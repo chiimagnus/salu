@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// 终端控制工具
 /// 提供 ANSI 颜色代码和屏幕控制功能

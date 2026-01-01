@@ -31,7 +31,7 @@ enum ScreenRenderer {
         lines.append("")
         
         // 牌堆信息
-        lines.append("\(Terminal.dim)  📚 \(Localization.shared.drawPile): \(engine.state.drawPile.count)\(Localization.shared.cards)    🗑️ \(Localization.shared.discardPile): \(engine.state.discardPile.count)\(Localization.shared.cards)\(Terminal.reset)")
+        lines.append("\(Terminal.dim)  📚 抽牌堆: \(engine.state.drawPile.count)张    🗑️ 弃牌堆: \(engine.state.discardPile.count)张\(Terminal.reset)")
         lines.append("")
         
         // 事件日志区域
@@ -57,17 +57,15 @@ enum ScreenRenderer {
     // MARK: - 组件构建
     
     private static func buildHeader(turn: Int, seed: UInt64) -> [String] {
-        let L = Localization.shared
         return [
             "\(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)",
-            "\(Terminal.bold)\(Terminal.cyan)  ⚔️ SALU - \(L.gameTitle)   \(Terminal.dim)\(L.turn) \(turn)  🎲 \(seed)\(Terminal.reset)",
+            "\(Terminal.bold)\(Terminal.cyan)  ⚔️ SALU - 杀戮尖塔 CLI   \(Terminal.dim)第 \(turn) 回合  🎲 \(seed)\(Terminal.reset)",
             "\(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)"
         ]
     }
     
     private static func buildEnemyArea(_ enemy: Entity) -> [String] {
         var lines: [String] = []
-        let L = Localization.shared
         
         let hpPercent = Double(enemy.currentHP) / Double(enemy.maxHP)
         let hpBar = Terminal.healthBar(percent: hpPercent)
@@ -77,17 +75,16 @@ enum ScreenRenderer {
         lines.append("     \(hpColor)\(hpBar)\(Terminal.reset) \(enemy.currentHP)/\(enemy.maxHP) HP")
         
         if enemy.block > 0 {
-            lines.append("     \(Terminal.cyan)🛡️ \(enemy.block) \(L.block)\(Terminal.reset)")
+            lines.append("     \(Terminal.cyan)🛡️ \(enemy.block) 格挡\(Terminal.reset)")
         }
         
-        lines.append("     \(Terminal.yellow)📢 \(L.intent): \(L.attack) 7 \(L.damage)\(Terminal.reset)")
+        lines.append("     \(Terminal.yellow)📢 意图: 攻击 7 伤害\(Terminal.reset)")
         
         return lines
     }
     
     private static func buildPlayerArea(_ state: BattleState) -> [String] {
         var lines: [String] = []
-        let L = Localization.shared
         
         let hpPercent = Double(state.player.currentHP) / Double(state.player.maxHP)
         let hpBar = Terminal.healthBar(percent: hpPercent)
@@ -97,7 +94,7 @@ enum ScreenRenderer {
         lines.append("     \(hpColor)\(hpBar)\(Terminal.reset) \(state.player.currentHP)/\(state.player.maxHP) HP")
         
         if state.player.block > 0 {
-            lines.append("     \(Terminal.cyan)🛡️ \(state.player.block) \(L.block)\(Terminal.reset)")
+            lines.append("     \(Terminal.cyan)🛡️ \(state.player.block) 格挡\(Terminal.reset)")
         }
         
         let energyDisplay = String(repeating: "◆", count: state.energy) + 
@@ -109,9 +106,8 @@ enum ScreenRenderer {
     
     private static func buildHandArea(_ state: BattleState) -> [String] {
         var lines: [String] = []
-        let L = Localization.shared
         
-        lines.append("  \(Terminal.bold)🃏 \(L.hand) (\(state.hand.count)\(L.cards))\(Terminal.reset)")
+        lines.append("  \(Terminal.bold)🃏 手牌 (\(state.hand.count)张)\(Terminal.reset)")
         
         for (index, card) in state.hand.enumerated() {
             let canPlay = card.cost <= state.energy
@@ -122,10 +118,10 @@ enum ScreenRenderer {
             let effectIcon: String
             switch card.kind {
             case .strike:
-                effect = "\(L.deal) \(card.damage) \(L.damage)"
+                effect = "造成 \(card.damage) 伤害"
                 effectIcon = "⚔️"
             case .defend:
-                effect = "\(L.gain) \(card.block) \(L.block)"
+                effect = "获得 \(card.block) 格挡"
                 effectIcon = "🛡️"
             }
             
@@ -137,9 +133,8 @@ enum ScreenRenderer {
     
     private static func buildEventLog(_ events: [String], maxEvents: Int = 6) -> [String] {
         var lines: [String] = []
-        let L = Localization.shared
         
-        lines.append("\(Terminal.bold)───────────── \(L.eventLog) ─────────────\(Terminal.reset)")
+        lines.append("\(Terminal.bold)───────────── 事件日志 ─────────────\(Terminal.reset)")
         
         let displayEvents = events.suffix(maxEvents)
         for event in displayEvents {
@@ -158,10 +153,9 @@ enum ScreenRenderer {
     }
     
     private static func buildInputPrompt(handCount: Int) -> [String] {
-        let L = Localization.shared
         return [
             "\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)",
-            "\(Terminal.yellow)⌨️ \(L.actions):\(Terminal.reset) \(Terminal.cyan)[1-\(handCount)]\(Terminal.reset) \(L.playCard)  \(Terminal.cyan)[0]\(Terminal.reset) \(L.endTurn)  \(Terminal.cyan)[h]\(Terminal.reset) \(L.help)  \(Terminal.cyan)[l]\(Terminal.reset) \(L.language)  \(Terminal.cyan)[q]\(Terminal.reset) \(L.quit)",
+            "\(Terminal.yellow)⌨️ 操作:\(Terminal.reset) \(Terminal.cyan)[1-\(handCount)]\(Terminal.reset) 出牌  \(Terminal.cyan)[0]\(Terminal.reset) 结束回合  \(Terminal.cyan)[h]\(Terminal.reset) 帮助  \(Terminal.cyan)[q]\(Terminal.reset) 退出",
             "\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)"
         ]
     }

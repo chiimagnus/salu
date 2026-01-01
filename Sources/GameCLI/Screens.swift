@@ -7,7 +7,6 @@ enum Screens {
     // MARK: - 标题屏幕
     
     static func showTitle(seed: UInt64) {
-        let L = Localization.shared
         Terminal.clear()
         print("""
         \(Terminal.bold)\(Terminal.cyan)
@@ -20,83 +19,58 @@ enum Screens {
         ║      ███████║██║  ██║███████╗╚██████╔╝                ║
         ║      ╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝                 ║
         ║                                                       ║
-        ║              ⚔️  \(L.gameSubtitle)  ⚔️                   ║
+        ║              ⚔️  杀戮尖塔 CLI 版  ⚔️                   ║
         ║                                                       ║
         ╚═══════════════════════════════════════════════════════╝
         \(Terminal.reset)
         """)
-        print("\(Terminal.dim)        🎲 \(L.seed): \(seed)\(Terminal.reset)")
+        print("\(Terminal.dim)        🎲 随机种子: \(seed)\(Terminal.reset)")
         print()
     }
     
     // MARK: - 帮助屏幕
     
     static func showHelp() {
-        let L = Localization.shared
         Terminal.clear()
         print("""
         \(Terminal.bold)\(Terminal.cyan)
         ╔═══════════════════════════════════════════════════════╗
-        ║                     📖 \(L.helpTitle)                       ║
+        ║                     📖 游戏帮助                       ║
         ╠═══════════════════════════════════════════════════════╣
         ║                                                       ║
-        ║  \(Terminal.yellow)\(L.controlsSection)\(Terminal.cyan)                                          ║
+        ║  \(Terminal.yellow)操作说明\(Terminal.cyan)                                          ║
         ║  ────────                                             ║
-        ║  \(Terminal.reset)1-N\(Terminal.cyan)    \(L.helpPlayCard)                            ║
-        ║  \(Terminal.reset)0\(Terminal.cyan)      \(L.helpEndTurn)                              ║
-        ║  \(Terminal.reset)h\(Terminal.cyan)      \(L.helpShowHelp)                            ║
-        ║  \(Terminal.reset)l\(Terminal.cyan)      \(L.helpSwitchLang)                          ║
-        ║  \(Terminal.reset)q\(Terminal.cyan)      \(L.helpQuit)                                  ║
+        ║  \(Terminal.reset)1-N\(Terminal.cyan)    打出第 N 张手牌                            ║
+        ║  \(Terminal.reset)0\(Terminal.cyan)      结束当前回合                              ║
+        ║  \(Terminal.reset)h\(Terminal.cyan)      显示此帮助信息                            ║
+        ║  \(Terminal.reset)q\(Terminal.cyan)      退出游戏                                  ║
         ║                                                       ║
-        ║  \(Terminal.yellow)\(L.rulesSection)\(Terminal.cyan)                                          ║
+        ║  \(Terminal.yellow)游戏规则\(Terminal.cyan)                                          ║
         ║  ────────                                             ║
-        ║  \(Terminal.reset)• \(L.ruleEnergy)\(Terminal.cyan)                       ║
-        ║  \(Terminal.reset)• \(L.ruleDraw)\(Terminal.cyan)                                 ║
-        ║  \(Terminal.reset)• \(L.ruleBlock)\(Terminal.cyan)                          ║
-        ║  \(Terminal.reset)• \(L.ruleDamage)\(Terminal.cyan)                              ║
-        ║  \(Terminal.reset)• \(L.ruleWin)\(Terminal.cyan)                       ║
+        ║  \(Terminal.reset)• 每回合开始时获得 3 点能量\(Terminal.cyan)                       ║
+        ║  \(Terminal.reset)• 每回合抽 5 张牌\(Terminal.cyan)                                 ║
+        ║  \(Terminal.reset)• 格挡在每回合开始时清零\(Terminal.cyan)                          ║
+        ║  \(Terminal.reset)• 伤害会先被格挡吸收\(Terminal.cyan)                              ║
+        ║  \(Terminal.reset)• 将敌人 HP 降为 0 即可获胜\(Terminal.cyan)                       ║
         ║                                                       ║
         ╠═══════════════════════════════════════════════════════╣
-        ║           \(L.pressEnterToReturn)                        ║
+        ║           按 Enter 返回游戏...                        ║
         ╚═══════════════════════════════════════════════════════╝
         \(Terminal.reset)
         """)
-    }
-    
-    // MARK: - 语言切换屏幕
-    
-    static func showLanguageSelect() {
-        let L = Localization.shared
-        Terminal.clear()
-        print("""
-        \(Terminal.bold)\(Terminal.cyan)
-        ╔═══════════════════════════════════════════════════════╗
-        ║                   🌐 \(L.languageTitle)                    ║
-        ╠═══════════════════════════════════════════════════════╣
-        ║                                                       ║
-        ║     \(Terminal.yellow)[1]\(Terminal.cyan)  中文                                      ║
-        ║     \(Terminal.yellow)[2]\(Terminal.cyan)  English                                   ║
-        ║                                                       ║
-        ║     \(Terminal.dim)\(L.currentLanguage): \(L.languageName)\(Terminal.cyan)                          ║
-        ║                                                       ║
-        ╚═══════════════════════════════════════════════════════╝
-        \(Terminal.reset)
-        """)
-        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
     }
     
     // MARK: - 退出屏幕
     
     static func showExit() {
-        let L = Localization.shared
         Terminal.clear()
         print("""
         \(Terminal.magenta)
         ╔═══════════════════════════════════════════════════════╗
         ║                                                       ║
-        ║           👋 \(L.exitMessage)                          ║
+        ║           👋 感谢游玩 SALU！                          ║
         ║                                                       ║
-        ║              \(L.exitSeeYou)                           ║
+        ║              期待下次再见！                           ║
         ║                                                       ║
         ╚═══════════════════════════════════════════════════════╝
         \(Terminal.reset)
@@ -106,7 +80,6 @@ enum Screens {
     // MARK: - 战斗结果屏幕
     
     static func showVictory(state: BattleState) {
-        let L = Localization.shared
         Terminal.clear()
         print("""
         \(Terminal.green)\(Terminal.bold)
@@ -121,12 +94,12 @@ enum Screens {
         ║      ╚████╔╝ ██║╚██████╗   ██║   ╚██████╔╝██║  ██║██╗ ║
         ║       ╚═══╝  ╚═╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚═╝ ║
         ║                                                       ║
-        ║                  🏆 \(L.victoryTitle) 🏆                    ║
+        ║                  🏆 战 斗 胜 利 🏆                    ║
         ║                                                       ║
         ╠═══════════════════════════════════════════════════════╣
         ║                                                       ║
-        ║         \(L.remainingHP)：\(String(format: "%3d", state.player.currentHP))/\(state.player.maxHP)                            ║
-        ║         \(L.battleRounds)：\(String(format: "%3d", state.turn))                              ║
+        ║         剩余 HP：\(String(format: "%3d", state.player.currentHP))/\(state.player.maxHP)                            ║
+        ║         战斗回合：\(String(format: "%3d", state.turn))                              ║
         ║                                                       ║
         ╚═══════════════════════════════════════════════════════╝
         \(Terminal.reset)
@@ -134,7 +107,6 @@ enum Screens {
     }
     
     static func showDefeat(state: BattleState) {
-        let L = Localization.shared
         Terminal.clear()
         print("""
         \(Terminal.red)\(Terminal.bold)
@@ -149,13 +121,13 @@ enum Screens {
         ║      ██████╔╝███████╗██║     ███████╗██║  ██║   ██║   ║
         ║      ╚═════╝ ╚══════╝╚═╝     ╚══════╝╚═╝  ╚═╝   ╚═╝   ║
         ║                                                       ║
-        ║                  💀 \(L.defeatTitle) 💀                    ║
+        ║                  💀 战 斗 失 败 💀                    ║
         ║                                                       ║
         ╠═══════════════════════════════════════════════════════╣
         ║                                                       ║
-        ║         \(L.survivedRounds)：\(String(format: "%3d", state.turn))                              ║
+        ║         坚持回合：\(String(format: "%3d", state.turn))                              ║
         ║                                                       ║
-        ║              \(L.tryAgain)                     ║
+        ║              再接再厉！下次一定！                     ║
         ║                                                       ║
         ╚═══════════════════════════════════════════════════════╝
         \(Terminal.reset)

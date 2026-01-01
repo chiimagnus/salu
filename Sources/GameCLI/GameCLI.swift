@@ -31,8 +31,7 @@ struct GameCLI {
         Screens.showTitle(seed: seed)
         
         // 等待用户按键开始
-        let L = Localization.shared
-        print("\(Terminal.cyan)\(L.pressEnterToStart)\(Terminal.reset)", terminator: "")
+        print("\(Terminal.cyan)按 Enter 开始战斗...\(Terminal.reset)", terminator: "")
         _ = readLine()
         
         // 游戏主循环
@@ -46,8 +45,6 @@ struct GameCLI {
     
     static func gameLoop(engine: BattleEngine, seed: UInt64) {
         while !engine.state.isOver {
-            let L = Localization.shared
-            
             // 刷新整个屏幕
             ScreenRenderer.renderBattleScreen(
                 engine: engine,
@@ -75,16 +72,12 @@ struct GameCLI {
                 _ = readLine()
                 continue
                 
-            case "l", "lang":
-                handleLanguageSwitch()
-                continue
-                
             default:
                 break
             }
             
             guard let number = Int(input) else {
-                currentMessage = "\(Terminal.red)⚠️ \(L.invalidInput)\(Terminal.reset)"
+                currentMessage = "\(Terminal.red)⚠️ 请输入有效数字，输入 h 查看帮助\(Terminal.reset)"
                 continue
             }
             
@@ -93,7 +86,7 @@ struct GameCLI {
             } else if number >= 1, number <= engine.state.hand.count {
                 engine.handleAction(.playCard(handIndex: number - 1))
             } else {
-                currentMessage = "\(Terminal.red)⚠️ \(L.invalidChoice): 1-\(engine.state.hand.count) / 0\(Terminal.reset)"
+                currentMessage = "\(Terminal.red)⚠️ 无效选择: 1-\(engine.state.hand.count) / 0\(Terminal.reset)"
                 continue
             }
             
@@ -104,25 +97,6 @@ struct GameCLI {
         
         // 战斗结束
         Screens.showFinal(state: engine.state)
-    }
-    
-    // MARK: - Language Switch
-    
-    static func handleLanguageSwitch() {
-        Screens.showLanguageSelect()
-        
-        guard let input = readLine()?.trimmingCharacters(in: .whitespaces) else {
-            return
-        }
-        
-        switch input {
-        case "1":
-            Localization.shared.setLanguage(.chinese)
-        case "2":
-            Localization.shared.setLanguage(.english)
-        default:
-            break
-        }
     }
     
     // MARK: - Event Management
