@@ -6,38 +6,36 @@ enum EventFormatter {
     
     /// 格式化单个事件为显示字符串
     static func format(_ event: BattleEvent) -> String {
-        let L = Localization.shared
-        
         switch event {
         case .battleStarted:
-            return "\(Terminal.bold)\(Terminal.magenta)⚔️ \(L.battleStarted)\(Terminal.reset)"
+            return "\(Terminal.bold)\(Terminal.magenta)⚔️ 战斗开始！\(Terminal.reset)"
             
         case .turnStarted(let turn):
-            return "\(Terminal.cyan)══ \(L.turnStartedPrefix)\(turn)\(L.turnStartedSuffix) ══\(Terminal.reset)"
+            return "\(Terminal.cyan)══ 第 \(turn) 回合开始 ══\(Terminal.reset)"
             
         case .energyReset(let amount):
-            return "\(Terminal.yellow)⚡ \(L.energyResetTo) \(amount)\(Terminal.reset)"
+            return "\(Terminal.yellow)⚡ 能量恢复至 \(amount)\(Terminal.reset)"
             
         case .blockCleared(let target, let amount):
-            return "\(Terminal.dim)🛡️ \(target) \(amount) \(L.blockCleared)\(Terminal.reset)"
+            return "\(Terminal.dim)🛡️ \(target) \(amount) 格挡清除\(Terminal.reset)"
             
         case .drew(_, let cardName):
-            return "\(Terminal.green)🃏 \(L.drew) \(cardName)\(Terminal.reset)"
+            return "\(Terminal.green)🃏 抽到 \(cardName)\(Terminal.reset)"
             
         case .shuffled(let count):
-            return "\(Terminal.magenta)🔀 \(L.shuffled): \(count)\(L.cardsWord)\(Terminal.reset)"
+            return "\(Terminal.magenta)🔀 洗牌: \(count)张\(Terminal.reset)"
             
         case .played(_, let cardName, let cost):
-            return "\(Terminal.bold)▶️ \(L.played) \(cardName) (◆\(cost))\(Terminal.reset)"
+            return "\(Terminal.bold)▶️ 打出 \(cardName) (◆\(cost))\(Terminal.reset)"
             
         case .damageDealt(let source, let target, let amount, let blocked):
             return formatDamage(source: source, target: target, amount: amount, blocked: blocked)
             
         case .blockGained(let target, let amount):
-            return "\(Terminal.cyan)🛡️ \(target) +\(amount) \(L.block)\(Terminal.reset)"
+            return "\(Terminal.cyan)🛡️ \(target) +\(amount) 格挡\(Terminal.reset)"
             
         case .handDiscarded(let count):
-            return "\(Terminal.dim)🗑️ \(L.discarded) \(count)\(L.handCardsWord)\(Terminal.reset)"
+            return "\(Terminal.dim)🗑️ 弃置 \(count)张手牌\(Terminal.reset)"
             
         case .enemyIntent(_, _, _):
             return ""  // 不显示，已经在界面上显示了
@@ -46,19 +44,19 @@ enum EventFormatter {
             return "\(Terminal.red)\(Terminal.bold)👹 \(enemyId) \(action)！\(Terminal.reset)"
             
         case .turnEnded(let turn):
-            return "\(Terminal.dim)── \(L.turnStartedPrefix)\(turn)\(L.turnStartedSuffix.replacingOccurrences(of: "开始", with: "结束").replacingOccurrences(of: "Start", with: "End")) ──\(Terminal.reset)"
+            return "\(Terminal.dim)── 第 \(turn) 回合结束 ──\(Terminal.reset)"
             
         case .entityDied(_, let name):
-            return "\(Terminal.red)\(Terminal.bold)💀 \(name) \(L.defeated)\(Terminal.reset)"
+            return "\(Terminal.red)\(Terminal.bold)💀 \(name) 被击败！\(Terminal.reset)"
             
         case .battleWon:
-            return "\(Terminal.green)\(Terminal.bold)🎉 \(L.victory)\(Terminal.reset)"
+            return "\(Terminal.green)\(Terminal.bold)🎉 战斗胜利！\(Terminal.reset)"
             
         case .battleLost:
-            return "\(Terminal.red)\(Terminal.bold)💔 \(L.defeat)\(Terminal.reset)"
+            return "\(Terminal.red)\(Terminal.bold)💔 战斗失败...\(Terminal.reset)"
             
         case .notEnoughEnergy(let required, let available):
-            return "\(Terminal.red)⚠️ \(L.notEnoughEnergy): \(L.need) \(required), \(L.have) \(available)\(Terminal.reset)"
+            return "\(Terminal.red)⚠️ 能量不足: 需 \(required), 有 \(available)\(Terminal.reset)"
             
         case .invalidAction(let reason):
             return "\(Terminal.red)❌ \(reason)\(Terminal.reset)"
@@ -67,14 +65,12 @@ enum EventFormatter {
     
     /// 格式化伤害事件
     private static func formatDamage(source: String, target: String, amount: Int, blocked: Int) -> String {
-        let L = Localization.shared
-        
         if blocked > 0 && amount == 0 {
-            return "\(Terminal.cyan)🛡️ \(target) \(L.fullyBlocked)\(Terminal.reset)"
+            return "\(Terminal.cyan)🛡️ \(target) 完全格挡了攻击！\(Terminal.reset)"
         } else if blocked > 0 {
-            return "\(Terminal.red)💥 \(source)→\(target) \(amount) \(L.damage)\(Terminal.reset)\(Terminal.cyan)(\(blocked) \(L.block))\(Terminal.reset)"
+            return "\(Terminal.red)💥 \(source)→\(target) \(amount) 伤害\(Terminal.reset)\(Terminal.cyan)(\(blocked) 格挡)\(Terminal.reset)"
         } else {
-            return "\(Terminal.red)💥 \(source)→\(target) \(amount) \(L.damage)\(Terminal.reset)"
+            return "\(Terminal.red)💥 \(source)→\(target) \(amount) 伤害\(Terminal.reset)"
         }
     }
 }
