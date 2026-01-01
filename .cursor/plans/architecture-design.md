@@ -160,6 +160,12 @@ Sources/
 │   │   ├── RewardType.swift        # 奖励类型
 │   │   └── RewardGenerator.swift   # 奖励生成
 │   │
+│   ├── AI/                         # 🆕 AI 子系统（接口层）
+│   │   ├── AIProvider.swift        # AI 服务协议
+│   │   ├── AIPromptBuilder.swift   # 构建 AI 提示词
+│   │   ├── AIDecision.swift        # AI 决策模型
+│   │   └── GameStateEncoder.swift  # 游戏状态序列化
+│   │
 │   ├── Actions.swift               # ✅（已有）
 │   ├── Events.swift                # ✅（已有）
 │   ├── History.swift               # ✅（已有）
@@ -172,6 +178,11 @@ Sources/
     │   ├── RewardScreen.swift      # 🆕 奖励选择界面
     │   ├── ShopScreen.swift        # 🆕 商店界面
     │   └── EventScreen.swift       # 🆕 事件界面
+    ├── AI/                         # 🆕 AI 实现
+    │   ├── OpenAIProvider.swift    # OpenAI API
+    │   ├── ClaudeProvider.swift    # Claude API
+    │   ├── LocalLLMProvider.swift  # 本地 LLM
+    │   └── MockAIProvider.swift    # 测试用 Mock
     ├── Components/                 # ✅（已有）
     └── ...
 ```
@@ -346,6 +357,77 @@ enum RunEvent {
 | P6.5 | 角色专属卡池 | ⭐⭐ | 1小时 |
 
 **验收标准**：可选择不同角色开始冒险
+
+---
+
+### P7：AI 集成 ⭐⭐⭐
+
+**依赖**：P1（敌人系统）、P3（奖励系统）、P5（遗物系统）基本完成
+
+#### 架构设计
+
+```
+Sources/
+├── GameCore/
+│   ├── AI/                         # AI 子系统（接口层）
+│   │   ├── AIProvider.swift        # AI 服务协议
+│   │   ├── AIPromptBuilder.swift   # 构建 AI 提示词
+│   │   ├── AIDecision.swift        # AI 决策模型
+│   │   └── GameStateEncoder.swift  # 游戏状态序列化
+│   └── ...
+│
+└── GameCLI/
+    ├── AI/                         # AI 实现（具体实现）
+    │   ├── OpenAIProvider.swift    # OpenAI API
+    │   ├── ClaudeProvider.swift    # Claude API
+    │   ├── LocalLLMProvider.swift  # 本地 LLM
+    │   └── MockAIProvider.swift    # 测试用 Mock
+    └── ...
+```
+
+#### 核心接口
+
+```swift
+// AI 服务协议
+protocol AIProvider: Sendable {
+    func decide(context: GameContext, question: AIQuestion) async throws -> AIDecision
+}
+
+// AI 可回答的问题类型
+enum AIQuestion {
+    case enemyNextMove           // 敌人决策
+    case suggestPlayerAction     // 玩家建议
+    case generateEventText       // 生成事件
+    case evaluateGameState       // 评估局势
+}
+```
+
+#### MVI 步骤
+
+| 步骤 | 内容 | 复杂度 | 预计时间 |
+|------|------|--------|----------|
+| P7.1 | 设计 `AIProvider` 协议和数据结构 | ⭐⭐ | 30分钟 |
+| P7.2 | 实现 `MockAIProvider`（随机决策） | ⭐ | 20分钟 |
+| P7.3 | 实现 `OpenAIProvider` | ⭐⭐ | 1小时 |
+| P7.4 | AI 敌人决策集成 | ⭐⭐ | 45分钟 |
+| P7.5 | AI 玩家助手（按 'a' 获取建议） | ⭐ | 30分钟 |
+| P7.6 | AI 对战模式（观战 AI 自动打牌） | ⭐⭐ | 1小时 |
+| P7.7 | AI 生成事件文本 | ⭐⭐ | 45分钟 |
+| P7.8 | 本地 LLM 支持（llama.cpp / MLX） | ⭐⭐⭐ | 2小时 |
+
+**验收标准**：
+- 敌人可使用 AI 进行智能决策
+- 玩家可按 'a' 键获取 AI 策略建议
+- 支持 AI 自动对战模式
+- 支持 AI 生成随机事件
+
+#### API 费用参考
+
+| 模型 | 大致费用 | 特点 |
+|------|----------|------|
+| GPT-4o-mini | ~$0.0001/请求 | 便宜，响应快 |
+| Claude Haiku | ~$0.0001/请求 | 便宜，推理好 |
+| 本地 LLM | 免费 | 离线，需要硬件 |
 
 ---
 
