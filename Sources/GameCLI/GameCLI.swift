@@ -17,40 +17,138 @@ struct GameCLI {
     // MARK: - Main Entry
     
     static func main() {
-        // 检查是否查看历史记录
+        // 检查命令行快捷参数
         if CommandLine.arguments.contains("--history") || CommandLine.arguments.contains("-H") {
             Screens.showHistory()
             return
         }
         
-        // 检查是否查看统计数据
         if CommandLine.arguments.contains("--stats") || CommandLine.arguments.contains("-S") {
             Screens.showStatistics()
             return
         }
         
+        // 显示主菜单
+        mainMenuLoop()
+        
+        // 显示光标
+        print(Terminal.showCursor, terminator: "")
+    }
+    
+    // MARK: - Main Menu
+    
+    static func mainMenuLoop() {
+        while true {
+            Screens.showMainMenu()
+            
+            guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
+                continue
+            }
+            
+            switch input {
+            case "1":
+                // 开始新战斗
+                startNewBattle()
+                
+            case "2":
+                // 设置菜单
+                settingsMenuLoop()
+                
+            case "3", "q":
+                // 退出游戏
+                Screens.showExit()
+                return
+                
+            default:
+                break
+            }
+        }
+    }
+    
+    // MARK: - Settings Menu
+    
+    static func settingsMenuLoop() {
+        while true {
+            Screens.showSettingsMenu()
+            
+            guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
+                continue
+            }
+            
+            switch input {
+            case "1":
+                // 查看历史记录
+                Screens.showHistory()
+                print("\(Terminal.dim)按 Enter 返回...\(Terminal.reset)")
+                _ = readLine()
+                
+            case "2":
+                // 查看统计数据
+                Screens.showStatistics()
+                print("\(Terminal.dim)按 Enter 返回...\(Terminal.reset)")
+                _ = readLine()
+                
+            case "3":
+                // 清除历史记录
+                confirmClearHistory()
+                
+            case "0", "q", "b":
+                // 返回主菜单
+                return
+                
+            default:
+                break
+            }
+        }
+    }
+    
+    static func confirmClearHistory() {
+        Terminal.clear()
+        print("""
+        \(Terminal.bold)\(Terminal.red)
+        ╔═══════════════════════════════════════════════════════╗
+        ║              ⚠️  确认清除历史记录？                   ║
+        ╠═══════════════════════════════════════════════════════╣
+        ║                                                       ║
+        ║  此操作不可恢复！                                     ║
+        ║                                                       ║
+        ║  当前共有 \(String(format: "%3d", HistoryManager.shared.recordCount)) 条记录                                ║
+        ║                                                       ║
+        ╠═══════════════════════════════════════════════════════╣
+        ║  输入 \(Terminal.reset)yes\(Terminal.bold)\(Terminal.red) 确认删除，其他任意键取消                     ║
+        ╚═══════════════════════════════════════════════════════╝
+        \(Terminal.reset)
+        """)
+        
+        print("\(Terminal.yellow)> \(Terminal.reset)", terminator: "")
+        if let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased(), input == "yes" {
+            HistoryManager.shared.clearHistory()
+            Terminal.clear()
+            print("\n        \(Terminal.green)✓ 历史记录已清除\(Terminal.reset)\n")
+            print("\(Terminal.dim)按 Enter 返回...\(Terminal.reset)")
+            _ = readLine()
+        }
+    }
+    
+    // MARK: - Battle
+    
+    static func startNewBattle() {
         let seed = parseSeed(from: CommandLine.arguments)
         
         // 初始化战斗引擎
         let engine = BattleEngine(seed: seed)
         engine.startBattle()
         
+        // 清空之前的事件
+        recentEvents.removeAll()
+        currentMessage = nil
+        
         // 收集初始事件
         appendEvents(engine.events)
         engine.clearEvents()
         
-        // 显示标题屏幕
-        Screens.showTitle(seed: seed)
-        
-        // 等待用户按键开始
-        print("\(Terminal.cyan)按 Enter 开始战斗...\(Terminal.reset)", terminator: "")
-        _ = readLine()
-        
-        // 游戏主循环
+        // 直接进入游戏主循环
         gameLoop(engine: engine, seed: seed)
-        
-        // 显示光标
-        print(Terminal.showCursor, terminator: "")
     }
     
     // MARK: - Game Loop
@@ -76,7 +174,7 @@ struct GameCLI {
             // 处理输入
             switch input.lowercased() {
             case "q":
-                Screens.showExit()
+                // 返回主菜单而不是退出
                 return
                 
             case "h", "help":
@@ -112,6 +210,9 @@ struct GameCLI {
         HistoryManager.shared.addRecord(record)
         
         Screens.showFinal(state: engine.state, record: record)
+        
+        print("\n\(Terminal.dim)按 Enter 返回主菜单...\(Terminal.reset)")
+        _ = readLine()
     }
     
     // MARK: - Event Management

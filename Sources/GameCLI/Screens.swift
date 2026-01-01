@@ -5,10 +5,20 @@ import GameCore
 /// 包含标题、帮助、结束等全屏界面
 enum Screens {
     
-    // MARK: - 标题屏幕
+    // MARK: - 主菜单
     
-    static func showTitle(seed: UInt64) {
+    static func showMainMenu() {
         Terminal.clear()
+        
+        // 获取统计信息显示
+        let stats = HistoryManager.shared.getStatistics()
+        let statsLine: String
+        if stats.totalBattles > 0 {
+            statsLine = "📈 \(stats.wins)胜 \(stats.losses)负 (胜率 \(String(format: "%.1f", stats.winRate))%)"
+        } else {
+            statsLine = "📈 暂无战绩"
+        }
+        
         print("""
         \(Terminal.bold)\(Terminal.cyan)
         ╔═══════════════════════════════════════════════════════╗
@@ -22,11 +32,45 @@ enum Screens {
         ║                                                       ║
         ║              ⚔️  杀戮尖塔 CLI 版  ⚔️                   ║
         ║                                                       ║
+        ╠═══════════════════════════════════════════════════════╣
+        ║                                                       ║
+        ║  \(Terminal.reset)\(Terminal.green)[1]\(Terminal.cyan) ⚔️  开始战斗                                ║
+        ║  \(Terminal.reset)\(Terminal.yellow)[2]\(Terminal.cyan) ⚙️  设置 / 战绩                              ║
+        ║  \(Terminal.reset)\(Terminal.red)[3]\(Terminal.cyan) 🚪 退出游戏                                ║
+        ║                                                       ║
+        ╠═══════════════════════════════════════════════════════╣
+        ║  \(Terminal.reset)\(Terminal.dim)\(statsLine)\(Terminal.bold)\(Terminal.cyan)\(String(repeating: " ", count: max(0, 40 - statsLine.count)))║
         ╚═══════════════════════════════════════════════════════╝
         \(Terminal.reset)
         """)
-        print("\(Terminal.dim)        🎲 随机种子: \(seed)\(Terminal.reset)")
-        print()
+        
+        print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
+    }
+    
+    // MARK: - 设置菜单
+    
+    static func showSettingsMenu() {
+        Terminal.clear()
+        
+        let recordCount = HistoryManager.shared.recordCount
+        
+        print("""
+        \(Terminal.bold)\(Terminal.yellow)
+        ╔═══════════════════════════════════════════════════════╗
+        ║                    ⚙️  设置菜单                       ║
+        ╠═══════════════════════════════════════════════════════╣
+        ║                                                       ║
+        ║  \(Terminal.reset)\(Terminal.cyan)[1]\(Terminal.bold)\(Terminal.yellow) 📜 查看历史记录                            ║
+        ║  \(Terminal.reset)\(Terminal.cyan)[2]\(Terminal.bold)\(Terminal.yellow) 📊 查看战绩统计                            ║
+        ║  \(Terminal.reset)\(Terminal.red)[3]\(Terminal.bold)\(Terminal.yellow) 🗑️  清除历史记录 \(Terminal.dim)(\(recordCount) 条)\(Terminal.bold)\(Terminal.yellow)                   ║
+        ║                                                       ║
+        ╠═══════════════════════════════════════════════════════╣
+        ║  \(Terminal.reset)\(Terminal.dim)[0/B] 返回主菜单\(Terminal.bold)\(Terminal.yellow)                               ║
+        ╚═══════════════════════════════════════════════════════╝
+        \(Terminal.reset)
+        """)
+        
+        print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
     }
     
     // MARK: - 帮助屏幕
@@ -44,7 +88,7 @@ enum Screens {
         ║  \(Terminal.reset)1-N\(Terminal.cyan)    打出第 N 张手牌                            ║
         ║  \(Terminal.reset)0\(Terminal.cyan)      结束当前回合                              ║
         ║  \(Terminal.reset)h\(Terminal.cyan)      显示此帮助信息                            ║
-        ║  \(Terminal.reset)q\(Terminal.cyan)      退出游戏                                  ║
+        ║  \(Terminal.reset)q\(Terminal.cyan)      返回主菜单                                ║
         ║                                                       ║
         ║  \(Terminal.yellow)游戏规则\(Terminal.cyan)                                          ║
         ║  ────────                                             ║
@@ -193,9 +237,11 @@ enum Screens {
             for (index, record) in records.reversed().enumerated() {
                 let resultIcon = record.won ? "\(Terminal.green)✓ 胜利\(Terminal.reset)" : "\(Terminal.red)✗ 失败\(Terminal.reset)"
                 let dateStr = dateFormatter.string(from: record.timestamp)
-                let hpStr = "\(record.playerFinalHP)/\(record.playerMaxHP)"
+                let hpStr = "\(record.playerFinalHP)/\(record.playerMaxHP)".padding(toLength: 7, withPad: " ", startingAt: 0)
+                let indexStr = String(format: "%2d", index + 1)
+                let turnStr = String(format: "%3d", record.turnsPlayed)
                 
-                print("        \(String(format: "%2d", index + 1))    \(dateStr)  \(resultIcon)  \(String(format: "%3d", record.turnsPlayed))   \(String(format: "%6s", hpStr))   \(record.totalDamageDealt)")
+                print("        \(indexStr)    \(dateStr)  \(resultIcon)  \(turnStr)   \(hpStr)  \(record.totalDamageDealt)")
             }
             
             print()
