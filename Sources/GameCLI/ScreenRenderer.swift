@@ -138,12 +138,18 @@ enum ScreenRenderer {
             case .bash:
                 effect = "造成 \(card.damage) 伤害, 易伤 2"
                 effectIcon = "💥"
+            case .clothesline:
+                effect = "造成 \(card.damage) 伤害, 虚弱 2"
+                effectIcon = "💥"
             case .defend:
                 effect = "获得 \(card.block) 格挡"
                 effectIcon = "🛡️"
             case .shrugItOff:
                 effect = "获得 \(card.block) 格挡, 抽 1 张"
                 effectIcon = "🛡️"
+            case .inflame:
+                effect = "获得 2 力量"
+                effectIcon = "💪"
             }
             
             lines.append("     \(statusIcon) \(cardColor)[\(index + 1)] \(card.displayName)\(Terminal.reset)  \(Terminal.yellow)◆\(card.cost)\(Terminal.reset)  \(effectIcon) \(effect)")

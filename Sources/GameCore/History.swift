@@ -136,10 +136,11 @@ public struct BattleRecordBuilder {
             switch event {
             case .played(_, let cardName, _):
                 switch cardName {
-                case "Strike", "Pommel Strike", "Bash":
+                case "Strike", "Pommel Strike", "Bash", "Clothesline":
                     strikesPlayed += 1  // 攻击类卡牌
                 case "Defend", "Shrug It Off":
                     defendsPlayed += 1  // 防御类卡牌
+                // Inflame 是技能牌，暂不统计到攻击/防御类
                 default:
                     break
                 }

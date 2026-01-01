@@ -58,13 +58,17 @@ swift run GameCLI
 | Bash | 2 能量 | 造成 8 伤害，给予易伤 2 |
 | Pommel Strike | 1 能量 | 造成 9 伤害，抽 1 张牌 |
 | Shrug It Off | 1 能量 | 获得 8 格挡，抽 1 张牌 |
+| Inflame | 1 能量 | 获得 2 力量 |
+| Clothesline | 2 能量 | 造成 12 伤害，给予虚弱 2 |
 
-初始牌组（11 张）：
+初始牌组（13 张）：
 - Strike × 4
 - Defend × 4
 - Bash × 1
 - Pommel Strike × 1
 - Shrug It Off × 1
+- Inflame × 1
+- Clothesline × 1
 
 ### 牌堆机制
 
@@ -206,9 +210,9 @@ swift run GameCLI --stats
 
 | 效果 | 说明 | 状态 |
 |------|------|------|
-| Vulnerable（易伤） | 受到伤害 +50% | ✅ |
-| Weak（虚弱） | 造成伤害 -25% | ✅ 已实现基础设施 |
-| Strength（力量） | 攻击伤害 +N | ✅ 已实现基础设施 |
+| Vulnerable（易伤） | 受到伤害 +50% | ✅ Bash 施加 |
+| Weak（虚弱） | 造成伤害 -25% | ✅ Clothesline 施加 |
+| Strength（力量） | 攻击伤害 +N | ✅ Inflame 获得 |
 
 ### Phase 3：多敌人战斗
 

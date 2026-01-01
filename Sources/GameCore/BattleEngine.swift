@@ -290,6 +290,29 @@ public final class BattleEngine: @unchecked Sendable {
                 state.enemy.vulnerable += card.vulnerableApply
                 emit(.statusApplied(target: state.enemy.name, effect: "易伤", stacks: card.vulnerableApply))
             }
+            
+        case .inflame:
+            // 获得力量
+            if card.strengthGain > 0 {
+                state.player.strength += card.strengthGain
+                emit(.statusApplied(target: state.player.name, effect: "力量", stacks: card.strengthGain))
+            }
+            
+        case .clothesline:
+            // 造成伤害
+            let finalDamage = calculateDamage(baseDamage: card.damage, attacker: state.player, defender: state.enemy)
+            let (dealt, blocked) = state.enemy.takeDamage(finalDamage)
+            emit(.damageDealt(
+                source: state.player.name,
+                target: state.enemy.name,
+                amount: dealt,
+                blocked: blocked
+            ))
+            // 施加虚弱
+            if card.weakApply > 0 {
+                state.enemy.weak += card.weakApply
+                emit(.statusApplied(target: state.enemy.name, effect: "虚弱", stacks: card.weakApply))
+            }
         }
     }
     
