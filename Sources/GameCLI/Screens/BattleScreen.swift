@@ -1,8 +1,8 @@
 import GameCore
 
-/// 屏幕渲染器
-/// 负责构建和渲染游戏界面
-enum ScreenRenderer {
+/// 战斗界面渲染器
+/// 负责构建和渲染战斗主界面
+enum BattleScreen {
     
     // MARK: - 主屏幕渲染
     
@@ -215,4 +215,7 @@ enum ScreenRenderer {
         return parts.joined(separator: " ")
     }
 }
+
+/// 向后兼容别名
+typealias ScreenRenderer = BattleScreen
 
