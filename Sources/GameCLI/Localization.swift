@@ -7,7 +7,7 @@ enum Language: String {
 }
 
 /// 国际化管理器
-/// 支持中英文切换
+/// 支持中英文切换，从 JSON 文件加载语言字符串
 final class Localization: @unchecked Sendable {
     
     // MARK: - 单例
@@ -18,131 +18,258 @@ final class Localization: @unchecked Sendable {
     
     private(set) var currentLanguage: Language = .chinese
     
-    private init() {}
+    // MARK: - 语言字符串字典
+    
+    private var strings: [String: String] = [:]
+    
+    // MARK: - 初始化
+    
+    private init() {
+        // 从配置加载保存的语言偏好
+        let savedLanguage = ConfigManager.shared.loadLanguagePreference()
+        currentLanguage = savedLanguage
+        loadLanguageStrings()
+    }
+    
+    // MARK: - 语言切换
     
     /// 切换语言
     func setLanguage(_ language: Language) {
+        guard language != currentLanguage else { return }
         currentLanguage = language
+        loadLanguageStrings()
+        // 保存语言偏好
+        ConfigManager.shared.saveLanguagePreference(language)
     }
     
     /// 切换到下一种语言
     func toggleLanguage() {
-        currentLanguage = currentLanguage == .chinese ? .english : .chinese
+        let newLanguage = currentLanguage == .chinese ? Language.english : Language.chinese
+        setLanguage(newLanguage)
+    }
+    
+    // MARK: - 加载语言文件
+    
+    /// 从 JSON 文件加载语言字符串
+    private func loadLanguageStrings() {
+        let fileName = "\(currentLanguage.rawValue).json"
+        
+        // 尝试从 Bundle.module 加载（SPM 资源）
+        if let url = Bundle.module.url(forResource: currentLanguage.rawValue, withExtension: "json") {
+            if loadFromFile(url: url) {
+                return
+            }
+        }
+        
+        // 尝试多个可能的路径（开发/测试环境）
+        let possiblePaths = [
+            // 开发环境路径
+            "Sources/GameCLI/Resources/\(fileName)",
+            // 相对于当前工作目录
+            "./Sources/GameCLI/Resources/\(fileName)"
+        ]
+        
+        for path in possiblePaths {
+            let url = URL(fileURLWithPath: path)
+            if FileManager.default.fileExists(atPath: url.path) {
+                if loadFromFile(url: url) {
+                    return
+                }
+            }
+        }
+        
+        // 如果都找不到，使用内嵌的默认字符串
+        loadDefaultStrings()
+    }
+    
+    /// 从文件加载
+    private func loadFromFile(url: URL) -> Bool {
+        do {
+            let data = try Data(contentsOf: url)
+            strings = try JSONDecoder().decode([String: String].self, from: data)
+            return true
+        } catch {
+            return false
+        }
+    }
+    
+    /// 加载默认字符串（备用）
+    private func loadDefaultStrings() {
+        if currentLanguage == .chinese {
+            strings = [
+                "game_title": "杀戮尖塔 CLI",
+                "game_subtitle": "杀戮尖塔 CLI 版",
+                "language_name": "中文",
+                "turn": "第",
+                "turn_suffix": "回合",
+                "cards": "张",
+                "seed": "随机种子",
+                "block": "格挡",
+                "damage": "伤害",
+                "intent": "意图",
+                "attack": "攻击",
+                "hand": "手牌",
+                "draw_pile": "抽牌堆",
+                "discard_pile": "弃牌堆",
+                "event_log": "事件日志",
+                "deal": "造成",
+                "gain": "获得",
+                "actions": "操作",
+                "play_card": "出牌",
+                "end_turn": "结束回合",
+                "help": "帮助",
+                "language": "语言",
+                "quit": "退出",
+                "press_enter_to_start": "按 Enter 开始战斗...",
+                "invalid_input": "请输入有效数字，输入 h 查看帮助",
+                "invalid_choice": "无效选择"
+            ]
+        } else {
+            strings = [
+                "game_title": "Slay the Spire CLI",
+                "game_subtitle": "Slay the Spire CLI",
+                "language_name": "English",
+                "turn": "Turn",
+                "turn_suffix": "",
+                "cards": "",
+                "seed": "Seed",
+                "block": "Block",
+                "damage": "Damage",
+                "intent": "Intent",
+                "attack": "Attack",
+                "hand": "Hand",
+                "draw_pile": "Draw",
+                "discard_pile": "Discard",
+                "event_log": "Event Log",
+                "deal": "Deal",
+                "gain": "Gain",
+                "actions": "Actions",
+                "play_card": "Play",
+                "end_turn": "End",
+                "help": "Help",
+                "language": "Lang",
+                "quit": "Quit",
+                "press_enter_to_start": "Press Enter to start...",
+                "invalid_input": "Invalid input, press h for help",
+                "invalid_choice": "Invalid choice"
+            ]
+        }
+    }
+    
+    // MARK: - 字符串访问
+    
+    /// 获取本地化字符串
+    private func string(_ key: String) -> String {
+        return strings[key] ?? key
     }
     
     // MARK: - 游戏标题
     
-    var gameTitle: String {
-        currentLanguage == .chinese ? "杀戮尖塔 CLI" : "Slay the Spire CLI"
-    }
-    
-    var gameSubtitle: String {
-        currentLanguage == .chinese ? "杀戮尖塔 CLI 版" : "Slay the Spire CLI"
-    }
-    
-    var languageName: String {
-        currentLanguage == .chinese ? "中文" : "English"
-    }
+    var gameTitle: String { string("game_title") }
+    var gameSubtitle: String { string("game_subtitle") }
+    var languageName: String { string("language_name") }
     
     // MARK: - 通用词汇
     
-    var turn: String { currentLanguage == .chinese ? "第" : "Turn" }
-    var turnSuffix: String { currentLanguage == .chinese ? "回合" : "" }
-    var cards: String { currentLanguage == .chinese ? "张" : "" }
-    var seed: String { currentLanguage == .chinese ? "随机种子" : "Seed" }
+    var turn: String { string("turn") }
+    var turnSuffix: String { string("turn_suffix") }
+    var cards: String { string("cards") }
+    var seed: String { string("seed") }
     
     // MARK: - 战斗界面
     
-    var block: String { currentLanguage == .chinese ? "格挡" : "Block" }
-    var damage: String { currentLanguage == .chinese ? "伤害" : "Damage" }
-    var intent: String { currentLanguage == .chinese ? "意图" : "Intent" }
-    var attack: String { currentLanguage == .chinese ? "攻击" : "Attack" }
-    var hand: String { currentLanguage == .chinese ? "手牌" : "Hand" }
-    var drawPile: String { currentLanguage == .chinese ? "抽牌堆" : "Draw" }
-    var discardPile: String { currentLanguage == .chinese ? "弃牌堆" : "Discard" }
-    var eventLog: String { currentLanguage == .chinese ? "事件日志" : "Event Log" }
+    var block: String { string("block") }
+    var damage: String { string("damage") }
+    var intent: String { string("intent") }
+    var attack: String { string("attack") }
+    var hand: String { string("hand") }
+    var drawPile: String { string("draw_pile") }
+    var discardPile: String { string("discard_pile") }
+    var eventLog: String { string("event_log") }
     
     // MARK: - 卡牌效果
     
-    var deal: String { currentLanguage == .chinese ? "造成" : "Deal" }
-    var gain: String { currentLanguage == .chinese ? "获得" : "Gain" }
+    var deal: String { string("deal") }
+    var gain: String { string("gain") }
     
     // MARK: - 操作提示
     
-    var actions: String { currentLanguage == .chinese ? "操作" : "Actions" }
-    var playCard: String { currentLanguage == .chinese ? "出牌" : "Play" }
-    var endTurn: String { currentLanguage == .chinese ? "结束回合" : "End" }
-    var help: String { currentLanguage == .chinese ? "帮助" : "Help" }
-    var language: String { currentLanguage == .chinese ? "语言" : "Lang" }
-    var quit: String { currentLanguage == .chinese ? "退出" : "Quit" }
+    var actions: String { string("actions") }
+    var playCard: String { string("play_card") }
+    var endTurn: String { string("end_turn") }
+    var help: String { string("help") }
+    var language: String { string("language") }
+    var quit: String { string("quit") }
     
     // MARK: - 帮助页面
     
-    var helpTitle: String { currentLanguage == .chinese ? "游戏帮助" : "Help" }
-    var controlsSection: String { currentLanguage == .chinese ? "操作说明" : "Controls" }
-    var rulesSection: String { currentLanguage == .chinese ? "游戏规则" : "Rules" }
-    
-    var helpPlayCard: String { currentLanguage == .chinese ? "打出第 N 张手牌" : "Play card N" }
-    var helpEndTurn: String { currentLanguage == .chinese ? "结束当前回合" : "End current turn" }
-    var helpShowHelp: String { currentLanguage == .chinese ? "显示此帮助信息" : "Show this help" }
-    var helpSwitchLang: String { currentLanguage == .chinese ? "切换语言" : "Switch language" }
-    var helpQuit: String { currentLanguage == .chinese ? "退出游戏" : "Quit game" }
-    
-    var ruleEnergy: String { currentLanguage == .chinese ? "每回合开始时获得 3 点能量" : "Gain 3 energy each turn" }
-    var ruleDraw: String { currentLanguage == .chinese ? "每回合抽 5 张牌" : "Draw 5 cards each turn" }
-    var ruleBlock: String { currentLanguage == .chinese ? "格挡在每回合开始时清零" : "Block resets each turn" }
-    var ruleDamage: String { currentLanguage == .chinese ? "伤害会先被格挡吸收" : "Block absorbs damage first" }
-    var ruleWin: String { currentLanguage == .chinese ? "将敌人 HP 降为 0 即可获胜" : "Reduce enemy HP to 0 to win" }
-    
-    var pressEnterToReturn: String { currentLanguage == .chinese ? "按 Enter 返回游戏..." : "Press Enter to return..." }
+    var helpTitle: String { string("help_title") }
+    var controlsSection: String { string("controls_section") }
+    var rulesSection: String { string("rules_section") }
+    var helpPlayCard: String { string("help_play_card") }
+    var helpEndTurn: String { string("help_end_turn") }
+    var helpShowHelp: String { string("help_show_help") }
+    var helpSwitchLang: String { string("help_switch_lang") }
+    var helpQuit: String { string("help_quit") }
+    var ruleEnergy: String { string("rule_energy") }
+    var ruleDraw: String { string("rule_draw") }
+    var ruleBlock: String { string("rule_block") }
+    var ruleDamage: String { string("rule_damage") }
+    var ruleWin: String { string("rule_win") }
+    var pressEnterToReturn: String { string("press_enter_to_return") }
     
     // MARK: - 语言切换页面
     
-    var languageTitle: String { currentLanguage == .chinese ? "语言设置" : "Language" }
-    var currentLanguageLabel: String { currentLanguage == .chinese ? "当前语言" : "Current" }
+    var languageTitle: String { string("language_title") }
+    var currentLanguageLabel: String { string("current_language") }
+    var selectLanguage: String { string("select_language") }
+    var languageSaved: String { string("language_saved") }
     
     // MARK: - 退出页面
     
-    var exitMessage: String { currentLanguage == .chinese ? "感谢游玩 SALU！" : "Thanks for playing SALU!" }
-    var exitSeeYou: String { currentLanguage == .chinese ? "期待下次再见！" : "See you next time!" }
+    var exitMessage: String { string("exit_message") }
+    var exitSeeYou: String { string("exit_see_you") }
     
     // MARK: - 战斗结果
     
-    var victoryTitle: String { currentLanguage == .chinese ? "战 斗 胜 利" : "V I C T O R Y" }
-    var defeatTitle: String { currentLanguage == .chinese ? "战 斗 失 败" : "D E F E A T" }
-    var remainingHP: String { currentLanguage == .chinese ? "剩余 HP" : "HP Left" }
-    var battleRounds: String { currentLanguage == .chinese ? "战斗回合" : "Rounds" }
-    var survivedRounds: String { currentLanguage == .chinese ? "坚持回合" : "Survived" }
-    var tryAgain: String { currentLanguage == .chinese ? "再接再厉！下次一定！" : "Try again! You can do it!" }
+    var victoryTitle: String { string("victory_title") }
+    var defeatTitle: String { string("defeat_title") }
+    var remainingHP: String { string("remaining_hp") }
+    var battleRounds: String { string("battle_rounds") }
+    var survivedRounds: String { string("survived_rounds") }
+    var tryAgain: String { string("try_again") }
     
     // MARK: - 事件消息
     
-    var battleStarted: String { currentLanguage == .chinese ? "战斗开始！" : "Battle Start!" }
-    var turnStartedPrefix: String { currentLanguage == .chinese ? "第 " : "Turn " }
-    var turnStartedSuffix: String { currentLanguage == .chinese ? " 回合开始" : " Start" }
-    var energyResetTo: String { currentLanguage == .chinese ? "能量恢复至" : "Energy reset to" }
-    var blockCleared: String { currentLanguage == .chinese ? "格挡清除" : "block cleared" }
-    var drew: String { currentLanguage == .chinese ? "抽到" : "Drew" }
-    var shuffled: String { currentLanguage == .chinese ? "洗牌" : "Shuffled" }
-    var played: String { currentLanguage == .chinese ? "打出" : "Played" }
-    var discarded: String { currentLanguage == .chinese ? "弃置" : "Discarded" }
-    var cardsWord: String { currentLanguage == .chinese ? "张" : " cards" }
-    var handCardsWord: String { currentLanguage == .chinese ? "张手牌" : " hand cards" }
-    var fullyBlocked: String { currentLanguage == .chinese ? "完全格挡了攻击！" : "fully blocked the attack!" }
-    var defeated: String { currentLanguage == .chinese ? "被击败！" : "defeated!" }
-    var victory: String { currentLanguage == .chinese ? "战斗胜利！" : "Victory!" }
-    var defeat: String { currentLanguage == .chinese ? "战斗失败..." : "Defeat..." }
-    var notEnoughEnergy: String { currentLanguage == .chinese ? "能量不足" : "Not enough energy" }
-    var need: String { currentLanguage == .chinese ? "需" : "Need" }
-    var have: String { currentLanguage == .chinese ? "有" : "Have" }
+    var battleStarted: String { string("battle_started") }
+    var turnStartedPrefix: String { string("turn_started_prefix") }
+    var turnStartedSuffix: String { string("turn_started_suffix") }
+    var energyResetTo: String { string("energy_reset_to") }
+    var blockCleared: String { string("block_cleared") }
+    var drew: String { string("drew") }
+    var shuffled: String { string("shuffled") }
+    var played: String { string("played") }
+    var discarded: String { string("discarded") }
+    var cardsWord: String { string("cards_word") }
+    var handCardsWord: String { string("hand_cards_word") }
+    var fullyBlocked: String { string("fully_blocked") }
+    var defeated: String { string("defeated") }
+    var victory: String { string("victory") }
+    var defeat: String { string("defeat") }
+    var notEnoughEnergy: String { string("not_enough_energy") }
+    var need: String { string("need") }
+    var have: String { string("have") }
     
     // MARK: - 错误消息
     
-    var invalidInput: String { currentLanguage == .chinese ? "请输入有效数字，输入 h 查看帮助" : "Invalid input, press h for help" }
-    var invalidChoice: String { currentLanguage == .chinese ? "无效选择" : "Invalid choice" }
+    var invalidInput: String { string("invalid_input") }
+    var invalidChoice: String { string("invalid_choice") }
     
     // MARK: - 开始游戏
     
-    var pressEnterToStart: String { currentLanguage == .chinese ? "按 Enter 开始战斗..." : "Press Enter to start..." }
+    var pressEnterToStart: String { string("press_enter_to_start") }
+    var welcomeTitle: String { string("welcome_title") }
+    var welcomeSubtitle: String { string("welcome_subtitle") }
+    var pressEnterToContinue: String { string("press_enter_to_continue") }
 }
 

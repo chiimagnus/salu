@@ -1,0 +1,89 @@
+{
+  "game_title": "Slay the Spire CLI",
+  "game_subtitle": "Slay the Spire CLI",
+  "language_name": "English",
+  
+  "turn": "Turn",
+  "turn_suffix": "",
+  "cards": "",
+  "seed": "Seed",
+  
+  "block": "Block",
+  "damage": "Damage",
+  "intent": "Intent",
+  "attack": "Attack",
+  "hand": "Hand",
+  "draw_pile": "Draw",
+  "discard_pile": "Discard",
+  "event_log": "Event Log",
+  
+  "deal": "Deal",
+  "gain": "Gain",
+  
+  "actions": "Actions",
+  "play_card": "Play",
+  "end_turn": "End",
+  "help": "Help",
+  "language": "Lang",
+  "quit": "Quit",
+  
+  "help_title": "Help",
+  "controls_section": "Controls",
+  "rules_section": "Rules",
+  
+  "help_play_card": "Play card N",
+  "help_end_turn": "End current turn",
+  "help_show_help": "Show this help",
+  "help_switch_lang": "Switch language",
+  "help_quit": "Quit game",
+  
+  "rule_energy": "Gain 3 energy each turn",
+  "rule_draw": "Draw 5 cards each turn",
+  "rule_block": "Block resets each turn",
+  "rule_damage": "Block absorbs damage first",
+  "rule_win": "Reduce enemy HP to 0 to win",
+  
+  "press_enter_to_return": "Press Enter to return...",
+  "press_enter_to_start": "Press Enter to start...",
+  
+  "language_title": "Language",
+  "current_language": "Current",
+  "select_language": "Select Language",
+  "language_saved": "Language saved",
+  
+  "exit_message": "Thanks for playing SALU!",
+  "exit_see_you": "See you next time!",
+  
+  "victory_title": "V I C T O R Y",
+  "defeat_title": "D E F E A T",
+  "remaining_hp": "HP Left",
+  "battle_rounds": "Rounds",
+  "survived_rounds": "Survived",
+  "try_again": "Try again! You can do it!",
+  
+  "battle_started": "Battle Start!",
+  "turn_started_prefix": "Turn ",
+  "turn_started_suffix": " Start",
+  "energy_reset_to": "Energy reset to",
+  "block_cleared": "block cleared",
+  "drew": "Drew",
+  "shuffled": "Shuffled",
+  "played": "Played",
+  "discarded": "Discarded",
+  "cards_word": " cards",
+  "hand_cards_word": " hand cards",
+  "fully_blocked": "fully blocked the attack!",
+  "defeated": "defeated!",
+  "victory": "Victory!",
+  "defeat": "Defeat...",
+  "not_enough_energy": "Not enough energy",
+  "need": "Need",
+  "have": "Have",
+  
+  "invalid_input": "Invalid input, press h for help",
+  "invalid_choice": "Invalid choice",
+  
+  "welcome_title": "Welcome to SALU",
+  "welcome_subtitle": "Slay the Spire Command Line Edition",
+  "press_enter_to_continue": "Press Enter to continue..."
+}

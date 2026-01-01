@@ -17,6 +17,9 @@ struct GameCLI {
     // MARK: - Main Entry
     
     static func main() {
+        // 显示欢迎屏幕和语言选择
+        showWelcomeAndLanguageSelection()
+        
         let seed = parseSeed(from: CommandLine.arguments)
         
         // 初始化战斗引擎
@@ -108,6 +111,23 @@ struct GameCLI {
     
     // MARK: - Language Switch
     
+    /// 显示欢迎界面和语言选择
+    static func showWelcomeAndLanguageSelection() {
+        Screens.showWelcome()
+        
+        // 提示用户可以选择语言
+        print("\(Terminal.yellow)[l]\(Terminal.reset) \(Localization.shared.language)  ", terminator: "")
+        print("\(Terminal.green)[Enter]\(Terminal.reset) \(Localization.shared.pressEnterToContinue)")
+        print()
+        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+        
+        if let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() {
+            if input == "l" || input == "lang" {
+                handleLanguageSwitch()
+            }
+        }
+    }
+    
     static func handleLanguageSwitch() {
         Screens.showLanguageSelect()
         
@@ -118,11 +138,23 @@ struct GameCLI {
         switch input {
         case "1":
             Localization.shared.setLanguage(.chinese)
+            showLanguageSavedMessage()
         case "2":
             Localization.shared.setLanguage(.english)
+            showLanguageSavedMessage()
         default:
             break
         }
+    }
+    
+    /// 显示语言保存确认消息
+    static func showLanguageSavedMessage() {
+        let L = Localization.shared
+        print()
+        print("\(Terminal.green)✓ \(L.languageSaved)\(Terminal.reset)")
+        print()
+        print("\(Terminal.cyan)\(L.pressEnterToContinue)\(Terminal.reset)", terminator: "")
+        _ = readLine()
     }
     
     // MARK: - Event Management

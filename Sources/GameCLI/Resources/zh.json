@@ -1,0 +1,89 @@
+{
+  "game_title": "杀戮尖塔 CLI",
+  "game_subtitle": "杀戮尖塔 CLI 版",
+  "language_name": "中文",
+  
+  "turn": "第",
+  "turn_suffix": "回合",
+  "cards": "张",
+  "seed": "随机种子",
+  
+  "block": "格挡",
+  "damage": "伤害",
+  "intent": "意图",
+  "attack": "攻击",
+  "hand": "手牌",
+  "draw_pile": "抽牌堆",
+  "discard_pile": "弃牌堆",
+  "event_log": "事件日志",
+  
+  "deal": "造成",
+  "gain": "获得",
+  
+  "actions": "操作",
+  "play_card": "出牌",
+  "end_turn": "结束回合",
+  "help": "帮助",
+  "language": "语言",
+  "quit": "退出",
+  
+  "help_title": "游戏帮助",
+  "controls_section": "操作说明",
+  "rules_section": "游戏规则",
+  
+  "help_play_card": "打出第 N 张手牌",
+  "help_end_turn": "结束当前回合",
+  "help_show_help": "显示此帮助信息",
+  "help_switch_lang": "切换语言",
+  "help_quit": "退出游戏",
+  
+  "rule_energy": "每回合开始时获得 3 点能量",
+  "rule_draw": "每回合抽 5 张牌",
+  "rule_block": "格挡在每回合开始时清零",
+  "rule_damage": "伤害会先被格挡吸收",
+  "rule_win": "将敌人 HP 降为 0 即可获胜",
+  
+  "press_enter_to_return": "按 Enter 返回游戏...",
+  "press_enter_to_start": "按 Enter 开始战斗...",
+  
+  "language_title": "语言设置",
+  "current_language": "当前语言",
+  "select_language": "选择语言",
+  "language_saved": "语言设置已保存",
+  
+  "exit_message": "感谢游玩 SALU！",
+  "exit_see_you": "期待下次再见！",
+  
+  "victory_title": "战 斗 胜 利",
+  "defeat_title": "战 斗 失 败",
+  "remaining_hp": "剩余 HP",
+  "battle_rounds": "战斗回合",
+  "survived_rounds": "坚持回合",
+  "try_again": "再接再厉！下次一定！",
+  
+  "battle_started": "战斗开始！",
+  "turn_started_prefix": "第 ",
+  "turn_started_suffix": " 回合开始",
+  "energy_reset_to": "能量恢复至",
+  "block_cleared": "格挡清除",
+  "drew": "抽到",
+  "shuffled": "洗牌",
+  "played": "打出",
+  "discarded": "弃置",
+  "cards_word": "张",
+  "hand_cards_word": "张手牌",
+  "fully_blocked": "完全格挡了攻击！",
+  "defeated": "被击败！",
+  "victory": "战斗胜利！",
+  "defeat": "战斗失败...",
+  "not_enough_energy": "能量不足",
+  "need": "需",
+  "have": "有",
+  
+  "invalid_input": "请输入有效数字，输入 h 查看帮助",
+  "invalid_choice": "无效选择",
+  
+  "welcome_title": "欢迎来到 SALU",
+  "welcome_subtitle": "杀戮尖塔命令行版",
+  "press_enter_to_continue": "按 Enter 继续..."
+}

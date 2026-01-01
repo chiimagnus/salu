@@ -13,7 +13,8 @@ let package = Package(
         // GameCLI: 命令行前端
         .executableTarget(
             name: "GameCLI",
-            dependencies: ["GameCore"]
+            dependencies: ["GameCore"],
+            resources: [.process("Resources")]
         ),
     ]
 )

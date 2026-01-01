@@ -4,6 +4,33 @@ import GameCore
 /// 包含标题、帮助、结束等全屏界面
 enum Screens {
     
+    // MARK: - 欢迎屏幕
+    
+    static func showWelcome() {
+        let L = Localization.shared
+        Terminal.clear()
+        print("""
+        \(Terminal.bold)\(Terminal.magenta)
+        ╔═══════════════════════════════════════════════════════╗
+        ║                                                       ║
+        ║      ███████╗ █████╗ ██╗     ██╗   ██╗                ║
+        ║      ██╔════╝██╔══██╗██║     ██║   ██║                ║
+        ║      ███████╗███████║██║     ██║   ██║                ║
+        ║      ╚════██║██╔══██║██║     ██║   ██║                ║
+        ║      ███████║██║  ██║███████╗╚██████╔╝                ║
+        ║      ╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝                 ║
+        ║                                                       ║
+        ║                 \(L.welcomeTitle)                    ║
+        ║              \(L.welcomeSubtitle)              ║
+        ║                                                       ║
+        ╚═══════════════════════════════════════════════════════╝
+        \(Terminal.reset)
+        
+        \(Terminal.dim)        当前语言 / Current Language: \(L.languageName)\(Terminal.reset)
+        """)
+        print()
+    }
+    
     // MARK: - 标题屏幕
     
     static func showTitle(seed: UInt64) {
