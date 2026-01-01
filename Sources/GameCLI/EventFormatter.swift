@@ -60,6 +60,12 @@ enum EventFormatter {
             
         case .invalidAction(let reason):
             return "\(Terminal.red)❌ \(reason)\(Terminal.reset)"
+            
+        case .statusApplied(let target, let effect, let stacks):
+            return "\(Terminal.magenta)✨ \(target) 获得 \(effect) \(stacks) 层\(Terminal.reset)"
+            
+        case .statusExpired(let target, let effect):
+            return "\(Terminal.dim)💨 \(target) 的 \(effect) 已消退\(Terminal.reset)"
         }
     }
     

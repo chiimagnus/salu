@@ -93,6 +93,28 @@ public final class BattleEngine: @unchecked Sendable {
         events.append(event)
     }
     
+    // MARK: Damage Calculation
+    
+    /// 计算最终伤害（应用力量、虚弱、易伤修正）
+    private func calculateDamage(baseDamage: Int, attacker: Entity, defender: Entity) -> Int {
+        var damage = baseDamage
+        
+        // 力量加成
+        damage += attacker.strength
+        
+        // 虚弱减伤（-25%，向下取整）
+        if attacker.weak > 0 {
+            damage = Int(Double(damage) * 0.75)
+        }
+        
+        // 易伤增伤（+50%，向下取整）
+        if defender.vulnerable > 0 {
+            damage = Int(Double(damage) * 1.5)
+        }
+        
+        return max(0, damage)
+    }
+    
     // MARK: Turn Management
     
     private func startNewTurn() {
@@ -112,11 +134,24 @@ public final class BattleEngine: @unchecked Sendable {
             emit(.blockCleared(target: state.player.name, amount: clearedBlock))
         }
         
+        // 递减玩家状态效果
+        let playerExpired = state.player.tickStatusEffects()
+        for effect in playerExpired {
+            emit(.statusExpired(target: state.player.name, effect: effect))
+        }
+        
+        // 递减敌人状态效果
+        let enemyExpired = state.enemy.tickStatusEffects()
+        for effect in enemyExpired {
+            emit(.statusExpired(target: state.enemy.name, effect: effect))
+        }
+        
         // 抽牌
         drawCards(cardsPerTurn)
         
-        // 显示敌人意图
-        emit(.enemyIntent(enemyId: state.enemy.id, action: "攻击", damage: enemyDamage))
+        // 显示敌人意图（考虑敌人虚弱状态）
+        let intentDamage = calculateDamage(baseDamage: enemyDamage, attacker: state.enemy, defender: state.player)
+        emit(.enemyIntent(enemyId: state.enemy.id, action: "攻击", damage: intentDamage))
     }
     
     private func endPlayerTurn() {
@@ -151,8 +186,9 @@ public final class BattleEngine: @unchecked Sendable {
     private func executeEnemyTurn() {
         emit(.enemyAction(enemyId: state.enemy.id, action: "攻击"))
         
-        // 敌人造成伤害
-        let (dealt, blocked) = state.player.takeDamage(enemyDamage)
+        // 敌人造成伤害（应用伤害修正）
+        let finalDamage = calculateDamage(baseDamage: enemyDamage, attacker: state.enemy, defender: state.player)
+        let (dealt, blocked) = state.player.takeDamage(finalDamage)
         emit(.damageDealt(
             source: state.enemy.name,
             target: state.player.name,
@@ -204,8 +240,9 @@ public final class BattleEngine: @unchecked Sendable {
     private func executeCardEffect(_ card: Card) {
         switch card.kind {
         case .strike:
-            // 对敌人造成伤害
-            let (dealt, blocked) = state.enemy.takeDamage(card.damage)
+            // 对敌人造成伤害（应用伤害修正）
+            let finalDamage = calculateDamage(baseDamage: card.damage, attacker: state.player, defender: state.enemy)
+            let (dealt, blocked) = state.enemy.takeDamage(finalDamage)
             emit(.damageDealt(
                 source: state.player.name,
                 target: state.enemy.name,

@@ -54,6 +54,12 @@ public enum BattleEvent: Sendable, Equatable {
     
     /// 无效操作
     case invalidAction(reason: String)
+    
+    /// 获得状态效果
+    case statusApplied(target: String, effect: String, stacks: Int)
+    
+    /// 状态效果过期
+    case statusExpired(target: String, effect: String)
 }
 
 /// 事件描述（用于 CLI 显示）
@@ -117,6 +123,12 @@ extension BattleEvent {
             
         case .invalidAction(let reason):
             return "❌ 无效操作：\(reason)"
+            
+        case .statusApplied(let target, let effect, let stacks):
+            return "✨ \(target) 获得 \(effect) \(stacks) 层"
+            
+        case .statusExpired(let target, let effect):
+            return "💨 \(target) 的 \(effect) 已消退"
         }
     }
 }

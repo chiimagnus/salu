@@ -78,6 +78,12 @@ enum ScreenRenderer {
             lines.append("     \(Terminal.cyan)🛡️ \(enemy.block) 格挡\(Terminal.reset)")
         }
         
+        // 显示状态效果
+        let statusLine = buildStatusLine(entity: enemy)
+        if !statusLine.isEmpty {
+            lines.append("     \(statusLine)")
+        }
+        
         lines.append("     \(Terminal.yellow)📢 意图: 攻击 7 伤害\(Terminal.reset)")
         
         return lines
@@ -95,6 +101,12 @@ enum ScreenRenderer {
         
         if state.player.block > 0 {
             lines.append("     \(Terminal.cyan)🛡️ \(state.player.block) 格挡\(Terminal.reset)")
+        }
+        
+        // 显示状态效果
+        let statusLine = buildStatusLine(entity: state.player)
+        if !statusLine.isEmpty {
+            lines.append("     \(statusLine)")
         }
         
         let energyDisplay = String(repeating: "◆", count: state.energy) + 
@@ -158,6 +170,29 @@ enum ScreenRenderer {
             "\(Terminal.yellow)⌨️ 操作:\(Terminal.reset) \(Terminal.cyan)[1-\(handCount)]\(Terminal.reset) 出牌  \(Terminal.cyan)[0]\(Terminal.reset) 结束回合  \(Terminal.cyan)[h]\(Terminal.reset) 帮助  \(Terminal.cyan)[q]\(Terminal.reset) 退出",
             "\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)"
         ]
+    }
+    
+    // MARK: - Status Effects
+    
+    /// 构建状态效果显示行
+    private static func buildStatusLine(entity: Entity) -> String {
+        var parts: [String] = []
+        
+        if entity.vulnerable > 0 {
+            parts.append("\(Terminal.red)💔易伤\(entity.vulnerable)\(Terminal.reset)")
+        }
+        
+        if entity.weak > 0 {
+            parts.append("\(Terminal.yellow)😵虚弱\(entity.weak)\(Terminal.reset)")
+        }
+        
+        if entity.strength > 0 {
+            parts.append("\(Terminal.green)💪力量+\(entity.strength)\(Terminal.reset)")
+        } else if entity.strength < 0 {
+            parts.append("\(Terminal.dim)💪力量\(entity.strength)\(Terminal.reset)")
+        }
+        
+        return parts.joined(separator: " ")
     }
 }
 
