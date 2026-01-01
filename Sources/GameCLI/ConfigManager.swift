@@ -53,7 +53,7 @@ final class ConfigManager: @unchecked Sendable {
             let config = try JSONDecoder().decode(Config.self, from: data)
             return config
         } catch {
-            print("⚠️ 加载配置失败: \(error.localizedDescription)")
+            print("⚠️ Failed to load config: \(error.localizedDescription)")
             return Config.default
         }
     }
@@ -69,7 +69,7 @@ final class ConfigManager: @unchecked Sendable {
             let data = try encoder.encode(config)
             try data.write(to: configFilePath, options: .atomic)
         } catch {
-            print("⚠️ 保存配置失败: \(error.localizedDescription)")
+            print("⚠️ Failed to save config: \(error.localizedDescription)")
         }
     }
     
