@@ -12,12 +12,20 @@ GameCLI 是**表现层**，负责终端界面渲染、用户输入处理。
 
 ```
 Sources/GameCLI/  ← 本规范适用范围
-├── GameCLI.swift        # 主入口、菜单循环、游戏循环
-├── Terminal.swift       # ANSI 控制码、终端工具
-├── EventFormatter.swift # 事件格式化
-├── ScreenRenderer.swift # 战斗界面渲染
-├── Screens.swift        # 全屏界面（菜单/帮助/结果）
-└── HistoryManager.swift # 战绩持久化
+├── Screens/                    # 界面系统
+│   ├── MainMenuScreen.swift    # 主菜单界面
+│   ├── SettingsScreen.swift    # 设置菜单界面
+│   ├── HelpScreen.swift        # 帮助界面
+│   ├── BattleScreen.swift      # 战斗主界面渲染
+│   ├── ResultScreen.swift      # 战斗结果界面
+│   ├── HistoryScreen.swift     # 历史记录界面
+│   └── StatisticsScreen.swift  # 统计数据界面
+├── Components/                 # UI 组件
+│   └── EventFormatter.swift    # 事件 → 彩色文本
+├── GameCLI.swift               # 主入口、游戏循环
+├── Terminal.swift              # ANSI 控制码、终端工具
+├── Screens.swift               # 界面统一入口（向后兼容层）
+└── HistoryManager.swift        # 战绩持久化
 ```
 
 ---

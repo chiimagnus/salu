@@ -12,12 +12,20 @@ GameCore 是**纯逻辑层**，负责游戏规则、状态管理、计算。
 
 ```
 Sources/GameCore/  ← 本规范适用范围
-├── Models.swift       # 数据模型（Card, Entity, BattleState）
-├── RNG.swift          # 随机数生成器
-├── Events.swift       # 战斗事件定义
-├── Actions.swift      # 玩家动作定义
-├── BattleEngine.swift # 战斗引擎（核心逻辑）
-└── History.swift      # 战绩数据模型
+├── Battle/                 # 战斗系统
+│   ├── BattleEngine.swift  # 战斗引擎（核心逻辑）
+│   ├── BattleState.swift   # 战斗状态
+│   └── BattleStats.swift   # 战斗统计
+├── Cards/                  # 卡牌系统
+│   ├── CardKind.swift      # 卡牌种类枚举
+│   ├── Card.swift          # 卡牌模型
+│   └── StarterDeck.swift   # 初始牌组配置
+├── Entity/                 # 实体系统
+│   └── Entity.swift        # 实体模型（玩家/敌人）
+├── Actions.swift           # 玩家动作定义
+├── Events.swift            # 战斗事件定义
+├── History.swift           # 战绩数据模型
+└── RNG.swift               # 随机数生成器
 ```
 
 ---
