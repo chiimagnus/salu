@@ -12,21 +12,36 @@ GameCLI 是**表现层**，负责终端界面渲染、用户输入处理。
 
 ```
 Sources/GameCLI/  ← 本规范适用范围
-├── Screens/                    # 界面系统
+│
+├── Screens/                    # ✅ 界面系统
 │   ├── MainMenuScreen.swift    # 主菜单界面
 │   ├── SettingsScreen.swift    # 设置菜单界面
 │   ├── HelpScreen.swift        # 帮助界面
 │   ├── BattleScreen.swift      # 战斗主界面渲染
 │   ├── ResultScreen.swift      # 战斗结果界面
 │   ├── HistoryScreen.swift     # 历史记录界面
-│   └── StatisticsScreen.swift  # 统计数据界面
-├── Components/                 # UI 组件
+│   ├── StatisticsScreen.swift  # 统计数据界面
+│   ├── MapScreen.swift         # 🔜 地图界面（计划中）
+│   ├── RewardScreen.swift      # 🔜 奖励选择界面（计划中）
+│   ├── ShopScreen.swift        # 🔜 商店界面（计划中）
+│   └── EventScreen.swift       # 🔜 事件界面（计划中）
+│
+├── Components/                 # ✅ UI 组件
 │   └── EventFormatter.swift    # 事件 → 彩色文本
-├── GameCLI.swift               # 主入口、游戏循环
-├── Terminal.swift              # ANSI 控制码、终端工具
-├── Screens.swift               # 界面统一入口（向后兼容层）
-└── HistoryManager.swift        # 战绩持久化
+│
+├── AI/                         # 🔜 AI 实现（计划中）
+│   ├── OpenAIProvider.swift    # OpenAI API
+│   ├── ClaudeProvider.swift    # Claude API
+│   ├── LocalLLMProvider.swift  # 本地 LLM
+│   └── MockAIProvider.swift    # 测试用 Mock
+│
+├── GameCLI.swift               # ✅ 主入口、游戏循环
+├── Terminal.swift              # ✅ ANSI 控制码、终端工具
+├── Screens.swift               # ✅ 界面统一入口（向后兼容层）
+└── HistoryManager.swift        # ✅ 战绩持久化
 ```
+
+> 说明：✅ 已实现 | 🔜 计划中（详见 `.cursor/plans/architecture-design.md`）
 
 ---
 
