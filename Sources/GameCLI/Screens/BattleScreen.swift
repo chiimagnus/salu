@@ -86,7 +86,7 @@ enum BattleScreen {
             lines.append("     \(statusLine)")
         }
         
-        lines.append("     \(Terminal.yellow)📢 意图: 攻击 7 伤害\(Terminal.reset)")
+        lines.append("     \(Terminal.yellow)\(enemy.intent.displayIcon) 意图: \(enemy.intent.displayText)\(Terminal.reset)")
         
         return lines
     }

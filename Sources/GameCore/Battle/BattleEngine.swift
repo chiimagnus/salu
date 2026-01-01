@@ -37,9 +37,14 @@ public final class BattleEngine: @unchecked Sendable {
     
     /// 使用默认配置初始化
     public convenience init(seed: UInt64) {
+        // 使用 RNG 随机选择敌人
+        let tempRNG = SeededRNG(seed: seed)
+        let enemyTypes = ["jaw_worm", "cultist"]
+        let selectedType = enemyTypes[tempRNG.nextInt(upperBound: enemyTypes.count)]
+        
         self.init(
             player: createDefaultPlayer(),
-            enemy: createDefaultEnemy(),
+            enemy: createEnemy(type: selectedType),
             deck: createStarterDeck(),
             seed: seed
         )

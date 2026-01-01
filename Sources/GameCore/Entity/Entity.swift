@@ -12,6 +12,9 @@ public struct Entity: Sendable {
     public var weak: Int = 0         // 虚弱：造成伤害 -25%
     public var strength: Int = 0     // 力量：攻击伤害 +N
     
+    /// 当前意图（仅敌人使用）
+    public var intent: EnemyIntent = .unknown
+    
     public var isAlive: Bool {
         currentHP > 0
     }
@@ -92,5 +95,15 @@ public func createDefaultPlayer() -> Entity {
 /// 创建默认敌人
 public func createDefaultEnemy() -> Entity {
     Entity(id: "enemy", name: "下颚虫", maxHP: 42)
+}
+
+/// 创建指定类型的敌人
+public func createEnemy(type: String) -> Entity {
+    switch type {
+    case "cultist":
+        return Entity(id: "cultist", name: "信徒", maxHP: 50)
+    default:
+        return Entity(id: "jaw_worm", name: "下颚虫", maxHP: 42)
+    }
 }
 
