@@ -7,6 +7,9 @@ public final class BattleEngine: @unchecked Sendable {
     public private(set) var state: BattleState
     public private(set) var events: [BattleEvent] = []
     
+    /// 战斗统计（累积，不会被清除）
+    public private(set) var battleStats: BattleStats = BattleStats()
+    
     private let rng: SeededRNG
     private let cardsPerTurn: Int = 5
     private let enemyDamage: Int = 7  // MVP: 敌人固定攻击7点
@@ -189,6 +192,7 @@ public final class BattleEngine: @unchecked Sendable {
         // 敌人造成伤害（应用伤害修正）
         let finalDamage = calculateDamage(baseDamage: enemyDamage, attacker: state.enemy, defender: state.player)
         let (dealt, blocked) = state.player.takeDamage(finalDamage)
+        battleStats.totalDamageTaken += dealt
         emit(.damageDealt(
             source: state.enemy.name,
             target: state.player.name,
@@ -238,11 +242,23 @@ public final class BattleEngine: @unchecked Sendable {
     }
     
     private func executeCardEffect(_ card: Card) {
+        // 统计卡牌使用
+        battleStats.cardsPlayed += 1
+        switch card.kind {
+        case .strike, .pommelStrike, .bash, .clothesline:
+            battleStats.strikesPlayed += 1
+        case .defend, .shrugItOff:
+            battleStats.defendsPlayed += 1
+        case .inflame:
+            battleStats.skillsPlayed += 1
+        }
+        
         switch card.kind {
         case .strike:
             // 对敌人造成伤害（应用伤害修正）
             let finalDamage = calculateDamage(baseDamage: card.damage, attacker: state.player, defender: state.enemy)
             let (dealt, blocked) = state.enemy.takeDamage(finalDamage)
+            battleStats.totalDamageDealt += dealt
             emit(.damageDealt(
                 source: state.player.name,
                 target: state.enemy.name,
@@ -254,6 +270,7 @@ public final class BattleEngine: @unchecked Sendable {
             // 造成伤害
             let finalDamage = calculateDamage(baseDamage: card.damage, attacker: state.player, defender: state.enemy)
             let (dealt, blocked) = state.enemy.takeDamage(finalDamage)
+            battleStats.totalDamageDealt += dealt
             emit(.damageDealt(
                 source: state.player.name,
                 target: state.enemy.name,
@@ -266,11 +283,13 @@ public final class BattleEngine: @unchecked Sendable {
         case .defend:
             // 获得格挡
             state.player.gainBlock(card.block)
+            battleStats.totalBlockGained += card.block
             emit(.blockGained(target: state.player.name, amount: card.block))
             
         case .shrugItOff:
             // 获得格挡
             state.player.gainBlock(card.block)
+            battleStats.totalBlockGained += card.block
             emit(.blockGained(target: state.player.name, amount: card.block))
             // 抽牌
             drawCards(card.drawCount)
@@ -279,6 +298,7 @@ public final class BattleEngine: @unchecked Sendable {
             // 造成伤害
             let finalDamage = calculateDamage(baseDamage: card.damage, attacker: state.player, defender: state.enemy)
             let (dealt, blocked) = state.enemy.takeDamage(finalDamage)
+            battleStats.totalDamageDealt += dealt
             emit(.damageDealt(
                 source: state.player.name,
                 target: state.enemy.name,
@@ -302,6 +322,7 @@ public final class BattleEngine: @unchecked Sendable {
             // 造成伤害
             let finalDamage = calculateDamage(baseDamage: card.damage, attacker: state.player, defender: state.enemy)
             let (dealt, blocked) = state.enemy.takeDamage(finalDamage)
+            battleStats.totalDamageDealt += dealt
             emit(.damageDealt(
                 source: state.player.name,
                 target: state.enemy.name,

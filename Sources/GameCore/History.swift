@@ -120,47 +120,10 @@ public struct BattleStatistics: Sendable {
 /// 从战斗引擎构建战斗记录
 public struct BattleRecordBuilder {
     
-    /// 从战斗引擎和事件日志构建记录
+    /// 从战斗引擎构建记录（使用 battleStats 累积数据）
     public static func build(from engine: BattleEngine, seed: UInt64) -> BattleRecord {
         let state = engine.state
-        let events = engine.events
-        
-        // 统计卡牌使用
-        var strikesPlayed = 0
-        var defendsPlayed = 0
-        var totalDamageDealt = 0
-        var totalDamageTaken = 0
-        var totalBlockGained = 0
-        
-        for event in events {
-            switch event {
-            case .played(_, let cardName, _):
-                switch cardName {
-                case "Strike", "Pommel Strike", "Bash", "Clothesline":
-                    strikesPlayed += 1  // 攻击类卡牌
-                case "Defend", "Shrug It Off":
-                    defendsPlayed += 1  // 防御类卡牌
-                // Inflame 是技能牌，暂不统计到攻击/防御类
-                default:
-                    break
-                }
-                
-            case .damageDealt(let source, _, let amount, _):
-                if source == state.player.name {
-                    totalDamageDealt += amount
-                } else {
-                    totalDamageTaken += amount
-                }
-                
-            case .blockGained(let target, let amount):
-                if target == state.player.name {
-                    totalBlockGained += amount
-                }
-                
-            default:
-                break
-            }
-        }
+        let stats = engine.battleStats
         
         return BattleRecord(
             seed: seed,
@@ -172,12 +135,12 @@ public struct BattleRecordBuilder {
             enemyName: state.enemy.name,
             enemyMaxHP: state.enemy.maxHP,
             enemyFinalHP: state.enemy.currentHP,
-            cardsPlayed: strikesPlayed + defendsPlayed,
-            strikesPlayed: strikesPlayed,
-            defendsPlayed: defendsPlayed,
-            totalDamageDealt: totalDamageDealt,
-            totalDamageTaken: totalDamageTaken,
-            totalBlockGained: totalBlockGained
+            cardsPlayed: stats.cardsPlayed,
+            strikesPlayed: stats.strikesPlayed,
+            defendsPlayed: stats.defendsPlayed,
+            totalDamageDealt: stats.totalDamageDealt,
+            totalDamageTaken: stats.totalDamageTaken,
+            totalBlockGained: stats.totalBlockGained
         )
     }
 }
