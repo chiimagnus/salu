@@ -1,3 +1,4 @@
+import Foundation
 import GameCore
 
 /// 特殊屏幕
@@ -134,12 +135,120 @@ enum Screens {
         """)
     }
     
-    static func showFinal(state: BattleState) {
+    static func showFinal(state: BattleState, record: BattleRecord? = nil) {
         if state.playerWon == true {
             showVictory(state: state)
         } else {
             showDefeat(state: state)
         }
+        
+        // 显示战绩统计
+        if let record = record {
+            print()
+            print("        \(Terminal.dim)╭──────────────────────────────────────╮\(Terminal.reset)")
+            print("        \(Terminal.dim)│ 📊 本局统计                          │\(Terminal.reset)")
+            print("        \(Terminal.dim)├──────────────────────────────────────┤\(Terminal.reset)")
+            print("        \(Terminal.dim)│ 打出卡牌: \(String(format: "%-3d", record.cardsPlayed))                          │\(Terminal.reset)")
+            print("        \(Terminal.dim)│ 造成伤害: \(String(format: "%-3d", record.totalDamageDealt))  获得格挡: \(String(format: "%-3d", record.totalBlockGained))        │\(Terminal.reset)")
+            print("        \(Terminal.dim)│ 受到伤害: \(String(format: "%-3d", record.totalDamageTaken))                          │\(Terminal.reset)")
+            print("        \(Terminal.dim)╰──────────────────────────────────────╯\(Terminal.reset)")
+        }
+        
+        // 显示累计胜率
+        let stats = HistoryManager.shared.getStatistics()
+        if stats.totalBattles > 0 {
+            print()
+            print("        \(Terminal.cyan)📈 累计战绩: \(stats.wins)胜 \(stats.losses)负 (胜率 \(String(format: "%.1f", stats.winRate))%)\(Terminal.reset)")
+        }
+        
+        print()
+        print("        \(Terminal.dim)使用 --history 查看历史记录\(Terminal.reset)")
+        print("        \(Terminal.dim)使用 --stats 查看详细统计\(Terminal.reset)")
+    }
+    
+    // MARK: - 历史记录屏幕
+    
+    static func showHistory() {
+        Terminal.clear()
+        
+        let records = HistoryManager.shared.getRecentRecords(10)
+        
+        print("""
+        \(Terminal.bold)\(Terminal.cyan)
+        ╔═══════════════════════════════════════════════════════╗
+        ║                  📜 战斗历史记录                      ║
+        ╚═══════════════════════════════════════════════════════╝
+        \(Terminal.reset)
+        """)
+        
+        if records.isEmpty {
+            print("        \(Terminal.dim)暂无战斗记录\(Terminal.reset)")
+        } else {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "MM/dd HH:mm"
+            
+            print("        \(Terminal.dim)序号  时间         结果   回合  剩余HP  伤害输出\(Terminal.reset)")
+            print("        \(Terminal.dim)────────────────────────────────────────────────\(Terminal.reset)")
+            
+            for (index, record) in records.reversed().enumerated() {
+                let resultIcon = record.won ? "\(Terminal.green)✓ 胜利\(Terminal.reset)" : "\(Terminal.red)✗ 失败\(Terminal.reset)"
+                let dateStr = dateFormatter.string(from: record.timestamp)
+                let hpStr = "\(record.playerFinalHP)/\(record.playerMaxHP)"
+                
+                print("        \(String(format: "%2d", index + 1))    \(dateStr)  \(resultIcon)  \(String(format: "%3d", record.turnsPlayed))   \(String(format: "%6s", hpStr))   \(record.totalDamageDealt)")
+            }
+            
+            print()
+            print("        \(Terminal.dim)显示最近 \(records.count) 场战斗 (共 \(HistoryManager.shared.recordCount) 场)\(Terminal.reset)")
+        }
+        
+        print()
+    }
+    
+    // MARK: - 统计屏幕
+    
+    static func showStatistics() {
+        Terminal.clear()
+        
+        let stats = HistoryManager.shared.getStatistics()
+        
+        print("""
+        \(Terminal.bold)\(Terminal.cyan)
+        ╔═══════════════════════════════════════════════════════╗
+        ║                   📊 战绩统计                         ║
+        ╚═══════════════════════════════════════════════════════╝
+        \(Terminal.reset)
+        """)
+        
+        if stats.totalBattles == 0 {
+            print("        \(Terminal.dim)暂无战斗数据\(Terminal.reset)")
+        } else {
+            // 胜负统计
+            print("        \(Terminal.yellow)▸ 战斗统计\(Terminal.reset)")
+            print("          总场次: \(stats.totalBattles)")
+            print("          胜利: \(Terminal.green)\(stats.wins)\(Terminal.reset)  失败: \(Terminal.red)\(stats.losses)\(Terminal.reset)  胜率: \(String(format: "%.1f", stats.winRate))%")
+            print()
+            
+            // 回合统计
+            print("        \(Terminal.yellow)▸ 回合统计\(Terminal.reset)")
+            print("          平均回合: \(String(format: "%.1f", stats.averageTurns))")
+            if let fastest = stats.fastestWin {
+                print("          最快胜利: \(fastest) 回合")
+            }
+            if let longest = stats.longestBattle {
+                print("          最长战斗: \(longest) 回合")
+            }
+            print()
+            
+            // 战斗数据
+            print("        \(Terminal.yellow)▸ 累计数据\(Terminal.reset)")
+            print("          使用卡牌: \(stats.totalCardsPlayed)")
+            print("          造成伤害: \(stats.totalDamageDealt)")
+            print("          受到伤害: \(stats.totalDamageTaken)")
+            print("          获得格挡: \(stats.totalBlockGained)")
+        }
+        
+        print()
     }
 }
 

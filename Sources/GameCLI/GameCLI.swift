@@ -17,6 +17,18 @@ struct GameCLI {
     // MARK: - Main Entry
     
     static func main() {
+        // 检查是否查看历史记录
+        if CommandLine.arguments.contains("--history") || CommandLine.arguments.contains("-H") {
+            Screens.showHistory()
+            return
+        }
+        
+        // 检查是否查看统计数据
+        if CommandLine.arguments.contains("--stats") || CommandLine.arguments.contains("-S") {
+            Screens.showStatistics()
+            return
+        }
+        
         let seed = parseSeed(from: CommandLine.arguments)
         
         // 初始化战斗引擎
@@ -95,8 +107,11 @@ struct GameCLI {
             engine.clearEvents()
         }
         
-        // 战斗结束
-        Screens.showFinal(state: engine.state)
+        // 战斗结束 - 保存战绩
+        let record = BattleRecordBuilder.build(from: engine, seed: seed)
+        HistoryManager.shared.addRecord(record)
+        
+        Screens.showFinal(state: engine.state, record: record)
     }
     
     // MARK: - Event Management
