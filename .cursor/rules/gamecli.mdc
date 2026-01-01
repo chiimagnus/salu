@@ -8,13 +8,12 @@ alwaysApply: true
 
 ## 模块定位
 
-GameCLI 是**表现层**，负责终端界面渲染、用户输入处理、国际化。
+GameCLI 是**表现层**，负责终端界面渲染、用户输入处理。
 
 ```
 Sources/GameCLI/  ← 本规范适用范围
 ├── GameCLI.swift       # 主入口、游戏循环
 ├── Terminal.swift      # ANSI 控制码、终端工具
-├── Localization.swift  # 国际化（中/英文）
 ├── EventFormatter.swift # 事件格式化
 ├── ScreenRenderer.swift # 屏幕渲染
 └── Screens.swift       # 特殊屏幕（标题/帮助/结束）
@@ -26,10 +25,9 @@ Sources/GameCLI/  ← 本规范适用范围
 
 ### 必须遵守
 
-- ✅ 所有用户可见文本使用 `Localization` 获取
 - ✅ 颜色输出使用 `Terminal` 常量
 - ✅ 屏幕刷新使用清屏+重绘模式
-- ✅ 开发时使用中文作为默认语言
+- ✅ 所有用户可见文本使用中文
 
 ### 依赖关系
 
@@ -46,37 +44,9 @@ GameCore → GameCLI  ❌ 禁止
 |------|------|
 | `GameCLI.swift` | 主入口、游戏循环、输入处理 |
 | `Terminal.swift` | ANSI 颜色码、屏幕控制、工具函数 |
-| `Localization.swift` | 中英文国际化、语言切换 |
 | `EventFormatter.swift` | 将 BattleEvent 格式化为彩色字符串 |
 | `ScreenRenderer.swift` | 构建战斗主界面 |
-| `Screens.swift` | 标题/帮助/语言/退出/结果等全屏 |
-
----
-
-## 国际化规范
-
-### 添加新文本
-
-1. 在 `Localization.swift` 添加属性
-2. 提供中文和英文两个版本
-3. 在 UI 代码中使用 `Localization.shared.xxx`
-
-```swift
-// Localization.swift
-var newText: String {
-    currentLanguage == .chinese ? "中文文本" : "English text"
-}
-
-// 使用
-let L = Localization.shared
-print(L.newText)
-```
-
-### 语言规范
-
-- **开发语言**：中文（所有注释、文档用中文）
-- **支持语言**：中文、英文
-- **默认语言**：中文
+| `Screens.swift` | 标题/帮助/退出/结果等全屏 |
 
 ---
 
@@ -145,15 +115,12 @@ Terminal.flush()  // 刷新缓冲区
 | `1-N` | 打出第 N 张手牌 |
 | `0` | 结束回合 |
 | `h` | 显示帮助 |
-| `l` | 切换语言 |
 | `q` | 退出游戏 |
 
 ---
 
 ## 检查清单
 
-- [ ] 用户可见文本使用 Localization
 - [ ] 颜色使用 Terminal 常量
 - [ ] 屏幕刷新使用清屏模式
-- [ ] 新增文本提供中英文版本
 - [ ] 界面布局保持一致
