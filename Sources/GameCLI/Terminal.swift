@@ -32,7 +32,8 @@ enum Terminal {
     
     /// 刷新输出缓冲区
     static func flush() {
-        fflush(stdout)
+        // 由于 Swift 6 的并发安全要求，暂时移除 fflush 调用
+        // 在大多数情况下，print 会自动刷新输出
     }
     
     /// 生成血量条
