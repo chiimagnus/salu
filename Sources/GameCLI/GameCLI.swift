@@ -9,10 +9,13 @@ struct GameCLI {
     
     /// 事件日志
     private nonisolated(unsafe) static var recentEvents: [String] = []
-    private static let maxRecentEvents = 6
+    private static let maxRecentEvents = 12
     
     /// 当前消息
     private nonisolated(unsafe) static var currentMessage: String? = nil
+    
+    /// 是否显示事件日志
+    private nonisolated(unsafe) static var showEventLog: Bool = false
     
     // MARK: - Main Entry
     
@@ -160,7 +163,8 @@ struct GameCLI {
                 engine: engine,
                 seed: seed,
                 events: recentEvents,
-                message: currentMessage
+                message: currentMessage,
+                showEventLog: showEventLog
             )
             
             // 读取玩家输入
@@ -180,6 +184,11 @@ struct GameCLI {
             case "h", "help":
                 Screens.showHelp()
                 _ = readLine()
+                continue
+                
+            case "l", "log":
+                // 切换事件日志显示
+                showEventLog.toggle()
                 continue
                 
             default:

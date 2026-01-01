@@ -7,7 +7,7 @@ enum ScreenRenderer {
     // MARK: - 主屏幕渲染
     
     /// 渲染战斗主界面
-    static func renderBattleScreen(engine: BattleEngine, seed: UInt64, events: [String], message: String?) {
+    static func renderBattleScreen(engine: BattleEngine, seed: UInt64, events: [String], message: String?, showEventLog: Bool = false) {
         var lines: [String] = []
         
         // 顶部标题栏
@@ -34,16 +34,18 @@ enum ScreenRenderer {
         lines.append("\(Terminal.dim)  📚 抽牌堆: \(engine.state.drawPile.count)张    🗑️ 弃牌堆: \(engine.state.discardPile.count)张\(Terminal.reset)")
         lines.append("")
         
-        // 事件日志区域
-        lines.append(contentsOf: buildEventLog(events))
-        lines.append("")
+        // 事件日志区域（可折叠）
+        if showEventLog {
+            lines.append(contentsOf: buildEventLog(events))
+            lines.append("")
+        }
         
         // 消息区域
         lines.append(message ?? "")
         lines.append("")
         
         // 操作提示
-        lines.append(contentsOf: buildInputPrompt(handCount: engine.state.hand.count))
+        lines.append(contentsOf: buildInputPrompt(handCount: engine.state.hand.count, showEventLog: showEventLog))
         
         // 清屏并打印
         Terminal.clear()
@@ -179,10 +181,13 @@ enum ScreenRenderer {
         return lines
     }
     
-    private static func buildInputPrompt(handCount: Int) -> [String] {
+    private static func buildInputPrompt(handCount: Int, showEventLog: Bool = false) -> [String] {
+        let logHint = showEventLog 
+            ? "\(Terminal.dim)[l] 隐藏日志\(Terminal.reset)" 
+            : "\(Terminal.cyan)[l]\(Terminal.reset) 日志"
         return [
             "\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)",
-            "\(Terminal.yellow)⌨️ 操作:\(Terminal.reset) \(Terminal.cyan)[1-\(handCount)]\(Terminal.reset) 出牌  \(Terminal.cyan)[0]\(Terminal.reset) 结束回合  \(Terminal.cyan)[h]\(Terminal.reset) 帮助  \(Terminal.cyan)[q]\(Terminal.reset) 退出",
+            "\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(handCount)]\(Terminal.reset) 出牌  \(Terminal.cyan)[0]\(Terminal.reset) 结束  \(Terminal.cyan)[h]\(Terminal.reset) 帮助  \(logHint)  \(Terminal.cyan)[q]\(Terminal.reset) 退出",
             "\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)"
         ]
     }
