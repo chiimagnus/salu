@@ -130,17 +130,38 @@ swift run GameCLI
 
 ---
 
-## 可复现性
+## 命令行参数
 
-使用 `--seed` 参数可以固定随机数种子，确保相同输入产生相同结果：
+| 参数 | 说明 |
+|------|------|
+| `--seed N` | 固定随机种子（可复现） |
+| `--history` / `-H` | 查看历史战绩 |
+| `--stats` / `-S` | 查看详细统计 |
 
 ```bash
-# 这两次运行的结果完全一致
+# 使用固定种子（可复现）
 swift run GameCLI --seed 42
-swift run GameCLI --seed 42
+
+# 查看历史战绩
+swift run GameCLI --history
+
+# 查看统计数据
+swift run GameCLI --stats
 ```
 
-这对于调试和测试非常有用。
+---
+
+## 战绩系统
+
+战斗结束后自动记录：
+- 胜负结果、回合数
+- 使用卡牌统计
+- 伤害/格挡统计
+
+数据存储位置：
+- **macOS**: `~/Library/Application Support/Salu/battle_history.json`
+- **Linux**: `~/.salu/battle_history.json`
+- **Windows**: `%LOCALAPPDATA%\Salu\battle_history.json`
 
 ---
 
