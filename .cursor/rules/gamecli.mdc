@@ -12,11 +12,62 @@ GameCLI 是**表现层**，负责终端界面渲染、用户输入处理。
 
 ```
 Sources/GameCLI/  ← 本规范适用范围
-├── GameCLI.swift       # 主入口、游戏循环
-├── Terminal.swift      # ANSI 控制码、终端工具
+├── GameCLI.swift        # 主入口、菜单循环、游戏循环
+├── Terminal.swift       # ANSI 控制码、终端工具
 ├── EventFormatter.swift # 事件格式化
-├── ScreenRenderer.swift # 屏幕渲染
-└── Screens.swift       # 特殊屏幕（标题/帮助/结束）
+├── ScreenRenderer.swift # 战斗界面渲染
+├── Screens.swift        # 全屏界面（菜单/帮助/结果）
+└── HistoryManager.swift # 战绩持久化
+```
+
+---
+
+## 设计原则
+
+### 单一职责原则（SRP）
+
+每个文件只负责一个明确的功能领域：
+
+| 文件 | 单一职责 | 禁止混入 |
+|------|----------|----------|
+| `Terminal.swift` | 终端底层控制 | UI 逻辑、业务逻辑 |
+| `EventFormatter.swift` | 事件 → 文本 | 屏幕布局、输入处理 |
+| `ScreenRenderer.swift` | 战斗界面构建 | 菜单逻辑、事件格式化 |
+| `Screens.swift` | 全屏界面展示 | 游戏循环、状态管理 |
+| `HistoryManager.swift` | 文件读写 | UI 渲染 |
+| `GameCLI.swift` | 流程控制 | 具体渲染实现 |
+
+### 组件化原则
+
+1. **新增 UI 组件时**：考虑是否需要独立文件
+2. **文件超过 300 行**：考虑拆分
+3. **功能可复用时**：抽取为独立组件
+
+```swift
+// ✅ 正确：按职责拆分
+// Terminal.swift - 底层工具
+// ScreenRenderer.swift - 界面渲染
+// Screens.swift - 全屏界面
+
+// ❌ 错误：一个文件包含所有 UI 代码
+```
+
+### 依赖方向
+
+```
+GameCLI.swift
+    ↓ 调用
+┌───────────────────┬─────────────────────┐
+│ Screens.swift     │ ScreenRenderer.swift │
+└───────────────────┴─────────────────────┘
+    ↓ 调用
+┌───────────────────────────────────────────┐
+│ Terminal.swift  │  EventFormatter.swift   │
+└───────────────────────────────────────────┘
+    ↓ 导入
+┌───────────────────────────────────────────┐
+│              GameCore                      │
+└───────────────────────────────────────────┘
 ```
 
 ---
@@ -28,6 +79,7 @@ Sources/GameCLI/  ← 本规范适用范围
 - ✅ 颜色输出使用 `Terminal` 常量
 - ✅ 屏幕刷新使用清屏+重绘模式
 - ✅ 所有用户可见文本使用中文
+- ✅ 每个文件职责单一明确
 
 ### 依赖关系
 
@@ -38,15 +90,36 @@ GameCore → GameCLI  ❌ 禁止
 
 ---
 
-## 文件职责
+## 文件职责详解
 
-| 文件 | 职责 |
-|------|------|
-| `GameCLI.swift` | 主入口、游戏循环、输入处理 |
-| `Terminal.swift` | ANSI 颜色码、屏幕控制、工具函数 |
-| `EventFormatter.swift` | 将 BattleEvent 格式化为彩色字符串 |
-| `ScreenRenderer.swift` | 构建战斗主界面 |
-| `Screens.swift` | 标题/帮助/退出/结果等全屏 |
+| 文件 | 职责 | 典型内容 |
+|------|------|----------|
+| `GameCLI.swift` | 入口、菜单、游戏循环 | main(), mainMenuLoop(), gameLoop() |
+| `Terminal.swift` | ANSI 颜色码、光标控制 | clear(), 颜色常量 |
+| `EventFormatter.swift` | BattleEvent → 彩色字符串 | format() |
+| `ScreenRenderer.swift` | 构建战斗主界面 | renderBattleScreen() |
+| `Screens.swift` | 全屏界面（菜单/帮助/结果） | showMainMenu(), showHelp() |
+| `HistoryManager.swift` | 战绩 JSON 读写 | addRecord(), getRecords() |
+
+---
+
+## 扩展指南
+
+### 添加新界面
+
+1. 如果是全屏界面 → 添加到 `Screens.swift`
+2. 如果是战斗内组件 → 添加到 `ScreenRenderer.swift`
+3. 如果是全新功能模块 → 创建新文件
+
+### 添加新菜单项
+
+1. 在 `Screens.swift` 更新菜单显示
+2. 在 `GameCLI.swift` 添加输入处理
+
+### 添加新命令行参数
+
+1. 在 `GameCLI.main()` 添加参数检查
+2. 更新 CLAUDE.mdc 文档
 
 ---
 
@@ -108,19 +181,10 @@ Terminal.flush()  // 刷新缓冲区
 
 ---
 
-## 输入处理
-
-| 输入 | 操作 |
-|------|------|
-| `1-N` | 打出第 N 张手牌 |
-| `0` | 结束回合 |
-| `h` | 显示帮助 |
-| `q` | 退出游戏 |
-
----
-
 ## 检查清单
 
 - [ ] 颜色使用 Terminal 常量
 - [ ] 屏幕刷新使用清屏模式
 - [ ] 界面布局保持一致
+- [ ] 文件职责单一明确
+- [ ] 新组件考虑复用性

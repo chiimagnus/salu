@@ -12,11 +12,58 @@ GameCore 是**纯逻辑层**，负责游戏规则、状态管理、计算。
 
 ```
 Sources/GameCore/  ← 本规范适用范围
-├── Models.swift       # 数据模型
+├── Models.swift       # 数据模型（Card, Entity, BattleState）
 ├── RNG.swift          # 随机数生成器
-├── Events.swift       # 战斗事件
-├── Actions.swift      # 玩家动作
-└── BattleEngine.swift # 战斗引擎
+├── Events.swift       # 战斗事件定义
+├── Actions.swift      # 玩家动作定义
+├── BattleEngine.swift # 战斗引擎（核心逻辑）
+└── History.swift      # 战绩数据模型
+```
+
+---
+
+## 设计原则
+
+### 单一职责原则（SRP）
+
+每个文件只负责一个明确的领域：
+
+| 文件 | 单一职责 | 禁止混入 |
+|------|----------|----------|
+| `Models.swift` | 数据结构定义 | 业务逻辑、计算 |
+| `Events.swift` | 事件类型定义 | 事件处理逻辑 |
+| `Actions.swift` | 动作类型定义 | 动作执行逻辑 |
+| `RNG.swift` | 随机数生成 | 游戏规则 |
+| `BattleEngine.swift` | 战斗逻辑 | 数据模型定义 |
+| `History.swift` | 战绩数据结构 | 持久化逻辑 |
+
+### 组件化原则
+
+1. **新增功能模块时**：考虑是否需要独立文件
+2. **文件超过 200 行**：考虑拆分
+3. **类型可独立使用时**：抽取为独立文件
+
+```swift
+// ✅ 正确：按领域拆分
+// Models.swift - 数据模型
+// Events.swift - 事件定义
+// BattleEngine.swift - 战斗逻辑
+
+// ❌ 错误：所有内容放在一个文件
+```
+
+### 依赖方向
+
+```
+BattleEngine.swift
+    ↓ 使用
+┌──────────────────────────────────────────┐
+│ Models.swift │ Events.swift │ Actions.swift │
+└──────────────────────────────────────────┘
+    ↓ 使用
+┌──────────────────────────────────────────┐
+│              RNG.swift                    │
+└──────────────────────────────────────────┘
 ```
 
 ---
@@ -27,7 +74,7 @@ Sources/GameCore/  ← 本规范适用范围
 
 - ❌ `print()` 或任何控制台输出
 - ❌ 读取 `stdin` 或任何用户输入
-- ❌ 导入 `Foundation`（除非必要的基础类型）
+- ❌ 导入 `Foundation`（History.swift 除外）
 - ❌ 导入任何 UI 框架
 - ❌ 导入 GameCLI 模块
 
@@ -37,6 +84,7 @@ Sources/GameCore/  ← 本规范适用范围
 - ✅ 遵循 `Sendable` 协议（支持并发）
 - ✅ 通过事件系统记录状态变化
 - ✅ 使用注入的 RNG 保证可复现性
+- ✅ 每个文件职责单一明确
 
 ---
 
@@ -78,15 +126,16 @@ let shuffled = deck.shuffled()  // 不可复现！
 
 ---
 
-## 文件职责
+## 文件职责详解
 
 | 文件 | 职责 | 关键类型 |
 |------|------|----------|
-| [Models.swift](mdc:Sources/GameCore/Models.swift) | 数据模型 | Card, Entity, BattleState |
-| [RNG.swift](mdc:Sources/GameCore/RNG.swift) | 随机数 | SeededRNG |
-| [Events.swift](mdc:Sources/GameCore/Events.swift) | 事件 | BattleEvent |
-| [Actions.swift](mdc:Sources/GameCore/Actions.swift) | 动作 | PlayerAction |
-| [BattleEngine.swift](mdc:Sources/GameCore/BattleEngine.swift) | 引擎 | BattleEngine |
+| `Models.swift` | 数据模型 | Card, Entity, BattleState |
+| `RNG.swift` | 随机数 | SeededRNG |
+| `Events.swift` | 事件定义 | BattleEvent |
+| `Actions.swift` | 动作定义 | PlayerAction |
+| `BattleEngine.swift` | 战斗引擎 | BattleEngine |
+| `History.swift` | 战绩模型 | BattleRecord, BattleStatistics |
 
 ---
 
@@ -102,10 +151,16 @@ let shuffled = deck.shuffled()  // 不可复现！
 ### 添加状态效果 (Buff/Debuff)
 
 1. 在 `Entity` 中添加状态字段（如 `vulnerable: Int`）
-2. 创建 `StatusEffect` 枚举
+2. 创建 `StatusEffect` 枚举（可在 Models.swift 或新文件）
 3. 在 `BattleEngine` 伤害计算中应用修正
 4. 在回合结束时递减持续时间
 5. 添加对应的 `BattleEvent` 事件
+
+### 添加新功能模块
+
+1. **评估是否独立**：新功能是否与现有文件职责相关？
+2. **创建新文件**：如果是全新领域，创建独立文件
+3. **保持纯逻辑**：不引入 UI 或 I/O 依赖
 
 ---
 
@@ -127,4 +182,5 @@ let shuffled = deck.shuffled()  // 不可复现！
 - [ ] 所有 public 类型标记 Sendable
 - [ ] 使用 RNG 而非系统随机数
 - [ ] 状态变化通过事件记录
-- [ ] 业务变更同步更新 [CLAUDE.mdc](mdc:.cursor/rules/CLAUDE.mdc)
+- [ ] 文件职责单一明确
+- [ ] 业务变更同步更新 CLAUDE.mdc
