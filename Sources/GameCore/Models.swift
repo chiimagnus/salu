@@ -2,8 +2,10 @@
 
 /// 卡牌种类
 public enum CardKind: String, Sendable {
-    case strike  // 攻击牌：1能量，造成6伤害
-    case defend  // 防御牌：1能量，获得5格挡
+    case strike         // 攻击牌：1能量，造成6伤害
+    case defend         // 防御牌：1能量，获得5格挡
+    case pommelStrike   // 柄击：1能量，造成9伤害，抽1张牌
+    case shrugItOff     // 耸肩：1能量，获得8格挡，抽1张牌
 }
 
 /// 卡牌
@@ -14,8 +16,8 @@ public struct Card: Identifiable, Sendable {
     /// 能量消耗
     public var cost: Int {
         switch kind {
-        case .strike: return 1
-        case .defend: return 1
+        case .strike, .defend, .pommelStrike, .shrugItOff:
+            return 1
         }
     }
     
@@ -23,15 +25,25 @@ public struct Card: Identifiable, Sendable {
     public var damage: Int {
         switch kind {
         case .strike: return 6
-        case .defend: return 0
+        case .pommelStrike: return 9
+        case .defend, .shrugItOff: return 0
         }
     }
     
     /// 格挡值（仅防御牌有效）
     public var block: Int {
         switch kind {
-        case .strike: return 0
         case .defend: return 5
+        case .shrugItOff: return 8
+        case .strike, .pommelStrike: return 0
+        }
+    }
+    
+    /// 抽牌数
+    public var drawCount: Int {
+        switch kind {
+        case .pommelStrike, .shrugItOff: return 1
+        case .strike, .defend: return 0
         }
     }
     
@@ -40,6 +52,8 @@ public struct Card: Identifiable, Sendable {
         switch kind {
         case .strike: return "Strike"
         case .defend: return "Defend"
+        case .pommelStrike: return "Pommel Strike"
+        case .shrugItOff: return "Shrug It Off"
         }
     }
     
@@ -179,17 +193,23 @@ public struct BattleState: Sendable {
 public func createStarterDeck() -> [Card] {
     var cards: [Card] = []
     
-    // 5 张 Strike
-    for i in 1...5 {
+    // 4 张 Strike（原来 5 张）
+    for i in 1...4 {
         cards.append(Card(id: "strike_\(i)", kind: .strike))
     }
     
-    // 5 张 Defend
-    for i in 1...5 {
+    // 4 张 Defend（原来 5 张）
+    for i in 1...4 {
         cards.append(Card(id: "defend_\(i)", kind: .defend))
     }
     
-    return cards
+    // 1 张 Pommel Strike
+    cards.append(Card(id: "pommelStrike_1", kind: .pommelStrike))
+    
+    // 1 张 Shrug It Off
+    cards.append(Card(id: "shrugItOff_1", kind: .shrugItOff))
+    
+    return cards  // 总计 10 张
 }
 
 /// 创建默认玩家

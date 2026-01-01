@@ -135,10 +135,13 @@ public struct BattleRecordBuilder {
         for event in events {
             switch event {
             case .played(_, let cardName, _):
-                if cardName == "Strike" {
-                    strikesPlayed += 1
-                } else if cardName == "Defend" {
-                    defendsPlayed += 1
+                switch cardName {
+                case "Strike", "Pommel Strike":
+                    strikesPlayed += 1  // 攻击类卡牌
+                case "Defend", "Shrug It Off":
+                    defendsPlayed += 1  // 防御类卡牌
+                default:
+                    break
                 }
                 
             case .damageDealt(let source, _, let amount, _):

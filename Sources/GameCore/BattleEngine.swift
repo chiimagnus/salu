@@ -250,10 +250,30 @@ public final class BattleEngine: @unchecked Sendable {
                 blocked: blocked
             ))
             
+        case .pommelStrike:
+            // 造成伤害
+            let finalDamage = calculateDamage(baseDamage: card.damage, attacker: state.player, defender: state.enemy)
+            let (dealt, blocked) = state.enemy.takeDamage(finalDamage)
+            emit(.damageDealt(
+                source: state.player.name,
+                target: state.enemy.name,
+                amount: dealt,
+                blocked: blocked
+            ))
+            // 抽牌
+            drawCards(card.drawCount)
+            
         case .defend:
             // 获得格挡
             state.player.gainBlock(card.block)
             emit(.blockGained(target: state.player.name, amount: card.block))
+            
+        case .shrugItOff:
+            // 获得格挡
+            state.player.gainBlock(card.block)
+            emit(.blockGained(target: state.player.name, amount: card.block))
+            // 抽牌
+            drawCards(card.drawCount)
         }
     }
     

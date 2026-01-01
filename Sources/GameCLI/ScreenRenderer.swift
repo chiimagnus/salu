@@ -132,8 +132,14 @@ enum ScreenRenderer {
             case .strike:
                 effect = "造成 \(card.damage) 伤害"
                 effectIcon = "⚔️"
+            case .pommelStrike:
+                effect = "造成 \(card.damage) 伤害, 抽 1 张"
+                effectIcon = "⚔️"
             case .defend:
                 effect = "获得 \(card.block) 格挡"
+                effectIcon = "🛡️"
+            case .shrugItOff:
+                effect = "获得 \(card.block) 格挡, 抽 1 张"
                 effectIcon = "🛡️"
             }
             
