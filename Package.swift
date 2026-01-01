@@ -4,12 +4,16 @@
 import PackageDescription
 
 let package = Package(
-    name: "GameCLI",
+    name: "Salu",
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
+        // GameCore: 纯 Swift 游戏逻辑库（禁止 print、禁止 UI）
+        .target(
+            name: "GameCore"
+        ),
+        // GameCLI: 命令行前端
         .executableTarget(
-            name: "GameCLI"
+            name: "GameCLI",
+            dependencies: ["GameCore"]
         ),
     ]
 )
