@@ -10,9 +10,10 @@ public final class BattleEngine: @unchecked Sendable {
     /// 战斗统计（累积，不会被清除）
     public private(set) var battleStats: BattleStats = BattleStats()
     
-    private let rng: SeededRNG
+    private var rng: SeededRNG
     private let cardsPerTurn: Int = 5
-    private let enemyDamage: Int = 7  // MVP: 敌人固定攻击7点
+    private let enemyAI: any EnemyAI
+    private var lastEnemyIntent: EnemyIntent? = nil
     
     // MARK: - Initialization
     
@@ -20,15 +21,18 @@ public final class BattleEngine: @unchecked Sendable {
     /// - Parameters:
     ///   - player: 玩家实体
     ///   - enemy: 敌人实体
+    ///   - enemyAI: 敌人 AI
     ///   - deck: 初始牌组
     ///   - seed: 随机数种子（用于可复现性）
     public init(
         player: Entity,
         enemy: Entity,
+        enemyAI: any EnemyAI,
         deck: [Card],
         seed: UInt64
     ) {
         self.rng = SeededRNG(seed: seed)
+        self.enemyAI = enemyAI
         self.state = BattleState(player: player, enemy: enemy)
         
         // 初始化抽牌堆并洗牌
@@ -38,13 +42,14 @@ public final class BattleEngine: @unchecked Sendable {
     /// 使用默认配置初始化
     public convenience init(seed: UInt64) {
         // 使用 RNG 随机选择敌人
-        let tempRNG = SeededRNG(seed: seed)
-        let enemyTypes = ["jaw_worm", "cultist"]
-        let selectedType = enemyTypes[tempRNG.nextInt(upperBound: enemyTypes.count)]
+        var tempRNG = SeededRNG(seed: seed)
+        let enemyKinds: [EnemyKind] = [.jawWorm, .cultist, .louseGreen, .louseRed, .slimeMediumAcid]
+        let selectedKind = enemyKinds[tempRNG.nextInt(upperBound: enemyKinds.count)]
         
         self.init(
             player: createDefaultPlayer(),
-            enemy: createEnemy(type: selectedType),
+            enemy: createEnemy(kind: selectedKind, rng: &tempRNG),
+            enemyAI: getEnemyAI(kind: selectedKind),
             deck: createStarterDeck(),
             seed: seed
         )
@@ -157,9 +162,21 @@ public final class BattleEngine: @unchecked Sendable {
         // 抽牌
         drawCards(cardsPerTurn)
         
-        // 显示敌人意图（考虑敌人虚弱状态）
-        let intentDamage = calculateDamage(baseDamage: enemyDamage, attacker: state.enemy, defender: state.player)
-        emit(.enemyIntent(enemyId: state.enemy.id, action: "攻击", damage: intentDamage))
+        // 决定敌人意图
+        state.enemy.intent = enemyAI.decideIntent(
+            enemy: state.enemy,
+            player: state.player,
+            turn: state.turn,
+            lastIntent: lastEnemyIntent,
+            rng: &rng
+        )
+        
+        // 发送意图事件（用于日志）
+        emit(.enemyIntent(
+            enemyId: state.enemy.id,
+            action: state.enemy.intent.displayText,
+            damage: 0  // 伤害已包含在 displayText 中
+        ))
     }
     
     private func endPlayerTurn() {
@@ -192,18 +209,27 @@ public final class BattleEngine: @unchecked Sendable {
     }
     
     private func executeEnemyTurn() {
-        emit(.enemyAction(enemyId: state.enemy.id, action: "攻击"))
+        emit(.enemyAction(enemyId: state.enemy.id, action: state.enemy.intent.displayText))
         
-        // 敌人造成伤害（应用伤害修正）
-        let finalDamage = calculateDamage(baseDamage: enemyDamage, attacker: state.enemy, defender: state.player)
-        let (dealt, blocked) = state.player.takeDamage(finalDamage)
-        battleStats.totalDamageTaken += dealt
-        emit(.damageDealt(
-            source: state.enemy.name,
-            target: state.player.name,
-            amount: dealt,
-            blocked: blocked
-        ))
+        // 使用 AI 执行意图
+        let aiEvents = enemyAI.executeIntent(
+            intent: state.enemy.intent,
+            enemy: &state.enemy,
+            player: &state.player
+        )
+        
+        // 发送 AI 生成的事件
+        for event in aiEvents {
+            emit(event)
+            
+            // 统计伤害
+            if case .damageDealt(_, _, let dealt, _) = event {
+                battleStats.totalDamageTaken += dealt
+            }
+        }
+        
+        // 保存当前意图供下次使用
+        lastEnemyIntent = state.enemy.intent
         
         // 检查玩家是否死亡
         checkBattleEnd()

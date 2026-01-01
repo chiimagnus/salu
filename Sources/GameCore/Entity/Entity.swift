@@ -98,12 +98,25 @@ public func createDefaultEnemy() -> Entity {
 }
 
 /// 创建指定类型的敌人
-public func createEnemy(type: String) -> Entity {
-    switch type {
-    case "cultist":
-        return Entity(id: "cultist", name: "信徒", maxHP: 50)
-    default:
-        return Entity(id: "jaw_worm", name: "下颚虫", maxHP: 42)
+public func createEnemy(kind: EnemyKind, rng: inout SeededRNG) -> Entity {
+    let data = EnemyData.get(kind)
+    let hp = data.generateHP(rng: &rng)
+    var enemy = Entity(id: kind.rawValue, name: kind.displayName, maxHP: hp)
+    enemy.currentHP = hp
+    return enemy
+}
+
+/// 获取敌人对应的 AI
+public func getEnemyAI(kind: EnemyKind) -> any EnemyAI {
+    switch kind {
+    case .jawWorm:
+        return JawWormAI()
+    case .cultist:
+        return CultistAI()
+    case .louseGreen, .louseRed:
+        return LouseAI()
+    case .slimeMediumAcid:
+        return AcidSlimeAI()
     }
 }
 
