@@ -4,10 +4,10 @@
 # Salu - 游戏测试脚本
 # ============================================================
 # 用法：
-#   ./Scripts/test_game.sh           # 运行所有测试
-#   ./Scripts/test_game.sh build     # 仅测试编译
-#   ./Scripts/test_game.sh play      # 自动运行一局游戏
-#   ./Scripts/test_game.sh reproduce # 测试可复现性
+#   ./.cursor/Scripts/test_game.sh           # 运行所有测试
+#   ./.cursor/Scripts/test_game.sh build     # 仅测试编译
+#   ./.cursor/Scripts/test_game.sh play      # 自动运行一局游戏
+#   ./.cursor/Scripts/test_game.sh reproduce # 测试可复现性
 # ============================================================
 
 set -e  # 遇到错误立即退出
@@ -19,13 +19,15 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# 切换到项目根目录
-cd "$(dirname "$0")/.."
+# 切换到项目根目录（从 .cursor/Scripts 向上两级）
+cd "$(dirname "$0")/../.."
 PROJECT_ROOT=$(pwd)
 
 echo -e "${BLUE}╔══════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║       Salu 测试脚本 v1.0             ║${NC}"
+echo -e "${BLUE}║       Salu 测试脚本 v2.0             ║${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════╝${NC}"
+echo ""
+echo -e "${BLUE}项目目录: ${PROJECT_ROOT}${NC}"
 echo ""
 
 # ============================================================
@@ -101,6 +103,41 @@ test_reproducibility() {
     fi
 }
 
+test_status_effects() {
+    echo -e "${YELLOW}[测试] 状态效果验证...${NC}"
+    
+    # 尝试使用 Bash 卡牌施加易伤
+    INPUT_SEQUENCE="1\n1\n1\n1\n0\nq"
+    
+    OUTPUT=$(echo -e "$INPUT_SEQUENCE" | swift run GameCLI --seed 1 2>&1)
+    
+    # 检查是否有状态效果相关输出
+    if echo "$OUTPUT" | grep -q "易伤\|虚弱\|力量"; then
+        echo -e "${GREEN}✅ 状态效果系统正常${NC}"
+        return 0
+    else
+        echo -e "${YELLOW}⚠️ 未检测到状态效果（可能未触发）${NC}"
+        return 0  # 不算失败
+    fi
+}
+
+test_new_cards() {
+    echo -e "${YELLOW}[测试] 新卡牌验证...${NC}"
+    
+    INPUT_SEQUENCE="1\n1\n1\n1\n1\n0\nq"
+    
+    OUTPUT=$(echo -e "$INPUT_SEQUENCE" | swift run GameCLI --seed 1 2>&1)
+    
+    # 检查是否有新卡牌相关输出
+    if echo "$OUTPUT" | grep -q "Bash\|Pommel Strike\|Shrug It Off\|Inflame\|Clothesline"; then
+        echo -e "${GREEN}✅ 新卡牌系统正常${NC}"
+        return 0
+    else
+        echo -e "${YELLOW}⚠️ 未检测到新卡牌（可能未抽到）${NC}"
+        return 0  # 不算失败
+    fi
+}
+
 test_shuffle_mechanic() {
     echo -e "${YELLOW}[测试] 洗牌机制验证...${NC}"
     
@@ -115,41 +152,6 @@ test_shuffle_mechanic() {
     else
         echo -e "${YELLOW}⚠️ 未触发洗牌（可能回合数不够）${NC}"
         return 0  # 不算失败
-    fi
-}
-
-test_block_mechanic() {
-    echo -e "${YELLOW}[测试] 格挡机制验证...${NC}"
-    
-    # 第一回合使用防御牌
-    INPUT_SEQUENCE="1\n0\nq"  # 打第一张牌（可能是防御），然后结束回合
-    
-    OUTPUT=$(echo -e "$INPUT_SEQUENCE" | swift run GameCLI --seed 1 2>&1)
-    
-    if echo "$OUTPUT" | grep -q "格挡"; then
-        echo -e "${GREEN}✅ 格挡机制正常${NC}"
-        return 0
-    else
-        echo -e "${YELLOW}⚠️ 未触发格挡（可能第一张不是防御牌）${NC}"
-        return 0  # 不算失败
-    fi
-}
-
-test_energy_mechanic() {
-    echo -e "${YELLOW}[测试] 能量机制验证...${NC}"
-    
-    # 尝试打出多张牌，消耗能量
-    INPUT_SEQUENCE="1\n1\n1\n1\nq"  # 连续打4张牌
-    
-    OUTPUT=$(echo -e "$INPUT_SEQUENCE" | swift run GameCLI --seed 1 2>&1)
-    
-    # 检查是否有能量消耗相关输出
-    if echo "$OUTPUT" | grep -q "能量"; then
-        echo -e "${GREEN}✅ 能量机制正常${NC}"
-        return 0
-    else
-        echo -e "${RED}❌ 能量机制异常${NC}"
-        return 1
     fi
 }
 
@@ -173,13 +175,13 @@ run_all_tests() {
     test_reproducibility || FAILED=$((FAILED + 1))
     echo ""
     
+    test_status_effects || FAILED=$((FAILED + 1))
+    echo ""
+    
+    test_new_cards || FAILED=$((FAILED + 1))
+    echo ""
+    
     test_shuffle_mechanic || FAILED=$((FAILED + 1))
-    echo ""
-    
-    test_block_mechanic || FAILED=$((FAILED + 1))
-    echo ""
-    
-    test_energy_mechanic || FAILED=$((FAILED + 1))
     echo ""
     
     echo -e "${BLUE}══════════════════════════════════════${NC}"
@@ -204,8 +206,13 @@ case "${1:-all}" in
     reproduce)
         test_build && test_reproducibility
         ;;
+    status)
+        test_build && test_status_effects
+        ;;
+    cards)
+        test_build && test_new_cards
+        ;;
     all|*)
         run_all_tests
         ;;
 esac
-

@@ -17,8 +17,13 @@ swift run GameCLI --seed 1
 # 运行游戏（随机种子）
 swift run GameCLI
 
-# 运行测试
-./Scripts/test_game.sh
+# 运行测试（从项目根目录执行）
+./.cursor/Scripts/test_game.sh           # 运行所有测试
+./.cursor/Scripts/test_game.sh build     # 仅测试编译
+./.cursor/Scripts/test_game.sh play      # 自动运行一局游戏
+./.cursor/Scripts/test_game.sh reproduce # 测试可复现性
+./.cursor/Scripts/test_game.sh status    # 测试状态效果
+./.cursor/Scripts/test_game.sh cards     # 测试新卡牌
 ```
 
 ---
