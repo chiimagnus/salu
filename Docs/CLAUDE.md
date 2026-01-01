@@ -1,3 +1,5 @@
+# Slay the Spire（简易仿制）CLI 版 MVP 计划
+
 ## 项目初始化
 
 项目名：**Salu**
