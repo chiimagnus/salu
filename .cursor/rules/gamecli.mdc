@@ -1,7 +1,7 @@
 ---
 description: GameCLI 模块开发规范 - 表现层
 globs: Sources/GameCLI/**/*.swift
-alwaysApply: true
+alwaysApply: false
 ---
 
 # GameCLI 模块开发规范

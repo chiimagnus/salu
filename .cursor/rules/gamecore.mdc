@@ -1,7 +1,7 @@
 ---
 description: GameCore 模块开发规范 - 纯逻辑层
 globs: Sources/GameCore/**/*.swift
-alwaysApply: true
+alwaysApply: false
 ---
 
 # GameCore 模块开发规范
