@@ -72,9 +72,9 @@ public struct JawWormAI: EnemyAI {
             enemy.gainBlock(blockStacks)
             events.append(.blockGained(target: enemy.name, amount: blockStacks))
             
-        case .buff(_, let stacks):
+        case .buff(let buffName, let stacks):
             enemy.strength += stacks
-            events.append(.statusApplied(target: enemy.name, effect: "力量", stacks: stacks))
+            events.append(.statusApplied(target: enemy.name, effect: buffName, stacks: stacks))
             
         default:
             break
@@ -123,9 +123,9 @@ public struct CultistAI: EnemyAI {
                 blocked: blocked
             ))
             
-        case .buff(_, let stacks):
+        case .buff(let buffName, let stacks):
             enemy.strength += stacks
-            events.append(.statusApplied(target: enemy.name, effect: "力量", stacks: stacks))
+            events.append(.statusApplied(target: enemy.name, effect: buffName, stacks: stacks))
             
         default:
             break
@@ -177,9 +177,9 @@ public struct LouseAI: EnemyAI {
                 blocked: blocked
             ))
             
-        case .buff(_, let stacks):
+        case .buff(let buffName, let stacks):
             enemy.strength += stacks
-            events.append(.statusApplied(target: enemy.name, effect: "力量", stacks: stacks))
+            events.append(.statusApplied(target: enemy.name, effect: buffName, stacks: stacks))
             
         default:
             break
@@ -259,23 +259,5 @@ public struct AcidSlimeAI: EnemyAI {
 }
 
 // MARK: - Helper Functions
+// Note: calculateDamage is now in BattleUtils.swift and imported globally
 
-/// 计算最终伤害（应用力量、虚弱、易伤修正）
-private func calculateDamage(baseDamage: Int, attacker: Entity, defender: Entity) -> Int {
-    var damage = baseDamage
-    
-    // 力量加成
-    damage += attacker.strength
-    
-    // 虚弱减伤（-25%，向下取整）
-    if attacker.weak > 0 {
-        damage = Int(Double(damage) * 0.75)
-    }
-    
-    // 易伤增伤（+50%，向下取整）
-    if defender.vulnerable > 0 {
-        damage = Int(Double(damage) * 1.5)
-    }
-    
-    return max(0, damage)
-}
