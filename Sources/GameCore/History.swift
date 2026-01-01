@@ -136,7 +136,7 @@ public struct BattleRecordBuilder {
             switch event {
             case .played(_, let cardName, _):
                 switch cardName {
-                case "Strike", "Pommel Strike":
+                case "Strike", "Pommel Strike", "Bash":
                     strikesPlayed += 1  // 攻击类卡牌
                 case "Defend", "Shrug It Off":
                     defendsPlayed += 1  // 防御类卡牌

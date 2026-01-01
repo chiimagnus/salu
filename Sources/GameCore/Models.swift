@@ -6,6 +6,7 @@ public enum CardKind: String, Sendable {
     case defend         // 防御牌：1能量，获得5格挡
     case pommelStrike   // 柄击：1能量，造成9伤害，抽1张牌
     case shrugItOff     // 耸肩：1能量，获得8格挡，抽1张牌
+    case bash           // 重击：2能量，造成8伤害，给予易伤2
 }
 
 /// 卡牌
@@ -18,6 +19,8 @@ public struct Card: Identifiable, Sendable {
         switch kind {
         case .strike, .defend, .pommelStrike, .shrugItOff:
             return 1
+        case .bash:
+            return 2
         }
     }
     
@@ -26,6 +29,7 @@ public struct Card: Identifiable, Sendable {
         switch kind {
         case .strike: return 6
         case .pommelStrike: return 9
+        case .bash: return 8
         case .defend, .shrugItOff: return 0
         }
     }
@@ -35,7 +39,7 @@ public struct Card: Identifiable, Sendable {
         switch kind {
         case .defend: return 5
         case .shrugItOff: return 8
-        case .strike, .pommelStrike: return 0
+        case .strike, .pommelStrike, .bash: return 0
         }
     }
     
@@ -43,7 +47,15 @@ public struct Card: Identifiable, Sendable {
     public var drawCount: Int {
         switch kind {
         case .pommelStrike, .shrugItOff: return 1
-        case .strike, .defend: return 0
+        case .strike, .defend, .bash: return 0
+        }
+    }
+    
+    /// 施加易伤回合数
+    public var vulnerableApply: Int {
+        switch kind {
+        case .bash: return 2
+        default: return 0
         }
     }
     
@@ -54,6 +66,7 @@ public struct Card: Identifiable, Sendable {
         case .defend: return "Defend"
         case .pommelStrike: return "Pommel Strike"
         case .shrugItOff: return "Shrug It Off"
+        case .bash: return "Bash"
         }
     }
     
@@ -193,15 +206,18 @@ public struct BattleState: Sendable {
 public func createStarterDeck() -> [Card] {
     var cards: [Card] = []
     
-    // 4 张 Strike（原来 5 张）
+    // 4 张 Strike
     for i in 1...4 {
         cards.append(Card(id: "strike_\(i)", kind: .strike))
     }
     
-    // 4 张 Defend（原来 5 张）
+    // 4 张 Defend
     for i in 1...4 {
         cards.append(Card(id: "defend_\(i)", kind: .defend))
     }
+    
+    // 1 张 Bash（起始牌）
+    cards.append(Card(id: "bash_1", kind: .bash))
     
     // 1 张 Pommel Strike
     cards.append(Card(id: "pommelStrike_1", kind: .pommelStrike))
@@ -209,7 +225,7 @@ public func createStarterDeck() -> [Card] {
     // 1 张 Shrug It Off
     cards.append(Card(id: "shrugItOff_1", kind: .shrugItOff))
     
-    return cards  // 总计 10 张
+    return cards  // 总计 11 张
 }
 
 /// 创建默认玩家
