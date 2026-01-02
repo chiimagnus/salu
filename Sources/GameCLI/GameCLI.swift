@@ -45,7 +45,8 @@ struct GameCLI {
             Screens.showMainMenu()
             
             guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
-                continue
+                // EOF 或输入关闭，退出主菜单
+                return
             }
             
             switch input {
@@ -75,7 +76,8 @@ struct GameCLI {
             Screens.showSettingsMenu()
             
             guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
-                continue
+                // EOF 或输入关闭，退出设置菜单
+                return
             }
             
             switch input {

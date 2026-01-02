@@ -4,7 +4,7 @@
 # Salu 测试 - 集成测试（完整战斗流程）
 # ============================================================
 # 测试完整的战斗流程：开始战斗 → 打牌 → 结束回合 → 战斗结束
-# 使用编译好的二进制文件以加快速度
+# 使用临时文件存储输入，避免 bash 内存溢出
 
 set -e
 
@@ -22,7 +22,29 @@ if [ ! -f "$GAME_BIN" ]; then
     swift build -c release 2>&1
 fi
 
+# 创建临时文件目录
+TMP_DIR=$(mktemp -d)
+trap "rm -rf $TMP_DIR" EXIT
+
 FAILED=0
+
+# ============================================================
+# 辅助函数：生成战斗输入文件
+# ============================================================
+generate_battle_input() {
+    local output_file="$1"
+    local rounds="$2"
+    
+    echo "1" > "$output_file"  # 开始战斗
+    for i in $(seq 1 $rounds); do
+        echo "1" >> "$output_file"  # 打第1张牌
+        echo "1" >> "$output_file"  # 打第1张牌
+        echo "1" >> "$output_file"  # 打第1张牌
+        echo "1" >> "$output_file"  # 打第1张牌
+        echo "1" >> "$output_file"  # 打第1张牌
+        echo "0" >> "$output_file"  # 结束回合
+    done
+}
 
 # ============================================================
 # 测试1：完整战斗直到结束
@@ -30,25 +52,26 @@ FAILED=0
 show_step "1/4" "完整战斗流程 (seed=100)"
 show_info "模拟玩家完成整局战斗（最多30回合）..."
 
-# 生成30回合的输入（红虱子 HP 14，应该很快击败）
-INPUT_SEQUENCE="1"
-for i in {1..30}; do
-    INPUT_SEQUENCE="${INPUT_SEQUENCE}\n1\n1\n1\n1\n1\n0"
-done
+INPUT_FILE="$TMP_DIR/battle_input_1.txt"
+generate_battle_input "$INPUT_FILE" 50
 
-echo -e "${CYAN}  → 开始战斗...${NC}"
+echo -e "${CYAN}  → 开始战斗（seed=100）...${NC}"
 
-OUTPUT=$(echo -e "$INPUT_SEQUENCE" | "$GAME_BIN" --seed 100 2>&1)
+OUTPUT=$("$GAME_BIN" --seed 100 < "$INPUT_FILE" 2>&1)
 
-# 检查战斗结果
-if echo "$OUTPUT" | grep -q "战斗胜利"; then
+# 检查战斗结果（注意：界面显示是 "战 斗 胜 利" 有空格）
+if echo "$OUTPUT" | grep -q "战.*斗.*胜.*利\|VICTORY"; then
     show_success "战斗完成：胜利！"
-elif echo "$OUTPUT" | grep -q "战斗失败"; then
+    # 提取敌人信息
+    ENEMY=$(echo "$OUTPUT" | grep -o "👹 [^[]*" | head -1)
+    show_detail "对战敌人: $ENEMY"
+elif echo "$OUTPUT" | grep -q "战.*斗.*失.*败\|DEFEAT"; then
     show_success "战斗完成：失败（但流程正常）"
+    ENEMY=$(echo "$OUTPUT" | grep -o "👹 [^[]*" | head -1)
+    show_detail "对战敌人: $ENEMY"
 else
-    # 检查是否至少正常运行了
     if echo "$OUTPUT" | grep -q "👹"; then
-        show_warning "战斗未在30回合内结束，但流程正常"
+        show_warning "战斗未在50回合内结束，但流程正常"
     else
         show_failure "战斗流程异常"
         FAILED=$((FAILED + 1))
@@ -58,53 +81,58 @@ fi
 echo ""
 
 # ============================================================
-# 测试2：多敌人快速战斗
+# 测试2：多敌人完整战斗
 # ============================================================
 show_step "2/4" "多敌人战斗测试"
-show_info "测试4种不同敌人的战斗..."
+show_info "测试4种不同敌人的完整战斗..."
 
-# 使用已知会产生不同敌人的 seed
 SEEDS=(1 2 3 5)
+WINS=0
+LOSSES=0
 
 for SEED in "${SEEDS[@]}"; do
-    # 生成20回合的输入
-    INPUT_SEQ="1"
-    for j in {1..20}; do
-        INPUT_SEQ="${INPUT_SEQ}\n1\n1\n1\n1\n1\n0"
-    done
+    INPUT_FILE="$TMP_DIR/battle_input_seed_$SEED.txt"
+    generate_battle_input "$INPUT_FILE" 50
     
-    OUTPUT=$(echo -e "$INPUT_SEQ" | "$GAME_BIN" --seed $SEED 2>&1)
+    OUTPUT=$("$GAME_BIN" --seed $SEED < "$INPUT_FILE" 2>&1)
     
     # 获取敌人名称
     ENEMY=$(echo "$OUTPUT" | grep -o "👹 [^[]*" | head -1 | sed 's/👹 //' | tr -d '[:space:]')
     
     # 检查战斗结果
-    if echo "$OUTPUT" | grep -q "战斗胜利"; then
+    if echo "$OUTPUT" | grep -q "战.*斗.*胜.*利\|VICTORY"; then
         echo -e "     Seed $SEED: ${CYAN}${ENEMY}${NC} → ${GREEN}胜利${NC}"
-    elif echo "$OUTPUT" | grep -q "战斗失败"; then
+        WINS=$((WINS + 1))
+    elif echo "$OUTPUT" | grep -q "战.*斗.*失.*败\|DEFEAT"; then
         echo -e "     Seed $SEED: ${CYAN}${ENEMY}${NC} → ${RED}失败${NC}"
+        LOSSES=$((LOSSES + 1))
     else
         echo -e "     Seed $SEED: ${CYAN}${ENEMY}${NC} → ${YELLOW}进行中${NC}"
     fi
 done
 
-show_success "多敌人战斗测试完成"
+show_success "多敌人战斗测试完成（胜: $WINS, 负: $LOSSES）"
 echo ""
 
 # ============================================================
-# 测试3：状态效果验证
+# 测试3：状态效果集成测试
 # ============================================================
 show_step "3/4" "状态效果集成测试"
 show_info "验证状态效果施加和伤害计算..."
 
-# 用一个会遇到信徒的 seed（信徒会使用仪式增加力量）
-INPUT_SEQ="1"
-for i in {1..8}; do
-    INPUT_SEQ="${INPUT_SEQ}\n1\n1\n1\n0"
+# 生成8回合的输入
+INPUT_FILE="$TMP_DIR/battle_input_status.txt"
+echo "1" > "$INPUT_FILE"
+for i in $(seq 1 8); do
+    echo "1" >> "$INPUT_FILE"
+    echo "1" >> "$INPUT_FILE"
+    echo "1" >> "$INPUT_FILE"
+    echo "0" >> "$INPUT_FILE"
 done
-INPUT_SEQ="${INPUT_SEQ}\nq\n3"
+echo "q" >> "$INPUT_FILE"
+echo "3" >> "$INPUT_FILE"
 
-OUTPUT=$(echo -e "$INPUT_SEQ" | "$GAME_BIN" --seed 1 2>&1)
+OUTPUT=$("$GAME_BIN" --seed 1 < "$INPUT_FILE" 2>&1)
 
 EFFECTS_FOUND=0
 
@@ -142,14 +170,16 @@ echo ""
 show_step "4/4" "洗牌机制测试"
 show_info "验证抽牌堆耗尽后的洗牌逻辑..."
 
-# 连续多回合，确保触发洗牌
-INPUT_SEQ="1"
-for i in {1..8}; do
-    INPUT_SEQ="${INPUT_SEQ}\n0"  # 只结束回合
+# 连续8回合只结束回合，触发洗牌
+INPUT_FILE="$TMP_DIR/battle_input_shuffle.txt"
+echo "1" > "$INPUT_FILE"
+for i in $(seq 1 8); do
+    echo "0" >> "$INPUT_FILE"
 done
-INPUT_SEQ="${INPUT_SEQ}\nq\n3"
+echo "q" >> "$INPUT_FILE"
+echo "3" >> "$INPUT_FILE"
 
-OUTPUT=$(echo -e "$INPUT_SEQ" | "$GAME_BIN" --seed 88 2>&1)
+OUTPUT=$("$GAME_BIN" --seed 88 < "$INPUT_FILE" 2>&1)
 
 if echo "$OUTPUT" | grep -q "洗牌\|洗入"; then
     SHUFFLE_COUNT=$(echo "$OUTPUT" | grep -c "洗牌\|洗入" || echo "1")
