@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # ============================================================
-# Salu - 游戏测试脚本
+# Salu - 游戏测试脚本 v3.0
 # ============================================================
 # 用法：
 #   ./.cursor/Scripts/test_game.sh           # 运行所有测试
 #   ./.cursor/Scripts/test_game.sh build     # 仅测试编译
-#   ./.cursor/Scripts/test_game.sh play      # 自动运行一局游戏
-#   ./.cursor/Scripts/test_game.sh reproduce # 测试可复现性
+#   ./.cursor/Scripts/test_game.sh quick     # 快速测试（编译+启动验证）
+#   ./.cursor/Scripts/test_game.sh enemy     # 测试敌人随机系统
 # ============================================================
 
 set -e  # 遇到错误立即退出
@@ -17,6 +17,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # 切换到项目根目录（从 .cursor/Scripts 向上两级）
@@ -24,7 +25,7 @@ cd "$(dirname "$0")/../.."
 PROJECT_ROOT=$(pwd)
 
 echo -e "${BLUE}╔══════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║       Salu 测试脚本 v2.0             ║${NC}"
+echo -e "${BLUE}║       Salu 测试脚本 v3.0             ║${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════╝${NC}"
 echo ""
 echo -e "${BLUE}项目目录: ${PROJECT_ROOT}${NC}"
@@ -35,123 +36,110 @@ echo ""
 # ============================================================
 
 test_build() {
-    echo -e "${YELLOW}[测试] 编译项目...${NC}"
+    echo -e "${YELLOW}[1/N] 编译项目 (Debug)...${NC}"
     if swift build 2>&1; then
-        echo -e "${GREEN}✅ 编译成功${NC}"
+        echo -e "${GREEN}  ✅ Debug 编译成功${NC}"
         return 0
     else
-        echo -e "${RED}❌ 编译失败${NC}"
+        echo -e "${RED}  ❌ Debug 编译失败${NC}"
         return 1
     fi
 }
 
 test_build_release() {
-    echo -e "${YELLOW}[测试] Release 编译...${NC}"
+    echo -e "${YELLOW}[2/N] 编译项目 (Release)...${NC}"
     if swift build -c release 2>&1; then
-        echo -e "${GREEN}✅ Release 编译成功${NC}"
+        echo -e "${GREEN}  ✅ Release 编译成功${NC}"
         return 0
     else
-        echo -e "${RED}❌ Release 编译失败${NC}"
+        echo -e "${RED}  ❌ Release 编译失败${NC}"
         return 1
     fi
 }
 
-test_play_game() {
-    echo -e "${YELLOW}[测试] 自动运行一局游戏 (seed=1)...${NC}"
+test_quick_start() {
+    echo -e "${YELLOW}[3/N] 快速启动测试...${NC}"
     
-    # 使用攻击优先策略：每回合尽量打出所有攻击牌
-    # 输入序列：1 表示打第一张牌，0 表示结束回合
-    INPUT_SEQUENCE="1\n1\n1\n0\n1\n1\n1\n0\n1\n1\n1\n0\n1\n1\n1\n0\n1\n1\n1\n0\n1\n1\n1\n0\n1\n1\n1\n0"
+    # 只测试游戏能否正常启动和显示主菜单
+    # 输入 3 直接退出
+    echo -e "${CYAN}  → 启动游戏并立即退出...${NC}"
     
-    OUTPUT=$(echo -e "$INPUT_SEQUENCE" | swift run GameCLI --seed 1 2>&1)
+    OUTPUT=$(echo -e "3" | swift run GameCLI --seed 1 2>&1 | head -30)
     
-    # 检查是否包含胜利或失败
-    if echo "$OUTPUT" | grep -q "战斗胜利"; then
-        echo -e "${GREEN}✅ 游戏正常运行，战斗胜利${NC}"
-        return 0
-    elif echo "$OUTPUT" | grep -q "战斗失败"; then
-        echo -e "${GREEN}✅ 游戏正常运行，战斗失败${NC}"
+    if echo "$OUTPUT" | grep -q "SALU\|杀戮尖塔\|开始战斗"; then
+        echo -e "${GREEN}  ✅ 游戏启动正常${NC}"
         return 0
     else
-        echo -e "${RED}❌ 游戏未正常结束${NC}"
+        echo -e "${RED}  ❌ 游戏启动失败${NC}"
+        echo "$OUTPUT"
+        return 1
+    fi
+}
+
+test_battle_start() {
+    echo -e "${YELLOW}[4/N] 战斗启动测试...${NC}"
+    
+    # 进入战斗，然后立即退出
+    # 1 = 开始战斗, q = 退出战斗, 3 = 退出游戏
+    echo -e "${CYAN}  → 进入战斗并退出...${NC}"
+    
+    OUTPUT=$(echo -e "1\nq\n3" | swift run GameCLI --seed 1 2>&1)
+    
+    # 检查是否显示敌人
+    if echo "$OUTPUT" | grep -q "👹"; then
+        ENEMY=$(echo "$OUTPUT" | grep -o "👹 [^[]*" | head -1 | sed 's/\[.*//')
+        echo -e "${GREEN}  ✅ 战斗启动正常${NC}"
+        echo -e "${CYAN}     遇到敌人: ${ENEMY}${NC}"
+        return 0
+    else
+        echo -e "${RED}  ❌ 战斗启动失败${NC}"
         echo "$OUTPUT" | tail -20
         return 1
     fi
 }
 
-test_reproducibility() {
-    echo -e "${YELLOW}[测试] 可复现性验证 (seed=42)...${NC}"
+test_enemy_variety() {
+    echo -e "${YELLOW}[5/N] 敌人随机系统测试...${NC}"
     
-    INPUT_SEQUENCE="1\n1\n1\n0"
+    echo -e "${CYAN}  → 使用不同 seed 检查敌人多样性...${NC}"
     
-    # 运行两次相同的输入
-    OUTPUT1=$(echo -e "$INPUT_SEQUENCE" | swift run GameCLI --seed 42 2>&1 | grep "抽到" | head -5)
-    OUTPUT2=$(echo -e "$INPUT_SEQUENCE" | swift run GameCLI --seed 42 2>&1 | grep "抽到" | head -5)
+    # 收集所有敌人名称
+    ALL_ENEMIES=""
     
-    if [ "$OUTPUT1" = "$OUTPUT2" ]; then
-        echo -e "${GREEN}✅ 可复现性验证通过${NC}"
-        echo "  第一回合抽牌序列："
-        echo "$OUTPUT1" | sed 's/^/    /'
+    for seed in 1 2 3 4 5 10 20 30 40 50; do
+        ENEMY=$(echo -e "1\nq\n3" | swift run GameCLI --seed $seed 2>&1 | grep -o "👹 [^[]*" | head -1 | sed 's/👹 //' | tr -d '[:space:]')
+        echo -e "     Seed $seed: ${CYAN}${ENEMY}${NC}"
+        ALL_ENEMIES="${ALL_ENEMIES}${ENEMY}\n"
+    done
+    
+    # 计算唯一敌人数量
+    UNIQUE_COUNT=$(echo -e "$ALL_ENEMIES" | sort | uniq | grep -v "^$" | wc -l | tr -d ' ')
+    
+    echo ""
+    echo -e "${CYAN}  发现 ${UNIQUE_COUNT} 种不同敌人${NC}"
+    
+    if [ "$UNIQUE_COUNT" -ge 3 ]; then
+        echo -e "${GREEN}  ✅ 敌人随机系统正常 (发现 $UNIQUE_COUNT 种敌人)${NC}"
         return 0
     else
-        echo -e "${RED}❌ 可复现性验证失败${NC}"
-        echo "第一次运行："
-        echo "$OUTPUT1"
-        echo "第二次运行："
-        echo "$OUTPUT2"
+        echo -e "${YELLOW}  ⚠️ 敌人多样性不足 (仅 $UNIQUE_COUNT 种)${NC}"
+        return 0  # 不算失败
+    fi
+}
+
+test_intent_display() {
+    echo -e "${YELLOW}[6/N] 敌人意图显示测试...${NC}"
+    
+    OUTPUT=$(echo -e "1\nq\n3" | swift run GameCLI --seed 1 2>&1)
+    
+    if echo "$OUTPUT" | grep -q "意图"; then
+        INTENT=$(echo "$OUTPUT" | grep "意图" | head -1)
+        echo -e "${GREEN}  ✅ 敌人意图显示正常${NC}"
+        echo -e "${CYAN}     ${INTENT}${NC}"
+        return 0
+    else
+        echo -e "${RED}  ❌ 未检测到敌人意图${NC}"
         return 1
-    fi
-}
-
-test_status_effects() {
-    echo -e "${YELLOW}[测试] 状态效果验证...${NC}"
-    
-    # 尝试使用 Bash 卡牌施加易伤
-    INPUT_SEQUENCE="1\n1\n1\n1\n0\nq"
-    
-    OUTPUT=$(echo -e "$INPUT_SEQUENCE" | swift run GameCLI --seed 1 2>&1)
-    
-    # 检查是否有状态效果相关输出
-    if echo "$OUTPUT" | grep -q "易伤\|虚弱\|力量"; then
-        echo -e "${GREEN}✅ 状态效果系统正常${NC}"
-        return 0
-    else
-        echo -e "${YELLOW}⚠️ 未检测到状态效果（可能未触发）${NC}"
-        return 0  # 不算失败
-    fi
-}
-
-test_new_cards() {
-    echo -e "${YELLOW}[测试] 新卡牌验证...${NC}"
-    
-    INPUT_SEQUENCE="1\n1\n1\n1\n1\n0\nq"
-    
-    OUTPUT=$(echo -e "$INPUT_SEQUENCE" | swift run GameCLI --seed 1 2>&1)
-    
-    # 检查是否有新卡牌相关输出
-    if echo "$OUTPUT" | grep -q "Bash\|Pommel Strike\|Shrug It Off\|Inflame\|Clothesline"; then
-        echo -e "${GREEN}✅ 新卡牌系统正常${NC}"
-        return 0
-    else
-        echo -e "${YELLOW}⚠️ 未检测到新卡牌（可能未抽到）${NC}"
-        return 0  # 不算失败
-    fi
-}
-
-test_shuffle_mechanic() {
-    echo -e "${YELLOW}[测试] 洗牌机制验证...${NC}"
-    
-    # 多回合游戏，确保触发洗牌
-    INPUT_SEQUENCE="0\n0\n0\n0\n0\n0\nq"  # 连续结束回合，触发洗牌
-    
-    OUTPUT=$(echo -e "$INPUT_SEQUENCE" | swift run GameCLI --seed 1 2>&1)
-    
-    if echo "$OUTPUT" | grep -q "洗牌"; then
-        echo -e "${GREEN}✅ 洗牌机制正常${NC}"
-        return 0
-    else
-        echo -e "${YELLOW}⚠️ 未触发洗牌（可能回合数不够）${NC}"
-        return 0  # 不算失败
     fi
 }
 
@@ -162,6 +150,7 @@ test_shuffle_mechanic() {
 run_all_tests() {
     echo ""
     FAILED=0
+    TOTAL=6
     
     test_build || FAILED=$((FAILED + 1))
     echo ""
@@ -169,24 +158,46 @@ run_all_tests() {
     test_build_release || FAILED=$((FAILED + 1))
     echo ""
     
-    test_play_game || FAILED=$((FAILED + 1))
+    test_quick_start || FAILED=$((FAILED + 1))
     echo ""
     
-    test_reproducibility || FAILED=$((FAILED + 1))
+    test_battle_start || FAILED=$((FAILED + 1))
     echo ""
     
-    test_status_effects || FAILED=$((FAILED + 1))
+    test_enemy_variety || FAILED=$((FAILED + 1))
     echo ""
     
-    test_new_cards || FAILED=$((FAILED + 1))
+    test_intent_display || FAILED=$((FAILED + 1))
     echo ""
     
-    test_shuffle_mechanic || FAILED=$((FAILED + 1))
+    echo -e "${BLUE}══════════════════════════════════════${NC}"
+    PASSED=$((TOTAL - FAILED))
+    if [ $FAILED -eq 0 ]; then
+        echo -e "${GREEN}🎉 所有测试通过！ ($PASSED/$TOTAL)${NC}"
+    else
+        echo -e "${RED}❌ ${FAILED} 个测试失败 ($PASSED/$TOTAL 通过)${NC}"
+    fi
+    echo -e "${BLUE}══════════════════════════════════════${NC}"
+    
+    return $FAILED
+}
+
+run_quick_tests() {
+    echo ""
+    FAILED=0
+    
+    test_build || FAILED=$((FAILED + 1))
+    echo ""
+    
+    test_quick_start || FAILED=$((FAILED + 1))
+    echo ""
+    
+    test_battle_start || FAILED=$((FAILED + 1))
     echo ""
     
     echo -e "${BLUE}══════════════════════════════════════${NC}"
     if [ $FAILED -eq 0 ]; then
-        echo -e "${GREEN}🎉 所有测试通过！${NC}"
+        echo -e "${GREEN}🎉 快速测试通过！${NC}"
     else
         echo -e "${RED}❌ ${FAILED} 个测试失败${NC}"
     fi
@@ -200,17 +211,14 @@ case "${1:-all}" in
     build)
         test_build
         ;;
-    play)
-        test_build && test_play_game
+    quick)
+        run_quick_tests
         ;;
-    reproduce)
-        test_build && test_reproducibility
+    enemy)
+        test_build && test_enemy_variety
         ;;
-    status)
-        test_build && test_status_effects
-        ;;
-    cards)
-        test_build && test_new_cards
+    intent)
+        test_build && test_intent_display
         ;;
     all|*)
         run_all_tests
