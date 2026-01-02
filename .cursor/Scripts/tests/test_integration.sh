@@ -5,6 +5,7 @@
 # ============================================================
 # 测试完整的战斗流程：开始战斗 → 打牌 → 结束回合 → 战斗结束
 # 使用临时文件存储输入，避免 bash 内存溢出
+# 使用超时机制确保进程不会无限运行
 
 set -e
 
@@ -15,6 +16,9 @@ cd "$(get_project_root)"
 
 show_header "集成测试（完整战斗流程）"
 
+# 超时时间（秒）- 每个战斗最多运行30秒
+TIMEOUT_SECONDS=30
+
 # 确保使用 Release 编译好的二进制
 GAME_BIN=".build/release/GameCLI"
 if [ ! -f "$GAME_BIN" ]; then
@@ -24,7 +28,37 @@ fi
 
 # 创建临时文件目录
 TMP_DIR=$(mktemp -d)
-trap "rm -rf $TMP_DIR" EXIT
+
+# 清理函数：确保退出时清理临时文件和子进程
+cleanup() {
+    rm -rf "$TMP_DIR" 2>/dev/null || true
+    # 杀掉可能遗留的 GameCLI 进程
+    pkill -f "GameCLI --seed" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+# 带超时运行游戏的函数
+run_game_with_timeout() {
+    local input_file="$1"
+    local seed="$2"
+    local timeout_sec="${3:-$TIMEOUT_SECONDS}"
+    
+    # 使用 timeout 命令（如果存在），否则使用后台进程+等待
+    if command -v timeout &>/dev/null; then
+        timeout "$timeout_sec" "$GAME_BIN" --seed "$seed" < "$input_file" 2>&1 || true
+    elif command -v gtimeout &>/dev/null; then
+        # macOS 可能需要 coreutils 的 gtimeout
+        gtimeout "$timeout_sec" "$GAME_BIN" --seed "$seed" < "$input_file" 2>&1 || true
+    else
+        # 回退方案：后台运行 + sleep + kill
+        "$GAME_BIN" --seed "$seed" < "$input_file" 2>&1 &
+        local pid=$!
+        (sleep "$timeout_sec"; kill -9 "$pid" 2>/dev/null) &
+        local killer=$!
+        wait "$pid" 2>/dev/null || true
+        kill "$killer" 2>/dev/null || true
+    fi
+}
 
 FAILED=0
 
@@ -55,9 +89,9 @@ show_info "模拟玩家完成整局战斗（最多30回合）..."
 INPUT_FILE="$TMP_DIR/battle_input_1.txt"
 generate_battle_input "$INPUT_FILE" 50
 
-echo -e "${CYAN}  → 开始战斗（seed=100）...${NC}"
+echo -e "${CYAN}  → 开始战斗（seed=100，超时${TIMEOUT_SECONDS}秒）...${NC}"
 
-OUTPUT=$("$GAME_BIN" --seed 100 < "$INPUT_FILE" 2>&1)
+OUTPUT=$(run_game_with_timeout "$INPUT_FILE" 100)
 
 # 检查战斗结果（注意：界面显示是 "战 斗 胜 利" 有空格）
 if echo "$OUTPUT" | grep -q "战.*斗.*胜.*利\|VICTORY"; then
@@ -94,7 +128,7 @@ for SEED in "${SEEDS[@]}"; do
     INPUT_FILE="$TMP_DIR/battle_input_seed_$SEED.txt"
     generate_battle_input "$INPUT_FILE" 50
     
-    OUTPUT=$("$GAME_BIN" --seed $SEED < "$INPUT_FILE" 2>&1)
+    OUTPUT=$(run_game_with_timeout "$INPUT_FILE" "$SEED")
     
     # 获取敌人名称
     ENEMY=$(echo "$OUTPUT" | grep -o "👹 [^[]*" | head -1 | sed 's/👹 //' | tr -d '[:space:]')
@@ -132,7 +166,7 @@ done
 echo "q" >> "$INPUT_FILE"
 echo "3" >> "$INPUT_FILE"
 
-OUTPUT=$("$GAME_BIN" --seed 1 < "$INPUT_FILE" 2>&1)
+OUTPUT=$(run_game_with_timeout "$INPUT_FILE" 1)
 
 EFFECTS_FOUND=0
 
@@ -179,7 +213,7 @@ done
 echo "q" >> "$INPUT_FILE"
 echo "3" >> "$INPUT_FILE"
 
-OUTPUT=$("$GAME_BIN" --seed 88 < "$INPUT_FILE" 2>&1)
+OUTPUT=$(run_game_with_timeout "$INPUT_FILE" 88)
 
 if echo "$OUTPUT" | grep -q "洗牌\|洗入"; then
     SHUFFLE_COUNT=$(echo "$OUTPUT" | grep -c "洗牌\|洗入" || echo "1")

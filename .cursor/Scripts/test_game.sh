@@ -33,11 +33,12 @@ show_usage() {
     echo "  $0 [command]"
     echo ""
     echo "命令："
-    echo "  all      运行所有测试 (默认)"
-    echo "  build    编译测试"
-    echo "  startup  启动测试"
-    echo "  enemy    敌人系统测试"
-    echo "  quick    快速测试 (编译+启动)"
+    echo "  all         运行所有测试 (默认)"
+    echo "  build       编译测试"
+    echo "  startup     启动测试"
+    echo "  enemy       敌人系统测试"
+    echo "  integration 集成测试（完整战斗流程）"
+    echo "  quick       快速测试 (编译+启动)"
     echo ""
 }
 
@@ -120,6 +121,9 @@ case "${1:-all}" in
         ;;
     enemy)
         run_test "enemy"
+        ;;
+    integration)
+        run_test "integration"
         ;;
     quick)
         run_quick_tests
