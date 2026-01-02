@@ -12,6 +12,12 @@ public struct Entity: Sendable {
     public var weak: Int = 0         // 虚弱：造成伤害 -25%
     public var strength: Int = 0     // 力量：攻击伤害 +N
     
+    /// 敌人种类（仅敌人使用，玩家为 nil）
+    public let kind: EnemyKind?
+    
+    /// 当前意图（仅敌人使用）
+    public var intent: EnemyIntent = .unknown
+    
     public var isAlive: Bool {
         currentHP > 0
     }
@@ -21,6 +27,7 @@ public struct Entity: Sendable {
         vulnerable > 0 || weak > 0 || strength != 0
     }
     
+    /// 创建玩家实体
     public init(id: String, name: String, maxHP: Int) {
         self.id = id
         self.name = name
@@ -30,6 +37,22 @@ public struct Entity: Sendable {
         self.vulnerable = 0
         self.weak = 0
         self.strength = 0
+        self.kind = nil
+        self.intent = .unknown
+    }
+    
+    /// 创建敌人实体
+    public init(id: String, name: String, maxHP: Int, kind: EnemyKind) {
+        self.id = id
+        self.name = name
+        self.maxHP = maxHP
+        self.currentHP = maxHP
+        self.block = 0
+        self.vulnerable = 0
+        self.weak = 0
+        self.strength = 0
+        self.kind = kind
+        self.intent = .unknown
     }
     
     /// 回合结束时递减状态效果
@@ -89,8 +112,8 @@ public func createDefaultPlayer() -> Entity {
     Entity(id: "player", name: "铁甲战士", maxHP: 80)
 }
 
-/// 创建默认敌人
+/// 创建默认敌人（向后兼容）
 public func createDefaultEnemy() -> Entity {
-    Entity(id: "enemy", name: "下颚虫", maxHP: 42)
+    Entity(id: "jaw_worm", name: "下颚虫", maxHP: 42, kind: .jawWorm)
 }
 

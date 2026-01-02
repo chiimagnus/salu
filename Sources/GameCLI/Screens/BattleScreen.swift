@@ -86,7 +86,10 @@ enum BattleScreen {
             lines.append("     \(statusLine)")
         }
         
-        lines.append("     \(Terminal.yellow)📢 意图: 攻击 7 伤害\(Terminal.reset)")
+        // 显示敌人意图（从 Entity.intent 读取）
+        let intentIcon = enemy.intent.displayIcon
+        let intentText = enemy.intent.displayText
+        lines.append("     \(Terminal.yellow)📢 意图: \(intentIcon) \(intentText)\(Terminal.reset)")
         
         return lines
     }

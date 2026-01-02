@@ -10,9 +10,11 @@ public final class BattleEngine: @unchecked Sendable {
     /// 战斗统计（累积，不会被清除）
     public private(set) var battleStats: BattleStats = BattleStats()
     
-    private let rng: SeededRNG
+    private var rng: SeededRNG
     private let cardsPerTurn: Int = 5
-    private let enemyDamage: Int = 7  // MVP: 敌人固定攻击7点
+    
+    /// 敌人 AI 决策器
+    private let enemyAI: any EnemyAI
     
     // MARK: - Initialization
     
@@ -31,15 +33,23 @@ public final class BattleEngine: @unchecked Sendable {
         self.rng = SeededRNG(seed: seed)
         self.state = BattleState(player: player, enemy: enemy)
         
+        // 初始化敌人 AI
+        let kind = enemy.kind ?? .jawWorm
+        self.enemyAI = EnemyAIFactory.create(for: kind)
+        
         // 初始化抽牌堆并洗牌
         self.state.drawPile = rng.shuffled(deck)
     }
     
-    /// 使用默认配置初始化
+    /// 使用默认配置初始化（随机选择敌人）
     public convenience init(seed: UInt64) {
+        var tempRng = SeededRNG(seed: seed)
+        let enemyKind = Act1EnemyPool.randomWeak(rng: &tempRng)
+        let enemy = createEnemy(kind: enemyKind, rng: &tempRng)
+        
         self.init(
             player: createDefaultPlayer(),
-            enemy: createDefaultEnemy(),
+            enemy: enemy,
             deck: createStarterDeck(),
             seed: seed
         )
@@ -152,9 +162,24 @@ public final class BattleEngine: @unchecked Sendable {
         // 抽牌
         drawCards(cardsPerTurn)
         
-        // 显示敌人意图（考虑敌人虚弱状态）
-        let intentDamage = calculateDamage(baseDamage: enemyDamage, attacker: state.enemy, defender: state.player)
-        emit(.enemyIntent(enemyId: state.enemy.id, action: "攻击", damage: intentDamage))
+        // AI 决定敌人意图
+        decideEnemyIntent()
+    }
+    
+    /// 让敌人 AI 决定下一个意图
+    private func decideEnemyIntent() {
+        let intent = enemyAI.decideIntent(
+            enemy: state.enemy,
+            player: state.player,
+            turn: state.turn,
+            rng: &rng
+        )
+        state.enemy.intent = intent
+        
+        // 发出敌人意图事件
+        let intentDamage = intent.damageValue ?? 0
+        let actionName = intent.displayText
+        emit(.enemyIntent(enemyId: state.enemy.id, action: actionName, damage: intentDamage))
     }
     
     private func endPlayerTurn() {
@@ -187,21 +212,79 @@ public final class BattleEngine: @unchecked Sendable {
     }
     
     private func executeEnemyTurn() {
-        emit(.enemyAction(enemyId: state.enemy.id, action: "攻击"))
+        let intent = state.enemy.intent
+        emit(.enemyAction(enemyId: state.enemy.id, action: intent.displayText))
         
-        // 敌人造成伤害（应用伤害修正）
-        let finalDamage = calculateDamage(baseDamage: enemyDamage, attacker: state.enemy, defender: state.player)
-        let (dealt, blocked) = state.player.takeDamage(finalDamage)
-        battleStats.totalDamageTaken += dealt
-        emit(.damageDealt(
-            source: state.enemy.name,
-            target: state.player.name,
-            amount: dealt,
-            blocked: blocked
-        ))
+        switch intent {
+        case .attack(let baseDamage):
+            // 纯攻击
+            let finalDamage = calculateDamage(baseDamage: baseDamage, attacker: state.enemy, defender: state.player)
+            let (dealt, blocked) = state.player.takeDamage(finalDamage)
+            battleStats.totalDamageTaken += dealt
+            emit(.damageDealt(
+                source: state.enemy.name,
+                target: state.player.name,
+                amount: dealt,
+                blocked: blocked
+            ))
+            
+        case .attackDebuff(let baseDamage, let debuff, let stacks):
+            // 攻击 + Debuff
+            let finalDamage = calculateDamage(baseDamage: baseDamage, attacker: state.enemy, defender: state.player)
+            let (dealt, blocked) = state.player.takeDamage(finalDamage)
+            battleStats.totalDamageTaken += dealt
+            emit(.damageDealt(
+                source: state.enemy.name,
+                target: state.player.name,
+                amount: dealt,
+                blocked: blocked
+            ))
+            
+            // 施加 Debuff
+            applyDebuff(to: &state.player, debuff: debuff, stacks: stacks)
+            
+        case .defend(let block):
+            // 防御
+            state.enemy.gainBlock(block)
+            emit(.blockGained(target: state.enemy.name, amount: block))
+            
+        case .buff(let name, let stacks):
+            // 增益（目前只支持力量）
+            if name == "力量" || name == "仪式" || name == "卷曲" {
+                state.enemy.strength += stacks
+                emit(.statusApplied(target: state.enemy.name, effect: name, stacks: stacks))
+            }
+            
+        case .unknown:
+            // 未知意图，默认攻击
+            let data = EnemyData.get(state.enemy.kind ?? .jawWorm)
+            let finalDamage = calculateDamage(baseDamage: data.baseAttackDamage, attacker: state.enemy, defender: state.player)
+            let (dealt, blocked) = state.player.takeDamage(finalDamage)
+            battleStats.totalDamageTaken += dealt
+            emit(.damageDealt(
+                source: state.enemy.name,
+                target: state.player.name,
+                amount: dealt,
+                blocked: blocked
+            ))
+        }
         
         // 检查玩家是否死亡
         checkBattleEnd()
+    }
+    
+    /// 对目标施加 Debuff
+    private func applyDebuff(to target: inout Entity, debuff: String, stacks: Int) {
+        switch debuff {
+        case "虚弱":
+            target.weak += stacks
+            emit(.statusApplied(target: target.name, effect: "虚弱", stacks: stacks))
+        case "易伤":
+            target.vulnerable += stacks
+            emit(.statusApplied(target: target.name, effect: "易伤", stacks: stacks))
+        default:
+            break
+        }
     }
     
     // MARK: Card Playing
