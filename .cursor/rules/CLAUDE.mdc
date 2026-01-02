@@ -18,12 +18,12 @@ swift run GameCLI --seed 1
 swift run GameCLI
 
 # 运行测试（从项目根目录执行）
-./.cursor/Scripts/test_game.sh           # 运行所有测试
+./.cursor/Scripts/test_game.sh           # 运行所有测试 (~2秒)
 ./.cursor/Scripts/test_game.sh build     # 仅测试编译
-./.cursor/Scripts/test_game.sh play      # 自动运行一局游戏
-./.cursor/Scripts/test_game.sh reproduce # 测试可复现性
-./.cursor/Scripts/test_game.sh status    # 测试状态效果
-./.cursor/Scripts/test_game.sh cards     # 测试新卡牌
+./.cursor/Scripts/test_game.sh startup   # 启动测试
+./.cursor/Scripts/test_game.sh enemy     # 敌人系统测试
+./.cursor/Scripts/test_game.sh integration # 集成测试（完整战斗流程）
+./.cursor/Scripts/test_game.sh quick     # 快速测试（编译+启动）
 ```
 
 ## 开发规范
@@ -255,16 +255,26 @@ swift run GameCLI --stats
 | Weak（虚弱） | 造成伤害 -25% | ✅ Clothesline 施加 |
 | Strength（力量） | 攻击伤害 +N | ✅ Inflame 获得 |
 
-### Phase 3：多敌人战斗
+### ~~Phase 3：敌人系统~~ ✅ 已完成
 
-- 支持同时面对多个敌人
-- 添加目标选择机制
-- 不同敌人有不同 AI 模式
+| 功能 | 说明 | 状态 |
+|------|------|------|
+| 5 种敌人 | 下颚虫、信徒、绿虱子、红虱子、酸液史莱姆 | ✅ |
+| 敌人 AI | 每种敌人有独特行为模式 | ✅ |
+| 意图系统 | 动态显示敌人下一步行动 | ✅ |
+| 敌人池 | Act1EnemyPool 随机选择敌人 | ✅ |
 
-### Phase 4：更多内容
+### Phase 4：地图程序生成（下一阶段）
+
+- 创建地图系统（线性 → 分叉路径）
+- 添加休息节点（恢复生命）
+- Boss 节点
+- 连续战斗（生命值保持）
+
+### Phase 5：更多内容
 
 - 卡牌升级系统
 - 遗物系统
 - 事件系统
-- 地图路线
 - 存档系统
+- 多敌人战斗（目标选择机制）
