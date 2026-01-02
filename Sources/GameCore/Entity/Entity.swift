@@ -112,8 +112,3 @@ public func createDefaultPlayer() -> Entity {
     Entity(id: "player", name: "铁甲战士", maxHP: 80)
 }
 
-/// 创建默认敌人（向后兼容）
-public func createDefaultEnemy() -> Entity {
-    Entity(id: "jaw_worm", name: "下颚虫", maxHP: 42, kind: .jawWorm)
-}
-

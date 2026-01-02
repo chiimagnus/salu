@@ -168,8 +168,10 @@ struct GameCLI {
             )
             
             // 读取玩家输入
+            // 注意：当管道输入用完时，readLine() 返回 nil，需要退出循环
             guard let input = readLine()?.trimmingCharacters(in: .whitespaces) else {
-                continue
+                // EOF 或输入关闭，退出游戏
+                return
             }
             
             // 清除之前的消息
