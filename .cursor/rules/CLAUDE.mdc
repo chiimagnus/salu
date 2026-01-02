@@ -1,6 +1,6 @@
 ---
 description: Salu 游戏业务说明 - 游戏规则、数值设定、扩展计划
-alwaysApply: false
+alwaysApply: true
 ---
 # Salu - 杀戮尖塔 CLI 仿制版
 
