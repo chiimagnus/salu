@@ -23,23 +23,9 @@ public final class SeededRNG: @unchecked Sendable {
     public func nextInt(upperBound: Int) -> Int {
         guard upperBound > 0 else { return 0 }
         
-        // 使用拒绝采样确保均匀分布
-        let bound = UInt64(upperBound)
-        var r = nextBits(31)
-        let m = bound - 1
-        
-        if (bound & m) == 0 {
-            // upperBound 是 2 的幂
-            return Int((bound &* r) >> 31)
-        }
-        
-        var u = r
-        while u &- (r % bound) &+ m >= UInt64(Int32.max) {
-            u = nextBits(31)
-            r = u
-        }
-        
-        return Int(r % bound)
+        // 简化实现：直接使用模运算
+        let r = nextBits(31)
+        return Int(r % UInt64(upperBound))
     }
     
     /// Fisher-Yates 洗牌算法
