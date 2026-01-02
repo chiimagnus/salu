@@ -1,17 +1,18 @@
 # GitHub Actions 工作流说明
 
-本项目包含多个 GitHub Actions 工作流，用于自动化测试和发布流程。
+本项目包含两个 GitHub Actions 工作流，用于自动化测试和发布流程。
 
 ## 工作流列表
 
-### 1. CI - Full Test Suite (`.github/workflows/ci.yml`)
+### 1. Tests (`.github/workflows/test.yml`)
 
 **触发条件：**
 - Push 到 `main` 或 `develop` 分支
 - Pull Request 到 `main` 或 `develop` 分支
 
 **功能：**
-- 在 Ubuntu 和 macOS 上运行所有测试套件
+- 在 Ubuntu 和 macOS 上运行所有测试
+- 运行 `.cursor/Scripts/test_game.sh all`
 - 上传构建产物（Debug 版本）
 
 **测试内容：**
@@ -20,37 +21,7 @@
 - 敌人系统测试
 - 集成测试
 
-### 2. Quick Tests (`.github/workflows/quick-test.yml`)
-
-**触发条件：**
-- Push 到任何分支
-- Pull Request 到任何分支
-
-**功能：**
-- 快速反馈机制
-- 仅运行编译和启动测试（最快的测试）
-
-**适用场景：**
-- 开发分支的快速验证
-- PR 的初步检查
-
-### 3. Test Suites (`.github/workflows/test-suites.yml`)
-
-**触发条件：**
-- Push 到 `main` 或 `develop` 分支
-- Pull Request 到 `main` 或 `develop` 分支
-
-**功能：**
-- 将测试分为独立的 jobs 并行运行
-- 提供更详细的测试结果
-
-**测试任务：**
-1. **Build Test** - 编译测试
-2. **Startup Test** - 启动测试（依赖 Build Test）
-3. **Enemy System Test** - 敌人系统测试（依赖 Build Test）
-4. **Integration Test** - 集成测试（依赖 Build Test）
-
-### 4. Release (`.github/workflows/release.yml`)
+### 2. Release (`.github/workflows/release.yml`)
 
 **触发条件：**
 - Push 版本标签（如 `v1.0.0`, `v2.1.3`）

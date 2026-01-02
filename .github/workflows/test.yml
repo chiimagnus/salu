@@ -1,4 +1,4 @@
-name: CI - Full Test Suite
+name: Tests
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   test:
-    name: Run All Tests
+    name: Run Tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

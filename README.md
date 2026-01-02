@@ -1,7 +1,6 @@
 ## Salu
 
-[![CI - Full Test Suite](https://github.com/chiimagnus/salu/actions/workflows/ci.yml/badge.svg)](https://github.com/chiimagnus/salu/actions/workflows/ci.yml)
-[![Quick Tests](https://github.com/chiimagnus/salu/actions/workflows/quick-test.yml/badge.svg)](https://github.com/chiimagnus/salu/actions/workflows/quick-test.yml)
+[![Tests](https://github.com/chiimagnus/salu/actions/workflows/test.yml/badge.svg)](https://github.com/chiimagnus/salu/actions/workflows/test.yml)
 [![Release](https://github.com/chiimagnus/salu/actions/workflows/release.yml/badge.svg)](https://github.com/chiimagnus/salu/actions/workflows/release.yml)
 
 [See this file](.cursor/rules/CLAUDE.mdc)
