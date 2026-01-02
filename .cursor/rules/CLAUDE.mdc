@@ -26,6 +26,33 @@ swift run GameCLI
 ./.cursor/Scripts/test_game.sh cards     # 测试新卡牌
 ```
 
+## 开发规范
+
+### Cursor AI 编译测试规范
+
+**重要**：在 Cursor AI 中运行编译和测试时，**必须使用后台运行模式**：
+
+```swift
+// ✅ 正确：使用 is_background: true
+run_terminal_cmd(command: "swift build", is_background: true)
+
+// ❌ 错误：前台运行可能导致超时或阻塞
+run_terminal_cmd(command: "swift build", is_background: false)
+```
+
+原因：
+- 避免长时间运行导致超时
+- 防止交互式命令阻塞
+- 测试脚本可能产生大量输出
+
+### 调试工具
+
+对于 Swift PM 项目的调试：
+
+1. **LLDB 调试**：`swift build && lldb .build/debug/GameCLI`
+2. **Xcode 调试**：`swift package generate-xcodeproj`（可使用 Instruments 分析内存）
+3. **打印调试**：通过 `BattleEvent` 事件系统追踪状态变化
+
 ---
 
 ## 游戏规则
@@ -118,13 +145,19 @@ swift run GameCLI
 | 每回合能量 | 3 |
 | 每回合抽牌 | 5 |
 
-### 敌人属性
+### 敌人系统
 
-| 属性 | 数值 |
-|------|------|
-| 名称 | 下颚虫 |
-| HP | 42 |
-| 行动 | 每回合攻击 7 |
+游戏包含多种敌人，每种敌人有独特的 AI 行为：
+
+| 敌人 | HP范围 | 基础攻击 | 特殊行为 |
+|------|--------|---------|----------|
+| 下颚虫 | 40-44 | 11 | 嚎叫(+3力量)、猛扑 |
+| 信徒 | 48-54 | 6 | 第一回合念咒(+3力量) |
+| 绿虱子 | 11-17 | 6 | 卷曲(+3力量) |
+| 红虱子 | 10-15 | 6 | 卷曲(+3力量) |
+| 酸液史莱姆 | 28-32 | 10 | 涂抹(施加虚弱) |
+
+敌人通过 `EnemyPool` 随机选择，每种敌人有独立的 AI 决策逻辑。
 
 ---
 
