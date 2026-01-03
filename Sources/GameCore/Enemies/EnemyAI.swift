@@ -29,6 +29,8 @@ public enum EnemyAIFactory {
             return LouseAI()
         case .slimeMediumAcid:
             return SlimeAI()
+        case .slimeBossSmall:
+            return SlimeBossAI()
         }
     }
 }

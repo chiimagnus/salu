@@ -26,6 +26,8 @@ public struct EnemyData: Sendable {
             return EnemyData(kind: kind, minHP: 10, maxHP: 15, baseAttackDamage: 6)
         case .slimeMediumAcid:
             return EnemyData(kind: kind, minHP: 28, maxHP: 32, baseAttackDamage: 10)
+        case .slimeBossSmall:
+            return EnemyData(kind: kind, minHP: 140, maxHP: 140, baseAttackDamage: 12)
         }
     }
     

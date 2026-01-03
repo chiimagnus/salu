@@ -11,6 +11,11 @@ public enum Act1EnemyPool {
         .slimeMediumAcid
     ]
     
+    /// Boss 敌人
+    public static let bosses: [EnemyKind] = [
+        .slimeBossSmall
+    ]
+    
     /// 所有敌人
     public static let all: [EnemyKind] = weak + medium
     
@@ -24,6 +29,12 @@ public enum Act1EnemyPool {
     public static func randomAny(rng: inout SeededRNG) -> EnemyKind {
         let index = rng.nextInt(upperBound: all.count)
         return all[index]
+    }
+    
+    /// 随机选择 Boss
+    public static func randomBoss(rng: inout SeededRNG) -> EnemyKind {
+        let index = rng.nextInt(upperBound: bosses.count)
+        return bosses[index]
     }
 }
 

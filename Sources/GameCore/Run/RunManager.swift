@@ -25,7 +25,18 @@ public final class RunManager: @unchecked Sendable {
     
     /// 创建当前房间的战斗
     public func createBattleForCurrentRoom() -> BattleEngine {
-        let enemyKind = Act1EnemyPool.randomWeak(rng: &rng)
+        guard let node = runState.currentNode else {
+            fatalError("No current node")
+        }
+        
+        // 根据房间类型选择敌人
+        let enemyKind: EnemyKind
+        if node.roomType == .boss {
+            enemyKind = Act1EnemyPool.randomBoss(rng: &rng)
+        } else {
+            enemyKind = Act1EnemyPool.randomWeak(rng: &rng)
+        }
+        
         let enemy = createEnemy(kind: enemyKind, rng: &rng)
         
         // 使用当前时间作为战斗种子

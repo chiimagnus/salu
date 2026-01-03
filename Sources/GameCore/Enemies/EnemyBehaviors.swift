@@ -94,3 +94,33 @@ public struct SlimeAI: EnemyAI, Sendable {
     }
 }
 
+/// 史莱姆 Boss AI
+/// 行为模式：更强的攻击和防御模式
+public struct SlimeBossAI: EnemyAI, Sendable {
+    public init() {}
+    
+    public func decideIntent(
+        enemy: Entity,
+        player: Entity,
+        turn: Int,
+        rng: inout SeededRNG
+    ) -> EnemyIntent {
+        let baseDamage = 12 + enemy.strength
+        
+        // 第一回合：大量格挡
+        if turn == 1 {
+            return .defend(block: 15)
+        }
+        
+        // 之后交替攻击和防御
+        if turn % 2 == 0 {
+            // 偶数回合：攻击
+            let damage = baseDamage + rng.nextInt(upperBound: 4)
+            return .attack(damage: damage)
+        } else {
+            // 奇数回合：防御
+            return .defend(block: 10)
+        }
+    }
+}
+
