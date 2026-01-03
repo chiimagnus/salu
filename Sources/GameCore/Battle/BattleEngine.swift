@@ -13,7 +13,8 @@ public final class BattleEngine: @unchecked Sendable {
     private var rng: SeededRNG
     private let cardsPerTurn: Int = 5
     
-    // P3: 移除 enemyAI 存储，改为每次从 Registry 获取
+    // P4: 遗物管理器（从 RunState 传入）
+    private let relicManager: RelicManager
     
     // MARK: - Initialization
     
@@ -22,17 +23,18 @@ public final class BattleEngine: @unchecked Sendable {
     ///   - player: 玩家实体
     ///   - enemy: 敌人实体
     ///   - deck: 初始牌组
+    ///   - relicManager: 遗物管理器（P4 新增）
     ///   - seed: 随机数种子（用于可复现性）
     public init(
         player: Entity,
         enemy: Entity,
         deck: [Card],
+        relicManager: RelicManager = RelicManager(),
         seed: UInt64
     ) {
         self.rng = SeededRNG(seed: seed)
         self.state = BattleState(player: player, enemy: enemy)
-        
-        // P3: 不再需要初始化 enemyAI
+        self.relicManager = relicManager
         
         // 初始化抽牌堆并洗牌
         self.state.drawPile = rng.shuffled(deck)
@@ -58,6 +60,10 @@ public final class BattleEngine: @unchecked Sendable {
     public func startBattle() {
         events.removeAll()
         emit(.battleStarted)
+        
+        // P4: 触发战斗开始的遗物效果
+        triggerRelics(.battleStart)
+        
         startNewTurn()
     }
     
@@ -146,6 +152,9 @@ public final class BattleEngine: @unchecked Sendable {
         state.isPlayerTurn = true
         
         emit(.turnStarted(turn: state.turn))
+        
+        // P4: 触发回合开始的遗物效果
+        triggerRelics(.turnStart(turn: state.turn))
         
         // 重置能量
         state.energy = state.maxEnergy
@@ -553,11 +562,32 @@ public final class BattleEngine: @unchecked Sendable {
             state.isOver = true
             state.playerWon = true
             emit(.battleWon)
+            // P4: 触发战斗结束（胜利）- 包括燃烧之血恢复生命
+            triggerRelics(.battleEnd(won: true))
         } else if !state.player.isAlive {
             emit(.entityDied(entityId: state.player.id, name: state.player.name))
             state.isOver = true
             state.playerWon = false
             emit(.battleLost)
+            // P4: 触发战斗结束（失败）
+            triggerRelics(.battleEnd(won: false))
+        }
+    }
+    
+    // MARK: Relic System (P4)
+    
+    /// 触发遗物效果
+    private func triggerRelics(_ trigger: BattleTrigger) {
+        let snapshot = BattleSnapshot(
+            turn: state.turn,
+            player: state.player,
+            enemy: state.enemy,
+            energy: state.energy
+        )
+        
+        let effects = relicManager.onBattleTrigger(trigger, snapshot: snapshot)
+        for effect in effects {
+            apply(effect)
         }
     }
 }

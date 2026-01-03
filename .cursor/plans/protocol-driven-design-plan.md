@@ -995,7 +995,11 @@ private func executeEnemyTurn() {
 
 ---
 
-## P4: 遗物系统设计 ⭐
+## P4: 遗物系统设计 ⭐ ✅ **已完成**
+
+> **实施日期**: 2026-01-03  
+> **状态**: ✅ 完成并通过所有测试  
+> **Commits**: [将在提交时填写]
 
 ### P4 重新审查：当前方案的问题（作为“框架”还不够）
 
@@ -1269,15 +1273,33 @@ private func handleBattleEnd(won: Bool) {
 
 ### 验收标准
 
- - [ ] `RelicRegistry` 使用 `RelicID` 注册遗物，新增遗物只需新增 Definition + 注册
- - [ ] `RelicManager` 不产出 BattleEvent（只产出 BattleEffect 列表）
- - [ ] `BattleTrigger` 只包含 battle 层触发点（run 层触发点留给 P5/P6）
- - [ ] `BattleEffect` 已补齐遗物所需效果（至少支持 heal）
- - [ ] BurningBlood：胜利后战斗结束恢复 6 HP
- - [ ] Vajra：战斗开始获得 1 点力量
- - [ ] Lantern：战斗开始获得 1 点能量
- - [ ] `swift build` 成功
- - [ ] `./.cursor/Scripts/test_game.sh` 成功
+ - [x] ✅ `RelicRegistry` 使用 `RelicID` 注册遗物，新增遗物只需新增 Definition + 注册
+ - [x] ✅ `RelicManager` 不产出 BattleEvent（只产出 BattleEffect 列表）
+ - [x] ✅ `BattleTrigger` 只包含 battle 层触发点（run 层触发点留给 P5/P6）
+ - [x] ✅ `BattleEffect` 已补齐遗物所需效果（至少支持 heal）
+ - [x] ✅ BurningBlood：胜利后战斗结束恢复 6 HP
+ - [x] ✅ Vajra：战斗开始获得 1 点力量
+ - [x] ✅ Lantern：战斗开始获得 1 点能量
+ - [x] ✅ `swift build` 成功
+ - [x] ✅ `./.cursor/Scripts/test_game.sh` 成功
+
+### P4 实施总结 ✅
+
+**完成内容**:
+- ✅ 添加 `RelicID` 到类型系统
+- ✅ 创建 `BattleTrigger` 枚举（战斗触发点）
+- ✅ 创建遗物框架 (RelicDefinition, RelicRegistry, RelicManager)
+- ✅ 实现 3 个基础遗物 (BurningBlood, Vajra, Lantern)
+- ✅ 在 `RunState` 添加 `RelicManager`
+- ✅ 在 `BattleEngine` 集成遗物触发:
+  - battleStart 触发
+  - turnStart 触发
+  - battleEnd 触发（含胜利/失败）
+  - triggerRelics helper 方法
+- ✅ 更新 `GameCLI` 传递 relicManager
+- ✅ 所有测试通过
+
+**测试结果**: 所有测试通过，无编译错误
 
 ---
 

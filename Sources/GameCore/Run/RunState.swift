@@ -10,6 +10,9 @@ public struct RunState: Sendable {
     /// 当前牌组
     public var deck: [Card]
     
+    /// 遗物管理器（P4 新增）
+    public var relicManager: RelicManager
+    
     /// 地图节点
     public var map: [MapNode]
     
@@ -33,12 +36,14 @@ public struct RunState: Sendable {
     public init(
         player: Entity,
         deck: [Card],
+        relicManager: RelicManager = RelicManager(),
         map: [MapNode],
         seed: UInt64,
         floor: Int = 1
     ) {
         self.player = player
         self.deck = deck
+        self.relicManager = relicManager
         self.map = map
         self.currentNodeId = nil
         self.seed = seed
@@ -53,9 +58,14 @@ public struct RunState: Sendable {
         let deck = createStarterDeck()
         let map = MapGenerator.generateBranching(seed: seed)
         
+        // 添加起始遗物（燃烧之血）
+        var relicManager = RelicManager()
+        relicManager.add("burning_blood")
+        
         return RunState(
             player: player,
             deck: deck,
+            relicManager: relicManager,
             map: map,
             seed: seed
         )

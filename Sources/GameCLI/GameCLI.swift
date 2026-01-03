@@ -247,11 +247,12 @@ struct GameCLI {
         }
         let enemy = createEnemy(enemyId: enemyId, rng: &rng)
         
-        // 创建战斗引擎（使用冒险中的玩家状态）
+        // 创建战斗引擎（使用冒险中的玩家状态和遗物）
         let engine = BattleEngine(
             player: runState.player,
             enemy: enemy,
             deck: runState.deck,
+            relicManager: runState.relicManager,
             seed: battleSeed
         )
         engine.startBattle()
@@ -309,11 +310,12 @@ struct GameCLI {
         var rng = SeededRNG(seed: bossSeed)
         let enemy = createEnemy(enemyId: "slime_medium_acid", rng: &rng)
         
-        // 创建战斗引擎
+        // 创建战斗引擎（使用冒险中的玩家状态和遗物）
         let engine = BattleEngine(
             player: runState.player,
             enemy: enemy,
             deck: runState.deck,
+            relicManager: runState.relicManager,
             seed: bossSeed
         )
         engine.startBattle()

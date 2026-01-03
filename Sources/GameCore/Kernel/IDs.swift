@@ -38,3 +38,16 @@ public struct EnemyID: Hashable, Sendable, ExpressibleByStringLiteral {
         self.rawValue = value
     }
 }
+
+/// 遗物 ID（强类型，P4 新增）
+public struct RelicID: Hashable, Sendable, ExpressibleByStringLiteral {
+    public let rawValue: String
+    
+    public init(_ rawValue: String) {
+        self.rawValue = rawValue
+    }
+    
+    public init(stringLiteral value: String) {
+        self.rawValue = value
+    }
+}
