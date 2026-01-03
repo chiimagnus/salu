@@ -10,11 +10,11 @@ public struct Entity: Sendable {
     // 状态效果容器（P2 重构：使用 StatusContainer）
     public var statuses: StatusContainer = StatusContainer()
     
-    /// 敌人种类（仅敌人使用，玩家为 nil）
-    public let kind: EnemyKind?
+    /// 敌人 ID（仅敌人使用，玩家为 nil）- P3 重构：使用 EnemyID
+    public let enemyId: EnemyID?
     
-    /// 当前意图（仅敌人使用）
-    public var intent: EnemyIntent = .unknown
+    /// 当前意图（仅敌人使用）- P3: 改用 EnemyMove
+    public var plannedMove: EnemyMove?
     
     public var isAlive: Bool {
         currentHP > 0
@@ -32,19 +32,19 @@ public struct Entity: Sendable {
         self.maxHP = maxHP
         self.currentHP = maxHP
         self.block = 0
-        self.kind = nil
-        self.intent = .unknown
+        self.enemyId = nil
+        self.plannedMove = nil
     }
     
-    /// 创建敌人实体
-    public init(id: String, name: String, maxHP: Int, kind: EnemyKind) {
+    /// 创建敌人实体 (P3: 使用 EnemyID)
+    public init(id: String, name: String, maxHP: Int, enemyId: EnemyID) {
         self.id = id
         self.name = name
         self.maxHP = maxHP
         self.currentHP = maxHP
         self.block = 0
-        self.kind = kind
-        self.intent = .unknown
+        self.enemyId = enemyId
+        self.plannedMove = nil
     }
     
     /// 受到伤害（先扣格挡再扣血）
