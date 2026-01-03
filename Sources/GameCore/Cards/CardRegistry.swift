@@ -24,7 +24,10 @@ public enum CardRegistry {
     
     public static func require(_ id: CardID) -> any CardDefinition.Type {
         // 破坏性策略：找不到就直接失败，避免静默 fallback
-        defs[id]!
+        guard let def = defs[id] else {
+            fatalError("CardRegistry: unknown card id '\(id.rawValue)'")
+        }
+        return def
     }
 }
 

@@ -172,15 +172,11 @@ public final class BattleEngine: @unchecked Sendable {
             emit(.energyReset(amount: state.energy))
 
         case .applyStatus(let target, let statusId, let stacks):
-            var entityName = ""
             if target == .player {
                 applyStatusById(to: &state.player, statusId: statusId, stacks: stacks)
-                entityName = state.player.name
             } else {
                 applyStatusById(to: &state.enemy, statusId: statusId, stacks: stacks)
-                entityName = state.enemy.name
             }
-            _ = entityName // keep for future (P2: status registry display)
 
         case .heal(let target, let amount):
             if target == .player {
