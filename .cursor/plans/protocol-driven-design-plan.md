@@ -334,6 +334,13 @@ public struct CardID: Hashable, Sendable, ExpressibleByStringLiteral {
     public init(_ rawValue: String) { self.rawValue = rawValue }
     public init(stringLiteral value: String) { self.rawValue = value }
 }
+
+// P1 先放在 Kernel（P2 会完整化状态系统）
+public struct StatusID: Hashable, Sendable, ExpressibleByStringLiteral {
+    public let rawValue: String
+    public init(_ rawValue: String) { self.rawValue = rawValue }
+    public init(stringLiteral value: String) { self.rawValue = value }
+}
 ```
 
 #### 2) `BattleEffect`（统一效果枚举：卡牌/状态/遗物/敌人都用）
@@ -471,7 +478,9 @@ P1 要求把 `BattleScreen.buildHandArea` 中这段：
 - **重写**：`createStarterDeck()`（改为创建 `Card(cardId: ...)` 的实例）
 - **重写**：`BattleEngine.executeCardEffect`（移除按卡牌 switch，改为执行 `BattleEffect`）
 - **重写**：`BattleScreen.buildHandArea`（移除按卡牌 switch，改为从 registry 取 `rulesText`）
-- **调整事件载荷**（建议）：`BattleEvent.played/drew` 使用 `CardID` 作为 source-of-truth（由 CLI 通过 registry 转成文字）
+- **调整事件载荷**（必须，破坏性）：`BattleEvent.played/drew` **改为携带 `CardID`（稳定 ID）而不是 `cardName`（显示字符串）**
+  - 直观例子：如果事件里存 `"Strike"`，你以后把显示名改成“打击”，所有事件/测试都要跟着改
+  - 如果事件里存 `CardID("strike")`，显示名怎么变都无所谓：CLI 用 `CardRegistry.require(cardId).name` 渲染即可
 
 ### P1 实施步骤（高优先级顺序）
 
