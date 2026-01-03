@@ -8,14 +8,14 @@ struct GameCLI {
     // MARK: - 状态
     
     /// 事件日志
-    private nonisolated(unsafe) static var recentEvents: [String] = []
+    private static var recentEvents: [String] = []
     private static let maxRecentEvents = 12
     
     /// 当前消息
-    private nonisolated(unsafe) static var currentMessage: String? = nil
+    private static var currentMessage: String? = nil
     
     /// 是否显示事件日志
-    private nonisolated(unsafe) static var showEventLog: Bool = false
+    private static var showEventLog: Bool = false
     
     // MARK: - Main Entry
     
@@ -138,7 +138,7 @@ struct GameCLI {
     // MARK: - Run (冒险模式)
     
     /// 当前冒险状态
-    private nonisolated(unsafe) static var currentRunState: RunState? = nil
+    private static var currentRunState: RunState? = nil
     
     static func startNewRun() {
         let seed = parseSeed(from: CommandLine.arguments)
