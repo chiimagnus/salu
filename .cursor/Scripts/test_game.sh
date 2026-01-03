@@ -37,6 +37,7 @@ show_usage() {
     echo "  build       编译测试"
     echo "  startup     启动测试"
     echo "  enemy       敌人系统测试"
+    echo "  relic       遗物系统测试"
     echo "  map         地图系统测试"
     echo "  integration 集成测试（完整冒险流程）"
     echo "  quick       快速测试 (编译+启动)"
@@ -122,6 +123,9 @@ case "${1:-all}" in
         ;;
     enemy)
         run_test "enemy"
+        ;;
+    relic)
+        run_test "relic"
         ;;
     map)
         run_test "map"
