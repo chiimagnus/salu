@@ -103,7 +103,7 @@ GameCore（逻辑层）
 |------|------|
 | `BattleEvent` | 事件类型有限且稳定，枚举更适合模式匹配 |
 | `PlayerAction` | 玩家动作类型有限且稳定 |
-| `EnemyIntent` | 意图类型有限且稳定 |
+| `BattleTrigger` | 战斗触发点有限且清晰，枚举更适合模式匹配 |
 | `RoomType` | 房间类型相对固定，枚举更简洁 |
 
 ---
@@ -113,12 +113,12 @@ GameCore（逻辑层）
 ```
 ┌────────────────────────────────────────────────────────────────┐
 │  P1: 卡牌系统协议化                    ⭐⭐⭐ 最重要           │
-│  ├── CardDefinition 协议                                       │
-│  ├── CardEffectResult 效果描述枚举                             │
-│  ├── DamageCalculator 伤害计算工具（提取现有逻辑）              │
-│  ├── 所有卡牌实现独立结构体                                    │
-│  ├── CardRegistry 卡牌注册表                                   │
-│  └── 卡牌升级系统支持（upgraded 属性）                         │
+│  ├── CardID/StatusID 强类型（Kernel/IDs.swift）                │
+│  ├── BattleEffect 统一效果（Kernel/BattleEffect.swift）        │
+│  ├── CardDefinition（play → [BattleEffect]）                   │
+│  ├── Card（实例：id + cardId）                                 │
+│  ├── CardRegistry（唯一扩展点：新增卡牌只需注册）              │
+│  └── 卡牌升级：upgradedId（升级版也是一个 CardID 定义）        │
 ├────────────────────────────────────────────────────────────────┤
 │  P2: 状态效果系统协议化                ⭐⭐ 重要               │
 │  ├── StatusDefinition 协议（修正 + 触发）                      │
@@ -139,6 +139,20 @@ GameCore（逻辑层）
 │  ├── BattleTrigger（战斗触发点） → [BattleEffect]                │
 │  ├── RelicManager（汇总效果，由 BattleEngine 执行）              │
 │  └── 3 个基础遗物实现                                          │
+├────────────────────────────────────────────────────────────────┤
+│  P5: Run/房间/地图流程协议化           ⭐⭐ 重要               │
+│  ├── RoomType 保留 enum，但用 Registry/Handler 消灭 CLI switch   │
+│  ├── RunEngine（纯逻辑状态机）+ RunTrigger/RunEffect             │
+│  └── MapGenerator 策略协议（Act/难度可扩展）                     │
+├────────────────────────────────────────────────────────────────┤
+│  P6: 持久化与 I/O 协议化              ⭐⭐ 重要               │
+│  ├── HistoryStore / RunSaveStore 协议（GameCore 定义）           │
+│  ├── File/JSON 实现放在 GameCLI（唯一 I/O 层）                    │
+│  └── Screen/Router 协议化，统一输入输出依赖注入                   │
+├────────────────────────────────────────────────────────────────┤
+│  P7: Run 存档系统（Save/Load）         ⭐⭐ 重要               │
+│  ├── RunSnapshot（Codable）+ RunSaveStore 具体实现               │
+│  └── CLI 支持继续冒险/存档管理（不引入新 I/O 到 GameCore）        │
 └────────────────────────────────────────────────────────────────┘
 
 已移除：
@@ -147,126 +161,40 @@ GameCore（逻辑层）
 
 ---
 
-## ⚠️ 已识别的设计问题与修复
+## ⚠️ 框架级约束（P1 ~ P6 都必须遵守）
 
-### 问题 1：P1 中使用了未定义的类型
+### 约束 1：效果统一（BattleEffect / RunEffect）
 
-| 问题 | 修复方案 |
-|------|----------|
-| `AnyCardEffect` 未定义 | 移除 `custom(effect:)` case，改用更具体的效果类型 |
-| `DamageCalculator` 未定义 | 在 P1.1 中创建，提取 BattleEngine 现有伤害计算逻辑 |
-| `StatusType` 应在 P2 | P1 中使用 `StatusID("vulnerable")` 这类强类型 ID（或 string literal），P2 完成后由 `StatusRegistry` 提供显示/行为 |
-
-### 问题 2：卡牌升级系统缺失
+- **battle 内**：卡牌/敌人/状态/遗物只允许产出 `[BattleEffect]`
+- **执行边界**：只有 `BattleEngine.apply(effect:)` 能修改 `BattleState` 并 `emit(BattleEvent)`
+- **run 内**：地图/房间/奖励/存档只允许产出 `[RunEffect]`（由 `RunEngine` 执行并 `emit(RunEvent)`，在 P5/P6 建立）
 
 ```swift
-// 修复：添加 upgraded 属性支持
-public protocol CardDefinition: Sendable {
-    // ... 现有属性 ...
-    
-    /// 是否为升级版卡牌
-    static var isUpgraded: Bool { get }
-    
-    /// 升级版卡牌定义 ID（可选）
-    static var upgradedVersionId: String? { get }
-}
-
-// 默认实现
-extension CardDefinition {
-    public static var isUpgraded: Bool { false }
-    public static var upgradedVersionId: String? { nil }
+public enum BattleEffect: Sendable, Equatable {
+    case dealDamage(target: EffectTarget, base: Int)
+    case gainBlock(target: EffectTarget, base: Int)
+    case applyStatus(target: EffectTarget, statusId: StatusID, stacks: Int)
+    case heal(target: EffectTarget, amount: Int)
 }
 ```
 
-### 问题 3：P2 与 Entity 的集成
+### 约束 2：强类型 ID（禁止散落字符串）
 
-```swift
-// 修复：使用 StatusContainer（组合）承载状态，而不是把状态字段硬编码在 Entity 里
-public struct StatusContainer: Sendable {
-    private var statuses: [String: Int] = [:]  // statusId -> stacks
-    
-    public func getStacks(_ statusId: String) -> Int {
-        statuses[statusId] ?? 0
-    }
-    
-    public mutating func apply(_ statusId: String, stacks: Int) {
-        statuses[statusId, default: 0] += stacks
-    }
-    
-    public mutating func tick() -> [String] {
-        // 递减所有可递减的状态
-        var expired: [String] = []
-        for (statusId, _) in statuses {
-            guard let definition = StatusRegistry.get(statusId) else { continue }
-            if definition.decaysOverTime {
-                statuses[statusId]! -= 1
-                if statuses[statusId]! <= 0 {
-                    statuses.removeValue(forKey: statusId)
-                    expired.append(statusId)
-                }
-            }
-        }
-        return expired
-    }
-}
+- `CardID/StatusID/EnemyID/RelicID` 必须强类型（并 `ExpressibleByStringLiteral`）
+- `BattleEvent`/`RunEvent` 的载荷存 **ID**，不存 UI 文本；渲染时通过 Registry 取 `name/icon/rulesText`
 
-// Entity 修改：替换现有的 vulnerable/weak/strength 字段（破坏性：直接移除旧字段）
-public struct Entity: Sendable {
-    // ... 保留 id, name, maxHP, currentHP, block ...
-    
-    /// 状态效果容器（替代 vulnerable, weak, strength）
-    public var statuses: StatusContainer = StatusContainer()
-    
-    // 兼容性便捷属性
-    public var vulnerable: Int {
-        get { statuses.getStacks("vulnerable") }
-        set { statuses.apply("vulnerable", stacks: newValue - vulnerable) }
-    }
-    // ... 其他兼容性属性 ...
-}
-```
+### 约束 3：容器只管数据（不 tick / 不 emit / 不 apply）
 
-### 问题 4：P3 与现有 EnemyAI 的关系
+- `StatusContainer`：只存 `StatusID -> stacks`，递减/触发由引擎在 turn hook 里做
+- `RelicManager`：只汇总 `RelicDefinition.onBattleTrigger(...)` 产生的 effects，执行仍由 BattleEngine 负责
 
-```
-方案：合并而非替代
+### 约束 4：可复现性（禁止 UUID/Foundation）
 
-当前：
-┌───────────────┐    ┌─────────────┐
-│  EnemyKind    │    │  EnemyAI    │
-│  (枚举)        │    │  (协议)      │
-└───────┬───────┘    └──────┬──────┘
-        │                    │
-        ▼                    ▼
-┌───────────────┐    ┌─────────────┐
-│  EnemyData    │    │ JawWormAI   │
-│  (静态数据)    │    │ CultistAI   │
-└───────────────┘    │ ...         │
-                     └─────────────┘
+- 所有随机必须来自注入的 `SeededRNG`
+- 敌人必须 **先 plan 后 execute**：plan 阶段用 rng，并把随机结果固化到 `EnemyMove.effects`
+- GameCore 禁止 `UUID()` / `Date()` / `Foundation`（`History.swift` 例外）
 
-目标：统一为 EnemyDefinition
-┌───────────────────────────────────┐
-│       EnemyDefinition             │
-│  ├── id, displayName, hpRange    │
-│  ├── baseAttack, description     │
-│  └── decideIntent()              │
-└───────────────────────────────────┘
-        ▼
-┌─────────────────┐
-│ JawWormEnemy    │
-│ CultistEnemy    │
-│ LouseGreenEnemy │
-│ ...             │
-└─────────────────┘
-
-迁移策略：
-1. 创建新的 EnemyDefinition 协议
-2. 将现有 EnemyData + 对应 AI 合并到新结构体
-3. 更新 BattleEngine 使用 EnemyRegistry
-4. 最后删除旧的 EnemyKind, EnemyData, EnemyAI, EnemyBehaviors
-```
-
-### 问题 5：CardKind 枚举的处理
+### 关键迁移策略：删除 CardKind（P1 破坏性）
 
 ```
 迁移策略：
@@ -398,7 +326,7 @@ public struct BattleSnapshot: Sendable {
 // Cards/Card.swift
 public struct Card: Identifiable, Sendable, Equatable {
     public let id: String          // instanceId（例如 "strike_1"；由引擎/牌组生成器负责）
-    public let cardId: CardID      // definitionId
+    public let cardId: CardID      // cardId（引用卡牌定义）
 }
 ```
 
@@ -1295,6 +1223,129 @@ private func handleBattleEnd(won: Bool) {
 
 ---
 
+## P5: Run/房间/地图流程协议化 ⭐⭐
+
+### 目标
+
+- **消灭 GameCLI 的 RoomType 分支**：删除 `GameCLI.runLoop` 中 `switch selectedNode.roomType { ... }`
+- **RoomType 保留 enum**：类型相对稳定，但“行为”通过 Handler/Registry 扩展
+- **地图生成策略协议化**：为 Act2/更高难度预留 `MapGenerating` 扩展点（保持可复现）
+- **RunState 更纯粹**：尽量把“房间行为”移出 `RunState`，由 RoomHandler/RunCoordinator 执行
+
+### 新架构设计
+
+```
+Sources/GameCore/
+├── Map/
+│   ├── MapGenerating.swift            # 地图生成策略协议（P5 新增）
+│   └── MapGenerator.swift             # 默认实现（Branching）
+│
+├── Run/
+│   ├── RunState.swift                 # 数据结构（尽量纯数据）
+│   └── RunSeedStrategy.swift          # 统一 battleSeed/bossSeed 派生策略（P5 新增）
+│
+└── [保持] RoomType.swift, MapNode.swift
+
+Sources/GameCLI/
+├── Flow/
+│   ├── RunCoordinator.swift           # 冒险流程协调器（P5 新增，替代 runLoop 里的 switch）
+│   └── RoomHandlerRegistry.swift      # RoomType -> handler（P5 新增）
+│
+└── Rooms/
+    └── Handlers/
+        ├── StartRoomHandler.swift
+        ├── BattleRoomHandler.swift
+        ├── RestRoomHandler.swift
+        └── BossRoomHandler.swift
+```
+
+### 关键协议（最小示例）
+
+```swift
+// GameCore/Map/MapGenerating.swift
+public protocol MapGenerating: Sendable {
+    func generate(seed: UInt64, rows: Int) -> [MapNode]
+}
+
+// GameCLI/Rooms/RoomHandling.swift
+protocol RoomHandling {
+    var roomType: RoomType { get }
+
+    /// 进入房间并执行该房间的完整流程（战斗/休息/结算）
+    /// 约束：I/O 仍在 GameCLI，但房间分支不再散落在 GameCLI.runLoop 的 switch 中
+    func run(node: MapNode, runState: inout RunState) -> RoomRunResult
+}
+
+enum RoomRunResult {
+    case completedNode
+    case runEnded(won: Bool)
+}
+```
+
+### 实施步骤
+
+- P5.1 新建 `MapGenerating` 协议；让现有 `MapGenerator.generateBranching` 成为默认实现
+- P5.2 新建 `RunSeedStrategy`：统一计算 battleSeed/bossSeed（替代散落在 GameCLI 的 seed 拼法）
+- P5.3 新建 `RoomHandlerRegistry` + 4 个 handler（start/battle/rest/boss）
+- P5.4 改造 `GameCLI.runLoop`：用 registry 选择 handler 并执行，彻底删除 `switch roomType`
+- P5.5 验证：地图选择→战斗→休息→Boss→通关/失败流程全部可跑通
+
+### 验收标准（必须全部通过）
+
+- [ ] `GameCLI.runLoop` 不再包含 `switch selectedNode.roomType`
+- [ ] 新增一个房间行为只需新增 handler + 注册（不改 runLoop）
+- [ ] `swift build` 成功
+- [ ] `./.cursor/Scripts/test_game.sh` 成功
+
+---
+
+## P6: 持久化与 I/O 协议化 ⭐⭐
+
+### 目标
+
+- **移除单例**：删除 `HistoryManager.shared`，改为依赖注入（接口优于单例）
+- **把 I/O 隔离在 GameCLI**：GameCore 只定义协议/数据结构；文件读写/JSON 编解码留在 GameCLI
+- **为 Run 存档预留扩展点**：引入 `RunSaveStore` 协议（P6 建接口，后续实现）
+
+### 新架构设计
+
+```
+Sources/GameCore/
+└── Persistence/
+    ├── BattleHistoryStore.swift       # 协议（P6 新增）
+    └── RunSaveStore.swift             # 协议（P6 新增）
+
+Sources/GameCLI/
+└── Persistence/
+    ├── FileBattleHistoryStore.swift   # JSON 文件实现（P6 新增）
+    └── （P7）FileRunSaveStore.swift   # Run 存档文件实现（在 P7 真正落地）
+```
+
+### 关键协议（最小示例）
+
+```swift
+// GameCore/Persistence/BattleHistoryStore.swift
+public protocol BattleHistoryStore: Sendable {
+    func load() throws -> [BattleRecord]
+    func append(_ record: BattleRecord) throws
+    func clear() throws
+}
+```
+
+### 实施步骤
+
+- P6.1 在 GameCore 定义 `BattleHistoryStore` 协议
+- P6.2 在 GameCLI 实现 `FileBattleHistoryStore`（复用现有存储路径逻辑）
+- P6.3 用 `HistoryService`（或同名管理器）替代 `HistoryManager.shared`，由 `GameCLI.main()` 注入
+- P6.4 为 Run 存档定义 `RunSaveStore` 协议（先不实现具体存档格式，P7 落地）
+
+### 验收标准（必须全部通过）
+
+- [ ] 代码库中不存在 `HistoryManager.shared`
+- [ ] History 读写走 `BattleHistoryStore` 协议（可替换 mock）
+- [ ] `swift build` 成功
+- [ ] `./.cursor/Scripts/test_game.sh` 成功
+
 ## ⚠️ 风险与注意事项
 
 ### 1. 破坏性重构影响面（必须接受）
@@ -1320,16 +1371,18 @@ private func handleBattleEnd(won: Bool) {
    - P2 后：验证易伤、虚弱、力量、中毒效果
    - P3 后：与所有敌人战斗，验证 AI 行为
    - P4 后：验证遗物触发和效果
+   - P5 后：地图选择→房间执行→通关/失败流程（确认 runLoop 不再 switch roomType）
+   - P6 后：历史记录读写/清空正常（确认无 `HistoryManager.shared`）
 
 ---
 
 ## 📋 检查清单
 
 ### P1 完成后检查
-- [ ] `CardRegistry.get(CardID(\"strike\"))` 返回正确定义
-- [ ] `Card(id: \"strike_1\", cardId: \"strike\")` 正确工作（实例 ID + CardID 分离）
+- [ ] `CardRegistry.get(CardID("strike"))` 返回正确定义
+- [ ] `Card(id: "strike_1", cardId: "strike")` 正确工作（实例 ID + CardID 分离）
 - [ ] BattleEngine 通过 `BattleEffect` 管线执行卡牌效果（无卡牌 switch）
-- [ ] BattleScreen 不再按 `card.kind` switch 拼描述，改为 registry 驱动
+- [ ] BattleScreen 不再包含“按卡牌种类 switch 拼描述”的逻辑，改为 registry/rulesText 驱动
 - [ ] 添加新卡牌只需新增 `CardDefinition` + 在 `CardRegistry` 注册
 
 ### P2 完成后检查
@@ -1339,16 +1392,26 @@ private func handleBattleEnd(won: Bool) {
 - [ ] 中毒在 turnEnd 通过 `StatusDefinition.onTurnEnd` 产出 `BattleEffect`，由引擎执行
 
 ### P3 完成后检查
-- [ ] `EnemyRegistry.get(EnemyID(\"jaw_worm\"))` 返回正确定义
+- [ ] `EnemyRegistry.get(EnemyID("jaw_worm"))` 返回正确定义
 - [ ] `EnemyPool.randomWeak()` 只返回 `EnemyID`（不生成 Entity）
 - [ ] BattleEngine 通过 `EnemyMove(effects:)` 执行敌人行动（不再 switch intent）
 - [ ] 旧代码已删除：EnemyKind/EnemyData/EnemyAI/EnemyBehaviors/EnemyAIFactory
 
 ### P4 完成后检查
 - [ ] `RelicManager.onBattleTrigger(.battleStart, snapshot:)` 正确触发遗物并返回 `[BattleEffect]`
-- [ ] 燃烧之血战斗结束恢复 HP
+- [ ] 燃烧之血：胜利后战斗结束恢复 6 HP
 - [ ] 金刚杵战斗开始 +1 力量
 - [ ] 灯笼战斗开始 +1 能量
+
+### P5 完成后检查
+- [ ] `GameCLI.runLoop` 不再包含 `switch selectedNode.roomType`
+- [ ] RoomHandlerRegistry 已注册 start/battle/rest/boss 的 handler
+- [ ] 冒险流程可完整跑通：地图选择 → 战斗/休息 → Boss → 通关/失败
+
+### P6 完成后检查
+- [ ] 代码库中不存在 `HistoryManager.shared`
+- [ ] History 读写通过 `BattleHistoryStore` 注入（可替换 mock）
+- [ ] 设置菜单（history/stats/clear）功能正常
 
 ---
 
