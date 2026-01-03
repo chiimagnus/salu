@@ -54,7 +54,7 @@ public struct Inflame: CardDefinition {
     public static let id: CardID = "inflame"
     public static let name = "Inflame"
     public static let type: CardType = .power
-    public static let rarity: CardRarity = .uncommon
+    public static let rarity: CardRarity = .common
     public static let cost = 1
     public static let rulesText = "获得 2 点力量"
     
@@ -75,7 +75,7 @@ public struct Clothesline: CardDefinition {
     public static let id: CardID = "clothesline"
     public static let name = "Clothesline"
     public static let type: CardType = .attack
-    public static let rarity: CardRarity = .uncommon
+    public static let rarity: CardRarity = .common
     public static let cost = 2
     public static let rulesText = "造成 12 点伤害，给予 2 层虚弱"
     

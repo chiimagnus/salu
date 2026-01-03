@@ -432,6 +432,10 @@ public final class BattleEngine: @unchecked Sendable {
     private func applyStatusEffect(target: EffectTarget, statusId: StatusID, stacks: Int) {
         let entityName: String
         
+        // TODO(P2): This hardcoded status handling will be replaced with StatusRegistry
+        // in Phase 2 (Status Effect System Protocol-Driven)
+        // Currently using hardcoded string matching as a temporary solution
+        
         switch target {
         case .player:
             entityName = state.player.name
@@ -447,6 +451,8 @@ public final class BattleEngine: @unchecked Sendable {
                 state.player.strength += stacks
                 emit(.statusApplied(target: entityName, effect: "力量", stacks: stacks))
             default:
+                // Silently ignore unknown status effects for now
+                // P2 will add proper error handling via StatusRegistry
                 break
             }
         case .enemy:
@@ -463,6 +469,8 @@ public final class BattleEngine: @unchecked Sendable {
                 state.enemy.strength += stacks
                 emit(.statusApplied(target: entityName, effect: "力量", stacks: stacks))
             default:
+                // Silently ignore unknown status effects for now
+                // P2 will add proper error handling via StatusRegistry
                 break
             }
         }
