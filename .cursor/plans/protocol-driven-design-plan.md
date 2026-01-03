@@ -696,10 +696,23 @@ P2 必须同步修改：
 
 ## P3: 敌人系统统一 ⭐⭐
 
-### 目标
-- 将 `EnemyKind` + `EnemyData` + `EnemyAI` 合并为统一的 `EnemyDefinition`
-- 每个敌人是一个独立的结构体，包含数据和行为
-- 添加新敌人只需创建新结构体并注册
+### P3 重新审查：当前实现的问题（来自真实代码）
+
+我已核对当前实现：
+
+- `Sources/GameCore/Enemies/EnemyKind.swift` + `EnemyData.get()`：新增敌人要改 `switch`
+- `Sources/GameCore/Enemies/EnemyAI.swift` + `EnemyAIFactory`：引擎需要“按种类选择 AI”
+- `Sources/GameCore/Battle/BattleEngine.swift`：敌人执行逻辑依赖 `EnemyIntent` 的 `switch`（与卡牌类似的扩展点）
+- debuff/buff 目前用字符串（如 `"虚弱"`, `"仪式"`），会和 P2 的 `StatusID/StatusRegistry` 脱节
+
+结论：P3 必须把敌人域重构为与 P1/P2 同一条主线：**EnemyID + EnemyDefinition + EnemyRegistry + Move 产出 BattleEffect**，并彻底删除旧扩展点。
+
+### P3 目标（破坏性：不保留 EnemyKind/EnemyAI/EnemyData）
+
+- **彻底删除**：`EnemyKind` / `EnemyData` / `EnemyAI` / `EnemyBehaviors` / `EnemyAIFactory` / `createEnemy(kind:)`
+- 建立 **EnemyID / EnemyDefinition / EnemyRegistry / EnemyPool** 的敌人框架
+- 敌人的 AI 不再是工厂：直接由 `EnemyDefinition.chooseMove(snapshot, rng)` 决策
+- 敌人行动不再 `switch EnemyIntent` 执行：**统一执行 `[BattleEffect]`（走 BattleEngine 的 apply(effect:)）**
 
 ### 当前架构问题
 
@@ -719,7 +732,7 @@ P2 必须同步修改：
 │       EnemyDefinition                 │
 │  ├── id, displayName                  │
 │  ├── hpRange, baseAttack              │
-│  └── decideIntent()                   │
+│  └── chooseMove() -> EnemyMove        │
 └───────────────────────────────────────┘
         │
 添加新敌人只需创建 1 个结构体 + 注册
@@ -728,183 +741,138 @@ P2 必须同步修改：
 ### 新架构设计
 
 ```
-Sources/GameCore/Enemies/
-├── EnemyDefinition.swift         # 敌人定义协议
-├── EnemyRegistry.swift           # 敌人注册表
-├── EnemyPool.swift               # 敌人池（保留，使用注册表）
-├── EnemyIntent.swift             # 意图类型（保留）
-├── Definitions/
-│   ├── Act1/
-│   │   ├── JawWormEnemy.swift    # 下颚虫
-│   │   ├── CultistEnemy.swift    # 信徒
-│   │   ├── LouseEnemies.swift    # 绿虱子、红虱子
-│   │   └── SlimeEnemies.swift    # 酸液史莱姆
-│   ├── Act1Elites/
-│   │   └── ...                   # 精英敌人
-│   └── Act1Boss/
-│       └── ...                   # Boss
-└── [已删除] EnemyKind.swift, EnemyData.swift, EnemyAI.swift, EnemyBehaviors.swift
+Sources/GameCore/
+├── Kernel/
+│   └── IDs.swift                     # EnemyID（强类型，P3 新增）
+│
+├── Enemies/
+│   ├── EnemyDefinition.swift         # 敌人定义协议（数据+AI）
+│   ├── EnemyMove.swift               # 敌人计划行动（intent + effects）
+│   ├── EnemyRegistry.swift           # 注册表：EnemyID -> Definition
+│   ├── EnemyPool.swift               # 遭遇表（只产出 EnemyID）
+│   └── Definitions/
+│       └── Act1/
+│           ├── JawWorm.swift
+│           ├── Cultist.swift
+│           ├── LouseGreen.swift
+│           ├── LouseRed.swift
+│           └── SlimeMediumAcid.swift
+│
+└── Battle/
+    └── BattleEngine.swift            # 破坏性重构：不再持有 enemyAI，不再 switch intent 执行
 ```
 
 ### 协议设计
 
 ```swift
 // ═══════════════════════════════════════════════════════════════
-// EnemyDefinition.swift - 敌人定义协议
+// IDs.swift / EnemyMove.swift / EnemyDefinition.swift（P3 核心接口）
 // ═══════════════════════════════════════════════════════════════
 
-/// 敌人定义协议
-/// 统一敌人的数据和行为
+/// 敌人 ID（强类型，禁止散落字符串）
+public struct EnemyID: Hashable, Sendable, ExpressibleByStringLiteral {
+    public let rawValue: String
+    public init(_ rawValue: String) { self.rawValue = rawValue }
+    public init(stringLiteral value: String) { self.rawValue = value }
+}
+
+/// 敌人意图（仅用于 UI 显示）
+/// 注意：意图不是执行逻辑，执行逻辑靠 effects
+public struct EnemyIntent: Sendable, Equatable {
+    public let icon: String
+    public let text: String
+    public let previewDamage: Int?
+}
+
+/// 敌人计划行动（一次“计划”，包含 intent + effects）
+public struct EnemyMove: Sendable, Equatable {
+    public let intent: EnemyIntent
+    public let effects: [BattleEffect]
+}
+
+/// 敌人定义协议（数据 + AI）
+/// 约束：只能产出 EnemyMove（effects 由 BattleEngine 执行并发事件）
 public protocol EnemyDefinition: Sendable {
-    /// 敌人唯一标识符（如 "jaw_worm", "cultist"）
-    static var id: String { get }
-    
-    /// 显示名称
-    static var displayName: String { get }
-    
-    /// HP 范围
-    static var hpRange: ClosedRange<Int> { get }
-    
-    /// 基础攻击力（用于默认攻击意图）
-    static var baseAttack: Int { get }
-    
-    /// 敌人描述
-    static var description: String { get }
-    
-    /// 敌人类型
-    static var enemyType: EnemyType { get }
-    
-    /// 决定下一个意图
-    /// - Parameters:
-    ///   - enemy: 敌人实体（当前状态）
-    ///   - player: 玩家实体（当前状态）
-    ///   - turn: 当前回合数
-    ///   - lastIntent: 上一个意图（用于避免连续相同行动）
-    ///   - rng: 随机数生成器
-    /// - Returns: 敌人意图
-    static func decideIntent(
-        enemy: Entity,
-        player: Entity,
-        turn: Int,
-        lastIntent: EnemyIntent?,
-        rng: inout SeededRNG
-    ) -> EnemyIntent
-    
-    /// 生成敌人实体
-    static func spawn(rng: inout SeededRNG) -> Entity
-}
+    static var id: EnemyID { get }
+    static var name: String { get }                 // UI 名称（中文）
+    static var hpRange: ClosedRange<Int> { get }    // 生成实例时使用
 
-/// 敌人类型
-public enum EnemyType: String, Sendable {
-    case normal = "普通"
-    case elite = "精英"
-    case boss = "Boss"
-}
-
-// 提供默认实现
-extension EnemyDefinition {
-    public static var enemyType: EnemyType { .normal }
-    
-    public static func spawn(rng: inout SeededRNG) -> Entity {
-        let range = hpRange
-        let hp = range.lowerBound + rng.nextInt(upperBound: range.upperBound - range.lowerBound + 1)
-        return Entity(
-            id: UUID().uuidString,  // 唯一实例 ID
-            name: displayName,
-            maxHP: hp,
-            enemyDefinitionId: id
-        )
-    }
+    /// AI：根据快照选择下一步行动（可使用 rng，但必须把随机结果固化进 effects）
+    static func chooseMove(snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove
 }
 ```
 
 ### 敌人实现示例
 
 ```swift
-// ═══════════════════════════════════════════════════════════════
-// JawWormEnemy.swift - 下颚虫
-// ═══════════════════════════════════════════════════════════════
+// 示例 1：下颚虫（JawWorm）
+// 行为模式（简化版）：攻击（base 11）或给自己加力量（strength +3）
+// 注意：这里的攻击强度修正（力量/虚弱/易伤）由 P2 的状态系统统一在 DamageCalculator 里处理
+public struct JawWorm: EnemyDefinition {
+    public static let id: EnemyID = "jaw_worm"
+    public static let name: String = "下颚虫"
+    public static let hpRange: ClosedRange<Int> = 40...44
 
-/// 下颚虫
-/// 行为模式：咬（11伤害）、嚎叫（+3力量）、猛扑（7伤害）
-public struct JawWormEnemy: EnemyDefinition {
-    public static let id = "jaw_worm"
-    public static let displayName = "下颚虫"
-    public static let hpRange = 40...44
-    public static let baseAttack = 11
-    public static let description = "凶猛的虫类敌人，会嚎叫增强自身力量"
-    
-    public static func decideIntent(
-        enemy: Entity,
-        player: Entity,
-        turn: Int,
-        lastIntent: EnemyIntent?,
-        rng: inout SeededRNG
-    ) -> EnemyIntent {
+    public static func chooseMove(snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {
         let roll = rng.nextInt(upperBound: 100)
-        let damage = baseAttack + enemy.strength
-        
-        if turn == 1 {
-            // 第一回合 75% 咬
-            return roll < 75 ? .attack(damage: damage) : .buff(name: "力量", stacks: 3)
+
+        // 第一回合：75% 攻击，否则加力量
+        if snapshot.turn == 1 {
+            if roll < 75 {
+                return EnemyMove(
+                    intent: EnemyIntent(icon: "⚔️", text: "攻击 11", previewDamage: 11),
+                    effects: [.dealDamage(target: .player, base: 11)]
+                )
+            } else {
+                return EnemyMove(
+                    intent: EnemyIntent(icon: "💪", text: "力量 +3", previewDamage: nil),
+                    effects: [.applyStatus(target: .enemy, statusId: "strength", stacks: 3)]
+                )
+            }
         }
-        
-        // 后续回合
+
+        // 后续回合：45% 攻击、30% 加力量、25% 猛扑（base 7）
         if roll < 45 {
-            return .attack(damage: damage)
+            return EnemyMove(
+                intent: EnemyIntent(icon: "⚔️", text: "攻击 11", previewDamage: 11),
+                effects: [.dealDamage(target: .player, base: 11)]
+            )
         } else if roll < 75 {
-            return .buff(name: "力量", stacks: 3)
+            return EnemyMove(
+                intent: EnemyIntent(icon: "💪", text: "力量 +3", previewDamage: nil),
+                effects: [.applyStatus(target: .enemy, statusId: "strength", stacks: 3)]
+            )
         } else {
-            // 猛扑
-            return .attack(damage: 7 + enemy.strength)
+            return EnemyMove(
+                intent: EnemyIntent(icon: "⚔️", text: "猛扑 7", previewDamage: 7),
+                effects: [.dealDamage(target: .player, base: 7)]
+            )
         }
     }
 }
 
-/// 信徒
-/// 行为模式：第一回合念咒（+3力量），后续攻击
-public struct CultistEnemy: EnemyDefinition {
-    public static let id = "cultist"
-    public static let displayName = "信徒"
-    public static let hpRange = 48...54
-    public static let baseAttack = 6
-    public static let description = "狂热的信徒，会通过仪式增强力量"
-    
-    public static func decideIntent(
-        enemy: Entity,
-        player: Entity,
-        turn: Int,
-        lastIntent: EnemyIntent?,
-        rng: inout SeededRNG
-    ) -> EnemyIntent {
-        if turn == 1 {
-            return .buff(name: "仪式", stacks: 3)
-        }
-        return .attack(damage: baseAttack + enemy.strength)
-    }
-}
+// 示例 2：酸液史莱姆（SlimeMediumAcid）
+// 行为模式（简化版）：攻击（base 10）或“涂抹”（base 7 + 给玩家虚弱 1）
+public struct SlimeMediumAcid: EnemyDefinition {
+    public static let id: EnemyID = "slime_medium_acid"
+    public static let name: String = "酸液史莱姆"
+    public static let hpRange: ClosedRange<Int> = 28...32
 
-/// 绿虱子
-public struct LouseGreenEnemy: EnemyDefinition {
-    public static let id = "louse_green"
-    public static let displayName = "绿虱子"
-    public static let hpRange = 11...17
-    public static let baseAttack = 6
-    public static let description = "小型害虫，偶尔会卷曲增强力量"
-    
-    public static func decideIntent(
-        enemy: Entity,
-        player: Entity,
-        turn: Int,
-        lastIntent: EnemyIntent?,
-        rng: inout SeededRNG
-    ) -> EnemyIntent {
+    public static func chooseMove(snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {
         let roll = rng.nextInt(upperBound: 100)
-        
-        if roll < 75 {
-            return .attack(damage: baseAttack + enemy.strength)
+        if roll < 70 {
+            return EnemyMove(
+                intent: EnemyIntent(icon: "⚔️", text: "攻击 10", previewDamage: 10),
+                effects: [.dealDamage(target: .player, base: 10)]
+            )
         } else {
-            return .buff(name: "卷曲", stacks: 3)
+            return EnemyMove(
+                intent: EnemyIntent(icon: "⚔️💀", text: "涂抹 7 + 虚弱 1", previewDamage: 7),
+                effects: [
+                    .dealDamage(target: .player, base: 7),
+                    .applyStatus(target: .player, statusId: "weak", stacks: 1)
+                ]
+            )
         }
     }
 }
@@ -919,37 +887,17 @@ public struct LouseGreenEnemy: EnemyDefinition {
 
 /// 敌人注册表
 public enum EnemyRegistry {
-    
-    private static let definitions: [String: any EnemyDefinition.Type] = [
-        // Act 1 普通敌人
-        JawWormEnemy.id: JawWormEnemy.self,
-        CultistEnemy.id: CultistEnemy.self,
-        LouseGreenEnemy.id: LouseGreenEnemy.self,
-        LouseRedEnemy.id: LouseRedEnemy.self,
-        SlimeMediumAcidEnemy.id: SlimeMediumAcidEnemy.self,
-        // ... 更多敌人
+
+    private static let defs: [EnemyID: any EnemyDefinition.Type] = [
+        JawWorm.id: JawWorm.self,
+        SlimeMediumAcid.id: SlimeMediumAcid.self,
+        // ... 其余敌人在这里注册（每新增一个敌人，只新增 definition 文件 + 在这里加一行）
     ]
-    
-    /// 根据 ID 获取敌人定义
-    public static func get(_ id: String) -> (any EnemyDefinition.Type)? {
-        definitions[id]
-    }
-    
-    /// 获取所有敌人 ID
-    public static var allEnemyIds: [String] {
-        Array(definitions.keys)
-    }
-    
-    /// 根据类型获取敌人
-    public static func enemies(ofType type: EnemyType) -> [any EnemyDefinition.Type] {
-        definitions.values.filter { $0.enemyType == type }
-    }
-    
-    /// 生成敌人实体
-    public static func spawn(_ id: String, rng: inout SeededRNG) -> Entity? {
-        guard let definition = get(id) else { return nil }
-        return definition.spawn(rng: &rng)
-    }
+
+    public static func get(_ id: EnemyID) -> (any EnemyDefinition.Type)? { defs[id] }
+
+    /// 计划中：用于引擎/测试的强制查找（找不到就直接失败，避免静默 fallback）
+    public static func require(_ id: EnemyID) -> any EnemyDefinition.Type { defs[id]! }
 }
 ```
 
@@ -962,34 +910,28 @@ public enum EnemyRegistry {
 
 /// 第一章敌人池
 public enum Act1EnemyPool {
-    /// 弱敌人 ID 列表
-    public static let weak: [String] = [
-        JawWormEnemy.id,
-        CultistEnemy.id,
-        LouseGreenEnemy.id,
-        LouseRedEnemy.id
+    /// 弱敌人 ID 列表（注意：这里不生成 Entity，只负责“抽到谁”）
+    public static let weak: [EnemyID] = [
+        JawWorm.id,
+        // Cultist.id, LouseGreen.id, LouseRed.id ...
     ]
-    
+
     /// 中等敌人 ID 列表
-    public static let medium: [String] = [
-        SlimeMediumAcidEnemy.id
+    public static let medium: [EnemyID] = [
+        SlimeMediumAcid.id
     ]
-    
+
     /// 所有敌人
-    public static let all: [String] = weak + medium
-    
-    /// 随机选择弱敌人并生成
-    public static func spawnRandomWeak(rng: inout SeededRNG) -> Entity {
-        let index = rng.nextInt(upperBound: weak.count)
-        let id = weak[index]
-        return EnemyRegistry.spawn(id, rng: &rng)!
+    public static let all: [EnemyID] = weak + medium
+
+    /// 随机选择弱敌人（只返回 EnemyID）
+    public static func randomWeak(rng: inout SeededRNG) -> EnemyID {
+        weak[rng.nextInt(upperBound: weak.count)]
     }
-    
-    /// 随机选择任意敌人并生成
-    public static func spawnRandomAny(rng: inout SeededRNG) -> Entity {
-        let index = rng.nextInt(upperBound: all.count)
-        let id = all[index]
-        return EnemyRegistry.spawn(id, rng: &rng)!
+
+    /// 随机选择任意敌人（只返回 EnemyID）
+    public static func randomAny(rng: inout SeededRNG) -> EnemyID {
+        all[rng.nextInt(upperBound: all.count)]
     }
 }
 ```
@@ -997,54 +939,72 @@ public enum Act1EnemyPool {
 ### BattleEngine 修改
 
 ```swift
-// 在 BattleEngine 中使用 EnemyRegistry 获取敌人 AI
-private func decideEnemyIntent() {
-    guard let definitionId = state.enemy.enemyDefinitionId,
-          let definition = EnemyRegistry.get(definitionId) else {
-        // 回退到默认攻击
-        state.enemy.intent = .attack(damage: 6)
-        return
-    }
-    
-    let intent = definition.decideIntent(
-        enemy: state.enemy,
-        player: state.player,
+// BattleEngine（P3 之后）
+// - 不再持有 `enemyAI`
+// - 不再 switch EnemyIntent 来执行动作
+// - 计划阶段 chooseMove（用 rng），执行阶段只 apply effects（不再随机）
+
+private var plannedEnemyMove: EnemyMove?
+
+private func planEnemyMove() {
+    // enemyId 是 Entity 上的稳定 EnemyID（P3 会把 kind 替换掉）
+    let def = EnemyRegistry.require(state.enemy.enemyId!)
+
+    let snapshot = BattleSnapshot(
         turn: state.turn,
-        lastIntent: state.enemy.intent,
-        rng: &rng
+        player: state.player,
+        enemy: state.enemy,
+        energy: state.energy
     )
-    state.enemy.intent = intent
+
+    let move = def.chooseMove(snapshot: snapshot, rng: &rng)
+    state.enemy.intent = move.intent           // 给 UI 显示
+    plannedEnemyMove = move                   // 保存计划，保证可复现
+
+    emit(.enemyIntent(
+        enemyId: state.enemy.id,
+        action: move.intent.text,
+        damage: move.intent.previewDamage ?? 0
+    ))
+}
+
+private func executeEnemyTurn() {
+    guard let move = plannedEnemyMove else { return }
+
+    emit(.enemyAction(enemyId: state.enemy.id, action: move.intent.text))
+    for effect in move.effects {
+        apply(effect)   // apply(effect:) 来自 P1（统一效果执行入口）
+    }
+
+    plannedEnemyMove = nil
 }
 ```
 
-### 实施步骤（修订版）
+### P3 实施步骤
 
-| 步骤 | 内容 | 复杂度 | 预计时间 |
-|------|------|--------|----------|
-| P3.1 | 创建 `EnemyDefinition` 协议 | ⭐ | 15分钟 |
-| P3.2 | 创建 `EnemyRegistry` 注册表 | ⭐ | 15分钟 |
-| P3.3 | 实现 `JawWormEnemy` | ⭐ | 15分钟 |
-| P3.4 | 实现 `CultistEnemy`, `LouseGreenEnemy`, `LouseRedEnemy` | ⭐ | 30分钟 |
-| P3.5 | 实现 `SlimeMediumAcidEnemy` | ⭐ | 15分钟 |
-| P3.6 | 修改 `Entity` 添加 `enemyDefinitionId` | ⭐ | 15分钟 |
-| P3.7 | 重构 `EnemyPool` 使用注册表 | ⭐ | 20分钟 |
-| P3.8 | 重构 `BattleEngine` 使用 `EnemyRegistry` | ⭐⭐ | 30分钟 |
-| P3.9 | 验证所有敌人行为正确 | ⭐ | 20分钟 |
-| P3.10 | 删除旧代码（`EnemyKind`, `EnemyData`, `EnemyAI`, `EnemyBehaviors`） | ⭐ | 10分钟 |
-| P3.11 | 添加 2 个新敌人验证扩展性（如 `FungiBeastEnemy`, `GremlinEnemy`） | ⭐ | 30分钟 |
-| **总计** | | | **~3.5小时** |
+- P3.1 在 `Kernel/IDs.swift` 增加 `EnemyID`（强类型）
+- P3.2 新建 `EnemyIntent`/`EnemyMove`/`EnemyDefinition`/`EnemyRegistry`
+- P3.3 迁移现有 Act1 的敌人实现为 Definition（每个敌人一个文件，输出 `EnemyMove(effects:)`）
+- P3.4 `EnemyPool` 破坏性重写：只返回 `EnemyID`（不生成 `Entity`）
+- P3.5 敌人实例生成：用 `hpRange + rng` 生成 HP，实例 `id` 使用“可复现计数器/组合字符串”，**禁止 UUID/Foundation**
+- P3.6 `Entity` 破坏性改动：`kind: EnemyKind?` → `enemyId: EnemyID?`（并配合 P2 的 `statuses`）
+- P3.7 `BattleEngine` 破坏性改动：
+  - 删除 `enemyAI` 成员与 `EnemyAIFactory`
+  - 增加 `plannedEnemyMove: EnemyMove?`
+  - 回合开始 `planEnemyMove()`，敌人回合执行 `move.effects`（统一走 `apply(effect:)`）
+- P3.8 `GameCLI`/`RunState` 里挑敌人逻辑改为 `EnemyID`（Act1EnemyPool.randomWeak/randomAny）
+- P3.9 添加 2 个新敌人验证扩展性（新增文件 + 注册即可）
+- P3.10 验证：`swift build` + `./.cursor/Scripts/test_game.sh`
 
-### 验收标准
+### P3 验收标准（必须全部通过）
 
-- [ ] 所有 5 种现有敌人迁移到 `EnemyDefinition` 协议
-- [ ] `EnemyRegistry` 正确管理所有敌人定义
-- [ ] `EnemyPool` 使用注册表生成敌人
-- [ ] `BattleEngine` 使用 `EnemyRegistry` 获取敌人 AI
-- [ ] 每种敌人的行为与原来一致
-- [ ] 旧代码已删除：`EnemyKind.swift`, `EnemyData.swift`, `EnemyAI.swift`, `EnemyBehaviors.swift`
-- [ ] 添加 2 个新敌人验证扩展性
-- [ ] 所有测试通过
+- [ ] 代码库中不存在：`EnemyKind.swift`, `EnemyData.swift`, `EnemyAI.swift`, `EnemyBehaviors.swift`, `EnemyAIFactory`
+- [ ] `EnemyRegistry` 使用 `EnemyID` 作为 key，新增敌人只需新增 Definition + 注册
+- [ ] `EnemyPool` 只返回 `EnemyID`（不生成 `Entity`）
+- [ ] `BattleEngine` 不再 switch intent 执行敌人动作（统一执行 move.effects）
+- [ ] 敌人行动的随机性只发生在 plan 阶段（可复现）
 - [ ] `swift build` 成功
+- [ ] `./.cursor/Scripts/test_game.sh` 成功
 
 ---
 
