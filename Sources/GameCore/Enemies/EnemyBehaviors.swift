@@ -10,7 +10,8 @@ public struct JawWormAI: EnemyAI, Sendable {
         rng: inout SeededRNG
     ) -> EnemyIntent {
         let roll = rng.nextInt(upperBound: 100)
-        let baseDamage = 11 + enemy.strength
+        let strength = enemy.statuses.stacks(of: "strength")
+        let baseDamage = 11 + strength
         
         if turn == 1 {
             // 第一回合 75% 咬
@@ -24,7 +25,7 @@ public struct JawWormAI: EnemyAI, Sendable {
             return .buff(name: "力量", stacks: 3)
         } else {
             // 猛扑：造成伤害 + 获得格挡（这里简化为攻击）
-            return .attack(damage: 7 + enemy.strength)
+            return .attack(damage: 7 + strength)
         }
     }
 }
@@ -45,7 +46,8 @@ public struct CultistAI: EnemyAI, Sendable {
             return .buff(name: "仪式", stacks: 3)
         }
         // 后续回合攻击（基础6 + 力量加成）
-        return .attack(damage: 6 + enemy.strength)
+        let strength = enemy.statuses.stacks(of: "strength")
+        return .attack(damage: 6 + strength)
     }
 }
 
@@ -61,7 +63,8 @@ public struct LouseAI: EnemyAI, Sendable {
         rng: inout SeededRNG
     ) -> EnemyIntent {
         let roll = rng.nextInt(upperBound: 100)
-        let baseDamage = 6 + enemy.strength
+        let strength = enemy.statuses.stacks(of: "strength")
+        let baseDamage = 6 + strength
         
         if roll < 75 {
             return .attack(damage: baseDamage)
@@ -83,13 +86,14 @@ public struct SlimeAI: EnemyAI, Sendable {
         rng: inout SeededRNG
     ) -> EnemyIntent {
         let roll = rng.nextInt(upperBound: 100)
-        let baseDamage = 10 + enemy.strength
+        let strength = enemy.statuses.stacks(of: "strength")
+        let baseDamage = 10 + strength
         
         if roll < 70 {
             return .attack(damage: baseDamage)
         } else {
             // 涂抹：攻击 + 施加虚弱
-            return .attackDebuff(damage: 7 + enemy.strength, debuff: "虚弱", stacks: 1)
+            return .attackDebuff(damage: 7 + strength, debuff: "虚弱", stacks: 1)
         }
     }
 }

@@ -113,17 +113,30 @@ public final class BattleEngine: @unchecked Sendable {
     private func calculateDamage(baseDamage: Int, attacker: Entity, defender: Entity) -> Int {
         var damage = baseDamage
         
-        // 力量加成
-        damage += attacker.strength
+        // 应用攻击者的输出伤害修正（按 phase + priority 排序）
+        let attackerModifiers = attacker.statuses.all
+            .compactMap { (id, stacks) -> (phase: ModifierPhase, priority: Int, modify: (Int) -> Int)? in
+                guard let def = StatusRegistry.get(id),
+                      let phase = def.outgoingDamagePhase else { return nil }
+                return (phase, def.priority, { def.modifyOutgoingDamage($0, stacks: stacks) })
+            }
+            .sorted { ($0.phase.rawValue, $0.priority) < ($1.phase.rawValue, $1.priority) }
         
-        // 虚弱减伤（-25%，向下取整）
-        if attacker.weak > 0 {
-            damage = Int(Double(damage) * 0.75)
+        for modifier in attackerModifiers {
+            damage = modifier.modify(damage)
         }
         
-        // 易伤增伤（+50%，向下取整）
-        if defender.vulnerable > 0 {
-            damage = Int(Double(damage) * 1.5)
+        // 应用防御者的输入伤害修正（按 phase + priority 排序）
+        let defenderModifiers = defender.statuses.all
+            .compactMap { (id, stacks) -> (phase: ModifierPhase, priority: Int, modify: (Int) -> Int)? in
+                guard let def = StatusRegistry.get(id),
+                      let phase = def.incomingDamagePhase else { return nil }
+                return (phase, def.priority, { def.modifyIncomingDamage($0, stacks: stacks) })
+            }
+            .sorted { ($0.phase.rawValue, $0.priority) < ($1.phase.rawValue, $1.priority) }
+        
+        for modifier in defenderModifiers {
+            damage = modifier.modify(damage)
         }
         
         return max(0, damage)
@@ -148,17 +161,7 @@ public final class BattleEngine: @unchecked Sendable {
             emit(.blockCleared(target: state.player.name, amount: clearedBlock))
         }
         
-        // 递减玩家状态效果
-        let playerExpired = state.player.tickStatusEffects()
-        for effect in playerExpired {
-            emit(.statusExpired(target: state.player.name, effect: effect))
-        }
-        
-        // 递减敌人状态效果
-        let enemyExpired = state.enemy.tickStatusEffects()
-        for effect in enemyExpired {
-            emit(.statusExpired(target: state.enemy.name, effect: effect))
-        }
+        // P2: 状态递减现在由 processStatusesAtTurnEnd 处理（在回合结束时）
         
         // 抽牌
         drawCards(cardsPerTurn)
@@ -192,6 +195,9 @@ public final class BattleEngine: @unchecked Sendable {
         if handCount > 0 {
             emit(.handDiscarded(count: handCount))
         }
+        
+        // 处理玩家回合结束的状态效果（触发 + 递减）
+        processStatusesAtTurnEnd(for: .player)
         
         emit(.turnEnded(turn: state.turn))
         
@@ -250,10 +256,12 @@ public final class BattleEngine: @unchecked Sendable {
             emit(.blockGained(target: state.enemy.name, amount: block))
             
         case .buff(let name, let stacks):
-            // 增益（目前只支持力量）
+            // 增益（P2：现在使用 StatusContainer）
             if name == "力量" || name == "仪式" || name == "卷曲" {
-                state.enemy.strength += stacks
-                emit(.statusApplied(target: state.enemy.name, effect: name, stacks: stacks))
+                state.enemy.statuses.apply("strength", stacks: stacks)
+                if let def = StatusRegistry.get("strength") {
+                    emit(.statusApplied(target: state.enemy.name, effect: name, stacks: stacks))
+                }
             }
             
         case .unknown:
@@ -270,21 +278,29 @@ public final class BattleEngine: @unchecked Sendable {
             ))
         }
         
+        // 处理敌人回合结束的状态效果（触发 + 递减）
+        processStatusesAtTurnEnd(for: .enemy)
+        
         // 检查玩家是否死亡
         checkBattleEnd()
     }
     
-    /// 对目标施加 Debuff
+    /// 对目标施加 Debuff（P2：现在使用 StatusContainer）
     private func applyDebuff(to target: inout Entity, debuff: String, stacks: Int) {
+        // 将旧的字符串 debuff 映射到 StatusID
+        let statusId: StatusID
         switch debuff {
         case "虚弱":
-            target.weak += stacks
-            emit(.statusApplied(target: target.name, effect: "虚弱", stacks: stacks))
+            statusId = "weak"
         case "易伤":
-            target.vulnerable += stacks
-            emit(.statusApplied(target: target.name, effect: "易伤", stacks: stacks))
+            statusId = "vulnerable"
         default:
-            break
+            return // 未知 debuff，忽略
+        }
+        
+        target.statuses.apply(statusId, stacks: stacks)
+        if let def = StatusRegistry.get(statusId) {
+            emit(.statusApplied(target: target.name, effect: def.name, stacks: stacks))
         }
     }
     
@@ -417,62 +433,48 @@ public final class BattleEngine: @unchecked Sendable {
     
     /// 应用格挡效果
     private func applyBlock(target: EffectTarget, base: Int) {
+        var block = base
+        
+        // 应用格挡修正（按 phase + priority 排序）
+        let entity = target == .player ? state.player : state.enemy
+        let modifiers = entity.statuses.all
+            .compactMap { (id, stacks) -> (phase: ModifierPhase, priority: Int, modify: (Int) -> Int)? in
+                guard let def = StatusRegistry.get(id),
+                      let phase = def.blockPhase else { return nil }
+                return (phase, def.priority, { def.modifyBlock($0, stacks: stacks) })
+            }
+            .sorted { ($0.phase.rawValue, $0.priority) < ($1.phase.rawValue, $1.priority) }
+        
+        for modifier in modifiers {
+            block = modifier.modify(block)
+        }
+        
         switch target {
         case .player:
-            state.player.gainBlock(base)
-            battleStats.totalBlockGained += base
-            emit(.blockGained(target: state.player.name, amount: base))
+            state.player.gainBlock(block)
+            battleStats.totalBlockGained += block
+            emit(.blockGained(target: state.player.name, amount: block))
         case .enemy:
-            state.enemy.gainBlock(base)
-            emit(.blockGained(target: state.enemy.name, amount: base))
+            state.enemy.gainBlock(block)
+            emit(.blockGained(target: state.enemy.name, amount: block))
         }
     }
     
     /// 应用状态效果
     private func applyStatusEffect(target: EffectTarget, statusId: StatusID, stacks: Int) {
-        let entityName: String
-        
-        // TODO(P2): This hardcoded status handling will be replaced with StatusRegistry
-        // in Phase 2 (Status Effect System Protocol-Driven)
-        // Currently using hardcoded string matching as a temporary solution
+        // P2: Now using StatusRegistry!
+        guard let def = StatusRegistry.get(statusId) else {
+            // Unknown status - skip silently
+            return
+        }
         
         switch target {
         case .player:
-            entityName = state.player.name
-            // 根据 statusId 应用状态（目前硬编码，P2 会重构）
-            switch statusId.rawValue {
-            case "vulnerable":
-                state.player.vulnerable += stacks
-                emit(.statusApplied(target: entityName, effect: "易伤", stacks: stacks))
-            case "weak":
-                state.player.weak += stacks
-                emit(.statusApplied(target: entityName, effect: "虚弱", stacks: stacks))
-            case "strength":
-                state.player.strength += stacks
-                emit(.statusApplied(target: entityName, effect: "力量", stacks: stacks))
-            default:
-                // Silently ignore unknown status effects for now
-                // P2 will add proper error handling via StatusRegistry
-                break
-            }
+            state.player.statuses.apply(statusId, stacks: stacks)
+            emit(.statusApplied(target: state.player.name, effect: def.name, stacks: stacks))
         case .enemy:
-            entityName = state.enemy.name
-            // 根据 statusId 应用状态（目前硬编码，P2 会重构）
-            switch statusId.rawValue {
-            case "vulnerable":
-                state.enemy.vulnerable += stacks
-                emit(.statusApplied(target: entityName, effect: "易伤", stacks: stacks))
-            case "weak":
-                state.enemy.weak += stacks
-                emit(.statusApplied(target: entityName, effect: "虚弱", stacks: stacks))
-            case "strength":
-                state.enemy.strength += stacks
-                emit(.statusApplied(target: entityName, effect: "力量", stacks: stacks))
-            default:
-                // Silently ignore unknown status effects for now
-                // P2 will add proper error handling via StatusRegistry
-                break
-            }
+            state.enemy.statuses.apply(statusId, stacks: stacks)
+            emit(.statusApplied(target: state.enemy.name, effect: def.name, stacks: stacks))
         }
     }
     
@@ -521,6 +523,60 @@ public final class BattleEngine: @unchecked Sendable {
         state.discardPile.removeAll()
         
         emit(.shuffled(count: count))
+    }
+    
+    // MARK: Status Processing
+    
+    /// 处理实体的回合结束状态效果（触发 + 递减）
+    private func processStatusesAtTurnEnd(for target: EffectTarget) {
+        let entity = target == .player ? state.player : state.enemy
+        let snapshot = BattleSnapshot(
+            turn: state.turn,
+            player: state.player,
+            enemy: state.enemy,
+            energy: state.energy
+        )
+        
+        // 1) 触发所有状态的 onTurnEnd 效果（如中毒造成伤害）
+        for (statusId, stacks) in entity.statuses.all {
+            guard let def = StatusRegistry.get(statusId) else { continue }
+            let effects = def.onTurnEnd(owner: target, stacks: stacks, snapshot: snapshot)
+            for effect in effects {
+                apply(effect)
+            }
+        }
+        
+        // 2) 递减状态层数
+        var expired: [StatusID] = []
+        for (statusId, stacks) in entity.statuses.all {
+            guard let def = StatusRegistry.get(statusId) else { continue }
+            
+            switch def.decay {
+            case .none:
+                // 不递减（如力量）
+                break
+            case .turnEnd(let decreaseBy):
+                let newStacks = stacks - decreaseBy
+                
+                switch target {
+                case .player:
+                    state.player.statuses.set(statusId, stacks: newStacks)
+                case .enemy:
+                    state.enemy.statuses.set(statusId, stacks: newStacks)
+                }
+                
+                if newStacks <= 0 {
+                    expired.append(statusId)
+                }
+            }
+        }
+        
+        // 3) 发出状态过期事件
+        for statusId in expired {
+            guard let def = StatusRegistry.get(statusId) else { continue }
+            let entityName = target == .player ? state.player.name : state.enemy.name
+            emit(.statusExpired(target: entityName, effect: def.name))
+        }
     }
     
     // MARK: Battle End Check

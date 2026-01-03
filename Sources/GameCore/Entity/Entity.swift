@@ -7,10 +7,8 @@ public struct Entity: Sendable {
     public var currentHP: Int
     public var block: Int
     
-    // 状态效果（回合数）
-    public var vulnerable: Int = 0   // 易伤：受到伤害 +50%
-    public var weak: Int = 0         // 虚弱：造成伤害 -25%
-    public var strength: Int = 0     // 力量：攻击伤害 +N
+    // 状态效果容器（P2 重构：使用 StatusContainer）
+    public var statuses: StatusContainer = StatusContainer()
     
     /// 敌人种类（仅敌人使用，玩家为 nil）
     public let kind: EnemyKind?
@@ -24,7 +22,7 @@ public struct Entity: Sendable {
     
     /// 是否有任何状态效果
     public var hasAnyStatus: Bool {
-        vulnerable > 0 || weak > 0 || strength != 0
+        statuses.hasAny
     }
     
     /// 创建玩家实体
@@ -34,9 +32,6 @@ public struct Entity: Sendable {
         self.maxHP = maxHP
         self.currentHP = maxHP
         self.block = 0
-        self.vulnerable = 0
-        self.weak = 0
-        self.strength = 0
         self.kind = nil
         self.intent = .unknown
     }
@@ -48,35 +43,8 @@ public struct Entity: Sendable {
         self.maxHP = maxHP
         self.currentHP = maxHP
         self.block = 0
-        self.vulnerable = 0
-        self.weak = 0
-        self.strength = 0
         self.kind = kind
         self.intent = .unknown
-    }
-    
-    /// 回合结束时递减状态效果
-    /// - Returns: 过期的状态效果列表
-    public mutating func tickStatusEffects() -> [String] {
-        var expired: [String] = []
-        
-        if vulnerable > 0 {
-            vulnerable -= 1
-            if vulnerable == 0 {
-                expired.append("易伤")
-            }
-        }
-        
-        if weak > 0 {
-            weak -= 1
-            if weak == 0 {
-                expired.append("虚弱")
-            }
-        }
-        
-        // strength 不递减（永久效果）
-        
-        return expired
     }
     
     /// 受到伤害（先扣格挡再扣血）

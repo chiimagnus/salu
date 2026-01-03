@@ -187,18 +187,21 @@ enum BattleScreen {
     private static func buildStatusLine(entity: Entity) -> String {
         var parts: [String] = []
         
-        if entity.vulnerable > 0 {
-            parts.append("\(Terminal.red)💔易伤\(entity.vulnerable)\(Terminal.reset)")
-        }
-        
-        if entity.weak > 0 {
-            parts.append("\(Terminal.yellow)😵虚弱\(entity.weak)\(Terminal.reset)")
-        }
-        
-        if entity.strength > 0 {
-            parts.append("\(Terminal.green)💪力量+\(entity.strength)\(Terminal.reset)")
-        } else if entity.strength < 0 {
-            parts.append("\(Terminal.dim)💪力量\(entity.strength)\(Terminal.reset)")
+        // P2: 使用 StatusRegistry 驱动状态显示
+        for (statusId, stacks) in entity.statuses.all {
+            guard let def = StatusRegistry.get(statusId) else { continue }
+            
+            let color = def.isPositive ? Terminal.green : Terminal.red
+            let stackDisplay: String
+            
+            // 对于永久状态（不递减），显示带符号
+            if case .none = def.decay {
+                stackDisplay = stacks >= 0 ? "+\(stacks)" : "\(stacks)"
+            } else {
+                stackDisplay = "\(stacks)"
+            }
+            
+            parts.append("\(color)\(def.icon)\(def.name)\(stackDisplay)\(Terminal.reset)")
         }
         
         return parts.joined(separator: " ")
