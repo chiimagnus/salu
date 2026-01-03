@@ -11,13 +11,12 @@
 - Pull Request 到 `main` 或 `develop` 分支
 
 **功能：**
-- 在 Ubuntu 和 macOS 上运行测试
+- 在 macOS 上运行测试
 - 运行 `.cursor/Scripts/test_game.sh all`
 - 上传 Debug 版本二进制文件（保留 7 天）
 
 **Debug 构建产物：**
 测试通过后，会上传 Debug 版本的可执行文件作为 Artifacts：
-- `salu-debug-linux` - Linux Debug 版本
 - `salu-debug-macos` - macOS Debug 版本
 
 这些文件可以在 Actions 运行记录页面底部的 "Artifacts" 区域下载，用于临时调试或分享。7 天后自动删除。
@@ -37,12 +36,11 @@
 
 **功能：**
 - 构建 Release 版本
-- 为 Linux 和 macOS 创建二进制文件
+- 为 macOS 创建二进制文件
 - 创建 GitHub Release
 - 上传构建产物
 
 **产物：**
-- `salu-linux-x64.tar.gz` - Linux x64 版本
 - `salu-macos-x64.tar.gz` - macOS x64 版本
 
 ## 使用说明

@@ -12,10 +12,7 @@ permissions:
 jobs:
   test:
     name: Run Tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
+    runs-on: macos-latest
 
     steps:
       - name: Checkout code
@@ -35,17 +32,8 @@ jobs:
       - name: Run all tests
         run: ./.cursor/Scripts/test_game.sh all
 
-      # 上传构建产物
-      - name: Upload build artifacts (Linux)
-        if: success() && matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: salu-debug-linux
-          path: .build/debug/GameCLI
-          retention-days: 7
-
-      - name: Upload build artifacts (macOS)
-        if: success() && matrix.os == 'macos-latest'
+      - name: Upload build artifacts
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: salu-debug-macos
