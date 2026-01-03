@@ -1595,3 +1595,27 @@ public protocol RunSaveStore: Sendable {
 | | | - 完善遗物系统设计 |
 | | | - 添加详细检查清单 |
 
+
+## P5 实施总结 ✅
+
+> **完成日期**: 2026-01-03  
+> **状态**: ✅ 完成并通过所有测试
+
+**实施内容**:
+- ✅ 创建 `MapGenerating` 协议和 `BranchingMapGenerator` 默认实现
+- ✅ 创建 `RoomHandling` 协议和 `RoomContext`
+- ✅ 创建 `RoomHandlerRegistry`
+- ✅ 实现 5 个房间 handler: Start, Battle, Elite, Rest, Boss
+- ✅ 重构 `GameCLI.runLoop`:
+  - 移除 `switch selectedNode.roomType` ✅
+  - 移除 3 个私有方法 (handleBattleNode, handleRestNode, handleBossNode) ✅  
+  - 使用 registry-based handler selection ✅
+- ✅ 所有验收标准通过
+- ✅ 所有测试通过（6/6 套件）
+
+**架构改进**:
+- **Before**: GameCLI.runLoop 包含 80+ 行 switch 分支 + 3 个私有方法（95+ 行）
+- **After**: 使用 registry 选择 handler，房间逻辑封装在 5 个独立文件中
+
+**测试结果**: 6/6 测试套件通过，无编译错误
+

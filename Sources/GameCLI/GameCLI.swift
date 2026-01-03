@@ -153,6 +153,28 @@ struct GameCLI {
     static func runLoop() {
         guard var runState = currentRunState else { return }
         
+        // 创建房间处理器注册表
+        let registry = RoomHandlerRegistry.makeDefault()
+        
+        // 创建房间上下文
+        let context = RoomContext(
+            appendEvents: { events in
+                recentEvents.removeAll()
+                currentMessage = nil
+                appendEvents(events)
+            },
+            clearEvents: {
+                recentEvents.removeAll()
+                currentMessage = nil
+            },
+            battleLoop: { engine, seed in
+                battleLoop(engine: engine, seed: seed)
+            },
+            createEnemy: { enemyId, rng in
+                createEnemy(enemyId: enemyId, rng: &rng)
+            }
+        )
+        
         while !runState.isOver {
             // 显示地图
             Screens.showMap(runState: runState)
@@ -190,35 +212,24 @@ struct GameCLI {
                 continue
             }
             
-            // 根据房间类型处理
-            switch selectedNode.roomType {
-            case .start:
-                // 起点，直接完成
-                runState.completeCurrentNode()
+            // 使用 handler 处理房间（消除 switch 分支）
+            guard let handler = registry.handler(for: selectedNode.roomType) else {
+                // 未注册的房间类型，跳过
+                continue
+            }
+            
+            let result = handler.run(node: selectedNode, runState: &runState, context: context)
+            
+            // 根据结果更新冒险状态
+            switch result {
+            case .completedNode:
+                // 节点完成，继续冒险
+                break
                 
-            case .battle, .elite:
-                // 战斗节点
-                let won = handleBattleNode(runState: &runState, isElite: selectedNode.roomType == .elite)
-                if !won {
-                    // 战斗失败，冒险结束
-                    runState.isOver = true
-                    runState.won = false
-                }
-                
-            case .rest:
-                // 休息节点
-                handleRestNode(runState: &runState)
-                
-            case .boss:
-                // Boss 战斗
-                let won = handleBossNode(runState: &runState)
-                if won {
-                    runState.isOver = true
-                    runState.won = true
-                } else {
-                    runState.isOver = true
-                    runState.won = false
-                }
+            case .runEnded(let won):
+                // 冒险结束
+                runState.isOver = true
+                runState.won = won
             }
             
             // 更新全局状态
@@ -228,111 +239,6 @@ struct GameCLI {
         // 冒险结束
         showRunResult(runState: runState)
         currentRunState = nil
-    }
-    
-    /// 处理战斗节点
-    private static func handleBattleNode(runState: inout RunState, isElite: Bool) -> Bool {
-        // 使用当前 RNG 状态创建新的种子
-        let battleSeed = runState.seed &+ UInt64(runState.currentRow) &* 1000
-        
-        // 选择敌人
-        var rng = SeededRNG(seed: battleSeed)
-        let enemyId: EnemyID
-        if isElite {
-            // 精英战斗：使用 medium 池
-            enemyId = Act1EnemyPool.randomAny(rng: &rng)
-        } else {
-            // 普通战斗
-            enemyId = Act1EnemyPool.randomWeak(rng: &rng)
-        }
-        let enemy = createEnemy(enemyId: enemyId, rng: &rng)
-        
-        // 创建战斗引擎（使用冒险中的玩家状态和遗物）
-        let engine = BattleEngine(
-            player: runState.player,
-            enemy: enemy,
-            deck: runState.deck,
-            relicManager: runState.relicManager,
-            seed: battleSeed
-        )
-        engine.startBattle()
-        
-        // 清空事件
-        recentEvents.removeAll()
-        currentMessage = nil
-        appendEvents(engine.events)
-        engine.clearEvents()
-        
-        // 战斗循环
-        battleLoop(engine: engine, seed: battleSeed)
-        
-        // 更新玩家状态
-        runState.updateFromBattle(playerHP: engine.state.player.currentHP)
-        
-        // 如果胜利，完成节点
-        if engine.state.playerWon == true {
-            runState.completeCurrentNode()
-            return true
-        }
-        
-        return false
-    }
-    
-    /// 处理休息节点
-    private static func handleRestNode(runState: inout RunState) {
-        Screens.showRestOptions(runState: runState)
-        
-        // 等待输入
-        _ = readLine()
-        
-        // 执行休息
-        let healed = runState.restAtNode()
-        
-        // 显示结果
-        Screens.showRestResult(
-            healedAmount: healed,
-            newHP: runState.player.currentHP,
-            maxHP: runState.player.maxHP
-        )
-        
-        _ = readLine()
-        
-        // 完成节点
-        runState.completeCurrentNode()
-    }
-    
-    /// 处理 Boss 节点
-    private static func handleBossNode(runState: inout RunState) -> Bool {
-        // Boss 战斗使用特殊种子
-        let bossSeed = runState.seed &+ 99999
-        
-        // 创建 Boss 敌人（目前使用 slimeMediumAcid 作为临时 Boss）
-        var rng = SeededRNG(seed: bossSeed)
-        let enemy = createEnemy(enemyId: "slime_medium_acid", rng: &rng)
-        
-        // 创建战斗引擎（使用冒险中的玩家状态和遗物）
-        let engine = BattleEngine(
-            player: runState.player,
-            enemy: enemy,
-            deck: runState.deck,
-            relicManager: runState.relicManager,
-            seed: bossSeed
-        )
-        engine.startBattle()
-        
-        // 清空事件
-        recentEvents.removeAll()
-        currentMessage = nil
-        appendEvents(engine.events)
-        engine.clearEvents()
-        
-        // 战斗循环
-        battleLoop(engine: engine, seed: bossSeed)
-        
-        // 更新玩家状态
-        runState.updateFromBattle(playerHP: engine.state.player.currentHP)
-        
-        return engine.state.playerWon == true
     }
     
     /// 显示冒险结果
