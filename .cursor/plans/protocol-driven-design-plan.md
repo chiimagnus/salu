@@ -10,6 +10,15 @@
 
 本计划将 Salu 项目从**枚举+Switch**模式重构为**协议驱动开发（Protocol-Oriented Programming）**模式，以支持更灵活的扩展性，便于添加更多卡牌和敌人。
 
+### 文档关系：`architecture-design.md` 要不要合并？
+
+- **`protocol-driven-design-plan.md`（本文）**：协议驱动重构的**实施主文档**（按 P1~P7 执行、可直接落代码）
+- **`architecture-design.md`**：产品/系统的**宏观架构与功能愿景**（偏“是什么”）
+
+建议做法（默认）：
+- **不全文合并**，只做 **互相引用 + 对齐关键结论**，避免出现两套冲突的路线图编号
+- 如果你更想要“单文档单真相”，我也可以把 `architecture-design.md` 的“目标架构/模块拆分/关键决策”提炼进本文的附录，并在 `architecture-design.md` 里改成只保留链接
+
 ---
 
 ## 🎯 总体目标：把“整个项目”重构为协议驱动（破坏性）
@@ -56,9 +65,9 @@
 - “定义层”只产出 `Effect` 描述，不直接改 `BattleState/RunState`
 - 只有 Engine（BattleEngine/RunEngine）能执行效果并发出事件
 
-#### 3) 统一触发点：`BattleHook` / `RunHook`
+#### 3) 统一触发点：`BattleTrigger` / `RunTrigger`
 
-所有“被动系统”（状态、遗物、一些敌人被动）通过 hook 接入：
+所有“被动系统”（状态、遗物、一些敌人被动）通过 trigger 接入：
 
 - `onBattleStart / onTurnStart / onCardPlayed / onDamageDealt / onBattleEnd ...`
 - Hook 的返回值同样是 `BattleEffect`（由引擎执行）
@@ -142,8 +151,8 @@ GameCore（逻辑层）
 ├────────────────────────────────────────────────────────────────┤
 │  P5: Run/房间/地图流程协议化           ⭐⭐ 重要               │
 │  ├── RoomType 保留 enum，但用 Registry/Handler 消灭 CLI switch   │
-│  ├── RunEngine（纯逻辑状态机）+ RunTrigger/RunEffect             │
-│  └── MapGenerator 策略协议（Act/难度可扩展）                     │
+│  ├── RunSeedStrategy（统一 battleSeed/bossSeed 派生）            │
+│  └── MapGenerating（地图生成策略协议，Act/难度可扩展）            │
 ├────────────────────────────────────────────────────────────────┤
 │  P6: 持久化与 I/O 协议化              ⭐⭐ 重要               │
 │  ├── HistoryStore / RunSaveStore 协议（GameCore 定义）           │
@@ -161,7 +170,7 @@ GameCore（逻辑层）
 
 ---
 
-## ⚠️ 框架级约束（P1 ~ P6 都必须遵守）
+## ⚠️ 框架级约束（P1 ~ P7 都必须遵守）
 
 ### 约束 1：效果统一（BattleEffect / RunEffect）
 
@@ -1346,6 +1355,86 @@ public protocol BattleHistoryStore: Sendable {
 - [ ] `swift build` 成功
 - [ ] `./.cursor/Scripts/test_game.sh` 成功
 
+---
+
+## P7: Run 存档系统（Save/Load）⭐⭐
+
+### 目标
+
+- 支持 **“继续上次冒险”**（主菜单入口）
+- 存档是 **Run 维度**（先不做 mid-battle 存档，避免需要序列化 BattleState）
+- 存档不做向后兼容：版本不匹配就提示“存档已过期，需要重新开局”（符合破坏性策略）
+
+### 新架构设计
+
+```
+Sources/GameCore/
+└── Run/
+    ├── RunSnapshot.swift              # Codable 快照（P7 新增）
+    └── RunSaveVersion.swift           # 版本号（P7 新增）
+
+Sources/GameCLI/
+└── Persistence/
+    └── FileRunSaveStore.swift         # RunSaveStore 文件实现（P7 落地）
+```
+
+### 关键数据结构（最小示例）
+
+```swift
+// GameCore/Run/RunSaveVersion.swift
+public enum RunSaveVersion {
+    public static let current = 1
+}
+
+// GameCore/Run/RunSnapshot.swift
+public struct RunSnapshot: Codable, Sendable {
+    public let version: Int
+    public let seed: UInt64
+    public let floor: Int
+
+    // map / node
+    public let map: [MapNode]
+    public let currentNodeId: String?
+
+    // player / deck
+    public let player: Entity
+    public let deck: [Card]
+
+    // relics（P4 后加入）
+    public let relicIds: [RelicID]
+
+    // 说明：如果后续引入 run-level RNG（奖励/事件/商店），需要把 RNG state 一并放进 snapshot
+}
+
+// GameCore/Persistence/RunSaveStore.swift（P6 已建协议，这里只说明用途）
+public protocol RunSaveStore: Sendable {
+    func load() throws -> RunSnapshot?
+    func save(_ snapshot: RunSnapshot) throws
+    func clear() throws
+}
+```
+
+### 触发时机（建议）
+
+- **节点完成后**（`RunState.completeCurrentNode()` 之后）自动保存
+- **战斗胜利后**（更新 playerHP、完成节点后）自动保存
+- **冒险结束**（通关/死亡）清除存档（可选）
+
+### 实施步骤
+
+- P7.1 在 GameCore 新增 `RunSnapshot`（Codable）与 `RunSaveVersion`
+- P7.2 在 GameCLI 实现 `FileRunSaveStore`（读写 JSON）
+- P7.3 主菜单新增 “继续上次冒险”（若无存档则隐藏/置灰）
+- P7.4 `GameCLI.runLoop`：在关键节点自动 `save(snapshot)`；在 run 结束时按策略清理
+- P7.5 验证：退出程序 → 再次启动 → 可继续同一张地图同一套 deck/hp 进度
+
+### 验收标准（必须全部通过）
+
+- [ ] 主菜单可“继续上次冒险”
+- [ ] 存档版本不匹配时有明确提示，并不会崩溃
+- [ ] `swift build` 成功
+- [ ] `./.cursor/Scripts/test_game.sh` 成功
+
 ## ⚠️ 风险与注意事项
 
 ### 1. 破坏性重构影响面（必须接受）
@@ -1373,6 +1462,7 @@ public protocol BattleHistoryStore: Sendable {
    - P4 后：验证遗物触发和效果
    - P5 后：地图选择→房间执行→通关/失败流程（确认 runLoop 不再 switch roomType）
    - P6 后：历史记录读写/清空正常（确认无 `HistoryManager.shared`）
+   - P7 后：继续冒险/存档版本过期提示/自动保存时机正确
 
 ---
 
@@ -1412,6 +1502,11 @@ public protocol BattleHistoryStore: Sendable {
 - [ ] 代码库中不存在 `HistoryManager.shared`
 - [ ] History 读写通过 `BattleHistoryStore` 注入（可替换 mock）
 - [ ] 设置菜单（history/stats/clear）功能正常
+
+### P7 完成后检查
+- [ ] 主菜单存在“继续上次冒险”（无存档时行为明确：隐藏/置灰/提示）
+- [ ] 节点完成后会自动保存（退出重进仍保持 map/deck/hp/进度）
+- [ ] 存档版本不匹配有明确提示，不会崩溃
 
 ---
 
