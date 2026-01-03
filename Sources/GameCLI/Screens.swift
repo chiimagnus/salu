@@ -11,6 +11,20 @@ enum Screens {
         MainMenuScreen.show()
     }
     
+    // MARK: - 地图屏幕
+    
+    static func showMap(runState: RunState, message: String? = nil) {
+        MapScreen.show(runState: runState, message: message)
+    }
+    
+    static func showRestOptions(runState: RunState) {
+        MapScreen.showRestOptions(runState: runState)
+    }
+    
+    static func showRestResult(healedAmount: Int, newHP: Int, maxHP: Int) {
+        MapScreen.showRestResult(healedAmount: healedAmount, newHP: newHP, maxHP: maxHP)
+    }
+    
     // MARK: - 设置菜单
     
     static func showSettingsMenu() {
