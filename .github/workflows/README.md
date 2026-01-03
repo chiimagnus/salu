@@ -10,12 +10,8 @@
 - Push 到 `main` 或 `develop` 分支
 - Pull Request 到 `main` 或 `develop` 分支
 
-**支持平台：**
-- Ubuntu
-- macOS
-- Windows
-
 **功能：**
+- 在 Ubuntu、macOS 和 Windows 上运行测试
 - Unix 系统运行 `.cursor/Scripts/test_game.sh all`
 - Windows 系统运行编译测试
 - 上传 Debug 版本二进制文件（保留 7 天）
@@ -43,7 +39,7 @@
 
 **功能：**
 - 构建 Release 版本
-- 为 Linux、macOS 和 Windows 创建二进制文件
+- 为 Linux 和 macOS 创建二进制文件
 - 创建 GitHub Release
 - 上传构建产物
 
@@ -102,7 +98,7 @@ https://github.com/chiimagnus/salu/actions
 ## 依赖项
 
 所有工作流使用：
-- **Swift 版本**: 5.9
+- **Swift 版本**: 6.2
 - **Actions**: 
   - `actions/checkout@v4` - 检出代码
   - `swift-actions/setup-swift@v2` - 设置 Swift 环境
