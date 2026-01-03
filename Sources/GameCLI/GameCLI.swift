@@ -138,25 +138,198 @@ struct GameCLI {
     // MARK: - Battle
     
     static func startNewBattle() {
+        startNewRun()
+    }
+    
+    // MARK: - Run (Adventure)
+    
+    static func startNewRun() {
         let seed = parseSeed(from: CommandLine.arguments)
         
-        // 初始化战斗引擎
-        let engine = BattleEngine(seed: seed)
-        engine.startBattle()
+        // 初始化冒险管理器
+        let runManager = RunManager(seed: seed)
         
         // 清空之前的事件
         recentEvents.removeAll()
         currentMessage = nil
         
-        // 收集初始事件
-        appendEvents(engine.events)
-        engine.clearEvents()
-        
-        // 直接进入游戏主循环
-        gameLoop(engine: engine, seed: seed)
+        // 进入冒险主循环
+        runLoop(runManager: runManager, seed: seed)
     }
     
-    // MARK: - Game Loop
+    // MARK: - Run Loop
+    
+    static func runLoop(runManager: RunManager, seed: UInt64) {
+        while !runManager.runState.isRunOver {
+            // 显示地图
+            Screens.showMap(nodes: runManager.runState.nodes, paths: runManager.runState.paths)
+            _ = readLine()
+            
+            // 获取当前房间类型
+            let roomType = runManager.enterCurrentRoom()
+            
+            switch roomType {
+            case .battle:
+                // 进行战斗
+                let engine = runManager.createBattleForCurrentRoom()
+                engine.startBattle()
+                
+                // 清空之前的事件
+                recentEvents.removeAll()
+                currentMessage = nil
+                
+                // 收集初始事件
+                appendEvents(engine.events)
+                engine.clearEvents()
+                
+                // 进入战斗循环
+                battleLoop(engine: engine, seed: seed)
+                
+                // 战斗结束后更新玩家状态
+                if engine.state.playerWon == true {
+                    runManager.updatePlayerAfterBattle(engine.state)
+                    runManager.proceedToNextRoom()
+                } else {
+                    // 玩家失败，冒险结束
+                    runManager.endRunAsDefeat()
+                }
+                
+            case .rest:
+                // 休息功能暂未实现，跳过
+                runManager.proceedToNextRoom()
+                
+            case .boss:
+                // Boss 战斗暂时当作普通战斗
+                let engine = runManager.createBattleForCurrentRoom()
+                engine.startBattle()
+                
+                recentEvents.removeAll()
+                currentMessage = nil
+                
+                appendEvents(engine.events)
+                engine.clearEvents()
+                
+                battleLoop(engine: engine, seed: seed)
+                
+                if engine.state.playerWon == true {
+                    runManager.updatePlayerAfterBattle(engine.state)
+                    runManager.endRunAsVictory()
+                } else {
+                    runManager.endRunAsDefeat()
+                }
+            }
+        }
+        
+        // 冒险结束
+        if runManager.runState.won {
+            Terminal.clear()
+            print("""
+            \(Terminal.bold)\(Terminal.green)
+            ╔═══════════════════════════════════════════╗
+            ║              🎉 胜利！                    ║
+            ║         你完成了整个冒险！                ║
+            ╚═══════════════════════════════════════════╝
+            \(Terminal.reset)
+            """)
+        } else {
+            Terminal.clear()
+            print("""
+            \(Terminal.bold)\(Terminal.red)
+            ╔═══════════════════════════════════════════╗
+            ║              💀 失败                      ║
+            ║         你的冒险到此结束...               ║
+            ╚═══════════════════════════════════════════╝
+            \(Terminal.reset)
+            """)
+        }
+        
+        print("\n\(Terminal.dim)按 Enter 返回主菜单...\(Terminal.reset)")
+        _ = readLine()
+    }
+    
+    // MARK: - Battle Loop
+    
+    static func battleLoop(engine: BattleEngine, seed: UInt64) {
+        while !engine.state.isOver {
+            // 刷新整个屏幕
+            ScreenRenderer.renderBattleScreen(
+                engine: engine,
+                seed: seed,
+                events: recentEvents,
+                message: currentMessage,
+                showEventLog: showEventLog
+            )
+            
+            // 读取玩家输入
+            guard let input = readLine()?.trimmingCharacters(in: .whitespaces) else {
+                // EOF 或输入关闭，退出游戏
+                return
+            }
+            
+            // 清除之前的消息
+            currentMessage = nil
+            
+            // 处理输入
+            switch input.lowercased() {
+            case "q":
+                // 返回主菜单而不是退出
+                return
+                
+            case "h", "help":
+                Screens.showHelp()
+                _ = readLine()
+                continue
+                
+            case "l", "log":
+                // 切换事件日志显示
+                showEventLog.toggle()
+                continue
+                
+            default:
+                break
+            }
+            
+            guard let number = Int(input) else {
+                currentMessage = "\(Terminal.red)⚠️ 请输入有效数字，输入 h 查看帮助\(Terminal.reset)"
+                continue
+            }
+            
+            if number == 0 {
+                engine.handleAction(.endTurn)
+            } else if number >= 1, number <= engine.state.hand.count {
+                engine.handleAction(.playCard(handIndex: number - 1))
+            } else {
+                currentMessage = "\(Terminal.red)⚠️ 无效选择: 1-\(engine.state.hand.count) / 0\(Terminal.reset)"
+                continue
+            }
+            
+            // 收集新事件
+            appendEvents(engine.events)
+            engine.clearEvents()
+        }
+        
+        // 战斗结束 - 显示结果但不保存历史记录（整个冒险结束后再保存）
+        if engine.state.playerWon == true {
+            Terminal.clear()
+            print("""
+            \(Terminal.bold)\(Terminal.green)
+            ╔═══════════════════════════════════════════╗
+            ║              ⚔️ 战斗胜利！                ║
+            ╚═══════════════════════════════════════════╝
+            \(Terminal.reset)
+            
+            生命值: \(engine.state.player.currentHP)/\(engine.state.player.maxHP)
+            
+            \(Terminal.dim)按 Enter 继续...\(Terminal.reset)
+            """)
+        } else {
+            Screens.showDefeat(state: engine.state)
+        }
+        
+        _ = readLine()
+    }
+    
+    // MARK: - Game Loop (已弃用，保留用于向后兼容)
     
     static func gameLoop(engine: BattleEngine, seed: UInt64) {
         while !engine.state.isOver {

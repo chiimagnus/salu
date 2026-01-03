@@ -50,4 +50,16 @@ public final class RunManager: @unchecked Sendable {
     public func proceedToNextRoom() {
         runState.moveToNextNode()
     }
+    
+    /// 结束冒险（失败）
+    public func endRunAsDefeat() {
+        runState.isRunOver = true
+        runState.won = false
+    }
+    
+    /// 结束冒险（胜利）
+    public func endRunAsVictory() {
+        runState.isRunOver = true
+        runState.won = true
+    }
 }

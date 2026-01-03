@@ -54,4 +54,10 @@ enum Screens {
     static func showStatistics() {
         StatisticsScreen.show()
     }
+    
+    // MARK: - 地图屏幕
+    
+    static func showMap(nodes: [MapNode], paths: [MapPath]) {
+        MapScreen.show(nodes: nodes, paths: paths)
+    }
 }
