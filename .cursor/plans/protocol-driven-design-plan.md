@@ -1,8 +1,8 @@
 # Salu 协议驱动开发重构计划 (Plan A)
 
 > 创建时间：2026-01-03
-> 状态：待实施
-> **最后审视：2026-01-03 - 修复依赖关系和设计缺陷**
+> 状态：进行中 (P1 ✅ 完成, P2 ✅ 完成, P3 进行中)
+> **最后更新：2026-01-03 - P1/P2 已完成并通过所有测试**
 
 ---
 
@@ -214,7 +214,11 @@ public enum BattleEffect: Sendable, Equatable {
 
 ---
 
-## P1: 卡牌系统协议化 ⭐⭐⭐（重新审查 & 重写，保留精简代码示例）
+## P1: 卡牌系统协议化 ⭐⭐⭐ ✅ **已完成**
+
+> **实施日期**: 2026-01-03  
+> **状态**: ✅ 完成并通过所有测试  
+> **Commits**: 81729bd, a842589, 174042a
 
 ### 这次重写 P1 的原因（来自代码库真实依赖）
 
@@ -442,7 +446,11 @@ P1 要求把 `BattleScreen.buildHandArea` 中这段：
 
 ---
 
-## P2: 状态效果系统协议化 ⭐⭐
+## P2: 状态效果系统协议化 ⭐⭐ ✅ **已完成**
+
+> **实施日期**: 2026-01-03  
+> **状态**: ✅ 完成并通过所有测试  
+> **Commits**: bbb674a, 4ff3e17
 
 ### P2 重新审查：当前实现的问题（来自真实代码）
 
@@ -622,9 +630,34 @@ P2 必须同步修改：
 
 ### P2 验收标准（必须全部通过）
 
-- [ ] `Entity` 不再含 `vulnerable/weak/strength` 字段，也没有 `tickStatusEffects()`
-- [ ] `StatusContainer` 不产生 `BattleEvent`（只存数据）
-- [ ] `DamageCalculator` 的状态修正顺序确定（phase+priority）
+- [x] ✅ `Entity` 不再含 `vulnerable/weak/strength` 字段，也没有 `tickStatusEffects()`
+- [x] ✅ `StatusContainer` 不产生 `BattleEvent`（只存数据）
+- [x] ✅ `DamageCalculator` 的状态修正顺序确定（phase+priority）
+- [x] ✅ 易伤/虚弱/力量/敏捷/中毒 全部可通过注册表扩展
+- [x] ✅ `BattleScreen` 状态展示由 registry 驱动（无硬编码 if 链）
+- [x] ✅ `swift build` 成功
+- [x] ✅ `./.cursor/Scripts/test_game.sh` 成功
+
+### P2 实施总结 ✅
+
+**完成内容**:
+- ✅ 创建 `StatusDefinition.swift` (协议 + ModifierPhase + StatusDecay)
+- ✅ 创建 `StatusContainer.swift` (纯数据结构)
+- ✅ 创建 `StatusRegistry.swift` (注册表)
+- ✅ 实现 6 个状态定义 (Vulnerable, Weak, Frail, Poison, Strength, Dexterity)
+- ✅ 重构 `Entity` (移除硬编码字段，使用 StatusContainer)
+- ✅ 删除 `Entity.tickStatusEffects()`
+- ✅ 重构 `calculateDamage` (phase+priority 确定性排序)
+- ✅ 重构 `applyBlock` (状态修正)
+- ✅ 添加 `processStatusesAtTurnEnd` (触发效果 + 自动递减)
+- ✅ 更新所有敌人 AI (使用 statuses.stacks)
+- ✅ 重构 `BattleScreen.buildStatusLine` (注册表驱动)
+- ✅ 修复编译警告
+- ✅ 所有测试通过 (build, startup, integration)
+
+**测试结果**: 所有测试通过，无编译警告
+
+---
 - [ ] 易伤/虚弱/力量/敏捷/中毒 全部可通过注册表扩展
 - [ ] `BattleScreen` 状态展示由 registry 驱动（无硬编码 if 链）
 - [ ] `swift build` 成功
