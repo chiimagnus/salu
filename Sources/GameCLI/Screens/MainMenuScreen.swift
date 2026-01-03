@@ -31,10 +31,9 @@ enum MainMenuScreen {
         ║                                                       ║
         ╠═══════════════════════════════════════════════════════╣
         ║                                                       ║
-        ║  \(Terminal.reset)\(Terminal.green)[1]\(Terminal.cyan) 🗺️  开始冒险（完整地图）                    ║
-        ║  \(Terminal.reset)\(Terminal.yellow)[2]\(Terminal.cyan) ⚔️  快速战斗（单场战斗）                    ║
-        ║  \(Terminal.reset)\(Terminal.dim)[3]\(Terminal.cyan) ⚙️  设置 / 战绩                              ║
-        ║  \(Terminal.reset)\(Terminal.red)[4]\(Terminal.cyan) 🚪 退出游戏                                ║
+        ║  \(Terminal.reset)\(Terminal.green)[1]\(Terminal.cyan) 🗺️  开始冒险                                  ║
+        ║  \(Terminal.reset)\(Terminal.dim)[2]\(Terminal.cyan) ⚙️  设置 / 战绩                              ║
+        ║  \(Terminal.reset)\(Terminal.red)[3]\(Terminal.cyan) 🚪 退出游戏                                ║
         ║                                                       ║
         ╠═══════════════════════════════════════════════════════╣
         ║  \(Terminal.reset)\(Terminal.dim)\(statsLine)\(Terminal.bold)\(Terminal.cyan)\(String(repeating: " ", count: max(0, 40 - statsLine.count)))║

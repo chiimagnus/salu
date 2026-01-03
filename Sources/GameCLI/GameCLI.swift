@@ -51,18 +51,14 @@ struct GameCLI {
             
             switch input {
             case "1":
-                // 开始冒险（完整地图模式）
+                // 开始冒险
                 startNewRun()
                 
             case "2":
-                // 快速战斗（单场战斗）
-                startNewBattle()
-                
-            case "3":
                 // 设置菜单
                 settingsMenuLoop()
                 
-            case "4", "q":
+            case "3", "q":
                 // 退出游戏
                 Screens.showExit()
                 return
