@@ -15,7 +15,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
 
     steps:
       - name: Checkout code
@@ -29,25 +29,11 @@ jobs:
       - name: Swift version
         run: swift --version
 
-      # Unix 系统使用 bash 脚本
-      - name: Make test script executable (Unix)
-        if: runner.os != 'Windows'
+      - name: Make test script executable
         run: chmod +x .cursor/Scripts/test_game.sh
 
-      - name: Run all tests (Unix)
-        if: runner.os != 'Windows'
+      - name: Run all tests
         run: ./.cursor/Scripts/test_game.sh all
-
-      # Windows 使用 PowerShell 命令
-      - name: Build and test (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          Write-Host "Building Debug..."
-          swift build
-          Write-Host "Building Release..."
-          swift build -c release
-          Write-Host "Build completed successfully!"
 
       # 上传构建产物
       - name: Upload build artifacts (Linux)
@@ -64,12 +50,4 @@ jobs:
         with:
           name: salu-debug-macos
           path: .build/debug/GameCLI
-          retention-days: 7
-
-      - name: Upload build artifacts (Windows)
-        if: success() && matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: salu-debug-windows
-          path: .build/debug/GameCLI.exe
           retention-days: 7

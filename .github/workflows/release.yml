@@ -19,15 +19,9 @@ jobs:
           - os: ubuntu-latest
             artifact_name: salu-linux-x64
             asset_name: salu-linux-x64
-            extension: ''
           - os: macos-latest
             artifact_name: salu-macos-x64
             asset_name: salu-macos-x64
-            extension: ''
-          - os: windows-latest
-            artifact_name: salu-windows-x64
-            asset_name: salu-windows-x64
-            extension: '.exe'
 
     steps:
       - name: Checkout code
@@ -44,71 +38,31 @@ jobs:
       - name: Build release binary
         run: swift build -c release
 
-      # Unix 系统打包
-      - name: Prepare artifact (Unix)
-        if: runner.os != 'Windows'
+      - name: Prepare artifact
         run: |
           mkdir -p artifact
           cp .build/release/GameCLI artifact/${{ matrix.artifact_name }}
           chmod +x artifact/${{ matrix.artifact_name }}
 
-      - name: Create tarball (Unix)
-        if: runner.os != 'Windows'
+      - name: Create tarball
         run: |
           cd artifact
           tar -czf ${{ matrix.asset_name }}.tar.gz ${{ matrix.artifact_name }}
           cd ..
 
-      # Windows 系统打包
-      - name: Prepare artifact (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path artifact
-          Copy-Item .build/release/GameCLI.exe artifact/${{ matrix.artifact_name }}.exe
-
-      - name: Create zip (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          cd artifact
-          Compress-Archive -Path "${{ matrix.artifact_name }}.exe" -DestinationPath "${{ matrix.asset_name }}.zip"
-          cd ..
-
-      # 上传构建产物
-      - name: Upload artifact (Unix)
-        if: success() && runner.os != 'Windows'
+      - name: Upload artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: artifact/${{ matrix.asset_name }}.tar.gz
           retention-days: 90
 
-      - name: Upload artifact (Windows)
-        if: success() && runner.os == 'Windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: artifact/${{ matrix.asset_name }}.zip
-          retention-days: 90
-
-      # 创建 GitHub Release
-      - name: Create Release (Unix)
-        if: startsWith(github.ref, 'refs/tags/') && runner.os != 'Windows'
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
           files: artifact/${{ matrix.asset_name }}.tar.gz
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create Release (Windows)
-        if: startsWith(github.ref, 'refs/tags/') && runner.os == 'Windows'
-        uses: softprops/action-gh-release@v1
-        with:
-          files: artifact/${{ matrix.asset_name }}.zip
           draft: false
           prerelease: false
           generate_release_notes: true
