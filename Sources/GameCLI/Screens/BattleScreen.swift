@@ -127,37 +127,23 @@ enum BattleScreen {
         lines.append("  \(Terminal.bold)🃏 手牌 (\(state.hand.count)张)\(Terminal.reset)")
         
         for (index, card) in state.hand.enumerated() {
-            let canPlay = card.cost <= state.energy
+            let def = CardRegistry.require(card.cardId)
+            let canPlay = def.cost <= state.energy
             let statusIcon = canPlay ? "\(Terminal.green)●\(Terminal.reset)" : "\(Terminal.red)○\(Terminal.reset)"
             let cardColor = canPlay ? Terminal.bold : Terminal.dim
             
-            let effect: String
+            // 从 CardDefinition 获取类型图标
             let effectIcon: String
-            switch card.kind {
-            case .strike:
-                effect = "造成 \(card.damage) 伤害"
+            switch def.type {
+            case .attack:
                 effectIcon = "⚔️"
-            case .pommelStrike:
-                effect = "造成 \(card.damage) 伤害, 抽 1 张"
-                effectIcon = "⚔️"
-            case .bash:
-                effect = "造成 \(card.damage) 伤害, 易伤 2"
-                effectIcon = "💥"
-            case .clothesline:
-                effect = "造成 \(card.damage) 伤害, 虚弱 2"
-                effectIcon = "💥"
-            case .defend:
-                effect = "获得 \(card.block) 格挡"
+            case .skill:
                 effectIcon = "🛡️"
-            case .shrugItOff:
-                effect = "获得 \(card.block) 格挡, 抽 1 张"
-                effectIcon = "🛡️"
-            case .inflame:
-                effect = "获得 2 力量"
+            case .power:
                 effectIcon = "💪"
             }
             
-            lines.append("     \(statusIcon) \(cardColor)[\(index + 1)] \(card.displayName)\(Terminal.reset)  \(Terminal.yellow)◆\(card.cost)\(Terminal.reset)  \(effectIcon) \(effect)")
+            lines.append("     \(statusIcon) \(cardColor)[\(index + 1)] \(def.name)\(Terminal.reset)  \(Terminal.yellow)◆\(def.cost)\(Terminal.reset)  \(effectIcon) \(def.rulesText)")
         }
         
         return lines

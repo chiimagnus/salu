@@ -91,7 +91,8 @@ public final class BattleEngine: @unchecked Sendable {
     /// 获取当前可打出的手牌索引
     public var playableCardIndices: [Int] {
         state.hand.enumerated().compactMap { index, card in
-            card.cost <= state.energy ? index : nil
+            let def = CardRegistry.require(card.cardId)
+            return def.cost <= state.energy ? index : nil
         }
     }
     
@@ -297,22 +298,23 @@ public final class BattleEngine: @unchecked Sendable {
         }
         
         let card = state.hand[handIndex]
+        let def = CardRegistry.require(card.cardId)
         
         // 验证能量
-        guard state.energy >= card.cost else {
-            emit(.notEnoughEnergy(required: card.cost, available: state.energy))
+        guard state.energy >= def.cost else {
+            emit(.notEnoughEnergy(required: def.cost, available: state.energy))
             return false
         }
         
         // 消耗能量
-        state.energy -= card.cost
+        state.energy -= def.cost
         
         // 从手牌移除
         state.hand.remove(at: handIndex)
         
-        emit(.played(cardId: card.id, cardName: card.displayName, cost: card.cost))
+        emit(.played(cardId: card.cardId, cost: def.cost))
         
-        // 执行卡牌效果
+        // 执行卡牌效果（新架构：通过 BattleEffect）
         executeCardEffect(card)
         
         // 卡牌进入弃牌堆
@@ -325,98 +327,158 @@ public final class BattleEngine: @unchecked Sendable {
     }
     
     private func executeCardEffect(_ card: Card) {
-        // 统计卡牌使用
+        let def = CardRegistry.require(card.cardId)
+        
+        // 统计卡牌使用（基于类型）
         battleStats.cardsPlayed += 1
-        switch card.kind {
-        case .strike, .pommelStrike, .bash, .clothesline:
+        switch def.type {
+        case .attack:
             battleStats.strikesPlayed += 1
-        case .defend, .shrugItOff:
+        case .skill:
             battleStats.defendsPlayed += 1
-        case .inflame:
+        case .power:
             battleStats.skillsPlayed += 1
         }
         
-        switch card.kind {
-        case .strike:
-            // 对敌人造成伤害（应用伤害修正）
-            let finalDamage = calculateDamage(baseDamage: card.damage, attacker: state.player, defender: state.enemy)
-            let (dealt, blocked) = state.enemy.takeDamage(finalDamage)
-            battleStats.totalDamageDealt += dealt
-            emit(.damageDealt(
-                source: state.player.name,
-                target: state.enemy.name,
-                amount: dealt,
-                blocked: blocked
-            ))
+        // 生成战斗快照
+        let snapshot = BattleSnapshot(
+            turn: state.turn,
+            player: state.player,
+            enemy: state.enemy,
+            energy: state.energy
+        )
+        
+        // 获取卡牌效果
+        let effects = def.play(snapshot: snapshot)
+        
+        // 执行所有效果
+        for effect in effects {
+            apply(effect)
+        }
+    }
+    
+    /// 应用单个战斗效果（统一执行入口）
+    private func apply(_ effect: BattleEffect) {
+        switch effect {
+        case .dealDamage(let target, let base):
+            applyDamage(target: target, base: base)
             
-        case .pommelStrike:
-            // 造成伤害
-            let finalDamage = calculateDamage(baseDamage: card.damage, attacker: state.player, defender: state.enemy)
-            let (dealt, blocked) = state.enemy.takeDamage(finalDamage)
-            battleStats.totalDamageDealt += dealt
-            emit(.damageDealt(
-                source: state.player.name,
-                target: state.enemy.name,
-                amount: dealt,
-                blocked: blocked
-            ))
-            // 抽牌
-            drawCards(card.drawCount)
+        case .gainBlock(let target, let base):
+            applyBlock(target: target, base: base)
             
-        case .defend:
-            // 获得格挡
-            state.player.gainBlock(card.block)
-            battleStats.totalBlockGained += card.block
-            emit(.blockGained(target: state.player.name, amount: card.block))
+        case .drawCards(let count):
+            drawCards(count)
             
-        case .shrugItOff:
-            // 获得格挡
-            state.player.gainBlock(card.block)
-            battleStats.totalBlockGained += card.block
-            emit(.blockGained(target: state.player.name, amount: card.block))
-            // 抽牌
-            drawCards(card.drawCount)
+        case .gainEnergy(let amount):
+            state.energy += amount
+            emit(.energyReset(amount: state.energy))
             
-        case .bash:
-            // 造成伤害
-            let finalDamage = calculateDamage(baseDamage: card.damage, attacker: state.player, defender: state.enemy)
-            let (dealt, blocked) = state.enemy.takeDamage(finalDamage)
-            battleStats.totalDamageDealt += dealt
-            emit(.damageDealt(
-                source: state.player.name,
-                target: state.enemy.name,
-                amount: dealt,
-                blocked: blocked
-            ))
-            // 施加易伤
-            if card.vulnerableApply > 0 {
-                state.enemy.vulnerable += card.vulnerableApply
-                emit(.statusApplied(target: state.enemy.name, effect: "易伤", stacks: card.vulnerableApply))
+        case .applyStatus(let target, let statusId, let stacks):
+            applyStatusEffect(target: target, statusId: statusId, stacks: stacks)
+            
+        case .heal(let target, let amount):
+            applyHeal(target: target, amount: amount)
+        }
+    }
+    
+    /// 应用伤害效果
+    private func applyDamage(target: EffectTarget, base: Int) {
+        let (attackerName, defenderName): (String, String)
+        let (attacker, defender): (Entity, Entity)
+        let finalDamage: Int
+        let damageResult: (Int, Int)
+        
+        switch target {
+        case .enemy:
+            attacker = state.player
+            defender = state.enemy
+            finalDamage = calculateDamage(baseDamage: base, attacker: attacker, defender: defender)
+            damageResult = state.enemy.takeDamage(finalDamage)
+            battleStats.totalDamageDealt += damageResult.0
+            attackerName = state.player.name
+            defenderName = state.enemy.name
+        case .player:
+            attacker = state.enemy
+            defender = state.player
+            finalDamage = calculateDamage(baseDamage: base, attacker: attacker, defender: defender)
+            damageResult = state.player.takeDamage(finalDamage)
+            battleStats.totalDamageTaken += damageResult.0
+            attackerName = state.enemy.name
+            defenderName = state.player.name
+        }
+        
+        emit(.damageDealt(
+            source: attackerName,
+            target: defenderName,
+            amount: damageResult.0,
+            blocked: damageResult.1
+        ))
+    }
+    
+    /// 应用格挡效果
+    private func applyBlock(target: EffectTarget, base: Int) {
+        switch target {
+        case .player:
+            state.player.gainBlock(base)
+            battleStats.totalBlockGained += base
+            emit(.blockGained(target: state.player.name, amount: base))
+        case .enemy:
+            state.enemy.gainBlock(base)
+            emit(.blockGained(target: state.enemy.name, amount: base))
+        }
+    }
+    
+    /// 应用状态效果
+    private func applyStatusEffect(target: EffectTarget, statusId: StatusID, stacks: Int) {
+        let entityName: String
+        
+        switch target {
+        case .player:
+            entityName = state.player.name
+            // 根据 statusId 应用状态（目前硬编码，P2 会重构）
+            switch statusId.rawValue {
+            case "vulnerable":
+                state.player.vulnerable += stacks
+                emit(.statusApplied(target: entityName, effect: "易伤", stacks: stacks))
+            case "weak":
+                state.player.weak += stacks
+                emit(.statusApplied(target: entityName, effect: "虚弱", stacks: stacks))
+            case "strength":
+                state.player.strength += stacks
+                emit(.statusApplied(target: entityName, effect: "力量", stacks: stacks))
+            default:
+                break
             }
-            
-        case .inflame:
-            // 获得力量
-            if card.strengthGain > 0 {
-                state.player.strength += card.strengthGain
-                emit(.statusApplied(target: state.player.name, effect: "力量", stacks: card.strengthGain))
+        case .enemy:
+            entityName = state.enemy.name
+            // 根据 statusId 应用状态（目前硬编码，P2 会重构）
+            switch statusId.rawValue {
+            case "vulnerable":
+                state.enemy.vulnerable += stacks
+                emit(.statusApplied(target: entityName, effect: "易伤", stacks: stacks))
+            case "weak":
+                state.enemy.weak += stacks
+                emit(.statusApplied(target: entityName, effect: "虚弱", stacks: stacks))
+            case "strength":
+                state.enemy.strength += stacks
+                emit(.statusApplied(target: entityName, effect: "力量", stacks: stacks))
+            default:
+                break
             }
-            
-        case .clothesline:
-            // 造成伤害
-            let finalDamage = calculateDamage(baseDamage: card.damage, attacker: state.player, defender: state.enemy)
-            let (dealt, blocked) = state.enemy.takeDamage(finalDamage)
-            battleStats.totalDamageDealt += dealt
-            emit(.damageDealt(
-                source: state.player.name,
-                target: state.enemy.name,
-                amount: dealt,
-                blocked: blocked
-            ))
-            // 施加虚弱
-            if card.weakApply > 0 {
-                state.enemy.weak += card.weakApply
-                emit(.statusApplied(target: state.enemy.name, effect: "虚弱", stacks: card.weakApply))
-            }
+        }
+    }
+    
+    /// 应用治疗效果
+    private func applyHeal(target: EffectTarget, amount: Int) {
+        switch target {
+        case .player:
+            let oldHP = state.player.currentHP
+            state.player.currentHP = min(state.player.currentHP + amount, state.player.maxHP)
+            // 治疗事件（目前没有对应的 BattleEvent，暂不 emit）
+        case .enemy:
+            let oldHP = state.enemy.currentHP
+            state.enemy.currentHP = min(state.enemy.currentHP + amount, state.enemy.maxHP)
+            // 治疗事件（目前没有对应的 BattleEvent，暂不 emit）
         }
     }
     
@@ -440,7 +502,7 @@ public final class BattleEngine: @unchecked Sendable {
         // 抽一张牌
         let card = state.drawPile.removeLast()
         state.hand.append(card)
-        emit(.drew(cardId: card.id, cardName: card.displayName))
+        emit(.drew(cardId: card.cardId))
     }
     
     private func shuffleDiscardIntoDraw() {
