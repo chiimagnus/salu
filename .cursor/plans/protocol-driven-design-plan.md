@@ -277,547 +277,221 @@ public struct Entity: Sendable {
 
 ---
 
-## P1: 卡牌系统协议化 ⭐⭐⭐
+## P1: 卡牌系统协议化 ⭐⭐⭐（重新审查 & 重写，保留精简代码示例）
 
-### 目标
-- 将每张卡牌抽象为独立的结构体，实现统一协议
-- 添加新卡牌只需创建新结构体，无需修改现有代码
-- 支持复杂的卡牌效果组合
-- **支持卡牌升级系统**
+### 这次重写 P1 的原因（来自代码库真实依赖）
 
-### 新架构设计
+我已核对当前实现：
+
+- `Sources/GameCore/Cards/Card.swift`：几乎所有卡牌信息来自 `switch card.kind`（cost/damage/block/draw/status…）
+- `Sources/GameCore/Battle/BattleEngine.swift`：`executeCardEffect` 是一个按 `card.kind` 的大 switch
+- `Sources/GameCLI/Screens/BattleScreen.swift`：`buildHandArea` 同样按 `card.kind` switch 拼效果文本
+- `Sources/GameCLI/Components/EventFormatter.swift`：显示 `.drew/.played` 事件携带的 `cardName`
+
+结论：P1 必须同时解决 **Card 模型 / BattleEngine 执行 / CLI UI 展示** 的扩展点，否则只协议化“卡牌定义”会变成假重构。
+
+### P1 目标（破坏性：不保留兼容层）
+
+- **彻底删除** `CardKind` 以及所有 “按 kind switch” 的扩展点（Card/BattleEngine/BattleScreen）
+- 建立 **CardID / CardDefinition / CardRegistry / BattleEffect** 的卡牌框架
+- 新增卡牌只做两件事：**新增一个 `CardDefinition` 类型 + 注册到 `CardRegistry`**
+- 卡牌升级是框架的一部分：升级版同样是 `CardDefinition`
+
+### P1 新架构设计（以框架为中心）
 
 ```
-Sources/GameCore/Cards/
-├── Protocols/
-│   └── CardDefinition.swift      # 卡牌定义协议
-├── Definitions/
-│   ├── BasicCards.swift          # 基础卡牌（Strike, Defend, Bash）
-│   ├── CommonCards.swift         # 普通卡牌
-│   └── UncommonCards.swift       # 罕见卡牌
-├── CardEffectResult.swift        # 卡牌效果描述枚举
-├── DamageCalculator.swift        # 伤害计算工具（从 BattleEngine 提取）
-├── CardRegistry.swift            # 卡牌注册表
-├── Card.swift                    # 卡牌实例（运行时）- 修改
-├── CardKind.swift                # 保留，用于向后兼容
-└── StarterDeck.swift             # 初始牌组（保留）
+Sources/GameCore/
+├── Kernel/                         # 框架基座（Effects/IDs/Targets）
+│   ├── IDs.swift                   # CardID/StatusID/...（强类型）
+│   └── BattleEffect.swift          # 统一战斗效果（卡/状态/遗物/敌人都用）
+│
+├── Cards/
+│   ├── Card.swift                  # 卡牌实例（只持有 CardID，不再持有 kind）
+│   ├── CardDefinition.swift        # 卡牌定义协议
+│   ├── CardRegistry.swift          # 注册表
+│   ├── StarterDeck.swift           # 起始牌组（改用 CardID）
+│   └── Definitions/
+│       └── Ironclad/
+│           ├── Basic.swift         # Strike/Defend/Bash (+版本)
+│           └── Common.swift        # PommelStrike/ShrugItOff/Inflame/Clothesline
+│
+└── Battle/
+    └── BattleEngine.swift          # 破坏性重构：执行 BattleEffect（无卡牌 switch）
 ```
 
-### 协议设计
+> 注意：这里不再保留 `CardEffectResult`。卡牌效果直接产出框架基座 `BattleEffect`，这样 P2/P3/P4 都可以复用同一条执行管线。
+
+---
+
+### 关键框架：CardID / BattleEffect / CardDefinition / Card（保留最小代码示例）
+
+#### 1) `CardID`（强类型，禁止散落字符串）
 
 ```swift
-// ═══════════════════════════════════════════════════════════════
-// CardDefinition.swift - 卡牌定义协议
-// ═══════════════════════════════════════════════════════════════
+// Kernel/IDs.swift
+public struct CardID: Hashable, Sendable, ExpressibleByStringLiteral {
+    public let rawValue: String
+    public init(_ rawValue: String) { self.rawValue = rawValue }
+    public init(stringLiteral value: String) { self.rawValue = value }
+}
+```
 
-/// 卡牌定义协议
-/// 每种卡牌实现此协议，定义其属性和效果
+#### 2) `BattleEffect`（统一效果枚举：卡牌/状态/遗物/敌人都用）
+
+```swift
+// Kernel/BattleEffect.swift
+public enum BattleEffect: Sendable, Equatable {
+    case dealDamage(target: EffectTarget, base: Int)
+    case gainBlock(target: EffectTarget, base: Int)
+    case drawCards(count: Int)
+    case gainEnergy(amount: Int)
+    case applyStatus(target: EffectTarget, statusId: StatusID, stacks: Int)
+    // 未来扩展：exhaust/addTempCard/shuffleIntoDraw/multiTarget...
+}
+
+public enum EffectTarget: Sendable, Equatable {
+    case player
+    case enemy
+}
+```
+
+> 为什么要统一：因为目前 `BattleEngine.executeCardEffect`、敌人 debuff、未来遗物/状态都会产生同类“效果”，统一后引擎只有一条执行路径。
+
+#### 3) `CardDefinition`（定义只产出效果，不直接改状态、不直接 emit 事件）
+
+```swift
+// Cards/CardDefinition.swift
 public protocol CardDefinition: Sendable {
-    /// 卡牌唯一标识符（如 "strike", "strike_plus"）
-    static var id: String { get }
-    
-    /// 显示名称
-    static var displayName: String { get }
-    
-    /// 卡牌类型
-    static var cardType: CardType { get }
-    
-    /// 稀有度
+    static var id: CardID { get }
+    static var name: String { get }        // 用于 UI（建议中文）
+    static var type: CardType { get }
     static var rarity: CardRarity { get }
-    
-    /// 能量消耗
     static var cost: Int { get }
-    
-    /// 卡牌描述（支持动态值）
-    static var description: String { get }
-    
-    /// 是否为升级版卡牌
-    static var isUpgraded: Bool { get }
-    
-    /// 升级版卡牌 ID（基础卡牌返回升级版 ID，升级版返回 nil）
-    static var upgradedVersionId: String? { get }
-    
-    /// 执行卡牌效果
-    static func execute(context: CardExecutionContext) -> [CardEffectResult]
-    
-    /// 基础伤害值（用于 UI 显示计算）
-    static var baseDamage: Int? { get }
-    
-    /// 基础格挡值（用于 UI 显示计算）
-    static var baseBlock: Int? { get }
+    static var rulesText: String { get }   // UI 展示文本（替代 BattleScreen 的 switch）
+
+    // 升级（升级版也是另一个 CardID）
+    static var upgradedId: CardID? { get }
+
+    // 纯决策：输入是快照，输出是效果
+    static func play(snapshot: BattleSnapshot) -> [BattleEffect]
 }
 
-// 提供默认实现
-extension CardDefinition {
-    public static var isUpgraded: Bool { false }
-    public static var upgradedVersionId: String? { nil }
-    public static var baseDamage: Int? { nil }
-    public static var baseBlock: Int? { nil }
-}
-
-/// 卡牌类型
-public enum CardType: String, Sendable {
-    case attack = "攻击"
-    case skill = "技能"
-    case power = "能力"
-    case status = "状态"  // 负面卡牌
-    case curse = "诅咒"   // 诅咒卡牌
-}
-
-/// 卡牌稀有度
-public enum CardRarity: String, Sendable {
-    case basic = "基础"
-    case common = "普通"
-    case uncommon = "罕见"
-    case rare = "稀有"
-}
-
-/// 卡牌执行上下文
-/// 包含执行效果所需的所有信息
-public struct CardExecutionContext: Sendable {
+public struct BattleSnapshot: Sendable {
+    public let turn: Int
     public let player: Entity
     public let enemy: Entity
-    public let battleState: BattleState
-    
-    public init(player: Entity, enemy: Entity, battleState: BattleState) {
-        self.player = player
-        self.enemy = enemy
-        self.battleState = battleState
-    }
+    public let energy: Int
 }
 ```
 
+#### 4) `Card`（运行时实例：只引用定义）
+
 ```swift
-// ═══════════════════════════════════════════════════════════════
-// CardEffectResult.swift - 卡牌效果描述
-// ═══════════════════════════════════════════════════════════════
-
-/// 卡牌效果结果
-/// 描述卡牌执行后产生的具体效果
-/// 注意：状态使用字符串 ID，P2 完成后会有 StatusRegistry 支持
-public enum CardEffectResult: Sendable, Equatable {
-    /// 造成伤害
-    case dealDamage(target: EffectTarget, baseDamage: Int)
-    
-    /// 获得格挡
-    case gainBlock(target: EffectTarget, amount: Int)
-    
-    /// 施加状态效果（使用字符串 ID，如 "vulnerable", "weak"）
-    case applyStatus(target: EffectTarget, statusId: String, stacks: Int)
-    
-    /// 抽牌
-    case drawCards(count: Int)
-    
-    /// 获得能量
-    case gainEnergy(amount: Int)
-    
-    /// 治疗
-    case heal(target: EffectTarget, amount: Int)
-    
-    /// 弃牌
-    case discardCards(count: Int)
-    
-    /// 消耗（移除卡牌，不进入弃牌堆）
-    case exhaust
-}
-
-/// 效果目标
-public enum EffectTarget: String, Sendable, Equatable {
-    case `self` = "self"       // 自己（玩家使用时指玩家）
-    case enemy = "enemy"       // 敌人
-    case allEnemies = "all"    // 所有敌人（未来多敌人支持）
+// Cards/Card.swift
+public struct Card: Identifiable, Sendable, Equatable {
+    public let id: String          // instanceId（例如 "strike_1"；由引擎/牌组生成器负责）
+    public let cardId: CardID      // definitionId
 }
 ```
 
-```swift
-// ═══════════════════════════════════════════════════════════════
-// DamageCalculator.swift - 伤害计算工具
-// ═══════════════════════════════════════════════════════════════
+---
 
-/// 伤害计算器
-/// 从 BattleEngine 提取的伤害计算逻辑，便于复用
-public enum DamageCalculator {
-    
-    /// 计算最终伤害（应用力量、虚弱、易伤修正）
-    /// - Parameters:
-    ///   - baseDamage: 基础伤害
-    ///   - attacker: 攻击者
-    ///   - defender: 防御者
-    /// - Returns: 最终伤害值
-    public static func calculate(
-        baseDamage: Int,
-        attacker: Entity,
-        defender: Entity
-    ) -> Int {
-        var damage = baseDamage
-        
-        // 力量加成
-        damage += attacker.strength
-        
-        // 虚弱减伤（-25%，向下取整）
-        if attacker.weak > 0 {
-            damage = Int(Double(damage) * 0.75)
-        }
-        
-        // 易伤增伤（+50%，向下取整）
-        if defender.vulnerable > 0 {
-            damage = Int(Double(damage) * 1.5)
-        }
-        
-        return max(0, damage)
-    }
-}
-```
-
-### 卡牌实现示例
+### 1) CardRegistry（新增卡牌的唯一扩展点）
 
 ```swift
-// ═══════════════════════════════════════════════════════════════
-// BasicCards.swift - 基础卡牌实现
-// ═══════════════════════════════════════════════════════════════
-
-/// Strike - 基础攻击牌
-public struct StrikeCard: CardDefinition {
-    public static let id = "strike"
-    public static let displayName = "Strike"
-    public static let cardType: CardType = .attack
-    public static let rarity: CardRarity = .basic
-    public static let cost = 1
-    public static let baseDamage: Int? = 6
-    public static let upgradedVersionId: String? = "strike_plus"
-    
-    public static var description: String { "造成 6 点伤害" }
-    
-    public static func execute(context: CardExecutionContext) -> [CardEffectResult] {
-        [.dealDamage(target: .enemy, baseDamage: 6)]
-    }
-}
-
-/// Strike+ - 升级版
-public struct StrikePlusCard: CardDefinition {
-    public static let id = "strike_plus"
-    public static let displayName = "Strike+"
-    public static let cardType: CardType = .attack
-    public static let rarity: CardRarity = .basic
-    public static let cost = 1
-    public static let baseDamage: Int? = 9
-    public static let isUpgraded = true
-    
-    public static var description: String { "造成 9 点伤害" }
-    
-    public static func execute(context: CardExecutionContext) -> [CardEffectResult] {
-        [.dealDamage(target: .enemy, baseDamage: 9)]
-    }
-}
-
-/// Defend - 基础防御牌
-public struct DefendCard: CardDefinition {
-    public static let id = "defend"
-    public static let displayName = "Defend"
-    public static let cardType: CardType = .skill
-    public static let rarity: CardRarity = .basic
-    public static let cost = 1
-    public static let baseBlock: Int? = 5
-    public static let upgradedVersionId: String? = "defend_plus"
-    
-    public static var description: String { "获得 5 点格挡" }
-    
-    public static func execute(context: CardExecutionContext) -> [CardEffectResult] {
-        [.gainBlock(target: .`self`, amount: 5)]
-    }
-}
-
-/// Bash - 重击
-public struct BashCard: CardDefinition {
-    public static let id = "bash"
-    public static let displayName = "Bash"
-    public static let cardType: CardType = .attack
-    public static let rarity: CardRarity = .basic
-    public static let cost = 2
-    public static let baseDamage: Int? = 8
-    public static let upgradedVersionId: String? = "bash_plus"
-    
-    public static var description: String { "造成 8 点伤害，施加 2 层易伤" }
-    
-    public static func execute(context: CardExecutionContext) -> [CardEffectResult] {
-        [
-            .dealDamage(target: .enemy, baseDamage: 8),
-            .applyStatus(target: .enemy, statusId: "vulnerable", stacks: 2)
-        ]
-    }
-}
-
-/// Pommel Strike - 柄击
-public struct PommelStrikeCard: CardDefinition {
-    public static let id = "pommel_strike"
-    public static let displayName = "Pommel Strike"
-    public static let cardType: CardType = .attack
-    public static let rarity: CardRarity = .common
-    public static let cost = 1
-    public static let baseDamage: Int? = 9
-    
-    public static var description: String { "造成 9 点伤害，抽 1 张牌" }
-    
-    public static func execute(context: CardExecutionContext) -> [CardEffectResult] {
-        [
-            .dealDamage(target: .enemy, baseDamage: 9),
-            .drawCards(count: 1)
-        ]
-    }
-}
-```
-
-### 卡牌注册表
-
-```swift
-// ═══════════════════════════════════════════════════════════════
-// CardRegistry.swift - 卡牌注册表
-// ═══════════════════════════════════════════════════════════════
-
-/// 卡牌注册表
-/// 集中管理所有卡牌定义，支持按 ID 查找
+// Cards/CardRegistry.swift
 public enum CardRegistry {
-    
-    /// 注册的卡牌类型映射
-    private static let definitions: [String: any CardDefinition.Type] = [
-        // 基础卡牌
-        StrikeCard.id: StrikeCard.self,
-        StrikePlusCard.id: StrikePlusCard.self,
-        DefendCard.id: DefendCard.self,
-        DefendPlusCard.id: DefendPlusCard.self,
-        BashCard.id: BashCard.self,
-        BashPlusCard.id: BashPlusCard.self,
-        // 普通卡牌
-        PommelStrikeCard.id: PommelStrikeCard.self,
-        ShrugItOffCard.id: ShrugItOffCard.self,
-        InflameCard.id: InflameCard.self,
-        ClotheslineCard.id: ClotheslineCard.self,
-        // ... 添加更多卡牌
+    private static let defs: [CardID: any CardDefinition.Type] = [
+        "strike": Strike.self,
+        // ...
     ]
-    
-    /// 根据 ID 获取卡牌定义
-    public static func get(_ id: String) -> (any CardDefinition.Type)? {
-        definitions[id]
-    }
-    
-    /// 获取所有已注册的卡牌 ID
-    public static var allCardIds: [String] {
-        Array(definitions.keys)
-    }
-    
-    /// 根据稀有度获取卡牌（不包含升级版）
-    public static func cards(ofRarity rarity: CardRarity) -> [any CardDefinition.Type] {
-        definitions.values.filter { $0.rarity == rarity && !$0.isUpgraded }
-    }
-    
-    /// 根据类型获取卡牌（不包含升级版）
-    public static func cards(ofType type: CardType) -> [any CardDefinition.Type] {
-        definitions.values.filter { $0.cardType == type && !$0.isUpgraded }
-    }
-    
-    /// 获取卡牌的升级版（如果有）
-    public static func getUpgradedVersion(_ id: String) -> (any CardDefinition.Type)? {
-        guard let definition = get(id),
-              let upgradedId = definition.upgradedVersionId else {
-            return nil
-        }
-        return get(upgradedId)
-    }
+
+    public static func get(_ id: CardID) -> (any CardDefinition.Type)? { defs[id] }
+    public static func require(_ id: CardID) -> any CardDefinition.Type { defs[id]! }
 }
 ```
 
-### Card 结构体修改
+> 约束：任何地方不允许通过 switch/cardId 字符串去“猜”卡牌行为；必须从 registry resolve。
+
+---
+
+### 2) 与 BattleEngine 的边界（效果管线）
+
+> 这是 P1 的核心：**卡牌定义只产出 BattleEffect；BattleEngine 执行 BattleEffect 并产出 BattleEvent**。
 
 ```swift
-// ═══════════════════════════════════════════════════════════════
-// Card.swift - 修改后的卡牌实例
-// ═══════════════════════════════════════════════════════════════
+// Battle/BattleEngine.swift（伪代码骨架，表达边界）
+private func executeCard(_ card: Card) {
+    let def = CardRegistry.require(card.cardId)
 
-/// 卡牌实例（运行时）
-public struct Card: Identifiable, Sendable {
-    public let id: String
-    
-    /// 卡牌定义 ID（新增）
-    public let definitionId: String
-    
-    /// 向后兼容：保留 kind（将在后续版本删除）
-    @available(*, deprecated, message: "Use definitionId instead")
-    public let kind: CardKind?
-    
-    /// 从 CardDefinition 获取属性
-    public var definition: (any CardDefinition.Type)? {
-        CardRegistry.get(definitionId)
-    }
-    
-    public var cost: Int {
-        definition?.cost ?? kind?.cost ?? 0
-    }
-    
-    public var displayName: String {
-        definition?.displayName ?? kind?.displayName ?? "Unknown"
-    }
-    
-    public var description: String {
-        definition?.description ?? ""
-    }
-    
-    public var baseDamage: Int? {
-        definition?.baseDamage
-    }
-    
-    public var baseBlock: Int? {
-        definition?.baseBlock
-    }
-    
-    // 新的初始化方法（推荐）
-    public init(id: String, definitionId: String) {
-        self.id = id
-        self.definitionId = definitionId
-        self.kind = nil
-    }
-    
-    // 向后兼容的初始化方法（将废弃）
-    public init(id: String, kind: CardKind) {
-        self.id = id
-        self.kind = kind
-        // 将 CardKind 映射到 definitionId
-        self.definitionId = kind.rawValue
-    }
-}
-```
+    // 1) 校验 cost
+    // 2) 扣能量
+    // 3) emit(.played(cardId: card.cardId, cost: def.cost))
 
-### BattleEngine 重构
-
-```swift
-// 在 BattleEngine 中使用协议驱动的卡牌效果执行
-private func executeCardEffect(_ card: Card) {
-    // 优先使用 CardDefinition
-    if let definition = CardRegistry.get(card.definitionId) {
-        executeCardDefinition(definition, card: card)
-        return
-    }
-    
-    // 回退到旧的 switch 方式（向后兼容）
-    if let kind = card.kind {
-        executeCardKind(kind, card: card)
-    }
-}
-
-private func executeCardDefinition(_ definition: any CardDefinition.Type, card: Card) {
-    // 构建执行上下文
-    let context = CardExecutionContext(
+    let snapshot = BattleSnapshot(
+        turn: state.turn,
         player: state.player,
         enemy: state.enemy,
-        battleState: state
+        energy: state.energy
     )
-    
-    // 获取效果列表
-    let effects = definition.execute(context: context)
-    
-    // 执行每个效果
-    for effect in effects {
-        executeEffect(effect)
-    }
+    let effects = def.play(snapshot: snapshot)
+    for e in effects { apply(e) }
 }
 
-private func executeEffect(_ effect: CardEffectResult) {
+private func apply(_ effect: BattleEffect) {
     switch effect {
-    case .dealDamage(let target, let baseDamage):
-        let entity = resolveTarget(target, forDamage: true)
-        let finalDamage = DamageCalculator.calculate(
-            baseDamage: baseDamage,
-            attacker: state.player,
-            defender: entity
-        )
-        let (dealt, blocked) = entity == state.enemy 
-            ? state.enemy.takeDamage(finalDamage)
-            : state.player.takeDamage(finalDamage)
-        battleStats.totalDamageDealt += dealt
-        emit(.damageDealt(
-            source: state.player.name,
-            target: entity.name,
-            amount: dealt,
-            blocked: blocked
-        ))
-        
-    case .gainBlock(let target, let amount):
-        if target == .`self` {
-            state.player.gainBlock(amount)
-            battleStats.totalBlockGained += amount
-            emit(.blockGained(target: state.player.name, amount: amount))
-        }
-        
-    case .applyStatus(let target, let statusId, let stacks):
-        let entity = resolveTarget(target, forDamage: false)
-        applyStatusById(to: &entity, statusId: statusId, stacks: stacks)
-        
-    case .drawCards(let count):
-        drawCards(count)
-        
-    case .gainEnergy(let amount):
-        state.energy += amount
-        emit(.energyGained(amount: amount))
-        
-    case .heal(let target, let amount):
-        // 实现治疗效果
+    case .dealDamage(let target, let base):
+        // 使用 DamageCalculator（后续 P2 会从状态系统统一修正）
+        // applyDamage + emit(.damageDealt...)
         break
-        
-    case .discardCards(let count):
-        // 实现弃牌效果
+    case .gainBlock:
         break
-        
-    case .exhaust:
-        // 消耗卡牌，不进入弃牌堆
-        break
-    }
-}
-
-/// 根据状态 ID 施加状态（临时实现，P2 会重构）
-private func applyStatusById(to entity: inout Entity, statusId: String, stacks: Int) {
-    switch statusId {
-    case "vulnerable":
-        entity.vulnerable += stacks
-        emit(.statusApplied(target: entity.name, effect: "易伤", stacks: stacks))
-    case "weak":
-        entity.weak += stacks
-        emit(.statusApplied(target: entity.name, effect: "虚弱", stacks: stacks))
-    case "strength":
-        entity.strength += stacks
-        emit(.statusApplied(target: entity.name, effect: "力量", stacks: stacks))
-    default:
-        break
+    // ...
     }
 }
 ```
 
-### 实施步骤（修订版）
+### 3) UI 展示如何去掉 switch（对齐 `BattleScreen.buildHandArea`）
 
-| 步骤 | 内容 | 复杂度 | 预计时间 |
-|------|------|--------|----------|
-| P1.1 | 创建 `DamageCalculator`（从 BattleEngine 提取） | ⭐ | 10分钟 |
-| P1.2 | 创建 `CardEffectResult` 枚举 | ⭐ | 15分钟 |
-| P1.3 | 创建 `CardDefinition` 协议和相关类型 | ⭐ | 20分钟 |
-| P1.4 | 实现基础卡牌（Strike, Defend, Bash）及升级版 | ⭐ | 30分钟 |
-| P1.5 | 实现其他现有卡牌（PommelStrike, ShrugItOff, Inflame, Clothesline） | ⭐ | 30分钟 |
-| P1.6 | 创建 `CardRegistry` 注册表 | ⭐ | 15分钟 |
-| P1.7 | 修改 `Card` 结构体添加 `definitionId` | ⭐⭐ | 20分钟 |
-| P1.8 | 重构 `BattleEngine.executeCardEffect()` | ⭐⭐ | 40分钟 |
-| P1.9 | 更新 `StarterDeck` 使用新的卡牌系统 | ⭐ | 10分钟 |
-| P1.10 | 更新 UI 层（EventFormatter, BattleScreen）获取卡牌信息 | ⭐ | 20分钟 |
-| P1.11 | 添加 2 张新卡牌验证扩展性 | ⭐ | 20分钟 |
-| **总计** | | | **~3.5小时** |
+P1 要求把 `BattleScreen.buildHandArea` 中这段：
+- `switch card.kind { ... }`
 
-### 验收标准
+替换为：
+- `let def = CardRegistry.require(card.cardId)`
+- 展示 `def.name / def.cost / def.rulesText`
 
-- [ ] `DamageCalculator` 从 BattleEngine 提取成功
-- [ ] 所有现有 7 张卡牌迁移到协议驱动模式
-- [ ] 3 张基础卡牌有升级版实现
-- [ ] `CardRegistry` 支持按 ID、稀有度、类型查询
-- [ ] `Card` 结构体同时支持新旧两种初始化方式
-- [ ] BattleEngine 优先使用 CardDefinition，回退到 CardKind
-- [ ] 添加 2 张新卡牌验证扩展性
-- [ ] 所有测试通过
+这样新增卡牌不会再迫使 UI 改 switch。
+
+---
+
+### P1 破坏性改动清单（必须一次完成）
+
+- **删除**：`Sources/GameCore/Cards/CardKind.swift`
+- **重写**：`Sources/GameCore/Cards/Card.swift`（移除 kind/switch，改为 `CardID` 引用定义）
+- **重写**：`createStarterDeck()`（改为创建 `Card(cardId: ...)` 的实例）
+- **重写**：`BattleEngine.executeCardEffect`（移除按卡牌 switch，改为执行 `BattleEffect`）
+- **重写**：`BattleScreen.buildHandArea`（移除按卡牌 switch，改为从 registry 取 `rulesText`）
+- **调整事件载荷**（建议）：`BattleEvent.played/drew` 使用 `CardID` 作为 source-of-truth（由 CLI 通过 registry 转成文字）
+
+### P1 实施步骤（高优先级顺序）
+
+- P1.1 建 `Kernel/IDs.swift`：`CardID`（以及后续会用到的 `StatusID`）
+- P1.2 建 `Kernel/BattleEffect.swift`：统一效果枚举 + `EffectTarget`
+- P1.3 重写 `Card.swift`（实例）为 `id + cardId`
+- P1.4 建 `CardDefinition.swift` + `CardRegistry.swift`
+- P1.5 用 Definition 重写现有 7 张卡牌（含 Strike+/Defend+/Bash+）
+- P1.6 BattleEngine：出牌改为 resolve definition → effects → apply(effect)
+- P1.7 BattleScreen：去掉 card.kind switch，展示 rulesText
+- P1.8 验证：build + 测试脚本
+
+### P1 验收标准（必须全部通过）
+
+- [ ] 代码库中不存在 `CardKind`（文件删除 + 无引用）
+- [ ] `BattleEngine` 不再含 “按卡牌 switch 执行效果”
+- [ ] `BattleScreen.buildHandArea` 不再含 “按卡牌 switch 拼描述”
+- [ ] 新增卡牌无需修改 BattleEngine/BattleScreen，只需新增 Definition + 注册
 - [ ] `swift build` 成功
+- [ ] `./.cursor/Scripts/test_game.sh` 成功
 
 ---
 
