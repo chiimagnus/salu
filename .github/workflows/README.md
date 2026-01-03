@@ -41,7 +41,7 @@
 - 上传构建产物
 
 **产物：**
-- `salu-macos-x64.tar.gz` - macOS x64 版本
+- `salu-macos.tar.gz` - macOS 版本
 
 ## 使用说明
 
