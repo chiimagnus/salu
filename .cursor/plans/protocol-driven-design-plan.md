@@ -353,6 +353,7 @@ public enum BattleEffect: Sendable, Equatable {
     case drawCards(count: Int)
     case gainEnergy(amount: Int)
     case applyStatus(target: EffectTarget, statusId: StatusID, stacks: Int)
+    case heal(target: EffectTarget, amount: Int)   // P4 遗物等需要
     // 未来扩展：exhaust/addTempCard/shuffleIntoDraw/multiTarget...
 }
 
@@ -1010,66 +1011,91 @@ private func executeEnemyTurn() {
 
 ## P4: 遗物系统设计 ⭐
 
-### 目标
-- 设计遗物系统协议
-- 支持多种触发时机（战斗开始、回合开始、打牌时等）
-- 遗物与战斗引擎深度集成
+### P4 重新审查：当前方案的问题（作为“框架”还不够）
+
+当前 P4 的写法存在几个“框架级”问题：
+
+- **重复造轮子**：`RelicEffectResult` 本质上就是另一套 “效果枚举”，会与 P1 的 `BattleEffect` 分裂
+- **Context 过大且全是 Optional**：`RelicTriggerContext` 同时塞 battle/run/card/damage 信息，调用方容易传错/漏传
+- **类型不统一**：状态还是字符串（`"strength"`），与 P2 的 `StatusID/StatusRegistry` 不一致
+- **触发点没有边界**：battle 触发与 run 触发混在同一套 trigger + result 里，后期会变得不可维护
+
+结论：遗物应该是“插件/Hook”，**统一产出 Effect**，并且分清 battle 与 run 两个层级。
+
+### P4 目标（破坏性：统一到 Hook + Effect）
+
+- 建立 **RelicID / RelicDefinition / RelicRegistry / RelicManager** 的遗物框架
+- 触发采用 **BattleTrigger（战斗层）/ RunTrigger（冒险层）** 分离
+- 遗物效果统一产出：
+  - battle 内：`[BattleEffect]`
+  - run 内：`[RunEffect]`（P5/P6 会补齐 run 框架）
+- `BattleEngine` 只负责：在触发点收集遗物效果 → `apply(effect:)` 执行 → emit `BattleEvent`
 
 ### 新架构设计
 
 ```
-Sources/GameCore/Relics/
-├── RelicDefinition.swift         # 遗物定义协议
-├── RelicTrigger.swift            # 触发时机枚举
-├── RelicManager.swift            # 遗物管理器
-├── RelicRegistry.swift           # 遗物注册表
-└── Definitions/
-    ├── StarterRelics.swift       # 起始遗物
-    │   ├── BurningBlood          # 燃烧之血：战斗结束恢复 6 HP
-    │   └── ...
-    ├── CommonRelics.swift        # 普通遗物
-    │   ├── Vajra                 # 金刚杵：+1 力量
-    │   ├── Lantern               # 灯笼：战斗开始 +1 能量
-    │   └── ...
-    └── BossRelics.swift          # Boss 遗物
+Sources/GameCore/
+├── Kernel/
+│   ├── IDs.swift                     # RelicID（强类型，P4 新增）
+│   ├── BattleTrigger.swift           # 战斗触发点（P4 新增）
+│   ├── BattleEffect.swift            # 统一效果（P4 需要补充 heal 等 case）
+│   └── RunEffect.swift               # RunEffect（P5/P6 补齐）
+│
+├── Relics/
+│   ├── RelicDefinition.swift         # 遗物定义协议（Hook：trigger -> effects）
+│   ├── RelicRegistry.swift           # 注册表：RelicID -> Definition
+│   ├── RelicManager.swift            # 管理器：持有 RelicID 列表并处理触发
+│   └── Definitions/
+│       ├── Starter.swift             # 起始遗物
+│       ├── Common.swift              # 普通遗物
+│       └── Boss.swift                # Boss 遗物
+│
+└── Battle/
+    └── BattleEngine.swift            # 触发 BattleTrigger → 收集 relic effects → apply(effect:)
 ```
 
 ### 协议设计
 
 ```swift
 // ═══════════════════════════════════════════════════════════════
-// RelicDefinition.swift - 遗物定义协议
+// IDs.swift / BattleTrigger.swift / RelicDefinition.swift（P4 核心接口）
 // ═══════════════════════════════════════════════════════════════
 
-/// 遗物定义协议
-public protocol RelicDefinition: Sendable {
-    /// 遗物唯一标识符
-    static var id: String { get }
-    
-    /// 显示名称
-    static var displayName: String { get }
-    
-    /// 遗物描述
-    static var description: String { get }
-    
-    /// 遗物稀有度
-    static var rarity: RelicRarity { get }
-    
-    /// 显示图标
-    static var icon: String { get }
-    
-    /// 该遗物关注的触发时机
-    static var triggers: [RelicTrigger] { get }
-    
-    /// 处理触发事件
-    /// - Parameters:
-    ///   - trigger: 触发类型
-    ///   - context: 触发上下文
-    /// - Returns: 遗物效果结果
-    static func onTrigger(_ trigger: RelicTrigger, context: RelicTriggerContext) -> RelicEffectResult
+/// 遗物 ID（强类型）
+public struct RelicID: Hashable, Sendable, ExpressibleByStringLiteral {
+    public let rawValue: String
+    public init(_ rawValue: String) { self.rawValue = rawValue }
+    public init(stringLiteral value: String) { self.rawValue = value }
 }
 
-/// 遗物稀有度
+/// 战斗触发点（只包含 battle 相关）
+/// 说明：run 相关触发点（进入房间/获得金币等）会在 P5/P6 的 RunEngine 中定义 RunTrigger/RunEffect
+public enum BattleTrigger: Sendable, Equatable {
+    case battleStart
+    case battleEnd(won: Bool)
+    case turnStart(turn: Int)
+    case turnEnd(turn: Int)
+    case cardPlayed(cardId: CardID)
+    case cardDrawn(cardId: CardID)
+    case damageDealt(amount: Int)
+    case damageTaken(amount: Int)
+    case blockGained(amount: Int)
+    case enemyKilled
+}
+
+/// 遗物定义协议（Hook）
+/// 约束：只能产出 [BattleEffect]，不直接修改 BattleState，也不直接 emit 事件
+public protocol RelicDefinition: Sendable {
+    static var id: RelicID { get }
+    static var name: String { get }         // UI 名称（中文）
+    static var description: String { get }
+    static var rarity: RelicRarity { get }
+    static var icon: String { get }
+
+    /// 触发：由 BattleEngine 在对应时机调用
+    static func onBattleTrigger(_ trigger: BattleTrigger, snapshot: BattleSnapshot) -> [BattleEffect]
+}
+
 public enum RelicRarity: String, Sendable {
     case starter = "起始"
     case common = "普通"
@@ -1078,131 +1104,58 @@ public enum RelicRarity: String, Sendable {
     case boss = "Boss"
     case event = "事件"
 }
-
-/// 遗物触发时机
-public enum RelicTrigger: String, Sendable, Equatable {
-    // 战斗相关
-    case battleStart = "battle_start"      // 战斗开始
-    case battleEnd = "battle_end"          // 战斗结束
-    case turnStart = "turn_start"          // 回合开始
-    case turnEnd = "turn_end"              // 回合结束
-    
-    // 卡牌相关
-    case cardPlayed = "card_played"        // 打出卡牌
-    case cardDrawn = "card_drawn"          // 抽牌
-    case cardExhausted = "card_exhausted"  // 消耗卡牌
-    
-    // 伤害相关
-    case damageDealt = "damage_dealt"      // 造成伤害
-    case damageTaken = "damage_taken"      // 受到伤害
-    case blockGained = "block_gained"      // 获得格挡
-    
-    // 状态相关
-    case enemyKilled = "enemy_killed"      // 击杀敌人
-    case hpLost = "hp_lost"                // 失去 HP
-    case goldGained = "gold_gained"        // 获得金币
-    
-    // 冒险相关
-    case roomEntered = "room_entered"      // 进入房间
-    case runStart = "run_start"            // 冒险开始
-}
-
-/// 遗物触发上下文
-public struct RelicTriggerContext: Sendable {
-    public let player: Entity
-    public let enemy: Entity?
-    public let battleState: BattleState?
-    public let runState: RunState?
-    
-    // 可选的事件相关数据
-    public let cardPlayed: Card?
-    public let damageAmount: Int?
-    public let blockAmount: Int?
-    
-    public init(
-        player: Entity,
-        enemy: Entity? = nil,
-        battleState: BattleState? = nil,
-        runState: RunState? = nil,
-        cardPlayed: Card? = nil,
-        damageAmount: Int? = nil,
-        blockAmount: Int? = nil
-    ) {
-        self.player = player
-        self.enemy = enemy
-        self.battleState = battleState
-        self.runState = runState
-        self.cardPlayed = cardPlayed
-        self.damageAmount = damageAmount
-        self.blockAmount = blockAmount
-    }
-}
-
-/// 遗物效果结果
-public enum RelicEffectResult: Sendable {
-    case none                                      // 无效果
-    case heal(amount: Int)                         // 治疗
-    case gainEnergy(amount: Int)                   // 获得能量
-    case gainBlock(amount: Int)                    // 获得格挡
-    case drawCards(count: Int)                     // 抽牌
-    case applyStatus(statusId: String, stacks: Int) // 施加状态
-    case gainGold(amount: Int)                     // 获得金币
-    case multiple([RelicEffectResult])             // 多个效果
-}
 ```
 
 ### 遗物实现示例
 
 ```swift
 // ═══════════════════════════════════════════════════════════════
-// StarterRelics.swift - 起始遗物
+// Relics/Definitions/*.swift - 遗物实现示例
 // ═══════════════════════════════════════════════════════════════
 
 /// 燃烧之血（铁甲战士起始遗物）
 /// 效果：战斗结束时恢复 6 HP
 public struct BurningBloodRelic: RelicDefinition {
-    public static let id = "burning_blood"
-    public static let displayName = "燃烧之血"
+    public static let id: RelicID = "burning_blood"
+    public static let name = "燃烧之血"
     public static let description = "战斗结束时恢复 6 点生命值"
     public static let rarity: RelicRarity = .starter
     public static let icon = "🔥"
-    public static let triggers: [RelicTrigger] = [.battleEnd]
-    
-    public static func onTrigger(_ trigger: RelicTrigger, context: RelicTriggerContext) -> RelicEffectResult {
-        guard trigger == .battleEnd else { return .none }
-        return .heal(amount: 6)
+
+    public static func onBattleTrigger(_ trigger: BattleTrigger, snapshot: BattleSnapshot) -> [BattleEffect] {
+        guard case .battleEnd(let won) = trigger, won else { return [] }
+        // 说明：这里需要 BattleEffect.heal（P4 会补充到 BattleEffect）
+        return [.heal(target: .player, amount: 6)]
     }
 }
 
 /// 金刚杵
 /// 效果：战斗开始时获得 1 点力量
 public struct VajraRelic: RelicDefinition {
-    public static let id = "vajra"
-    public static let displayName = "金刚杵"
+    public static let id: RelicID = "vajra"
+    public static let name = "金刚杵"
     public static let description = "战斗开始时获得 1 点力量"
     public static let rarity: RelicRarity = .common
     public static let icon = "💎"
-    public static let triggers: [RelicTrigger] = [.battleStart]
-    
-    public static func onTrigger(_ trigger: RelicTrigger, context: RelicTriggerContext) -> RelicEffectResult {
-        guard trigger == .battleStart else { return .none }
-        return .applyStatus(statusId: "strength", stacks: 1)
+
+    public static func onBattleTrigger(_ trigger: BattleTrigger, snapshot: BattleSnapshot) -> [BattleEffect] {
+        guard case .battleStart = trigger else { return [] }
+        return [.applyStatus(target: .player, statusId: "strength", stacks: 1)]
     }
 }
 
 /// 灯笼
 /// 效果：战斗开始时获得 1 点能量
 public struct LanternRelic: RelicDefinition {
-    public static let id = "lantern"
-    public static let displayName = "灯笼"
+    public static let id: RelicID = "lantern"
+    public static let name = "灯笼"
     public static let description = "战斗开始时获得 1 点能量"
     public static let rarity: RelicRarity = .common
     public static let icon = "🏮"
-    public static let triggers: [RelicTrigger] = [.battleStart]
-    
-    public static func onTrigger(_ trigger: RelicTrigger, context: RelicTriggerContext) -> RelicEffectResult {
-        guard trigger == .battleStart else { return .none }
-        return .gainEnergy(amount: 1)
+
+    public static func onBattleTrigger(_ trigger: BattleTrigger, snapshot: BattleSnapshot) -> [BattleEffect] {
+        guard case .battleStart = trigger else { return [] }
+        return [.gainEnergy(amount: 1)]
     }
 }
 ```
@@ -1218,102 +1171,95 @@ public struct LanternRelic: RelicDefinition {
 /// 管理玩家持有的遗物，处理触发事件
 public struct RelicManager: Sendable {
     /// 持有的遗物 ID 列表
-    private var relicIds: [String] = []
+    private var relicIds: [RelicID] = []
     
     public init() {}
     
     /// 添加遗物
-    public mutating func add(_ relicId: String) {
+    public mutating func add(_ relicId: RelicID) {
         guard !relicIds.contains(relicId) else { return }
         relicIds.append(relicId)
     }
     
     /// 移除遗物
-    public mutating func remove(_ relicId: String) {
+    public mutating func remove(_ relicId: RelicID) {
         relicIds.removeAll { $0 == relicId }
     }
     
     /// 是否拥有指定遗物
-    public func has(_ relicId: String) -> Bool {
+    public func has(_ relicId: RelicID) -> Bool {
         relicIds.contains(relicId)
     }
-    
-    /// 获取所有遗物
-    public var allRelics: [any RelicDefinition.Type] {
-        relicIds.compactMap { RelicRegistry.get($0) }
-    }
-    
-    /// 触发所有关注指定事件的遗物
-    public func trigger(_ trigger: RelicTrigger, context: RelicTriggerContext) -> [RelicEffectResult] {
-        var results: [RelicEffectResult] = []
-        
+
+    /// 战斗触发：收集所有遗物产出的 BattleEffect（由 BattleEngine 执行）
+    public func onBattleTrigger(_ trigger: BattleTrigger, snapshot: BattleSnapshot) -> [BattleEffect] {
+        var effects: [BattleEffect] = []
+
         for relicId in relicIds {
-            guard let definition = RelicRegistry.get(relicId) else { continue }
-            
-            // 只触发关注此事件的遗物
-            guard definition.triggers.contains(trigger) else { continue }
-            
-            let result = definition.onTrigger(trigger, context: context)
-            if case .none = result {
-                continue
-            }
-            results.append(result)
+            let def = RelicRegistry.require(relicId)
+            effects.append(contentsOf: def.onBattleTrigger(trigger, snapshot: snapshot))
         }
-        
-        return results
+
+        return effects
     }
+}
+```
+
+### RelicRegistry
+
+```swift
+// ═══════════════════════════════════════════════════════════════
+// RelicRegistry.swift - 遗物注册表
+// ═══════════════════════════════════════════════════════════════
+
+public enum RelicRegistry {
+    private static let defs: [RelicID: any RelicDefinition.Type] = [
+        BurningBloodRelic.id: BurningBloodRelic.self,
+        VajraRelic.id: VajraRelic.self,
+        LanternRelic.id: LanternRelic.self
+    ]
+
+    public static func get(_ id: RelicID) -> (any RelicDefinition.Type)? { defs[id] }
+    public static func require(_ id: RelicID) -> any RelicDefinition.Type { defs[id]! }
 }
 ```
 
 ### BattleEngine 集成
 
 ```swift
-// 在 BattleEngine 中添加遗物触发点
+// BattleEngine：遗物触发点示例
+// 约束：遗物不直接改状态/不 emit 事件，只产出 BattleEffect
+// BattleEngine 统一执行：for effect in effects { apply(effect) }
+
 public func startBattle() {
     events.removeAll()
     emit(.battleStarted)
-    
-    // 触发战斗开始遗物
-    let context = RelicTriggerContext(
+
+    let snapshot = BattleSnapshot(
+        turn: state.turn,
         player: state.player,
         enemy: state.enemy,
-        battleState: state
+        energy: state.energy
     )
-    let relicResults = relicManager.trigger(.battleStart, context: context)
-    for result in relicResults {
-        applyRelicEffect(result)
+
+    // battleStart 触发遗物
+    for effect in relicManager.onBattleTrigger(.battleStart, snapshot: snapshot) {
+        apply(effect) // apply(effect:) 来自 P1（统一效果执行入口）
     }
-    
+
     startNewTurn()
 }
 
-private func applyRelicEffect(_ result: RelicEffectResult) {
-    switch result {
-    case .none:
-        break
-    case .heal(let amount):
-        state.player.currentHP = min(state.player.maxHP, state.player.currentHP + amount)
-        emit(.healed(target: state.player.name, amount: amount))
-    case .gainEnergy(let amount):
-        state.energy += amount
-        emit(.energyGained(amount: amount))
-    case .gainBlock(let amount):
-        state.player.gainBlock(amount)
-        emit(.blockGained(target: state.player.name, amount: amount))
-    case .drawCards(let count):
-        drawCards(count)
-    case .applyStatus(let statusId, let stacks):
-        state.player.statuses.apply(statusId, stacks: stacks)
-        if let definition = StatusRegistry.get(statusId) {
-            emit(.statusApplied(target: state.player.name, effect: definition.displayName, stacks: stacks))
-        }
-    case .gainGold(let amount):
-        // 需要 RunState 支持
-        break
-    case .multiple(let effects):
-        for effect in effects {
-            applyRelicEffect(effect)
-        }
+private func handleBattleEnd(won: Bool) {
+    let snapshot = BattleSnapshot(
+        turn: state.turn,
+        player: state.player,
+        enemy: state.enemy,
+        energy: state.energy
+    )
+
+    for effect in relicManager.onBattleTrigger(.battleEnd(won: won), snapshot: snapshot) {
+        apply(effect)
     }
 }
 ```
@@ -1322,31 +1268,30 @@ private func applyRelicEffect(_ result: RelicEffectResult) {
 
 | 步骤 | 内容 | 复杂度 | 预计时间 |
 |------|------|--------|----------|
-| P4.1 | 创建 `RelicDefinition` 协议和相关类型 | ⭐ | 25分钟 |
-| P4.2 | 创建 `RelicTrigger` 枚举 | ⭐ | 10分钟 |
-| P4.3 | 创建 `RelicManager` 管理器 | ⭐⭐ | 30分钟 |
-| P4.4 | 创建 `RelicRegistry` 注册表 | ⭐ | 15分钟 |
-| P4.5 | 实现 `BurningBloodRelic`（燃烧之血） | ⭐ | 15分钟 |
-| P4.6 | 实现 `VajraRelic`（金刚杵） | ⭐ | 10分钟 |
-| P4.7 | 实现 `LanternRelic`（灯笼） | ⭐ | 10分钟 |
-| P4.8 | 修改 `RunState` 添加 `RelicManager` | ⭐ | 15分钟 |
-| P4.9 | 修改 `BattleEngine` 添加遗物触发点 | ⭐⭐ | 40分钟 |
-| P4.10 | 添加遗物 UI 显示 | ⭐ | 25分钟 |
-| P4.11 | 验证所有遗物效果正确 | ⭐ | 20分钟 |
+| P4.1 | 在 `Kernel/IDs.swift` 增加 `RelicID`（强类型） | ⭐ | 10分钟 |
+| P4.2 | 创建 `Kernel/BattleTrigger.swift`（Battle 触发点枚举） | ⭐ | 15分钟 |
+| P4.3 | 扩展 `Kernel/BattleEffect.swift`：补齐遗物需要的效果（至少 `heal`） | ⭐⭐ | 15分钟 |
+| P4.4 | 创建 `RelicDefinition` 协议（onBattleTrigger → [BattleEffect]） | ⭐ | 20分钟 |
+| P4.5 | 创建 `RelicRegistry`（RelicID → Definition） | ⭐ | 15分钟 |
+| P4.6 | 创建 `RelicManager`（持有 RelicID 列表，负责触发汇总） | ⭐⭐ | 25分钟 |
+| P4.7 | 实现 3 个基础遗物（BurningBlood / Vajra / Lantern） | ⭐ | 30分钟 |
+| P4.8 | 修改 `RunState` 添加 `RelicManager`（冒险持久状态） | ⭐ | 15分钟 |
+| P4.9 | 修改 `BattleEngine`：在 battleStart/battleEnd/turnStart 等触发点调用 relicManager 并 apply effects | ⭐⭐ | 40分钟 |
+| P4.10 | CLI UI：在战斗界面/设置页显示当前遗物（名称 + 图标 + 描述） | ⭐ | 25分钟 |
+| P4.11 | 验证所有遗物触发点与效果正确 | ⭐ | 20分钟 |
 | **总计** | | | **~3.5小时** |
 
 ### 验收标准
 
-- [ ] `RelicDefinition` 协议完整定义
-- [ ] `RelicManager` 正确管理遗物集合
-- [ ] `RelicRegistry` 正确注册所有遗物
-- [ ] 燃烧之血：战斗结束恢复 6 HP
-- [ ] 金刚杵：战斗开始 +1 力量
-- [ ] 灯笼：战斗开始 +1 能量
-- [ ] `BattleEngine` 正确触发遗物效果
-- [ ] 遗物在 UI 中正确显示
-- [ ] 所有测试通过
-- [ ] `swift build` 成功
+ - [ ] `RelicRegistry` 使用 `RelicID` 注册遗物，新增遗物只需新增 Definition + 注册
+ - [ ] `RelicManager` 不产出 BattleEvent（只产出 BattleEffect 列表）
+ - [ ] `BattleTrigger` 只包含 battle 层触发点（run 层触发点留给 P5/P6）
+ - [ ] `BattleEffect` 已补齐遗物所需效果（至少支持 heal）
+ - [ ] BurningBlood：胜利后战斗结束恢复 6 HP
+ - [ ] Vajra：战斗开始获得 1 点力量
+ - [ ] Lantern：战斗开始获得 1 点能量
+ - [ ] `swift build` 成功
+ - [ ] `./.cursor/Scripts/test_game.sh` 成功
 
 ---
 
