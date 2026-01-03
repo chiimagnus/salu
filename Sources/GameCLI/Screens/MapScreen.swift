@@ -77,36 +77,30 @@ enum MapScreen {
             let rowNodes = runState.map.nodes(atRow: row)
             var rowLine = "  "
             
-            // 添加层数标记
-            if row == maxRow {
-                rowLine += "\(Terminal.dim)Boss→\(Terminal.reset) "
+            // 检查这一层是否有可选择的节点
+            let hasAccessibleNode = rowNodes.contains { $0.isAccessible }
+            
+            // 添加层数标记（统一8个字符宽度）
+            if hasAccessibleNode {
+                // 当前可选择的层 - 黄色
+                rowLine += "\(Terminal.yellow)  当前→\(Terminal.reset) "
+            } else if row == maxRow {
+                rowLine += "\(Terminal.dim)  Boss→\(Terminal.reset) "
             } else if row == 0 {
-                rowLine += "\(Terminal.dim)起点→\(Terminal.reset) "
+                rowLine += "\(Terminal.dim)  起点→\(Terminal.reset) "
             } else {
-                rowLine += "      "
+                rowLine += "        "
             }
             
             // 显示该层的所有节点
             var nodeStrings: [String] = []
             for node in rowNodes {
-                let nodeStr = formatNode(node, currentNodeId: runState.currentNodeId)
+                let nodeStr = formatNode(node)
                 nodeStrings.append(nodeStr)
             }
             
             rowLine += nodeStrings.joined(separator: "  ")
             lines.append(rowLine)
-            
-            // 显示连接线（除了最后一层）
-            if row > 0 {
-                let connectionLine = buildConnectionLine(
-                    fromNodes: rowNodes,
-                    toRow: row - 1,
-                    map: runState.map
-                )
-                if !connectionLine.isEmpty {
-                    lines.append("        \(connectionLine)")
-                }
-            }
         }
         
         lines.append("")
@@ -115,31 +109,19 @@ enum MapScreen {
         return lines
     }
     
-    private static func formatNode(_ node: MapNode, currentNodeId: String?) -> String {
+    private static func formatNode(_ node: MapNode) -> String {
         let icon = node.roomType.icon
         
-        if node.id == currentNodeId {
-            // 当前位置
-            return "\(Terminal.bold)\(Terminal.yellow)[\(icon)]\(Terminal.reset)"
-        } else if node.isCompleted {
-            // 已完成
-            return "\(Terminal.dim)[\(icon)]\(Terminal.reset)"
-        } else if node.isAccessible {
-            // 可选择
+        if node.isCompleted {
+            // 已完成 - 绿色
             return "\(Terminal.green)[\(icon)]\(Terminal.reset)"
+        } else if node.isAccessible {
+            // 可选择 - 绿色加粗（当前可进入的节点）
+            return "\(Terminal.bold)\(Terminal.green)[\(icon)]\(Terminal.reset)"
         } else {
-            // 未解锁
-            return "\(Terminal.dim)[?]\(Terminal.reset)"
+            // 未解锁 - 灰色
+            return "\(Terminal.dim)[\(icon)]\(Terminal.reset)"
         }
-    }
-    
-    private static func buildConnectionLine(fromNodes: [MapNode], toRow: Int, map: [MapNode]) -> String {
-        // 简化的连接线显示
-        let hasConnections = fromNodes.contains { !$0.connections.isEmpty }
-        if hasConnections {
-            return "\(Terminal.dim)│\(Terminal.reset)"
-        }
-        return ""
     }
     
     private static func buildNodeSelection(runState: RunState) -> [String] {

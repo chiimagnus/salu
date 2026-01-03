@@ -98,9 +98,19 @@ public struct RunState: Sendable {
             return
         }
         
+        // 获取当前节点的层数
+        let currentRow = map[nodeIndex].row
+        
         // 标记当前节点为已完成
         map[nodeIndex].isCompleted = true
         map[nodeIndex].isAccessible = false
+        
+        // 将同一层的其他可访问节点设为不可访问（不能回头选择）
+        for i in 0..<map.count {
+            if map[i].row == currentRow && map[i].id != nodeId {
+                map[i].isAccessible = false
+            }
+        }
         
         // 获取当前节点的连接
         let connections = map[nodeIndex].connections
