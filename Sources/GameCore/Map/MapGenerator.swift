@@ -2,6 +2,23 @@
 /// 负责生成不同类型的地图
 public struct MapGenerator {
     
+    /// 地图配置
+    public struct MapConfig: Sendable {
+        public let floors: Int              // 总楼层数
+        public let minColumnsPerFloor: Int  // 每层最少节点数
+        public let maxColumnsPerFloor: Int  // 每层最多节点数
+        public let bossFloor: Int           // Boss 楼层
+        public let restFloorInterval: Int   // 休息点间隔
+        
+        public static let act1 = MapConfig(
+            floors: 15,
+            minColumnsPerFloor: 2,
+            maxColumnsPerFloor: 4,
+            bossFloor: 14,
+            restFloorInterval: 6
+        )
+    }
+    
     /// 生成简单的线性地图（5 个节点，包含 1 个休息）
     /// - Returns: 节点列表和路径列表
     public static func generateLinearMap() -> (nodes: [MapNode], paths: [MapPath]) {
@@ -82,5 +99,127 @@ public struct MapGenerator {
         paths.append(MapPath(from: 5, to: finalId))
         
         return (nodes, paths)
+    }
+    
+    /// 生成程序化地图（杀戮尖塔风格）
+    /// - Parameters:
+    ///   - config: 地图配置
+    ///   - seed: 随机数种子
+    /// - Returns: 节点列表和路径列表
+    public static func generateProceduralMap(config: MapConfig, seed: UInt64) 
+        -> (nodes: [MapNode], paths: [MapPath]) {
+        
+        var rng = SeededRNG(seed: seed)
+        var nodes: [MapNode] = []
+        var paths: [MapPath] = []
+        var nodeId = 0
+        
+        // 存储每层的节点 ID
+        var floorNodes: [[Int]] = []
+        
+        for floor in 0..<config.floors {
+            var currentFloorNodes: [Int] = []
+            
+            // 确定这层有多少个节点
+            let nodeCount: Int
+            if floor == 0 {
+                nodeCount = 1  // 起始层只有 1 个节点
+            } else if floor == config.bossFloor {
+                nodeCount = 1  // Boss 层只有 1 个节点
+            } else {
+                nodeCount = rng.nextInt(
+                    lowerBound: config.minColumnsPerFloor,
+                    upperBound: config.maxColumnsPerFloor + 1
+                )
+            }
+            
+            // 创建节点
+            for col in 0..<nodeCount {
+                let roomType = determineRoomType(
+                    floor: floor,
+                    bossFloor: config.bossFloor,
+                    restInterval: config.restFloorInterval,
+                    rng: &rng
+                )
+                
+                let node = MapNode(
+                    id: nodeId,
+                    floor: floor,
+                    column: col,
+                    roomType: roomType
+                )
+                nodes.append(node)
+                currentFloorNodes.append(nodeId)
+                nodeId += 1
+            }
+            
+            // 连接到上一层
+            if floor > 0 {
+                let previousFloorNodes = floorNodes[floor - 1]
+                paths.append(contentsOf: generateConnections(
+                    from: previousFloorNodes,
+                    to: currentFloorNodes,
+                    rng: &rng
+                ))
+            }
+            
+            floorNodes.append(currentFloorNodes)
+        }
+        
+        return (nodes, paths)
+    }
+    
+    /// 确定房间类型
+    private static func determineRoomType(
+        floor: Int,
+        bossFloor: Int,
+        restInterval: Int,
+        rng: inout SeededRNG
+    ) -> RoomType {
+        if floor == bossFloor {
+            return .boss
+        }
+        
+        // 每隔一定楼层有休息点
+        if floor > 0 && floor % restInterval == 0 {
+            // 30% 概率是休息点
+            return rng.nextInt(upperBound: 10) < 3 ? .rest : .battle
+        }
+        
+        return .battle
+    }
+    
+    /// 生成两层之间的连接
+    private static func generateConnections(
+        from previousNodes: [Int],
+        to currentNodes: [Int],
+        rng: inout SeededRNG
+    ) -> [MapPath] {
+        var paths: [MapPath] = []
+        var connectedCurrent = Set<Int>()
+        var connectedPrevious = Set<Int>()
+        
+        // 确保每个当前节点至少有一条入路
+        for currentNode in currentNodes {
+            // 随机选择 1-2 个父节点连接
+            let connectionCount = rng.nextInt(upperBound: 100) < 70 ? 1 : 2
+            let shuffledPrevious = rng.shuffled(previousNodes)
+            
+            for i in 0..<min(connectionCount, shuffledPrevious.count) {
+                paths.append(MapPath(from: shuffledPrevious[i], to: currentNode))
+                connectedPrevious.insert(shuffledPrevious[i])
+            }
+            connectedCurrent.insert(currentNode)
+        }
+        
+        // 确保每个上层节点至少有一个出口
+        for previousNode in previousNodes {
+            if !connectedPrevious.contains(previousNode) {
+                let randomCurrent = currentNodes[rng.nextInt(upperBound: currentNodes.count)]
+                paths.append(MapPath(from: previousNode, to: randomCurrent))
+            }
+        }
+        
+        return paths
     }
 }

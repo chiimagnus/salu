@@ -12,7 +12,7 @@ public final class RunManager: @unchecked Sendable {
         self.rng = SeededRNG(seed: seed)
         let player = createDefaultPlayer()
         let deck = createStarterDeck()
-        self.runState = RunState(player: player, deck: deck)
+        self.runState = RunState(player: player, deck: deck, seed: seed)
     }
     
     /// 开始房间内容（战斗、休息等）

@@ -28,6 +28,13 @@ public final class SeededRNG: @unchecked Sendable {
         return Int(r % UInt64(upperBound))
     }
     
+    /// 生成 [lowerBound, upperBound) 范围内的随机整数
+    public func nextInt(lowerBound: Int, upperBound: Int) -> Int {
+        guard lowerBound < upperBound else { return lowerBound }
+        let range = upperBound - lowerBound
+        return lowerBound + nextInt(upperBound: range)
+    }
+    
     /// Fisher-Yates 洗牌算法
     public func shuffle<T>(_ array: inout [T]) {
         guard array.count > 1 else { return }

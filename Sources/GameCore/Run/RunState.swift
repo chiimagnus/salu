@@ -16,14 +16,17 @@ public struct RunState: Sendable {
     public var isRunOver: Bool          // 冒险是否结束
     public var won: Bool                // 是否胜利
     
-    public init(player: Entity, deck: [Card]) {
+    public init(player: Entity, deck: [Card], seed: UInt64) {
         self.player = player
         self.currentFloor = 0
         self.gold = 99
         self.deck = deck
         
-        // 初始化分叉地图
-        let map = MapGenerator.generateBranchingMap()
+        // 生成程序化地图
+        let map = MapGenerator.generateProceduralMap(
+            config: .act1,
+            seed: seed
+        )
         self.nodes = map.nodes
         self.paths = map.paths
         self.currentNodeId = 0
