@@ -113,11 +113,11 @@ enum MapScreen {
         let icon = node.roomType.icon
         
         if node.isCompleted {
-            // 已完成 - 绿色
-            return "\(Terminal.green)[\(icon)]\(Terminal.reset)"
+            // 已完成 - 绿色勾号
+            return "\(Terminal.green)[✓]\(Terminal.reset)"
         } else if node.isAccessible {
-            // 可选择 - 绿色加粗（当前可进入的节点）
-            return "\(Terminal.bold)\(Terminal.green)[\(icon)]\(Terminal.reset)"
+            // 可选择 - 黄色高亮（当前可进入的节点）
+            return "\(Terminal.bold)\(Terminal.yellow)[\(icon)]\(Terminal.reset)"
         } else {
             // 未解锁 - 灰色
             return "\(Terminal.dim)[\(icon)]\(Terminal.reset)"
