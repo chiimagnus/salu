@@ -168,8 +168,9 @@ public final class BattleEngine: @unchecked Sendable {
             drawCards(count)
 
         case .gainEnergy(let amount):
+            guard amount != 0 else { return }
             state.energy += amount
-            emit(.energyReset(amount: state.energy))
+            emit(.energyGained(amount: amount, current: state.energy))
 
         case .applyStatus(let target, let statusId, let stacks):
             if target == .player {
@@ -184,14 +185,14 @@ public final class BattleEngine: @unchecked Sendable {
                 state.player.currentHP = min(state.player.maxHP, state.player.currentHP + amount)
                 let healed = state.player.currentHP - old
                 if healed > 0 {
-                    emit(.statusApplied(target: state.player.name, effect: "治疗", stacks: healed))
+                    emit(.healed(target: state.player.name, amount: healed))
                 }
             } else {
                 let old = state.enemy.currentHP
                 state.enemy.currentHP = min(state.enemy.maxHP, state.enemy.currentHP + amount)
                 let healed = state.enemy.currentHP - old
                 if healed > 0 {
-                    emit(.statusApplied(target: state.enemy.name, effect: "治疗", stacks: healed))
+                    emit(.healed(target: state.enemy.name, amount: healed))
                 }
             }
         }

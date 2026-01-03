@@ -9,6 +9,9 @@ public enum BattleEvent: Sendable, Equatable {
     
     /// 能量重置
     case energyReset(amount: Int)
+
+    /// 获得能量（非回合重置）
+    case energyGained(amount: Int, current: Int)
     
     /// 格挡清除
     case blockCleared(target: String, amount: Int)
@@ -27,6 +30,9 @@ public enum BattleEvent: Sendable, Equatable {
     
     /// 获得格挡
     case blockGained(target: String, amount: Int)
+
+    /// 治疗
+    case healed(target: String, amount: Int)
     
     /// 手牌弃置（回合结束时）
     case handDiscarded(count: Int)
@@ -74,19 +80,22 @@ extension BattleEvent {
             
         case .energyReset(let amount):
             return "⚡ 能量恢复至 \(amount)"
+
+        case .energyGained(let amount, let current):
+            return "⚡ 获得 \(amount) 能量（当前 \(current)）"
             
         case .blockCleared(let target, let amount):
             return "🛡️ \(target) 的格挡 \(amount) 已清除"
             
         case .drew(let cardId):
-            let name = CardRegistry.require(cardId).name
+            let name = CardRegistry.get(cardId)?.name ?? "未知卡牌(\(cardId.rawValue))"
             return "🃏 抽到 \(name)"
             
         case .shuffled(let count):
             return "🔀 洗牌：\(count) 张牌从弃牌堆洗入抽牌堆"
             
         case .played(let cardId, let cost):
-            let name = CardRegistry.require(cardId).name
+            let name = CardRegistry.get(cardId)?.name ?? "未知卡牌(\(cardId.rawValue))"
             return "▶️ 打出 \(name)（消耗 \(cost) 能量）"
             
         case .damageDealt(let source, let target, let amount, let blocked):
@@ -98,6 +107,9 @@ extension BattleEvent {
             
         case .blockGained(let target, let amount):
             return "🛡️ \(target) 获得 \(amount) 格挡"
+
+        case .healed(let target, let amount):
+            return "💚 \(target) 恢复 \(amount) 点生命"
             
         case .handDiscarded(let count):
             return "🗑️ 弃置 \(count) 张手牌"

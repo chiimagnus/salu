@@ -15,19 +15,22 @@ enum EventFormatter {
             
         case .energyReset(let amount):
             return "\(Terminal.yellow)⚡ 能量恢复至 \(amount)\(Terminal.reset)"
+
+        case .energyGained(let amount, let current):
+            return "\(Terminal.yellow)⚡ +\(amount) 能量（当前 \(current)）\(Terminal.reset)"
             
         case .blockCleared(let target, let amount):
             return "\(Terminal.dim)🛡️ \(target) \(amount) 格挡清除\(Terminal.reset)"
             
         case .drew(let cardId):
-            let cardName = CardRegistry.require(cardId).name
+            let cardName = CardRegistry.get(cardId)?.name ?? "未知卡牌(\(cardId.rawValue))"
             return "\(Terminal.green)🃏 抽到 \(cardName)\(Terminal.reset)"
             
         case .shuffled(let count):
             return "\(Terminal.magenta)🔀 洗牌: \(count)张\(Terminal.reset)"
             
         case .played(let cardId, let cost):
-            let cardName = CardRegistry.require(cardId).name
+            let cardName = CardRegistry.get(cardId)?.name ?? "未知卡牌(\(cardId.rawValue))"
             return "\(Terminal.bold)▶️ 打出 \(cardName) (◆\(cost))\(Terminal.reset)"
             
         case .damageDealt(let source, let target, let amount, let blocked):
@@ -35,6 +38,9 @@ enum EventFormatter {
             
         case .blockGained(let target, let amount):
             return "\(Terminal.cyan)🛡️ \(target) +\(amount) 格挡\(Terminal.reset)"
+
+        case .healed(let target, let amount):
+            return "\(Terminal.green)💚 \(target) +\(amount) HP\(Terminal.reset)"
             
         case .handDiscarded(let count):
             return "\(Terminal.dim)🗑️ 弃置 \(count)张手牌\(Terminal.reset)"
