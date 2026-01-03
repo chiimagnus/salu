@@ -51,6 +51,14 @@ public final class RunManager: @unchecked Sendable {
         runState.moveToNextNode()
     }
     
+    /// 休息恢复生命值
+    /// - Returns: 实际恢复的生命值
+    public func rest() -> Int {
+        let healAmount = min(30, runState.player.maxHP - runState.player.currentHP)
+        runState.player.currentHP += healAmount
+        return healAmount
+    }
+    
     /// 结束冒险（失败）
     public func endRunAsDefeat() {
         runState.isRunOver = true

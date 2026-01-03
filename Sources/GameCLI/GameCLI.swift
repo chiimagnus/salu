@@ -195,7 +195,10 @@ struct GameCLI {
                 }
                 
             case .rest:
-                // 休息功能暂未实现，跳过
+                // 休息恢复生命
+                let healAmount = runManager.rest()
+                RestScreen.show(player: runManager.runState.player, healAmount: healAmount)
+                _ = readLine()
                 runManager.proceedToNextRoom()
                 
             case .boss:
