@@ -239,6 +239,9 @@ public enum BattleEffect: Sendable, Equatable {
 - 已删除：`Sources/GameCore/Cards/CardKind.swift`
 - 已重构：`Sources/GameCore/Battle/BattleEngine.swift`（resolve definition → effects → apply(effect)）
 - 已重构：`Sources/GameCore/Events.swift`（`drew/played` 改为携带 `CardID`）
+- 已打磨：事件语义
+  - 新增 `BattleEvent.energyGained` / `BattleEvent.healed`
+  - CLI 渲染 `CardID` 改为安全模式（未知 ID 显示占位文本，不在渲染阶段 `fatalError`）
 - 已重构：CLI
   - `Sources/GameCLI/Screens/BattleScreen.swift`（去掉卡牌 switch，使用 rulesText/type）
   - `Sources/GameCLI/Components/EventFormatter.swift`（用 `CardRegistry` 渲染 CardID）
