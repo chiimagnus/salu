@@ -1,0 +1,52 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.2'
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Make test script executable
+        run: chmod +x .cursor/Scripts/test_game.sh
+
+      - name: Run all tests
+        run: ./.cursor/Scripts/test_game.sh all
+
+      - name: Upload build artifacts (Debug)
+        if: success() && matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: salu-debug-linux
+          path: .build/debug/GameCLI
+          retention-days: 7
+
+      - name: Upload build artifacts (Debug - macOS)
+        if: success() && matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: salu-debug-macos
+          path: .build/debug/GameCLI
+          retention-days: 7
