@@ -2,7 +2,7 @@
 
 > 创建时间：2026-01-03
 > 状态：待实施
-> **最后审视：2026-01-03 - 修复依赖关系和设计缺陷**
+> **最后审视：2026-01-04 - P1 已落地（卡牌协议化），build+测试通过**
 
 ---
 
@@ -226,6 +226,27 @@ public enum BattleEffect: Sendable, Equatable {
 - `Sources/GameCLI/Components/EventFormatter.swift`：显示 `.drew/.played` 事件携带的 `cardName`
 
 结论：P1 必须同时解决 **Card 模型 / BattleEngine 执行 / CLI UI 展示** 的扩展点，否则只协议化“卡牌定义”会变成假重构。
+
+### ✅ P1 实施状态（已完成）
+
+- 已新增：`Sources/GameCore/Kernel/IDs.swift`, `Sources/GameCore/Kernel/BattleEffect.swift`
+- 已新增：`Sources/GameCore/Cards/CardDefinition.swift`, `CardRegistry.swift`
+- 已新增：卡牌定义实现（铁甲战士）：
+  - `Sources/GameCore/Cards/Definitions/Ironclad/Basic.swift`
+  - `Sources/GameCore/Cards/Definitions/Ironclad/Common.swift`
+- 已重构：`Sources/GameCore/Cards/Card.swift`（改为 `id + cardId`，静态属性来自 registry）
+- 已重构：`Sources/GameCore/Cards/StarterDeck.swift`（改为 `cardId`）
+- 已删除：`Sources/GameCore/Cards/CardKind.swift`
+- 已重构：`Sources/GameCore/Battle/BattleEngine.swift`（resolve definition → effects → apply(effect)）
+- 已重构：`Sources/GameCore/Events.swift`（`drew/played` 改为携带 `CardID`）
+- 已重构：CLI
+  - `Sources/GameCLI/Screens/BattleScreen.swift`（去掉卡牌 switch，使用 rulesText/type）
+  - `Sources/GameCLI/Components/EventFormatter.swift`（用 `CardRegistry` 渲染 CardID）
+
+### ✅ P1 验证结果
+
+- `swift build`：✅ 通过
+- `./.cursor/Scripts/test_game.sh`：✅ 通过（5/5 套件）
 
 ### P1 目标（破坏性：不保留兼容层）
 
