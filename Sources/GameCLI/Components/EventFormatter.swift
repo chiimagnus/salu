@@ -19,13 +19,15 @@ enum EventFormatter {
         case .blockCleared(let target, let amount):
             return "\(Terminal.dim)🛡️ \(target) \(amount) 格挡清除\(Terminal.reset)"
             
-        case .drew(_, let cardName):
+        case .drew(let cardId):
+            let cardName = CardRegistry.require(cardId).name
             return "\(Terminal.green)🃏 抽到 \(cardName)\(Terminal.reset)"
             
         case .shuffled(let count):
             return "\(Terminal.magenta)🔀 洗牌: \(count)张\(Terminal.reset)"
             
-        case .played(_, let cardName, let cost):
+        case .played(let cardId, let cost):
+            let cardName = CardRegistry.require(cardId).name
             return "\(Terminal.bold)▶️ 打出 \(cardName) (◆\(cost))\(Terminal.reset)"
             
         case .damageDealt(let source, let target, let amount, let blocked):

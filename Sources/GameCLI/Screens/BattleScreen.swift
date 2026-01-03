@@ -131,33 +131,18 @@ enum BattleScreen {
             let statusIcon = canPlay ? "\(Terminal.green)●\(Terminal.reset)" : "\(Terminal.red)○\(Terminal.reset)"
             let cardColor = canPlay ? Terminal.bold : Terminal.dim
             
-            let effect: String
+            let effect = card.rulesText
             let effectIcon: String
-            switch card.kind {
-            case .strike:
-                effect = "造成 \(card.damage) 伤害"
+            switch card.type {
+            case .attack:
                 effectIcon = "⚔️"
-            case .pommelStrike:
-                effect = "造成 \(card.damage) 伤害, 抽 1 张"
-                effectIcon = "⚔️"
-            case .bash:
-                effect = "造成 \(card.damage) 伤害, 易伤 2"
-                effectIcon = "💥"
-            case .clothesline:
-                effect = "造成 \(card.damage) 伤害, 虚弱 2"
-                effectIcon = "💥"
-            case .defend:
-                effect = "获得 \(card.block) 格挡"
+            case .skill:
                 effectIcon = "🛡️"
-            case .shrugItOff:
-                effect = "获得 \(card.block) 格挡, 抽 1 张"
-                effectIcon = "🛡️"
-            case .inflame:
-                effect = "获得 2 力量"
-                effectIcon = "💪"
+            case .power:
+                effectIcon = "✨"
             }
             
-            lines.append("     \(statusIcon) \(cardColor)[\(index + 1)] \(card.displayName)\(Terminal.reset)  \(Terminal.yellow)◆\(card.cost)\(Terminal.reset)  \(effectIcon) \(effect)")
+            lines.append("     \(statusIcon) \(cardColor)[\(index + 1)] \(card.name)\(Terminal.reset)  \(Terminal.yellow)◆\(card.cost)\(Terminal.reset)  \(effectIcon) \(effect)")
         }
         
         return lines

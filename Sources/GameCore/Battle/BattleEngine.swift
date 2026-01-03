@@ -127,6 +127,79 @@ public final class BattleEngine: @unchecked Sendable {
         
         return max(0, damage)
     }
+
+    // MARK: - Effect Execution (P1)
+
+    private enum EffectActor {
+        case player
+        case enemy
+    }
+
+    private func apply(_ effect: BattleEffect, actor: EffectActor) {
+        switch effect {
+        case .dealDamage(let target, let base):
+            let attacker: Entity = (actor == .player) ? state.player : state.enemy
+            let finalTargetIsPlayer = (target == .player)
+            let defender: Entity = finalTargetIsPlayer ? state.player : state.enemy
+
+            let finalDamage = calculateDamage(baseDamage: base, attacker: attacker, defender: defender)
+
+            if finalTargetIsPlayer {
+                let (dealt, blocked) = state.player.takeDamage(finalDamage)
+                battleStats.totalDamageTaken += dealt
+                emit(.damageDealt(source: attacker.name, target: state.player.name, amount: dealt, blocked: blocked))
+            } else {
+                let (dealt, blocked) = state.enemy.takeDamage(finalDamage)
+                battleStats.totalDamageDealt += dealt
+                emit(.damageDealt(source: attacker.name, target: state.enemy.name, amount: dealt, blocked: blocked))
+            }
+
+        case .gainBlock(let target, let amount):
+            if target == .player {
+                state.player.gainBlock(amount)
+                battleStats.totalBlockGained += amount
+                emit(.blockGained(target: state.player.name, amount: amount))
+            } else {
+                state.enemy.gainBlock(amount)
+                emit(.blockGained(target: state.enemy.name, amount: amount))
+            }
+
+        case .drawCards(let count):
+            drawCards(count)
+
+        case .gainEnergy(let amount):
+            state.energy += amount
+            emit(.energyReset(amount: state.energy))
+
+        case .applyStatus(let target, let statusId, let stacks):
+            var entityName = ""
+            if target == .player {
+                applyStatusById(to: &state.player, statusId: statusId, stacks: stacks)
+                entityName = state.player.name
+            } else {
+                applyStatusById(to: &state.enemy, statusId: statusId, stacks: stacks)
+                entityName = state.enemy.name
+            }
+            _ = entityName // keep for future (P2: status registry display)
+
+        case .heal(let target, let amount):
+            if target == .player {
+                let old = state.player.currentHP
+                state.player.currentHP = min(state.player.maxHP, state.player.currentHP + amount)
+                let healed = state.player.currentHP - old
+                if healed > 0 {
+                    emit(.statusApplied(target: state.player.name, effect: "治疗", stacks: healed))
+                }
+            } else {
+                let old = state.enemy.currentHP
+                state.enemy.currentHP = min(state.enemy.maxHP, state.enemy.currentHP + amount)
+                let healed = state.enemy.currentHP - old
+                if healed > 0 {
+                    emit(.statusApplied(target: state.enemy.name, effect: "治疗", stacks: healed))
+                }
+            }
+        }
+    }
     
     // MARK: Turn Management
     
@@ -286,6 +359,23 @@ public final class BattleEngine: @unchecked Sendable {
             break
         }
     }
+
+    /// 根据 StatusID 施加状态（P1 版本：映射到 Entity 硬编码字段）
+    private func applyStatusById(to target: inout Entity, statusId: StatusID, stacks: Int) {
+        switch statusId.rawValue {
+        case "vulnerable":
+            target.vulnerable += stacks
+            emit(.statusApplied(target: target.name, effect: "易伤", stacks: stacks))
+        case "weak":
+            target.weak += stacks
+            emit(.statusApplied(target: target.name, effect: "虚弱", stacks: stacks))
+        case "strength":
+            target.strength += stacks
+            emit(.statusApplied(target: target.name, effect: "力量", stacks: stacks))
+        default:
+            emit(.statusApplied(target: target.name, effect: statusId.rawValue, stacks: stacks))
+        }
+    }
     
     // MARK: Card Playing
     
@@ -310,7 +400,7 @@ public final class BattleEngine: @unchecked Sendable {
         // 从手牌移除
         state.hand.remove(at: handIndex)
         
-        emit(.played(cardId: card.id, cardName: card.displayName, cost: card.cost))
+        emit(.played(cardId: card.cardId, cost: card.cost))
         
         // 执行卡牌效果
         executeCardEffect(card)
@@ -327,96 +417,27 @@ public final class BattleEngine: @unchecked Sendable {
     private func executeCardEffect(_ card: Card) {
         // 统计卡牌使用
         battleStats.cardsPlayed += 1
-        switch card.kind {
-        case .strike, .pommelStrike, .bash, .clothesline:
+
+        let def = card.definition
+        switch def.type {
+        case .attack:
             battleStats.strikesPlayed += 1
-        case .defend, .shrugItOff:
+        case .skill:
             battleStats.defendsPlayed += 1
-        case .inflame:
+        case .power:
             battleStats.skillsPlayed += 1
         }
-        
-        switch card.kind {
-        case .strike:
-            // 对敌人造成伤害（应用伤害修正）
-            let finalDamage = calculateDamage(baseDamage: card.damage, attacker: state.player, defender: state.enemy)
-            let (dealt, blocked) = state.enemy.takeDamage(finalDamage)
-            battleStats.totalDamageDealt += dealt
-            emit(.damageDealt(
-                source: state.player.name,
-                target: state.enemy.name,
-                amount: dealt,
-                blocked: blocked
-            ))
-            
-        case .pommelStrike:
-            // 造成伤害
-            let finalDamage = calculateDamage(baseDamage: card.damage, attacker: state.player, defender: state.enemy)
-            let (dealt, blocked) = state.enemy.takeDamage(finalDamage)
-            battleStats.totalDamageDealt += dealt
-            emit(.damageDealt(
-                source: state.player.name,
-                target: state.enemy.name,
-                amount: dealt,
-                blocked: blocked
-            ))
-            // 抽牌
-            drawCards(card.drawCount)
-            
-        case .defend:
-            // 获得格挡
-            state.player.gainBlock(card.block)
-            battleStats.totalBlockGained += card.block
-            emit(.blockGained(target: state.player.name, amount: card.block))
-            
-        case .shrugItOff:
-            // 获得格挡
-            state.player.gainBlock(card.block)
-            battleStats.totalBlockGained += card.block
-            emit(.blockGained(target: state.player.name, amount: card.block))
-            // 抽牌
-            drawCards(card.drawCount)
-            
-        case .bash:
-            // 造成伤害
-            let finalDamage = calculateDamage(baseDamage: card.damage, attacker: state.player, defender: state.enemy)
-            let (dealt, blocked) = state.enemy.takeDamage(finalDamage)
-            battleStats.totalDamageDealt += dealt
-            emit(.damageDealt(
-                source: state.player.name,
-                target: state.enemy.name,
-                amount: dealt,
-                blocked: blocked
-            ))
-            // 施加易伤
-            if card.vulnerableApply > 0 {
-                state.enemy.vulnerable += card.vulnerableApply
-                emit(.statusApplied(target: state.enemy.name, effect: "易伤", stacks: card.vulnerableApply))
-            }
-            
-        case .inflame:
-            // 获得力量
-            if card.strengthGain > 0 {
-                state.player.strength += card.strengthGain
-                emit(.statusApplied(target: state.player.name, effect: "力量", stacks: card.strengthGain))
-            }
-            
-        case .clothesline:
-            // 造成伤害
-            let finalDamage = calculateDamage(baseDamage: card.damage, attacker: state.player, defender: state.enemy)
-            let (dealt, blocked) = state.enemy.takeDamage(finalDamage)
-            battleStats.totalDamageDealt += dealt
-            emit(.damageDealt(
-                source: state.player.name,
-                target: state.enemy.name,
-                amount: dealt,
-                blocked: blocked
-            ))
-            // 施加虚弱
-            if card.weakApply > 0 {
-                state.enemy.weak += card.weakApply
-                emit(.statusApplied(target: state.enemy.name, effect: "虚弱", stacks: card.weakApply))
-            }
+
+        let snapshot = BattleSnapshot(
+            turn: state.turn,
+            player: state.player,
+            enemy: state.enemy,
+            energy: state.energy
+        )
+
+        let effects = def.play(snapshot: snapshot)
+        for effect in effects {
+            apply(effect, actor: .player)
         }
     }
     
@@ -440,7 +461,7 @@ public final class BattleEngine: @unchecked Sendable {
         // 抽一张牌
         let card = state.drawPile.removeLast()
         state.hand.append(card)
-        emit(.drew(cardId: card.id, cardName: card.displayName))
+        emit(.drew(cardId: card.cardId))
     }
     
     private func shuffleDiscardIntoDraw() {

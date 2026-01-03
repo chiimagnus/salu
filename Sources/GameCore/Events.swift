@@ -14,13 +14,13 @@ public enum BattleEvent: Sendable, Equatable {
     case blockCleared(target: String, amount: Int)
     
     /// 抽牌
-    case drew(cardId: String, cardName: String)
+    case drew(cardId: CardID)
     
     /// 洗牌（弃牌堆洗回抽牌堆）
     case shuffled(count: Int)
     
     /// 打出卡牌
-    case played(cardId: String, cardName: String, cost: Int)
+    case played(cardId: CardID, cost: Int)
     
     /// 造成伤害
     case damageDealt(source: String, target: String, amount: Int, blocked: Int)
@@ -78,14 +78,16 @@ extension BattleEvent {
         case .blockCleared(let target, let amount):
             return "🛡️ \(target) 的格挡 \(amount) 已清除"
             
-        case .drew(_, let cardName):
-            return "🃏 抽到 \(cardName)"
+        case .drew(let cardId):
+            let name = CardRegistry.require(cardId).name
+            return "🃏 抽到 \(name)"
             
         case .shuffled(let count):
             return "🔀 洗牌：\(count) 张牌从弃牌堆洗入抽牌堆"
             
-        case .played(_, let cardName, let cost):
-            return "▶️ 打出 \(cardName)（消耗 \(cost) 能量）"
+        case .played(let cardId, let cost):
+            let name = CardRegistry.require(cardId).name
+            return "▶️ 打出 \(name)（消耗 \(cost) 能量）"
             
         case .damageDealt(let source, let target, let amount, let blocked):
             if blocked > 0 {
