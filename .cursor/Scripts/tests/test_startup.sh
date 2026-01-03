@@ -22,12 +22,12 @@ fi
 FAILED=0
 
 # 快速启动测试
-show_step "1/2" "主菜单启动"
+show_step "1/3" "主菜单启动"
 show_info "启动并退出..."
 
 OUTPUT=$(echo -e "3" | "$GAME_BIN" --seed 1 2>&1 || true)
 
-if echo "$OUTPUT" | grep -q "SALU\|杀戮尖塔\|开始战斗" 2>/dev/null; then
+if echo "$OUTPUT" | grep -q "SALU\|杀戮尖塔\|开始冒险" 2>/dev/null; then
     show_success "主菜单启动正常"
 else
     show_failure "主菜单启动失败"
@@ -35,11 +35,25 @@ else
 fi
 echo ""
 
-# 战斗启动测试
-show_step "2/2" "战斗界面启动"
-show_info "进入战斗并退出..."
+# 地图启动测试
+show_step "2/3" "冒险地图启动"
+show_info "进入冒险模式并退出..."
 
 OUTPUT=$(echo -e "1\nq\n3" | "$GAME_BIN" --seed 1 2>&1 || true)
+
+if echo "$OUTPUT" | grep -q "地图\|当前\|起点\|Boss" 2>/dev/null; then
+    show_success "冒险地图启动正常"
+else
+    show_failure "冒险地图启动失败"
+    FAILED=$((FAILED + 1))
+fi
+echo ""
+
+# 战斗启动测试
+show_step "3/3" "战斗界面启动"
+show_info "选择节点进入战斗并退出..."
+
+OUTPUT=$(echo -e "1\n1\nq\nq\n3" | "$GAME_BIN" --seed 1 2>&1 || true)
 
 if echo "$OUTPUT" | grep -q "👹" 2>/dev/null; then
     ENEMY=$(echo "$OUTPUT" | grep -o "👹 [^[]*" 2>/dev/null | head -1 | sed 's/\[.*//' || echo "未知")
@@ -51,5 +65,5 @@ else
 fi
 echo ""
 
-show_result $((2 - FAILED)) 2
+show_result $((3 - FAILED)) 3
 exit $FAILED

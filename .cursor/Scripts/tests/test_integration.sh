@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # ============================================================
-# Salu 测试 - 集成测试（完整战斗流程）
+# Salu 测试 - 集成测试（完整冒险流程）
 # ============================================================
-# 测试完整的战斗流程：开始战斗 → 打牌 → 结束回合 → 战斗结束
+# 测试完整的冒险流程：开始冒险 → 选择节点 → 战斗 → 休息 → Boss
 
 set -e
 
@@ -12,7 +12,7 @@ source "$SCRIPT_DIR/common.sh"
 
 cd "$(get_project_root)"
 
-show_header "集成测试（完整战斗流程）"
+show_header "集成测试（完整冒险流程）"
 
 # 确保使用 Release 编译好的二进制
 GAME_BIN=".build/release/GameCLI"
@@ -34,73 +34,76 @@ trap cleanup EXIT INT TERM
 FAILED=0
 
 # ============================================================
-# 辅助函数：生成战斗输入（简化版，10回合足够）
+# 辅助函数：生成冒险输入（选择节点 + 战斗）
 # ============================================================
-generate_battle_input() {
+generate_adventure_input() {
     local output_file="$1"
-    local rounds="${2:-10}"
+    local battles="${2:-5}"
     
-    # 使用 printf 一次性写入，比循环 echo 快很多
+    # 开始冒险
     printf "1\n" > "$output_file"
-    for _ in $(seq 1 "$rounds"); do
-        printf "1\n1\n1\n1\n1\n0\n" >> "$output_file"
+    
+    # 选择起点节点
+    printf "1\n" >> "$output_file"
+    
+    # 多场战斗循环
+    for _ in $(seq 1 "$battles"); do
+        # 选择第一个可选节点
+        printf "1\n" >> "$output_file"
+        # 战斗回合（打牌 + 结束回合）
+        for _ in $(seq 1 10); do
+            printf "1\n1\n1\n1\n1\n0\n" >> "$output_file"
+        done
     done
 }
 
 # ============================================================
-# 测试1：完整战斗直到结束
+# 测试1：地图生成和显示
 # ============================================================
-show_step "1/4" "完整战斗流程 (seed=100)"
-show_info "模拟战斗流程..."
+show_step "1/4" "地图生成测试 (seed=100)"
+show_info "验证地图显示..."
 
-INPUT_FILE="$TMP_DIR/battle1.txt"
-generate_battle_input "$INPUT_FILE" 15
+INPUT_FILE="$TMP_DIR/map1.txt"
+printf "1\nq\n3\n" > "$INPUT_FILE"
 
 OUTPUT=$("$GAME_BIN" --seed 100 < "$INPUT_FILE" 2>&1 || true)
 
-# 检查战斗结果
-if echo "$OUTPUT" | grep -q "胜.*利\|VICTOR" 2>/dev/null; then
-    show_success "战斗完成：胜利！"
-    ENEMY=$(echo "$OUTPUT" | grep -o "👹 [^[]*" 2>/dev/null | head -1 || echo "未知")
-    show_detail "对战敌人: $ENEMY"
-elif echo "$OUTPUT" | grep -q "失.*败\|DEFEAT" 2>/dev/null; then
-    show_success "战斗完成：失败（但流程正常）"
-elif echo "$OUTPUT" | grep -q "👹" 2>/dev/null; then
-    show_warning "战斗未结束，但流程正常"
+# 检查地图元素
+if echo "$OUTPUT" | grep -q "Boss\|起点\|当前" 2>/dev/null; then
+    show_success "地图生成正常"
+    echo "$OUTPUT" | grep -q "⚔️" 2>/dev/null && show_detail "检测到战斗节点"
+    echo "$OUTPUT" | grep -q "💤" 2>/dev/null && show_detail "检测到休息节点"
+    echo "$OUTPUT" | grep -q "👹" 2>/dev/null && show_detail "检测到Boss节点"
 else
-    show_failure "战斗流程异常"
+    show_failure "地图生成异常"
     FAILED=$((FAILED + 1))
 fi
 
 echo ""
 
 # ============================================================
-# 测试2：多敌人战斗
+# 测试2：完整冒险流程（3场战斗）
 # ============================================================
-show_step "2/4" "多敌人战斗测试"
-show_info "测试4种不同敌人..."
+show_step "2/4" "冒险流程测试 (seed=100)"
+show_info "模拟冒险流程（3场战斗）..."
 
-WINS=0
+INPUT_FILE="$TMP_DIR/adventure1.txt"
+generate_adventure_input "$INPUT_FILE" 3
 
-for SEED in 1 2 3 5; do
-    INPUT_FILE="$TMP_DIR/battle_$SEED.txt"
-    generate_battle_input "$INPUT_FILE" 15
-    
-    OUTPUT=$("$GAME_BIN" --seed "$SEED" < "$INPUT_FILE" 2>&1 || true)
-    
-    ENEMY=$(echo "$OUTPUT" | grep -o "👹 [^[]*" 2>/dev/null | head -1 | sed 's/👹 //' | tr -d '[:space:]' || echo "未知")
-    
-    if echo "$OUTPUT" | grep -q "胜.*利\|VICTOR" 2>/dev/null; then
-        echo -e "     Seed $SEED: ${CYAN}${ENEMY}${NC} → ${GREEN}胜利${NC}"
-        WINS=$((WINS + 1))
-    elif echo "$OUTPUT" | grep -q "失.*败\|DEFEAT" 2>/dev/null; then
-        echo -e "     Seed $SEED: ${CYAN}${ENEMY}${NC} → ${RED}失败${NC}"
-    else
-        echo -e "     Seed $SEED: ${CYAN}${ENEMY}${NC} → ${YELLOW}进行中${NC}"
-    fi
-done
+OUTPUT=$("$GAME_BIN" --seed 100 < "$INPUT_FILE" 2>&1 || true)
 
-show_success "多敌人战斗测试完成（$WINS 胜）"
+# 检查冒险结果
+if echo "$OUTPUT" | grep -q "通关\|胜利\|恭喜" 2>/dev/null; then
+    show_success "冒险完成：通关！"
+elif echo "$OUTPUT" | grep -q "失败\|倒下" 2>/dev/null; then
+    show_success "冒险完成：失败（但流程正常）"
+elif echo "$OUTPUT" | grep -q "👹" 2>/dev/null; then
+    show_success "冒险进行中（流程正常）"
+else
+    show_failure "冒险流程异常"
+    FAILED=$((FAILED + 1))
+fi
+
 echo ""
 
 # ============================================================
@@ -110,11 +113,12 @@ show_step "3/4" "状态效果测试"
 show_info "验证状态效果..."
 
 INPUT_FILE="$TMP_DIR/status.txt"
-printf "1\n" > "$INPUT_FILE"
+# 开始冒险 → 选择起点 → 选择节点 → 战斗
+printf "1\n1\n1\n" > "$INPUT_FILE"
 for _ in $(seq 1 5); do
     printf "1\n1\n1\n0\n" >> "$INPUT_FILE"
 done
-printf "q\n3\n" >> "$INPUT_FILE"
+printf "q\nq\n3\n" >> "$INPUT_FILE"
 
 OUTPUT=$("$GAME_BIN" --seed 1 < "$INPUT_FILE" 2>&1 || true)
 
@@ -132,24 +136,26 @@ fi
 echo ""
 
 # ============================================================
-# 测试4：牌堆管理
+# 测试4：HP保持测试
 # ============================================================
-show_step "4/4" "牌堆管理测试"
-show_info "验证洗牌逻辑..."
+show_step "4/4" "HP保持测试"
+show_info "验证战斗间HP保持..."
 
-INPUT_FILE="$TMP_DIR/shuffle.txt"
-printf "1\n" > "$INPUT_FILE"
-for _ in $(seq 1 6); do
-    printf "0\n" >> "$INPUT_FILE"
+INPUT_FILE="$TMP_DIR/hp_test.txt"
+# 开始冒险 → 选择起点 → 选择节点 → 战斗 → 退出
+printf "1\n1\n1\n" > "$INPUT_FILE"
+# 第一场战斗
+for _ in $(seq 1 8); do
+    printf "1\n1\n1\n0\n" >> "$INPUT_FILE"
 done
-printf "q\n3\n" >> "$INPUT_FILE"
+printf "q\nq\n3\n" >> "$INPUT_FILE"
 
-OUTPUT=$("$GAME_BIN" --seed 88 < "$INPUT_FILE" 2>&1 || true)
+OUTPUT=$("$GAME_BIN" --seed 50 < "$INPUT_FILE" 2>&1 || true)
 
-if echo "$OUTPUT" | grep -q "抽牌堆\|弃牌堆" 2>/dev/null; then
-    show_success "牌堆管理正常"
+if echo "$OUTPUT" | grep -q "HP" 2>/dev/null; then
+    show_success "HP显示正常"
 else
-    show_warning "未检测到牌堆信息"
+    show_warning "未检测到HP信息"
 fi
 
 echo ""
