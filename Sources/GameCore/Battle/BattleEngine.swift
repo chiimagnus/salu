@@ -259,7 +259,7 @@ public final class BattleEngine: @unchecked Sendable {
             // 增益（P2：现在使用 StatusContainer）
             if name == "力量" || name == "仪式" || name == "卷曲" {
                 state.enemy.statuses.apply("strength", stacks: stacks)
-                if let def = StatusRegistry.get("strength") {
+                if StatusRegistry.get("strength") != nil {
                     emit(.statusApplied(target: state.enemy.name, effect: name, stacks: stacks))
                 }
             }
@@ -482,11 +482,9 @@ public final class BattleEngine: @unchecked Sendable {
     private func applyHeal(target: EffectTarget, amount: Int) {
         switch target {
         case .player:
-            let oldHP = state.player.currentHP
             state.player.currentHP = min(state.player.currentHP + amount, state.player.maxHP)
             // 治疗事件（目前没有对应的 BattleEvent，暂不 emit）
         case .enemy:
-            let oldHP = state.enemy.currentHP
             state.enemy.currentHP = min(state.enemy.currentHP + amount, state.enemy.maxHP)
             // 治疗事件（目前没有对应的 BattleEvent，暂不 emit）
         }
