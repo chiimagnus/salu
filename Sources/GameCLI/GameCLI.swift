@@ -188,7 +188,28 @@ struct GameCLI {
                 // 战斗结束后更新玩家状态
                 if engine.state.playerWon == true {
                     runManager.updatePlayerAfterBattle(engine.state)
-                    runManager.proceedToNextRoom()
+                    
+                    // 检查下一步选择
+                    let nextNodes = runManager.runState.getNextNodes()
+                    if nextNodes.isEmpty {
+                        // 没有更多节点，冒险结束
+                        runManager.endRunAsVictory()
+                    } else if nextNodes.count == 1 {
+                        // 只有一个选择，自动前进
+                        runManager.moveToNode(nextNodes[0].id)
+                    } else {
+                        // 多个选择，让玩家选择
+                        if let chosenNodeId = MapScreen.showWithChoices(
+                            nodes: runManager.runState.nodes,
+                            paths: runManager.runState.paths,
+                            nextNodes: nextNodes
+                        ) {
+                            runManager.moveToNode(chosenNodeId)
+                        } else {
+                            // 玩家取消选择，再次显示选择
+                            continue
+                        }
+                    }
                 } else {
                     // 玩家失败，冒险结束
                     runManager.endRunAsDefeat()
@@ -199,7 +220,24 @@ struct GameCLI {
                 let healAmount = runManager.rest()
                 RestScreen.show(player: runManager.runState.player, healAmount: healAmount)
                 _ = readLine()
-                runManager.proceedToNextRoom()
+                
+                // 检查下一步选择
+                let nextNodes = runManager.runState.getNextNodes()
+                if nextNodes.isEmpty {
+                    runManager.endRunAsVictory()
+                } else if nextNodes.count == 1 {
+                    runManager.moveToNode(nextNodes[0].id)
+                } else {
+                    if let chosenNodeId = MapScreen.showWithChoices(
+                        nodes: runManager.runState.nodes,
+                        paths: runManager.runState.paths,
+                        nextNodes: nextNodes
+                    ) {
+                        runManager.moveToNode(chosenNodeId)
+                    } else {
+                        continue
+                    }
+                }
                 
             case .boss:
                 // Boss 战斗暂时当作普通战斗

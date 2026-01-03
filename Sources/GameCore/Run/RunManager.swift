@@ -51,6 +51,11 @@ public final class RunManager: @unchecked Sendable {
         runState.moveToNextNode()
     }
     
+    /// 移动到指定节点
+    public func moveToNode(_ nodeId: Int) {
+        runState.moveToNode(nodeId)
+    }
+    
     /// 休息恢复生命值
     /// - Returns: 实际恢复的生命值
     public func rest() -> Int {

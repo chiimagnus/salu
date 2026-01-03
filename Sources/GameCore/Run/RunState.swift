@@ -22,8 +22,8 @@ public struct RunState: Sendable {
         self.gold = 99
         self.deck = deck
         
-        // 初始化线性地图
-        let map = MapGenerator.generateLinearMap()
+        // 初始化分叉地图
+        let map = MapGenerator.generateBranchingMap()
         self.nodes = map.nodes
         self.paths = map.paths
         self.currentNodeId = 0
@@ -43,7 +43,35 @@ public struct RunState: Sendable {
         nodes.first { $0.id == currentNodeId }
     }
     
-    /// 移动到下一个节点
+    /// 获取当前节点的所有下一步选择
+    public func getNextNodes() -> [MapNode] {
+        // 查找从当前节点出发的所有路径
+        let nextNodeIds = paths
+            .filter { $0.fromNodeId == currentNodeId }
+            .map { $0.toNodeId }
+        
+        // 返回对应的节点
+        return nodes.filter { nextNodeIds.contains($0.id) }
+    }
+    
+    /// 移动到指定节点
+    public mutating func moveToNode(_ nodeId: Int) {
+        // 标记当前节点为已访问
+        if let index = nodes.firstIndex(where: { $0.id == currentNodeId }) {
+            nodes[index].isVisited = true
+            nodes[index].isCurrentPosition = false
+        }
+        
+        // 移动到新节点
+        if let nextIndex = nodes.firstIndex(where: { $0.id == nodeId }) {
+            nodes[nextIndex].isCurrentPosition = true
+            nodes[nextIndex].isAccessible = true
+            currentNodeId = nodeId
+            currentFloor = nodes[nextIndex].floor
+        }
+    }
+    
+    /// 移动到下一个节点（自动选择，用于线性路径）
     public mutating func moveToNextNode() {
         // 标记当前节点为已访问
         if let index = nodes.firstIndex(where: { $0.id == currentNodeId }) {
