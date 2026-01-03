@@ -12,50 +12,7 @@ git clone https://github.com/chiimagnus/salu.git
 cd salu
 
 # 运行游戏（随机种子）
-swift run GameCLI
-
-# 使用固定种子（可复现）
-swift run GameCLI --seed 42
-```
-
-### 下载预编译版本
-
-前往 [Releases](https://github.com/chiimagnus/salu/releases) 页面下载：
-- `salu-linux-x64.tar.gz` - Linux 版本
-- `salu-macos-x64.tar.gz` - macOS 版本
-- `salu-windows-x64.zip` - Windows 版本
-
-#### Linux
-
-```bash
-# 下载并解压
-wget https://github.com/chiimagnus/salu/releases/latest/download/salu-linux-x64.tar.gz
-tar -xzf salu-linux-x64.tar.gz
-
-# 运行
-./salu-linux-x64
-```
-
-#### macOS
-
-```bash
-# 下载并解压
-curl -LO https://github.com/chiimagnus/salu/releases/latest/download/salu-macos-x64.tar.gz
-tar -xzf salu-macos-x64.tar.gz
-
-# 移除隔离属性（首次运行需要）
-xattr -d com.apple.quarantine salu-macos-x64
-
-# 运行
-./salu-macos-x64
-```
-
-#### Windows
-
-```powershell
-# 下载 salu-windows-x64.zip 并解压
-# 在命令提示符或 PowerShell 中运行
-.\salu-windows-x64.exe
+swift run
 ```
 
 ## 🤝 参与贡献
