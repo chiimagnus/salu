@@ -1,5 +1,5 @@
 /// 战斗引擎
-/// 负责管理战斗状态、处理玩家动作、执行敌人AI
+/// 负责管理战斗状态、处理玩家动作、执行敌人行动
 public final class BattleEngine: @unchecked Sendable {
     
     // MARK: - Properties
@@ -13,8 +13,7 @@ public final class BattleEngine: @unchecked Sendable {
     private var rng: SeededRNG
     private let cardsPerTurn: Int = 5
     
-    /// 敌人 AI 决策器
-    private let enemyAI: any EnemyAI
+    // P3: 移除 enemyAI 存储，改为每次从 Registry 获取
     
     // MARK: - Initialization
     
@@ -33,9 +32,7 @@ public final class BattleEngine: @unchecked Sendable {
         self.rng = SeededRNG(seed: seed)
         self.state = BattleState(player: player, enemy: enemy)
         
-        // 初始化敌人 AI
-        let kind = enemy.kind ?? .jawWorm
-        self.enemyAI = EnemyAIFactory.create(for: kind)
+        // P3: 不再需要初始化 enemyAI
         
         // 初始化抽牌堆并洗牌
         self.state.drawPile = rng.shuffled(deck)
@@ -44,8 +41,8 @@ public final class BattleEngine: @unchecked Sendable {
     /// 使用默认配置初始化（随机选择敌人）
     public convenience init(seed: UInt64) {
         var tempRng = SeededRNG(seed: seed)
-        let enemyKind = Act1EnemyPool.randomWeak(rng: &tempRng)
-        let enemy = createEnemy(kind: enemyKind, rng: &tempRng)
+        let enemyId = Act1EnemyPool.randomWeak(rng: &tempRng)
+        let enemy = createEnemy(enemyId: enemyId, rng: &tempRng)
         
         self.init(
             player: createDefaultPlayer(),
@@ -172,17 +169,30 @@ public final class BattleEngine: @unchecked Sendable {
     
     /// 让敌人 AI 决定下一个意图
     private func decideEnemyIntent() {
-        let intent = enemyAI.decideIntent(
-            enemy: state.enemy,
-            player: state.player,
+        // P3: 使用 EnemyRegistry 获取定义并选择行动
+        guard let enemyId = state.enemy.enemyId else {
+            // 如果没有 enemyId（不应该发生），使用默认行动
+            state.enemy.plannedMove = EnemyMove(
+                intent: EnemyIntentDisplay(icon: "❓", text: "未知"),
+                effects: []
+            )
+            emit(.enemyIntent(enemyId: state.enemy.id, action: "未知", damage: 0))
+            return
+        }
+        
+        let def = EnemyRegistry.require(enemyId)
+        let snapshot = BattleSnapshot(
             turn: state.turn,
-            rng: &rng
+            player: state.player,
+            enemy: state.enemy,
+            energy: state.energy
         )
-        state.enemy.intent = intent
+        let move = def.chooseMove(snapshot: snapshot, rng: &rng)
+        state.enemy.plannedMove = move
         
         // 发出敌人意图事件
-        let intentDamage = intent.damageValue ?? 0
-        let actionName = intent.displayText
+        let intentDamage = move.intent.previewDamage ?? 0
+        let actionName = move.intent.text
         emit(.enemyIntent(enemyId: state.enemy.id, action: actionName, damage: intentDamage))
     }
     
@@ -219,63 +229,20 @@ public final class BattleEngine: @unchecked Sendable {
     }
     
     private func executeEnemyTurn() {
-        let intent = state.enemy.intent
-        emit(.enemyAction(enemyId: state.enemy.id, action: intent.displayText))
+        // P3: 执行敌人的计划行动（通过 BattleEffect）
+        guard let move = state.enemy.plannedMove else {
+            // 没有计划行动（不应该发生）
+            emit(.enemyAction(enemyId: state.enemy.id, action: "跳过"))
+            processStatusesAtTurnEnd(for: .enemy)
+            checkBattleEnd()
+            return
+        }
         
-        switch intent {
-        case .attack(let baseDamage):
-            // 纯攻击
-            let finalDamage = calculateDamage(baseDamage: baseDamage, attacker: state.enemy, defender: state.player)
-            let (dealt, blocked) = state.player.takeDamage(finalDamage)
-            battleStats.totalDamageTaken += dealt
-            emit(.damageDealt(
-                source: state.enemy.name,
-                target: state.player.name,
-                amount: dealt,
-                blocked: blocked
-            ))
-            
-        case .attackDebuff(let baseDamage, let debuff, let stacks):
-            // 攻击 + Debuff
-            let finalDamage = calculateDamage(baseDamage: baseDamage, attacker: state.enemy, defender: state.player)
-            let (dealt, blocked) = state.player.takeDamage(finalDamage)
-            battleStats.totalDamageTaken += dealt
-            emit(.damageDealt(
-                source: state.enemy.name,
-                target: state.player.name,
-                amount: dealt,
-                blocked: blocked
-            ))
-            
-            // 施加 Debuff
-            applyDebuff(to: &state.player, debuff: debuff, stacks: stacks)
-            
-        case .defend(let block):
-            // 防御
-            state.enemy.gainBlock(block)
-            emit(.blockGained(target: state.enemy.name, amount: block))
-            
-        case .buff(let name, let stacks):
-            // 增益（P2：现在使用 StatusContainer）
-            if name == "力量" || name == "仪式" || name == "卷曲" {
-                state.enemy.statuses.apply("strength", stacks: stacks)
-                if StatusRegistry.get("strength") != nil {
-                    emit(.statusApplied(target: state.enemy.name, effect: name, stacks: stacks))
-                }
-            }
-            
-        case .unknown:
-            // 未知意图，默认攻击
-            let data = EnemyData.get(state.enemy.kind ?? .jawWorm)
-            let finalDamage = calculateDamage(baseDamage: data.baseAttackDamage, attacker: state.enemy, defender: state.player)
-            let (dealt, blocked) = state.player.takeDamage(finalDamage)
-            battleStats.totalDamageTaken += dealt
-            emit(.damageDealt(
-                source: state.enemy.name,
-                target: state.player.name,
-                amount: dealt,
-                blocked: blocked
-            ))
+        emit(.enemyAction(enemyId: state.enemy.id, action: move.intent.text))
+        
+        // 执行所有效果
+        for effect in move.effects {
+            apply(effect)
         }
         
         // 处理敌人回合结束的状态效果（触发 + 递减）
@@ -285,7 +252,8 @@ public final class BattleEngine: @unchecked Sendable {
         checkBattleEnd()
     }
     
-    /// 对目标施加 Debuff（P2：现在使用 StatusContainer）
+    /// 对目标施加 Debuff（P3: 已废弃，保留用于向后兼容）
+    @available(*, deprecated, message: "Use BattleEffect.applyStatus instead")
     private func applyDebuff(to target: inout Entity, debuff: String, stacks: Int) {
         // 将旧的字符串 debuff 映射到 StatusID
         let statusId: StatusID

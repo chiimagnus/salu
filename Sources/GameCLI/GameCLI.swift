@@ -237,15 +237,15 @@ struct GameCLI {
         
         // 选择敌人
         var rng = SeededRNG(seed: battleSeed)
-        let enemyKind: EnemyKind
+        let enemyId: EnemyID
         if isElite {
             // 精英战斗：使用 medium 池
-            enemyKind = Act1EnemyPool.randomAny(rng: &rng)
+            enemyId = Act1EnemyPool.randomAny(rng: &rng)
         } else {
             // 普通战斗
-            enemyKind = Act1EnemyPool.randomWeak(rng: &rng)
+            enemyId = Act1EnemyPool.randomWeak(rng: &rng)
         }
-        let enemy = createEnemy(kind: enemyKind, rng: &rng)
+        let enemy = createEnemy(enemyId: enemyId, rng: &rng)
         
         // 创建战斗引擎（使用冒险中的玩家状态）
         let engine = BattleEngine(
@@ -307,7 +307,7 @@ struct GameCLI {
         
         // 创建 Boss 敌人（目前使用 slimeMediumAcid 作为临时 Boss）
         var rng = SeededRNG(seed: bossSeed)
-        let enemy = createEnemy(kind: .slimeMediumAcid, rng: &rng)
+        let enemy = createEnemy(enemyId: "slime_medium_acid", rng: &rng)
         
         // 创建战斗引擎
         let engine = BattleEngine(

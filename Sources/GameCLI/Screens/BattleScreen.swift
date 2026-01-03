@@ -86,10 +86,14 @@ enum BattleScreen {
             lines.append("     \(statusLine)")
         }
         
-        // 显示敌人意图（从 Entity.intent 读取）
-        let intentIcon = enemy.intent.displayIcon
-        let intentText = enemy.intent.displayText
-        lines.append("     \(Terminal.yellow)📢 意图: \(intentIcon) \(intentText)\(Terminal.reset)")
+        // 显示敌人意图（P3: 从 Entity.plannedMove 读取）
+        if let move = enemy.plannedMove {
+            let intentIcon = move.intent.icon
+            let intentText = move.intent.text
+            lines.append("     \(Terminal.yellow)📢 意图: \(intentIcon) \(intentText)\(Terminal.reset)")
+        } else {
+            lines.append("     \(Terminal.yellow)📢 意图: ❓ 未知\(Terminal.reset)")
+        }
         
         return lines
     }

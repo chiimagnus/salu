@@ -665,7 +665,11 @@ P2 必须同步修改：
 
 ---
 
-## P3: 敌人系统统一 ⭐⭐
+## P3: 敌人系统统一 ⭐⭐ ✅ **已完成**
+
+> **实施日期**: 2026-01-03  
+> **状态**: ✅ 完成并通过所有测试  
+> **Commits**: [将在提交时填写]
 
 ### P3 重新审查：当前实现的问题（来自真实代码）
 
@@ -969,13 +973,25 @@ private func executeEnemyTurn() {
 
 ### P3 验收标准（必须全部通过）
 
-- [ ] 代码库中不存在：`EnemyKind.swift`, `EnemyData.swift`, `EnemyAI.swift`, `EnemyBehaviors.swift`, `EnemyAIFactory`
-- [ ] `EnemyRegistry` 使用 `EnemyID` 作为 key，新增敌人只需新增 Definition + 注册
-- [ ] `EnemyPool` 只返回 `EnemyID`（不生成 `Entity`）
-- [ ] `BattleEngine` 不再 switch intent 执行敌人动作（统一执行 move.effects）
-- [ ] 敌人行动的随机性只发生在 plan 阶段（可复现）
-- [ ] `swift build` 成功
-- [ ] `./.cursor/Scripts/test_game.sh` 成功
+- [x] ✅ 代码库中不存在：`EnemyKind.swift`, `EnemyData.swift`, `EnemyAI.swift`, `EnemyBehaviors.swift`, `EnemyAIFactory`
+- [x] ✅ `EnemyRegistry` 使用 `EnemyID` 作为 key，新增敌人只需新增 Definition + 注册
+- [x] ✅ `EnemyPool` 只返回 `EnemyID`（不生成 `Entity`）
+- [x] ✅ `BattleEngine` 不再 switch intent 执行敌人动作（统一执行 move.effects）
+- [x] ✅ 敌人行动的随机性只发生在 plan 阶段（可复现）
+- [x] ✅ `swift build` 成功
+- [x] ✅ `./.cursor/Scripts/test_game.sh` 成功
+
+### P3 实施总结 ✅
+
+**完成内容**:
+- ✅ 添加 `EnemyID` 到类型系统
+- ✅ 创建敌人框架 (EnemyMove, EnemyDefinition, EnemyRegistry)
+- ✅ 实现 5 个敌人定义
+- ✅ 重构 Entity, EnemyPool, BattleEngine, BattleScreen, GameCLI
+- ✅ 删除所有旧敌人系统文件
+- ✅ 所有测试通过
+
+**测试结果**: 所有测试通过，无编译错误
 
 ---
 
