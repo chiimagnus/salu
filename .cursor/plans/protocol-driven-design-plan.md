@@ -506,402 +506,191 @@ P1 要求把 `BattleScreen.buildHandArea` 中这段：
 
 ## P2: 状态效果系统协议化 ⭐⭐
 
-### 目标
-- 将状态效果（易伤、虚弱、力量等）抽象为协议
-- 支持添加新的状态效果（中毒、敏捷、脆弱等）
-- 统一状态效果的触发时机
-- **重构 Entity，使用 StatusContainer 替代硬编码字段**
+### P2 重新审查：当前实现的问题（来自真实代码）
 
-### 新架构设计
+我已核对当前实现：
+
+- `Sources/GameCore/Entity/Entity.swift`：状态是 3 个硬编码字段 `vulnerable/weak/strength`，且 `tickStatusEffects()` 直接做递减并返回中文字符串
+- `Sources/GameCore/Battle/BattleEngine.swift`：伤害计算直接读 `attacker.strength / attacker.weak / defender.vulnerable`
+- `Sources/GameCLI/Screens/BattleScreen.swift`：状态展示写死了 `易伤/虚弱/力量`
+
+结论：如果不把“状态”变成 Definition/Registry/Container 的框架域，未来加 `中毒/敏捷/脆弱` 会再次回到“加字段 + 加 switch”的老路。
+
+### P2 目标（破坏性：不保留兼容字段/兼容属性）
+
+- **删除** `Entity` 中的硬编码状态字段：`vulnerable/weak/strength`
+- **删除** `Entity.tickStatusEffects()`（状态递减不属于 Entity；属于战斗系统的 turn hook）
+- 建立 **StatusID / StatusDefinition / StatusRegistry / StatusContainer** 的状态框架
+- 状态系统必须同时支持两类能力：
+  - **修正型**：影响伤害/格挡（易伤/虚弱/力量/敏捷/脆弱）
+  - **触发型**：在特定时机产出 `BattleEffect`（如中毒在回合结束造成伤害）
+- **所有状态相关输出统一产出 `BattleEffect`**，由 BattleEngine 执行并 emit `BattleEvent`
+
+### P2 新架构设计（以框架为中心）
 
 ```
-Sources/GameCore/Status/
-├── StatusEffectDefinition.swift  # 状态效果定义协议
-├── StatusContainer.swift         # 状态容器（替代 Entity 中的硬编码）
-├── StatusRegistry.swift          # 状态注册表
-├── StatusType.swift              # 状态类型枚举（P1 中使用字符串，这里提供枚举）
-└── Effects/
-    ├── VulnerableEffect.swift    # 易伤：受到伤害 +50%
-    ├── WeakEffect.swift          # 虚弱：造成伤害 -25%
-    ├── StrengthEffect.swift      # 力量：攻击伤害 +N
-    ├── DexterityEffect.swift     # 敏捷：格挡 +N
-    ├── FrailEffect.swift         # 脆弱：获得格挡 -25%
-    ├── PoisonEffect.swift        # 中毒：回合结束受到 N 伤害
-    └── ...
+Sources/GameCore/
+├── Kernel/
+│   └── IDs.swift                  # StatusID（P1 已引入）
+│
+├── Status/
+│   ├── StatusDefinition.swift     # 状态定义协议（纯决策/纯修正）
+│   ├── StatusRegistry.swift       # 注册表：StatusID -> Definition
+│   ├── StatusContainer.swift      # 纯数据：StatusID -> stacks
+│   └── Definitions/
+│       ├── Debuffs.swift          # 易伤/虚弱/脆弱/中毒
+│       └── Buffs.swift            # 力量/敏捷
+│
+└── Entity/
+    └── Entity.swift               # 破坏性重写：只有 `statuses: StatusContainer`
 ```
 
-### 协议设计
+---
+
+### 核心框架（保留最小代码示例）
+
+#### 1) `StatusDefinition`（定义：修正 + 触发）
 
 ```swift
-// ═══════════════════════════════════════════════════════════════
-// StatusEffectDefinition.swift - 状态效果定义协议
-// ═══════════════════════════════════════════════════════════════
-
-/// 状态效果定义协议
-/// 每种状态效果实现此协议，定义其行为
-public protocol StatusEffectDefinition: Sendable {
-    /// 状态唯一标识符（如 "vulnerable", "weak"）
-    static var id: String { get }
-    
-    /// 显示名称
-    static var displayName: String { get }
-    
-    /// 显示图标
+// Status/StatusDefinition.swift
+public protocol StatusDefinition: Sendable {
+    static var id: StatusID { get }
+    static var name: String { get }     // UI 展示名（中文）
     static var icon: String { get }
-    
-    /// 是否为正面效果（Buff vs Debuff）
     static var isPositive: Bool { get }
-    
-    /// 是否随时间递减（每回合 -1）
-    static var decaysOverTime: Bool { get }
-    
-    /// 递减时机
-    static var decayTiming: StatusDecayTiming { get }
-    
-    // ═══════════════════════════════════════════════════════════
-    // 伤害修正
-    // ═══════════════════════════════════════════════════════════
-    
-    /// 修正造成的伤害（作为攻击者）
-    /// - Parameters:
-    ///   - damage: 原始伤害
-    ///   - stacks: 状态层数
-    /// - Returns: 修正后的伤害
-    static func modifyOutgoingDamage(_ damage: Int, stacks: Int) -> Int
-    
-    /// 修正受到的伤害（作为防御者）
-    static func modifyIncomingDamage(_ damage: Int, stacks: Int) -> Int
-    
-    /// 修正获得的格挡
-    static func modifyBlock(_ block: Int, stacks: Int) -> Int
-    
-    // ═══════════════════════════════════════════════════════════
-    // 触发效果
-    // ═══════════════════════════════════════════════════════════
-    
-    /// 回合开始时触发
-    /// - Returns: (是否消耗层数, 产生的事件)
-    static func onTurnStart(stacks: Int, entity: Entity) -> (consumeStacks: Int, events: [BattleEvent])
-    
-    /// 回合结束时触发
-    static func onTurnEnd(stacks: Int, entity: Entity) -> (consumeStacks: Int, events: [BattleEvent])
+
+    // 递减规则（用来替代 Entity.tickStatusEffects）
+    static var decay: StatusDecay { get }
+
+    // ── 修正型（默认不修正） ───────────────────────────────
+    static var outgoingDamagePhase: ModifierPhase? { get }   // nil = 不参与
+    static var incomingDamagePhase: ModifierPhase? { get }
+    static var blockPhase: ModifierPhase? { get }
+    static var priority: Int { get }                         // 保证确定性顺序
+
+    static func modifyOutgoingDamage(_ value: Int, stacks: Int) -> Int
+    static func modifyIncomingDamage(_ value: Int, stacks: Int) -> Int
+    static func modifyBlock(_ value: Int, stacks: Int) -> Int
+
+    // ── 触发型：产出 BattleEffect（不直接 emit 事件） ───────
+    static func onTurnEnd(owner: EffectTarget, stacks: Int, snapshot: BattleSnapshot) -> [BattleEffect]
 }
 
-/// 状态递减时机
-public enum StatusDecayTiming: Sendable {
-    case turnStart   // 回合开始时递减
-    case turnEnd     // 回合结束时递减
-    case never       // 永不递减（永久效果）
+public enum ModifierPhase: Int, Sendable {
+    case add = 0        // 先加（如力量/敏捷）
+    case multiply = 1   // 再乘（如虚弱/易伤/脆弱）
 }
 
-// 提供默认实现
-extension StatusEffectDefinition {
-    public static var decayTiming: StatusDecayTiming {
-        decaysOverTime ? .turnStart : .never
-    }
-    
-    public static func modifyOutgoingDamage(_ damage: Int, stacks: Int) -> Int { damage }
-    public static func modifyIncomingDamage(_ damage: Int, stacks: Int) -> Int { damage }
-    public static func modifyBlock(_ block: Int, stacks: Int) -> Int { block }
-    
-    public static func onTurnStart(stacks: Int, entity: Entity) -> (consumeStacks: Int, events: [BattleEvent]) {
-        (0, [])
-    }
-    
-    public static func onTurnEnd(stacks: Int, entity: Entity) -> (consumeStacks: Int, events: [BattleEvent]) {
-        (0, [])
-    }
+public enum StatusDecay: Sendable {
+    case none
+    case turnEnd(decreaseBy: Int)  // 常见：每回合 -1
+}
+
+extension StatusDefinition {
+    public static var outgoingDamagePhase: ModifierPhase? { nil }
+    public static var incomingDamagePhase: ModifierPhase? { nil }
+    public static var blockPhase: ModifierPhase? { nil }
+    public static var priority: Int { 0 }
+
+    public static func modifyOutgoingDamage(_ value: Int, stacks: Int) -> Int { value }
+    public static func modifyIncomingDamage(_ value: Int, stacks: Int) -> Int { value }
+    public static func modifyBlock(_ value: Int, stacks: Int) -> Int { value }
+
+    public static func onTurnEnd(owner: EffectTarget, stacks: Int, snapshot: BattleSnapshot) -> [BattleEffect] { [] }
 }
 ```
 
-```swift
-// ═══════════════════════════════════════════════════════════════
-// StatusContainer.swift - 状态容器
-// ═══════════════════════════════════════════════════════════════
+> 关键点：**必须有 priority/phase**，否则遍历 Dictionary 会导致修正顺序不确定（尤其乘法+向下取整时，顺序会改变结果）。
 
-/// 状态容器
-/// 管理实体的所有状态效果
+#### 2) `StatusContainer`（纯数据，不产生事件/效果）
+
+```swift
+// Status/StatusContainer.swift
 public struct StatusContainer: Sendable, Equatable {
-    /// 状态存储：statusId -> stacks
-    private var statuses: [String: Int] = [:]
-    
+    private var stacksById: [StatusID: Int] = [:]
+
     public init() {}
-    
-    /// 获取状态层数
-    public func getStacks(_ statusId: String) -> Int {
-        statuses[statusId] ?? 0
-    }
-    
-    /// 施加状态
-    public mutating func apply(_ statusId: String, stacks: Int) {
+
+    public func stacks(of id: StatusID) -> Int { stacksById[id] ?? 0 }
+
+    public mutating func apply(_ id: StatusID, stacks: Int) {
         guard stacks != 0 else { return }
-        statuses[statusId, default: 0] += stacks
-        // 确保不为负数
-        if statuses[statusId]! <= 0 {
-            statuses.removeValue(forKey: statusId)
-        }
+        let newValue = (stacksById[id] ?? 0) + stacks
+        if newValue <= 0 { stacksById.removeValue(forKey: id) }
+        else { stacksById[id] = newValue }
     }
-    
-    /// 设置状态层数
-    public mutating func set(_ statusId: String, stacks: Int) {
-        if stacks <= 0 {
-            statuses.removeValue(forKey: statusId)
-        } else {
-            statuses[statusId] = stacks
-        }
-    }
-    
-    /// 移除状态
-    public mutating func remove(_ statusId: String) {
-        statuses.removeValue(forKey: statusId)
-    }
-    
-    /// 获取所有状态
-    public var allStatuses: [(id: String, stacks: Int)] {
-        statuses.map { ($0.key, $0.value) }.sorted { $0.id < $1.id }
-    }
-    
-    /// 是否有任何状态
-    public var hasAnyStatus: Bool {
-        !statuses.isEmpty
-    }
-    
-    /// 回合开始时处理
-    public mutating func tickTurnStart() -> [BattleEvent] {
-        var events: [BattleEvent] = []
-        var toRemove: [String] = []
-        
-        for (statusId, stacks) in statuses {
-            guard let definition = StatusRegistry.get(statusId) else { continue }
-            
-            // 递减
-            if definition.decaysOverTime && definition.decayTiming == .turnStart {
-                statuses[statusId]! -= 1
-                if statuses[statusId]! <= 0 {
-                    toRemove.append(statusId)
-                }
-            }
-        }
-        
-        for statusId in toRemove {
-            statuses.removeValue(forKey: statusId)
-            if let definition = StatusRegistry.get(statusId) {
-                events.append(.statusExpired(target: "", effect: definition.displayName))
-            }
-        }
-        
-        return events
-    }
-    
-    /// 回合结束时处理
-    public mutating func tickTurnEnd() -> [BattleEvent] {
-        // 类似 tickTurnStart，但检查 .turnEnd 时机
-        var events: [BattleEvent] = []
-        // ... 实现类似逻辑
-        return events
+
+    public var all: [(id: StatusID, stacks: Int)] {
+        stacksById.map { ($0.key, $0.value) }.sorted { $0.id.rawValue < $1.id.rawValue }
     }
 }
 ```
 
-### 状态效果实现示例
+#### 3) `StatusRegistry`（扩展点：新增状态只新增 Definition + 注册）
 
 ```swift
-// ═══════════════════════════════════════════════════════════════
-// VulnerableEffect.swift - 易伤
-// ═══════════════════════════════════════════════════════════════
-
-/// 易伤：受到伤害 +50%
-public struct VulnerableEffect: StatusEffectDefinition {
-    public static let id = "vulnerable"
-    public static let displayName = "易伤"
-    public static let icon = "💔"
-    public static let isPositive = false
-    public static let decaysOverTime = true
-    
-    public static func modifyIncomingDamage(_ damage: Int, stacks: Int) -> Int {
-        guard stacks > 0 else { return damage }
-        return Int(Double(damage) * 1.5)  // +50%
-    }
-}
-
-/// 虚弱：造成伤害 -25%
-public struct WeakEffect: StatusEffectDefinition {
-    public static let id = "weak"
-    public static let displayName = "虚弱"
-    public static let icon = "💧"
-    public static let isPositive = false
-    public static let decaysOverTime = true
-    
-    public static func modifyOutgoingDamage(_ damage: Int, stacks: Int) -> Int {
-        guard stacks > 0 else { return damage }
-        return Int(Double(damage) * 0.75)  // -25%
-    }
-}
-
-/// 力量：攻击伤害 +N
-public struct StrengthEffect: StatusEffectDefinition {
-    public static let id = "strength"
-    public static let displayName = "力量"
-    public static let icon = "💪"
-    public static let isPositive = true
-    public static let decaysOverTime = false  // 永久效果
-    
-    public static func modifyOutgoingDamage(_ damage: Int, stacks: Int) -> Int {
-        damage + stacks
-    }
-}
-
-/// 敏捷：格挡 +N
-public struct DexterityEffect: StatusEffectDefinition {
-    public static let id = "dexterity"
-    public static let displayName = "敏捷"
-    public static let icon = "🏃"
-    public static let isPositive = true
-    public static let decaysOverTime = false
-    
-    public static func modifyBlock(_ block: Int, stacks: Int) -> Int {
-        block + stacks
-    }
-}
-
-/// 中毒：回合结束受到 N 伤害，然后层数 -1
-public struct PoisonEffect: StatusEffectDefinition {
-    public static let id = "poison"
-    public static let displayName = "中毒"
-    public static let icon = "🧪"
-    public static let isPositive = false
-    public static let decaysOverTime = true
-    public static let decayTiming: StatusDecayTiming = .turnEnd
-    
-    public static func onTurnEnd(stacks: Int, entity: Entity) -> (consumeStacks: Int, events: [BattleEvent]) {
-        guard stacks > 0 else { return (0, []) }
-        // 造成等于层数的伤害
-        let damage = stacks
-        return (1, [.damageDealt(source: "中毒", target: entity.name, amount: damage, blocked: 0)])
-    }
+// Status/StatusRegistry.swift
+public enum StatusRegistry {
+    private static let defs: [StatusID: any StatusDefinition.Type] = [
+        "vulnerable": Vulnerable.self,
+        "weak": Weak.self,
+        "strength": Strength.self,
+        // ...
+    ]
+    public static func get(_ id: StatusID) -> (any StatusDefinition.Type)? { defs[id] }
+    public static func require(_ id: StatusID) -> any StatusDefinition.Type { defs[id]! }
 }
 ```
 
-### Entity 修改
+---
 
-```swift
-// ═══════════════════════════════════════════════════════════════
-// Entity.swift - 使用 StatusContainer
-// ═══════════════════════════════════════════════════════════════
+### P2 与 BattleEngine 的边界（状态不发事件，只发 BattleEffect）
 
-public struct Entity: Sendable {
-    public let id: String
-    public let name: String
-    public let maxHP: Int
-    public var currentHP: Int
-    public var block: Int
-    
-    /// 状态效果容器（新增）
-    public var statuses: StatusContainer = StatusContainer()
-    
-    /// 敌人定义 ID（替代 kind）
-    public let enemyDefinitionId: String?
-    
-    /// 当前意图（仅敌人使用）
-    public var intent: EnemyIntent = .unknown
-    
-    // ═══════════════════════════════════════════════════════════
-    // 兼容性属性（使用 StatusContainer 实现）
-    // ═══════════════════════════════════════════════════════════
-    
-    public var vulnerable: Int {
-        get { statuses.getStacks("vulnerable") }
-        set { 
-            let diff = newValue - vulnerable
-            if diff != 0 { statuses.apply("vulnerable", stacks: diff) }
-        }
-    }
-    
-    public var weak: Int {
-        get { statuses.getStacks("weak") }
-        set {
-            let diff = newValue - weak
-            if diff != 0 { statuses.apply("weak", stacks: diff) }
-        }
-    }
-    
-    public var strength: Int {
-        get { statuses.getStacks("strength") }
-        set {
-            let diff = newValue - strength
-            if diff != 0 { statuses.apply("strength", stacks: diff) }
-        }
-    }
-    
-    public var isAlive: Bool { currentHP > 0 }
-    
-    public var hasAnyStatus: Bool { statuses.hasAnyStatus }
-    
-    // ... 其余方法保持不变，使用 statuses 替代直接字段访问
-}
-```
+- `BattleEngine` 在 **turnEnd(actor:)** 阶段：
+  1) 读取该 actor 的 `statuses`
+  2) 对每个状态调用 `StatusDefinition.onTurnEnd(...)` 收集效果
+  3) 执行这些 `BattleEffect`（统一走 `apply(effect:)`）
+  4) 按 `StatusDefinition.decay` 递减 stacks，并由引擎 emit `.statusExpired`
 
-### DamageCalculator 重构
+同时：
+- `DamageCalculator` / `BlockCalculator`（可以还是 DamageCalculator）应当：
+  - 从 `attacker.statuses` / `defender.statuses` 找到参与修正的定义
+  - 按 `phase + priority` 排序后再应用，保证结果稳定
 
-```swift
-// 使用 StatusRegistry 进行伤害修正
-public enum DamageCalculator {
-    
-    public static func calculate(
-        baseDamage: Int,
-        attacker: Entity,
-        defender: Entity
-    ) -> Int {
-        var damage = baseDamage
-        
-        // 应用攻击者的所有状态修正
-        for (statusId, stacks) in attacker.statuses.allStatuses {
-            if let definition = StatusRegistry.get(statusId) {
-                damage = definition.modifyOutgoingDamage(damage, stacks: stacks)
-            }
-        }
-        
-        // 应用防御者的所有状态修正
-        for (statusId, stacks) in defender.statuses.allStatuses {
-            if let definition = StatusRegistry.get(statusId) {
-                damage = definition.modifyIncomingDamage(damage, stacks: stacks)
-            }
-        }
-        
-        return max(0, damage)
-    }
-}
-```
+### UI 变更（对齐真实代码）
 
-### 实施步骤（修订版）
+P2 必须同步修改：
+- `BattleScreen.buildStatusLine`：不再写死 `易伤/虚弱/力量`，改为遍历 `entity.statuses.all`，用 `StatusRegistry.require(id).icon/name` 渲染
 
-| 步骤 | 内容 | 复杂度 | 预计时间 |
-|------|------|--------|----------|
-| P2.1 | 创建 `StatusEffectDefinition` 协议 | ⭐ | 20分钟 |
-| P2.2 | 创建 `StatusContainer` 容器 | ⭐⭐ | 30分钟 |
-| P2.3 | 创建 `StatusRegistry` 注册表 | ⭐ | 15分钟 |
-| P2.4 | 实现 `VulnerableEffect`, `WeakEffect`, `StrengthEffect` | ⭐ | 20分钟 |
-| P2.5 | 重构 `Entity` 使用 `StatusContainer` | ⭐⭐ | 40分钟 |
-| P2.6 | 重构 `DamageCalculator` 使用 `StatusRegistry` | ⭐⭐ | 30分钟 |
-| P2.7 | 重构 `BattleEngine` 状态相关逻辑 | ⭐⭐ | 40分钟 |
-| P2.8 | 实现 `DexterityEffect`（敏捷）验证格挡修正 | ⭐ | 15分钟 |
-| P2.9 | 实现 `PoisonEffect`（中毒）验证回合结束触发 | ⭐ | 20分钟 |
-| P2.10 | 更新 UI 层状态显示 | ⭐ | 20分钟 |
-| **总计** | | | **~4小时** |
+---
 
-### 验收标准
+### P2 破坏性改动清单
 
-- [ ] `StatusContainer` 正确管理所有状态
-- [ ] `Entity` 的 `vulnerable`, `weak`, `strength` 属性正常工作（兼容性）
-- [ ] `DamageCalculator` 使用 `StatusRegistry` 进行伤害修正
-- [ ] 易伤效果：受到伤害 +50%
-- [ ] 虚弱效果：造成伤害 -25%
-- [ ] 力量效果：攻击伤害 +N
-- [ ] 敏捷效果：获得格挡 +N
-- [ ] 中毒效果：回合结束造成 N 伤害
-- [ ] 状态递减正确工作
-- [ ] 所有测试通过
+- **删除**：`Entity.vulnerable/weak/strength` 字段
+- **删除**：`Entity.tickStatusEffects()`
+- **新增**：`StatusContainer` 并嵌入 `Entity`
+- **重构**：`BattleEngine.calculateDamage` 与状态递减时机（改为 turn hook）
+- **重构**：`BattleScreen.buildStatusLine`
+
+### P2 实施步骤
+
+- P2.1 新建 `StatusDefinition/StatusRegistry/StatusContainer`
+- P2.2 破坏性重写 `Entity`：加入 `statuses: StatusContainer`
+- P2.3 实现 5 个状态定义：`Vulnerable/Weak/Strength/Dexterity/Poison`
+- P2.4 重构 `DamageCalculator`：按 phase+priority 应用修正（保证确定性）
+- P2.5 BattleEngine：加入 `turnEnd(actor:)` 钩子，处理 poison 触发 + 递减
+- P2.6 UI：状态行改为 registry 驱动渲染
+- P2.7 验证：build + 测试脚本
+
+### P2 验收标准（必须全部通过）
+
+- [ ] `Entity` 不再含 `vulnerable/weak/strength` 字段，也没有 `tickStatusEffects()`
+- [ ] `StatusContainer` 不产生 `BattleEvent`（只存数据）
+- [ ] `DamageCalculator` 的状态修正顺序确定（phase+priority）
+- [ ] 易伤/虚弱/力量/敏捷/中毒 全部可通过注册表扩展
+- [ ] `BattleScreen` 状态展示由 registry 驱动（无硬编码 if 链）
 - [ ] `swift build` 成功
+- [ ] `./.cursor/Scripts/test_game.sh` 成功
 
 ---
 
