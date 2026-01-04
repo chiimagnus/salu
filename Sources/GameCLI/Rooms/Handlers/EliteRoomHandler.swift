@@ -5,7 +5,7 @@ struct EliteRoomHandler: RoomHandling {
     var roomType: RoomType { .elite }
     
     func run(node: MapNode, runState: inout RunState, context: RoomContext) -> RoomRunResult {
-        let won = handleEliteBattle(runState: &runState, context: context)
+        let won = handleEliteBattle(node: node, runState: &runState, context: context)
         
         if won {
             return .completedNode
@@ -14,7 +14,7 @@ struct EliteRoomHandler: RoomHandling {
         }
     }
     
-    private func handleEliteBattle(runState: inout RunState, context: RoomContext) -> Bool {
+    private func handleEliteBattle(node: MapNode, runState: inout RunState, context: RoomContext) -> Bool {
         // 使用当前 RNG 状态创建新的种子
         let battleSeed = runState.seed &+ UInt64(runState.currentRow) &* 1000
         
@@ -50,6 +50,19 @@ struct EliteRoomHandler: RoomHandling {
         
         // 如果胜利，完成节点
         if engine.state.playerWon == true {
+            // P1：精英战斗同样提供卡牌奖励（后续 P4 会额外加入遗物掉落）
+            let rewardContext = RewardContext(
+                seed: runState.seed,
+                floor: runState.floor,
+                currentRow: runState.currentRow,
+                nodeId: node.id,
+                roomType: node.roomType
+            )
+            let offer = RewardGenerator.generateCardReward(context: rewardContext)
+            if let chosen = RewardScreen.chooseCard(offer: offer) {
+                runState.addCardToDeck(cardId: chosen)
+            }
+            
             runState.completeCurrentNode()
             return true
         }

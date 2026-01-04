@@ -20,7 +20,7 @@ enum SettingsScreen {
         ║  \(Terminal.reset)\(Terminal.red)[3]\(Terminal.bold)\(Terminal.yellow) 🗑️  清除历史记录 \(Terminal.dim)(\(recordCount) 条)\(Terminal.bold)\(Terminal.yellow)                   ║
         ║                                                       ║
         ╠═══════════════════════════════════════════════════════╣
-        ║  \(Terminal.reset)\(Terminal.dim)[0/B] 返回主菜单\(Terminal.bold)\(Terminal.yellow)                               ║
+        ║  \(Terminal.reset)\(Terminal.dim)[0] 返回主菜单\(Terminal.bold)\(Terminal.yellow)                                 ║
         ╚═══════════════════════════════════════════════════════╝
         \(Terminal.reset)
         """)

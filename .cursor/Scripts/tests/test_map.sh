@@ -30,6 +30,9 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
+# 使用临时数据目录，避免污染真实用户数据
+export SALU_DATA_DIR="$TMP_DIR"
+
 FAILED=0
 
 # ============================================================

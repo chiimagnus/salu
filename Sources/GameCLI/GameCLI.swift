@@ -63,26 +63,43 @@ struct GameCLI {
                 // EOF 或输入关闭，退出主菜单
                 return
             }
-            
-            switch input {
-            case "1" where hasSave:
-                // 继续上次冒险
-                continueRun()
-                
-            case "1" where !hasSave, "2":
-                // 开始新冒险（如果没有存档，1 就是新冒险；否则 2 是新冒险）
-                startNewRun()
-                
-            case "2" where hasSave, "3" where !hasSave:
-                // 设置菜单
-                settingsMenuLoop()
-                
-            case "3" where hasSave, "4" where !hasSave, "q":
-                // 退出游戏
+
+            // 使用 (hasSave, input) 明确分支，避免 switch pattern + where 造成歧义
+            switch (hasSave, input) {
+            case (_, "q"):
                 Screens.showExit()
                 return
-                
+
+            case (true, "1"):
+                // 继续上次冒险
+                continueRun()
+
+            case (true, "2"):
+                // 开始新冒险
+                startNewRun()
+
+            case (true, "3"):
+                // 设置菜单
+                settingsMenuLoop()
+
+            case (true, "4"):
+                Screens.showExit()
+                return
+
+            case (false, "1"):
+                // 开始冒险
+                startNewRun()
+
+            case (false, "2"):
+                // 设置菜单
+                settingsMenuLoop()
+
+            case (false, "3"):
+                Screens.showExit()
+                return
+
             default:
+                // 无效输入，重新显示
                 break
             }
         }
@@ -116,7 +133,7 @@ struct GameCLI {
                 // 清除历史记录
                 confirmClearHistory()
                 
-            case "0", "q", "b":
+            case "0":
                 // 返回主菜单
                 return
                 

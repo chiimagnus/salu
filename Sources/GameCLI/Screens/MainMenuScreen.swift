@@ -35,7 +35,7 @@ enum MainMenuScreen {
             ║                                                       ║
             ║  \(Terminal.reset)\(Terminal.green)[1]\(Terminal.cyan) 🔄 继续上次冒险                            ║
             ║  \(Terminal.reset)\(Terminal.green)[2]\(Terminal.cyan) 🗺️  开始新冒险                              ║
-            ║  \(Terminal.reset)\(Terminal.dim)[3]\(Terminal.cyan) ⚙️  设置 / 战绩                              ║
+            ║  \(Terminal.reset)\(Terminal.green)[3]\(Terminal.cyan) ⚙️  设置 / 战绩                              ║
             ║  \(Terminal.reset)\(Terminal.red)[4]\(Terminal.cyan) 🚪 退出游戏                                ║
             ║                                                       ║
             ╠═══════════════════════════════════════════════════════╣
@@ -60,7 +60,7 @@ enum MainMenuScreen {
             ╠═══════════════════════════════════════════════════════╣
             ║                                                       ║
             ║  \(Terminal.reset)\(Terminal.green)[1]\(Terminal.cyan) 🗺️  开始冒险                                  ║
-            ║  \(Terminal.reset)\(Terminal.dim)[2]\(Terminal.cyan) ⚙️  设置 / 战绩                              ║
+            ║  \(Terminal.reset)\(Terminal.green)[2]\(Terminal.cyan) ⚙️  设置 / 战绩                              ║
             ║  \(Terminal.reset)\(Terminal.red)[3]\(Terminal.cyan) 🚪 退出游戏                                ║
             ║                                                       ║
             ╠═══════════════════════════════════════════════════════╣

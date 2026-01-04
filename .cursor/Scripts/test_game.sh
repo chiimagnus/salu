@@ -33,6 +33,7 @@ show_usage() {
     echo "  relic       遗物系统测试"
     echo "  map         地图系统测试"
     echo "  save        存档系统测试"
+    echo "  reward      战斗后奖励系统测试"
     echo "  integration 集成测试（完整冒险流程）"
     echo "  quick       快速测试 (编译+启动)"
     echo ""
@@ -126,6 +127,9 @@ case "${1:-all}" in
         ;;
     save)
         run_test "save"
+        ;;
+    reward)
+        run_test "reward"
         ;;
     integration)
         run_test "integration"
