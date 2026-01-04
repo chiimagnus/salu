@@ -2,6 +2,7 @@ import XCTest
 @testable import GameCore
 
 final class RewardGeneratorTests: XCTestCase {
+    /// 同一随机上下文应生成完全相同的奖励，用于验证生成结果可复现
     func testGenerateCardReward_isDeterministic() {
         let context = RewardContext(
             seed: 123,
@@ -17,6 +18,7 @@ final class RewardGeneratorTests: XCTestCase {
         XCTAssertEqual(a, b)
     }
     
+    /// 卡牌奖励的候选项应该唯一且不包含 starter 卡，确保奖励质量与多样性
     func testGenerateCardReward_choicesAreUniqueAndNonStarter() {
         let context = RewardContext(
             seed: 42,
@@ -39,5 +41,4 @@ final class RewardGeneratorTests: XCTestCase {
         }
     }
 }
-
 
