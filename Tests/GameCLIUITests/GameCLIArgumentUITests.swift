@@ -15,7 +15,8 @@ final class GameCLIArgumentUITests: XCTestCase {
             arguments: ["--history"],
             stdin: "",
             environment: [
-                "SALU_DATA_DIR": tmp.url.path
+                "SALU_DATA_DIR": tmp.url.path,
+                "SALU_TEST_MODE": "1"
             ],
             timeout: 4
         )
@@ -33,7 +34,8 @@ final class GameCLIArgumentUITests: XCTestCase {
             arguments: ["--stats"],
             stdin: "",
             environment: [
-                "SALU_DATA_DIR": tmp.url.path
+                "SALU_DATA_DIR": tmp.url.path,
+                "SALU_TEST_MODE": "1"
             ],
             timeout: 4
         )

@@ -13,7 +13,10 @@ final class GameCLISaveUITests: XCTestCase {
         let tmp = try TemporaryDirectory()
         defer { tmp.cleanup() }
         
-        let env = ["SALU_DATA_DIR": tmp.url.path]
+        let env = [
+            "SALU_DATA_DIR": tmp.url.path,
+            "SALU_TEST_MODE": "1"
+        ]
         
         // 运行 1：开始新冒险 → 选择起点节点（会自动完成并触发保存）→ 返回主菜单 → 退出
         _ = try CLIRunner.runGameCLI(

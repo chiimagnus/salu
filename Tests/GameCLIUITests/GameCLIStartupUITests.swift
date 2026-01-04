@@ -15,7 +15,8 @@ final class GameCLIStartupUITests: XCTestCase {
             arguments: ["--seed", "1"],
             stdin: "3\n",
             environment: [
-                "SALU_DATA_DIR": tmp.url.path
+                "SALU_DATA_DIR": tmp.url.path,
+                "SALU_TEST_MODE": "1"
             ],
             timeout: 6
         )

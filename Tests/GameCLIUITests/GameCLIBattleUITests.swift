@@ -16,7 +16,8 @@ final class GameCLIBattleUITests: XCTestCase {
             // 新冒险 → 起点 → 第一战斗节点 → 战斗界面 q 退出 → 冒险结果 Enter → 主菜单退出
             stdin: "1\n1\n1\nq\n\n3\n",
             environment: [
-                "SALU_DATA_DIR": tmp.url.path
+                "SALU_DATA_DIR": tmp.url.path,
+                "SALU_TEST_MODE": "1"
             ],
             timeout: 10
         )
