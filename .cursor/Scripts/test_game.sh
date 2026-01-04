@@ -34,6 +34,7 @@ show_usage() {
     echo "  map         地图系统测试"
     echo "  save        存档系统测试"
     echo "  reward      战斗后奖励系统测试"
+    echo "  unit        单元测试（swift test）"
     echo "  integration 集成测试（完整冒险流程）"
     echo "  quick       快速测试 (编译+启动)"
     echo ""
@@ -130,6 +131,9 @@ case "${1:-all}" in
         ;;
     reward)
         run_test "reward"
+        ;;
+    unit)
+        run_test "unit"
         ;;
     integration)
         run_test "integration"
