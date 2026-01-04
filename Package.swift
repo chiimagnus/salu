@@ -20,6 +20,11 @@ let package = Package(
             name: "GameCoreTests",
             dependencies: ["GameCore"]
         ),
+        // GameCLITests: GameCLI 白盒单元测试（对 SaveService/HistoryService 等可注入组件做断言）
+        .testTarget(
+            name: "GameCLITests",
+            dependencies: ["GameCLI", "GameCore"]
+        ),
         // GameCLIUITests: 使用 XCTest + Process 对 GameCLI 做黑盒「UI」测试（替代 sh 脚本）
         .testTarget(
             name: "GameCLIUITests",
