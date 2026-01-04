@@ -28,7 +28,7 @@ Sources/GameCore/  ← 本规范适用范围
 └── RNG.swift               # 随机数生成器
 ```
 
-> 说明：奖励/AI/多角色仍在规划中，落地请参见 `.cursor/plans/protocol-driven-design-plan.md`。
+> 说明：奖励/AI/多角色仍在规划中，后续规划请参见 `.cursor/plans/backlog-2026-01-04.md`。
 
 ---
 
