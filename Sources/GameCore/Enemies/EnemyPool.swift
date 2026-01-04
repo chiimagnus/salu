@@ -22,6 +22,12 @@ public enum Act1EnemyPool {
         return weak[index]
     }
     
+    /// 随机选择中等敌人
+    public static func randomMedium(rng: inout SeededRNG) -> EnemyID {
+        let index = rng.nextInt(upperBound: medium.count)
+        return medium[index]
+    }
+    
     /// 随机选择任意敌人
     public static func randomAny(rng: inout SeededRNG) -> EnemyID {
         let index = rng.nextInt(upperBound: all.count)

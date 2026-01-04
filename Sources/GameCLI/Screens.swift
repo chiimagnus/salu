@@ -1,8 +1,7 @@
-import Foundation
 import GameCore
 
-/// 屏幕统一入口（向后兼容层）
-/// 将各个 Screen 统一组织在一起
+/// 屏幕统一入口
+/// 将各个 Screen 统一组织在一起，集中管理跨屏依赖与调用方式
 enum Screens {
     
     // MARK: - 主菜单

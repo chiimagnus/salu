@@ -37,9 +37,10 @@ Sources/GameCLI/  ← 本规范适用范围
 |------|----------|----------|
 | `Terminal.swift` | 终端底层控制 | UI 逻辑、业务逻辑 |
 | `EventFormatter.swift` | 事件 → 文本 | 屏幕布局、输入处理 |
-| `ScreenRenderer.swift` | 战斗界面构建 | 菜单逻辑、事件格式化 |
-| `Screens.swift` | 全屏界面展示 | 游戏循环、状态管理 |
-| `HistoryManager.swift` | 文件读写 | UI 渲染 |
+| `Screens/BattleScreen.swift` | 战斗界面构建 | 菜单逻辑、事件格式化 |
+| `Screens.swift` | 屏幕统一入口（聚合调用） | 游戏循环、状态管理 |
+| `Persistence/HistoryService.swift` | 战绩读写协调（依赖注入） | UI 渲染、文件路径策略 |
+| `Persistence/SaveService.swift` | Run 存档业务（快照/恢复） | UI 渲染、文件 I/O 细节 |
 | `GameCLI.swift` | 流程控制 | 具体渲染实现 |
 
 ### 组件化原则
@@ -79,6 +80,14 @@ GameCLI.swift
 
 ---
 
+## 协议驱动开发（PDD）在 GameCLI 的落地点
+
+- **UI 渲染不写 switch**：卡牌/状态/敌人展示从 `CardRegistry/StatusRegistry/EnemyRegistry` 取 `name/rulesText/icon/intent` 渲染
+- **房间流程可插拔**：通过 `RoomHandling` + `RoomHandlerRegistry` 扩展房间行为，`GameCLI.runLoop` 不写 roomType 分支
+- **依赖注入优先**：History/Save 等 I/O 能力通过 Service 注入到 Screens/Handlers，避免在 Screen 内部创建文件存储
+
+---
+
 ## 核心约束
 
 ### 必须遵守
@@ -109,9 +118,10 @@ GameCore → GameCLI  ❌ 禁止
 | `Flow/RoomHandling.swift` | 房间处理协议/上下文 | RoomHandling, RoomContext, RoomRunResult |
 | `Flow/RoomHandlerRegistry.swift` | RoomType → handler 注册表 | register()/resolve() |
 | `Rooms/Handlers/*.swift` | 房间行为实现 | StartRoomHandler, BattleRoomHandler 等 |
-| `Persistence/HistoryService.swift` | 战绩读写协调 | load(), append(), clear() |
+| `Persistence/HistoryService.swift` | 战绩读写协调 | getAllRecords(), addRecord(), clearHistory() |
 | `Persistence/FileBattleHistoryStore.swift` | 战绩文件实现 | append(), clear() |
-| `Persistence/FileRunSaveStore.swift` | Run 存档文件实现 | load(), save() |
+| `Persistence/SaveService.swift` | Run 存档业务（快照/恢复） | createSnapshot(), restoreRunState() |
+| `Persistence/FileRunSaveStore.swift` | Run 存档文件实现 | load(), save(), hasSave() |
 
 ---
 
@@ -132,6 +142,13 @@ GameCore → GameCLI  ❌ 禁止
 
 1. 在 `GameCLI.main()` 添加参数检查
 2. 更新 CLAUDE.mdc 文档
+
+### 存档/继续冒险（P7）
+
+- 冒险模式会在**节点完成后自动保存**（`GameCLI.runLoop` 调用 `SaveService.saveRun`）。
+- 主菜单会根据 `SaveService.hasSave()` 决定是否显示“继续上次冒险”入口。
+- `FileRunSaveStore` 支持通过环境变量 `SALU_DATA_DIR` 覆盖存档目录（用于测试/调试；默认仍写入系统 Application Support/LOCALAPPDATA/~/.salu）。
+- `FileRunSaveStore` / `FileBattleHistoryStore` 支持通过环境变量 `SALU_DATA_DIR` 覆盖数据目录（用于测试/调试；默认仍写入系统 Application Support/LOCALAPPDATA/~/.salu）。
 
 ---
 

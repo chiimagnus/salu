@@ -28,7 +28,20 @@ Sources/GameCore/  ← 本规范适用范围
 └── RNG.swift               # 随机数生成器
 ```
 
-> 说明：奖励/AI/多角色仍在规划中，落地请参见 `.cursor/plans/protocol-driven-design-plan.md`。
+> 说明：奖励/AI/多角色仍在规划中，后续规划请参见 `.cursor/plans/backlog-2026-01-04.md`。
+
+---
+
+## 协议驱动开发（PDD）原则
+
+GameCore 的核心目标是把“内容扩展点”从 `enum + switch` 迁移到 **Definition + Registry**：
+
+- **强类型 ID**：`CardID/StatusID/EnemyID/RelicID`（禁止散落字符串）
+- **定义协议**：`CardDefinition/StatusDefinition/EnemyDefinition/RelicDefinition`（只做决策/产出效果，不直接 I/O）
+- **注册表**：`CardRegistry/StatusRegistry/EnemyRegistry/RelicRegistry`（新增内容的唯一入口）
+- **统一效果管线**：`BattleEffect` + `BattleEngine.apply(effect:)`（引擎只负责执行效果并产出事件）
+
+约束：新增卡牌/状态/敌人/遗物应当尽量只做 **新增 Definition + 在 Registry 注册**，避免修改 `BattleEngine` 或引入新的 switch 扩展点。
 
 ---
 
@@ -86,7 +99,7 @@ Battle/BattleEngine.swift
 
 - ❌ `print()` 或任何控制台输出
 - ❌ 读取 `stdin` 或任何用户输入
-- ❌ 导入 `Foundation`（History.swift 除外）
+- ❌ 导入 `Foundation`（`History.swift` 例外；I/O 协议文件也不应依赖 Foundation）
 - ❌ 导入任何 UI 框架
 - ❌ 导入 GameCLI 模块
 
@@ -182,6 +195,11 @@ let shuffled = deck.shuffled()  // 不可复现！
 1. **评估是否独立**：新功能是否与现有文件职责相关？
 2. **创建新文件**：如果是全新领域，创建独立文件
 3. **保持纯逻辑**：不引入 UI 或 I/O 依赖
+
+### Run 存档（P7）
+
+- `GameCore` 只提供 **Run 维度**可序列化快照模型（`RunSnapshot`）与版本管理（`RunSaveVersion`）。
+- 实际文件读写/JSON 编解码必须在 `GameCLI/Persistence`（`RunSaveStore` 的具体实现）。
 
 ---
 

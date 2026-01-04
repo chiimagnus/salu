@@ -4,31 +4,62 @@ import GameCore
 /// Run 存档文件存储实现
 /// 使用 JSON 格式保存冒险进度到本地文件
 final class FileRunSaveStore: RunSaveStore {
+    private static let dataDirEnvKey = "SALU_DATA_DIR"
+    private static let fileName = "run_save.json"
+    
     private let fileURL: URL
     
     init() {
-        // 使用与历史记录相同的目录
         let fileManager = FileManager.default
-        let directory: URL
         
-        #if os(Linux)
+        // 允许通过环境变量覆盖存储目录（用于测试/调试）
+        if let overridePath = ProcessInfo.processInfo.environment[Self.dataDirEnvKey],
+           !overridePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            let overrideDir = URL(fileURLWithPath: overridePath, isDirectory: true)
+            if Self.ensureDirectory(overrideDir) {
+                self.fileURL = overrideDir.appendingPathComponent(Self.fileName)
+                return
+            }
+        }
+        
+        let candidates = Self.defaultDirectoryCandidates(fileManager: fileManager)
+        let directory = candidates.first(where: { dir in
+            Self.ensureDirectory(dir) && fileManager.isWritableFile(atPath: dir.path)
+        }) ?? fileManager.temporaryDirectory.appendingPathComponent("salu")
+        
+        _ = Self.ensureDirectory(directory)
+        self.fileURL = directory.appendingPathComponent(Self.fileName)
+    }
+    
+    private static func defaultDirectoryCandidates(fileManager: FileManager) -> [URL] {
+        var candidates: [URL] = []
+        
+        #if os(Windows)
+        if let localAppData = ProcessInfo.processInfo.environment["LOCALAPPDATA"] {
+            candidates.append(URL(fileURLWithPath: localAppData).appendingPathComponent("Salu"))
+        }
+        #elseif os(Linux)
         if let home = ProcessInfo.processInfo.environment["HOME"] {
-            directory = URL(fileURLWithPath: home).appendingPathComponent(".salu")
-        } else {
-            directory = fileManager.temporaryDirectory.appendingPathComponent("salu")
+            candidates.append(URL(fileURLWithPath: home).appendingPathComponent(".salu"))
         }
         #else
         if let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
-            directory = appSupport.appendingPathComponent("Salu")
-        } else {
-            directory = fileManager.temporaryDirectory.appendingPathComponent("salu")
+            candidates.append(appSupport.appendingPathComponent("Salu"))
         }
         #endif
         
-        // 确保目录存在
-        try? fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
-        
-        self.fileURL = directory.appendingPathComponent("run_save.json")
+        candidates.append(fileManager.temporaryDirectory.appendingPathComponent("salu"))
+        return candidates
+    }
+    
+    @discardableResult
+    private static func ensureDirectory(_ directory: URL) -> Bool {
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            return true
+        } catch {
+            return false
+        }
     }
     
     func load() throws -> RunSnapshot? {

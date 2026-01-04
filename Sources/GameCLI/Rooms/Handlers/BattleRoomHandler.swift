@@ -5,8 +5,7 @@ struct BattleRoomHandler: RoomHandling {
     var roomType: RoomType { .battle }
     
     func run(node: MapNode, runState: inout RunState, context: RoomContext) -> RoomRunResult {
-        let isElite = (node.roomType == .elite)
-        let won = handleBattle(runState: &runState, isElite: isElite, context: context)
+        let won = handleBattle(runState: &runState, context: context)
         
         if won {
             return .completedNode
@@ -15,20 +14,13 @@ struct BattleRoomHandler: RoomHandling {
         }
     }
     
-    private func handleBattle(runState: inout RunState, isElite: Bool, context: RoomContext) -> Bool {
+    private func handleBattle(runState: inout RunState, context: RoomContext) -> Bool {
         // 使用当前 RNG 状态创建新的种子
         let battleSeed = runState.seed &+ UInt64(runState.currentRow) &* 1000
         
-        // 选择敌人
+        // 选择敌人（普通战斗：弱敌人池）
         var rng = SeededRNG(seed: battleSeed)
-        let enemyId: EnemyID
-        if isElite {
-            // 精英战斗：使用 medium 池
-            enemyId = Act1EnemyPool.randomAny(rng: &rng)
-        } else {
-            // 普通战斗
-            enemyId = Act1EnemyPool.randomWeak(rng: &rng)
-        }
+        let enemyId = Act1EnemyPool.randomWeak(rng: &rng)
         let enemy = context.createEnemy(enemyId, &rng)
         
         // 创建战斗引擎（使用冒险中的玩家状态和遗物）

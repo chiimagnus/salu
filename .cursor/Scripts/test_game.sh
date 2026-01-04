@@ -3,13 +3,6 @@
 # ============================================================
 # Salu - 游戏测试入口 v3.0
 # ============================================================
-# 用法：
-#   ./.cursor/Scripts/test_game.sh           # 运行所有测试
-#   ./.cursor/Scripts/test_game.sh build     # 仅测试编译
-#   ./.cursor/Scripts/test_game.sh startup   # 启动测试
-#   ./.cursor/Scripts/test_game.sh enemy     # 敌人系统测试
-#   ./.cursor/Scripts/test_game.sh quick     # 快速测试（编译+启动）
-# ============================================================
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TESTS_DIR="$SCRIPT_DIR/tests"
@@ -39,6 +32,7 @@ show_usage() {
     echo "  enemy       敌人系统测试"
     echo "  relic       遗物系统测试"
     echo "  map         地图系统测试"
+    echo "  save        存档系统测试"
     echo "  integration 集成测试（完整冒险流程）"
     echo "  quick       快速测试 (编译+启动)"
     echo ""
@@ -129,6 +123,9 @@ case "${1:-all}" in
         ;;
     map)
         run_test "map"
+        ;;
+    save)
+        run_test "save"
         ;;
     integration)
         run_test "integration"

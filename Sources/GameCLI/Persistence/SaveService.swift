@@ -18,7 +18,7 @@ final class SaveService {
                 id: node.id,
                 row: node.row,
                 column: node.column,
-                roomType: String(describing: node.roomType),
+                roomType: node.roomType.rawValue,
                 connections: node.connections,
                 isCompleted: node.isCompleted,
                 isAccessible: node.isAccessible
@@ -26,8 +26,8 @@ final class SaveService {
         }
         
         // 转换玩家状态
-        let playerStatuses = Dictionary(uniqueKeysWithValues: 
-            runState.player.statuses.all.map { (String(describing: $0.id), $0.stacks) }
+        let playerStatuses = Dictionary(
+            uniqueKeysWithValues: runState.player.statuses.all.map { ($0.id.rawValue, $0.stacks) }
         )
         let player = RunSnapshot.PlayerData(
             maxHP: runState.player.maxHP,
@@ -37,11 +37,11 @@ final class SaveService {
         
         // 转换牌组
         let deck = runState.deck.map { card in
-            RunSnapshot.CardData(id: card.id, cardId: String(describing: card.cardId))
+            RunSnapshot.CardData(id: card.id, cardId: card.cardId.rawValue)
         }
         
         // 转换遗物
-        let relicIds = runState.relicManager.all.map { String(describing: $0) }
+        let relicIds = runState.relicManager.all.map { $0.rawValue }
         
         return RunSnapshot(
             version: RunSaveVersion.current,
@@ -67,14 +67,8 @@ final class SaveService {
         // 重建地图节点
         var mapNodes: [MapNode] = []
         for nodeData in snapshot.mapNodes {
-            let roomType: RoomType
-            switch nodeData.roomType {
-            case "start": roomType = .start
-            case "battle": roomType = .battle
-            case "elite": roomType = .elite
-            case "rest": roomType = .rest
-            case "boss": roomType = .boss
-            default: roomType = .battle  // fallback
+            guard let roomType = RoomType(rawValue: nodeData.roomType) else {
+                throw SaveError.corruptedSave("未知房间类型: \(nodeData.roomType)")
             }
             
             let node = MapNode(
@@ -95,19 +89,26 @@ final class SaveService {
         
         // 恢复状态效果
         for (statusIdStr, stacks) in snapshot.player.statuses {
-            let statusId = StatusID(statusIdStr)
-            player.statuses.set(statusId, stacks: stacks)
+            player.statuses.set(StatusID(statusIdStr), stacks: stacks)
         }
         
         // 重建牌组
-        let deck = snapshot.deck.map { cardData in
-            Card(id: cardData.id, cardId: CardID(cardData.cardId))
+        let deck = try snapshot.deck.map { cardData in
+            let cardId = CardID(cardData.cardId)
+            guard CardRegistry.get(cardId) != nil else {
+                throw SaveError.corruptedSave("未知卡牌: \(cardData.cardId)")
+            }
+            return Card(id: cardData.id, cardId: cardId)
         }
         
         // 重建遗物管理器
         var relicManager = RelicManager()
         for relicIdStr in snapshot.relicIds {
-            relicManager.add(RelicID(relicIdStr))
+            let relicId = RelicID(relicIdStr)
+            guard RelicRegistry.get(relicId) != nil else {
+                throw SaveError.corruptedSave("未知遗物: \(relicIdStr)")
+            }
+            relicManager.add(relicId)
         }
         
         // 创建 RunState
@@ -159,11 +160,14 @@ final class SaveService {
 /// 存档错误
 enum SaveError: Error, CustomStringConvertible {
     case incompatibleVersion(Int, Int)  // (存档版本, 当前版本)
+    case corruptedSave(String)
     
     var description: String {
         switch self {
         case .incompatibleVersion(let saved, let current):
             return "存档版本不兼容: 存档版本 \(saved), 当前版本 \(current)"
+        case .corruptedSave(let reason):
+            return "存档已损坏或数据不合法：\(reason)"
         }
     }
 }

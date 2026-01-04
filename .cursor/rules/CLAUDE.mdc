@@ -22,7 +22,9 @@ swift run GameCLI
 ./.cursor/Scripts/test_game.sh build     # 仅测试编译
 ./.cursor/Scripts/test_game.sh startup   # 启动测试
 ./.cursor/Scripts/test_game.sh enemy     # 敌人系统测试
+./.cursor/Scripts/test_game.sh relic     # 遗物系统测试
 ./.cursor/Scripts/test_game.sh map       # 地图系统测试
+./.cursor/Scripts/test_game.sh save      # 存档系统测试
 ./.cursor/Scripts/test_game.sh integration # 集成测试（完整冒险流程）
 ./.cursor/Scripts/test_game.sh quick     # 快速测试（编译+启动）
 ```
@@ -53,6 +55,12 @@ run_terminal_cmd(command: "swift build", is_background: false)
 1. **LLDB 调试**：`swift build && lldb .build/debug/GameCLI`
 2. **Xcode 调试**：`swift package generate-xcodeproj`（可使用 Instruments 分析内存）
 3. **打印调试**：通过 `BattleEvent` 事件系统追踪状态变化
+
+### 架构实现说明（协议驱动开发）
+
+- 核心系统采用**协议驱动 + 注册表**的扩展方式：`CardDefinition/StatusDefinition/EnemyDefinition/RelicDefinition` + `*Registry` + 强类型 `*ID`
+- `BattleEngine` 统一执行 `BattleEffect` 管线（新增内容尽量只新增 Definition + 注册，避免在引擎里写 switch）
+- CLI 展示层（GameCLI）从 Registry 读取 `name/rulesText/icon` 渲染，避免硬编码分支
 
 ---
 
@@ -177,9 +185,10 @@ run_terminal_cmd(command: "swift build", is_background: false)
 
 | 输入 | 操作 |
 |------|------|
-| `1` | 🗺️ 开始冒险 |
-| `2` | ⚙️ 设置 / 战绩 |
-| `3` | 🚪 退出游戏 |
+| `1` | 🗺️ 开始冒险 / 🔄 继续上次冒险（有存档时） |
+| `2` | 🗺️ 开始新冒险（有存档时） / ⚙️ 设置 / 战绩（无存档时） |
+| `3` | ⚙️ 设置 / 战绩（有存档时） / 🚪 退出游戏（无存档时） |
+| `4` | 🚪 退出游戏（有存档时） |
 
 ### 地图界面
 
@@ -254,6 +263,17 @@ swift run GameCLI --stats
 
 ---
 
+## 存档系统
+
+冒险模式会在**每个节点完成后自动保存**，主菜单会在检测到存档时显示“继续上次冒险”入口。
+
+数据存储位置：
+- **macOS**: `~/Library/Application Support/Salu/run_save.json`
+- **Linux**: `~/.salu/run_save.json`
+- **Windows**: `%LOCALAPPDATA%\Salu\run_save.json`
+
+---
+
 ## 未来扩展计划
 
 ### ~~Phase 1：新卡牌~~ ✅ 已完成
@@ -296,7 +316,5 @@ swift run GameCLI --stats
 
 - 奖励系统（战斗后3选1卡牌）
 - 卡牌升级系统
-- 遗物系统
 - 事件系统
-- 存档系统
 - 多敌人战斗（目标选择机制）

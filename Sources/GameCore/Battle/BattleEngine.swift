@@ -60,10 +60,7 @@ public final class BattleEngine: @unchecked Sendable {
     public func startBattle() {
         events.removeAll()
         emit(.battleStarted)
-        
-        // P4: 触发战斗开始的遗物效果
-        triggerRelics(.battleStart)
-        
+
         startNewTurn()
     }
     
@@ -112,37 +109,9 @@ public final class BattleEngine: @unchecked Sendable {
     
     // MARK: Damage Calculation
     
-    /// 计算最终伤害（应用力量、虚弱、易伤修正）
+    /// 计算最终伤害（通过 DamageCalculator 按 phase+priority 应用状态修正）
     private func calculateDamage(baseDamage: Int, attacker: Entity, defender: Entity) -> Int {
-        var damage = baseDamage
-        
-        // 应用攻击者的输出伤害修正（按 phase + priority 排序）
-        let attackerModifiers = attacker.statuses.all
-            .compactMap { (id, stacks) -> (phase: ModifierPhase, priority: Int, modify: (Int) -> Int)? in
-                guard let def = StatusRegistry.get(id),
-                      let phase = def.outgoingDamagePhase else { return nil }
-                return (phase, def.priority, { def.modifyOutgoingDamage($0, stacks: stacks) })
-            }
-            .sorted { ($0.phase.rawValue, $0.priority) < ($1.phase.rawValue, $1.priority) }
-        
-        for modifier in attackerModifiers {
-            damage = modifier.modify(damage)
-        }
-        
-        // 应用防御者的输入伤害修正（按 phase + priority 排序）
-        let defenderModifiers = defender.statuses.all
-            .compactMap { (id, stacks) -> (phase: ModifierPhase, priority: Int, modify: (Int) -> Int)? in
-                guard let def = StatusRegistry.get(id),
-                      let phase = def.incomingDamagePhase else { return nil }
-                return (phase, def.priority, { def.modifyIncomingDamage($0, stacks: stacks) })
-            }
-            .sorted { ($0.phase.rawValue, $0.priority) < ($1.phase.rawValue, $1.priority) }
-        
-        for modifier in defenderModifiers {
-            damage = modifier.modify(damage)
-        }
-        
-        return max(0, damage)
+        DamageCalculator.calculate(baseDamage: baseDamage, attacker: attacker, defender: defender)
     }
     
     // MARK: Turn Management
@@ -152,13 +121,18 @@ public final class BattleEngine: @unchecked Sendable {
         state.isPlayerTurn = true
         
         emit(.turnStarted(turn: state.turn))
-        
-        // P4: 触发回合开始的遗物效果
-        triggerRelics(.turnStart(turn: state.turn))
-        
+
         // 重置能量
         state.energy = state.maxEnergy
         emit(.energyReset(amount: state.energy))
+
+        // P4: 触发战斗开始的遗物效果（仅第 1 回合）
+        if state.turn == 1 {
+            triggerRelics(.battleStart)
+        }
+        
+        // P4: 触发回合开始的遗物效果（在能量重置之后，避免被覆盖）
+        triggerRelics(.turnStart(turn: state.turn))
         
         // 清除玩家格挡
         if state.player.block > 0 {
@@ -217,6 +191,9 @@ public final class BattleEngine: @unchecked Sendable {
         
         // 处理玩家回合结束的状态效果（触发 + 递减）
         processStatusesAtTurnEnd(for: .player)
+
+        // P4: 触发回合结束遗物效果（仅玩家回合结束）
+        triggerRelics(.turnEnd(turn: state.turn))
         
         emit(.turnEnded(turn: state.turn))
         
@@ -261,26 +238,6 @@ public final class BattleEngine: @unchecked Sendable {
         checkBattleEnd()
     }
     
-    /// 对目标施加 Debuff（P3: 已废弃，保留用于向后兼容）
-    @available(*, deprecated, message: "Use BattleEffect.applyStatus instead")
-    private func applyDebuff(to target: inout Entity, debuff: String, stacks: Int) {
-        // 将旧的字符串 debuff 映射到 StatusID
-        let statusId: StatusID
-        switch debuff {
-        case "虚弱":
-            statusId = "weak"
-        case "易伤":
-            statusId = "vulnerable"
-        default:
-            return // 未知 debuff，忽略
-        }
-        
-        target.statuses.apply(statusId, stacks: stacks)
-        if let def = StatusRegistry.get(statusId) {
-            emit(.statusApplied(target: target.name, effect: def.name, stacks: stacks))
-        }
-    }
-    
     // MARK: Card Playing
     
     private func playCard(at handIndex: Int) -> Bool {
@@ -306,6 +263,9 @@ public final class BattleEngine: @unchecked Sendable {
         state.hand.remove(at: handIndex)
         
         emit(.played(cardId: card.cardId, cost: def.cost))
+
+        // P4: 触发打出卡牌的遗物效果
+        triggerRelics(.cardPlayed(cardId: card.cardId))
         
         // 执行卡牌效果（新架构：通过 BattleEffect）
         executeCardEffect(card)
@@ -406,31 +366,29 @@ public final class BattleEngine: @unchecked Sendable {
             amount: damageResult.0,
             blocked: damageResult.1
         ))
+
+        // P4: 触发伤害相关遗物效果（以玩家视角：造成伤害/受到伤害）
+        switch target {
+        case .enemy:
+            triggerRelics(.damageDealt(amount: damageResult.0))
+        case .player:
+            triggerRelics(.damageTaken(amount: damageResult.0))
+        }
     }
     
     /// 应用格挡效果
     private func applyBlock(target: EffectTarget, base: Int) {
-        var block = base
-        
-        // 应用格挡修正（按 phase + priority 排序）
+        // 应用格挡修正（通过 BlockCalculator 按 phase+priority 排序）
         let entity = target == .player ? state.player : state.enemy
-        let modifiers = entity.statuses.all
-            .compactMap { (id, stacks) -> (phase: ModifierPhase, priority: Int, modify: (Int) -> Int)? in
-                guard let def = StatusRegistry.get(id),
-                      let phase = def.blockPhase else { return nil }
-                return (phase, def.priority, { def.modifyBlock($0, stacks: stacks) })
-            }
-            .sorted { ($0.phase.rawValue, $0.priority) < ($1.phase.rawValue, $1.priority) }
-        
-        for modifier in modifiers {
-            block = modifier.modify(block)
-        }
+        let block = BlockCalculator.calculate(baseBlock: base, entity: entity)
         
         switch target {
         case .player:
             state.player.gainBlock(block)
             battleStats.totalBlockGained += block
             emit(.blockGained(target: state.player.name, amount: block))
+            // P4: 触发获得格挡遗物效果（仅玩家）
+            triggerRelics(.blockGained(amount: block))
         case .enemy:
             state.enemy.gainBlock(block)
             emit(.blockGained(target: state.enemy.name, amount: block))
@@ -488,6 +446,9 @@ public final class BattleEngine: @unchecked Sendable {
         let card = state.drawPile.removeLast()
         state.hand.append(card)
         emit(.drew(cardId: card.cardId))
+
+        // P4: 触发抽到卡牌的遗物效果
+        triggerRelics(.cardDrawn(cardId: card.cardId))
     }
     
     private func shuffleDiscardIntoDraw() {
@@ -557,10 +518,14 @@ public final class BattleEngine: @unchecked Sendable {
     // MARK: Battle End Check
     
     private func checkBattleEnd() {
+        guard !state.isOver else { return }
+        
         if !state.enemy.isAlive {
             emit(.entityDied(entityId: state.enemy.id, name: state.enemy.name))
             state.isOver = true
             state.playerWon = true
+            // P4: 敌人被击杀
+            triggerRelics(.enemyKilled)
             emit(.battleWon)
             // P4: 触发战斗结束（胜利）- 包括燃烧之血恢复生命
             triggerRelics(.battleEnd(won: true))

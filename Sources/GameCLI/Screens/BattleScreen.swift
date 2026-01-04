@@ -211,7 +211,3 @@ enum BattleScreen {
         return parts.joined(separator: " ")
     }
 }
-
-/// 向后兼容别名
-typealias ScreenRenderer = BattleScreen
-

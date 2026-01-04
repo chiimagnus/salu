@@ -1,5 +1,3 @@
-import Foundation
-
 /// 战斗历史存储协议
 /// 定义战斗记录的持久化接口，具体实现由 CLI 层提供
 public protocol BattleHistoryStore: Sendable {
