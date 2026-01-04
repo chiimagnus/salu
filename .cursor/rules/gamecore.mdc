@@ -86,7 +86,7 @@ Battle/BattleEngine.swift
 
 - ❌ `print()` 或任何控制台输出
 - ❌ 读取 `stdin` 或任何用户输入
-- ❌ 导入 `Foundation`（History.swift 除外）
+- ❌ 导入 `Foundation`（`History.swift` 例外；I/O 协议文件也不应依赖 Foundation）
 - ❌ 导入任何 UI 框架
 - ❌ 导入 GameCLI 模块
 
@@ -182,6 +182,11 @@ let shuffled = deck.shuffled()  // 不可复现！
 1. **评估是否独立**：新功能是否与现有文件职责相关？
 2. **创建新文件**：如果是全新领域，创建独立文件
 3. **保持纯逻辑**：不引入 UI 或 I/O 依赖
+
+### Run 存档（P7）
+
+- `GameCore` 只提供 **Run 维度**可序列化快照模型（`RunSnapshot`）与版本管理（`RunSaveVersion`）。
+- 实际文件读写/JSON 编解码必须在 `GameCLI/Persistence`（`RunSaveStore` 的具体实现）。
 
 ---
 
