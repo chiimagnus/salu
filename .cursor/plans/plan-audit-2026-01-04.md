@@ -110,6 +110,12 @@
   - `Sources/GameCLI/Persistence/FileBattleHistoryStore.swift`（实现）
   - `Sources/GameCLI/Persistence/HistoryService.swift`（业务服务）
 
+## P6 审查发现的问题（已修复）
+
+1. **测试/调试会污染真实用户数据目录（已修复）**
+   - 现象：`FileBattleHistoryStore` 只能写入系统目录（Application Support/LOCALAPPDATA/~/.salu），CI 或脚本测试可能污染真实环境。
+   - 修复：与 `FileRunSaveStore` 对齐，支持通过环境变量 `SALU_DATA_DIR` 覆盖数据目录，便于测试隔离。
+
 ## P7：Run 存档系统（Save/Load）✅（实现已具备，文档需同步）
 
 - **关键点（代码已具备）**：

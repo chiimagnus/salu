@@ -140,6 +140,7 @@ GameCore → GameCLI  ❌ 禁止
 - 冒险模式会在**节点完成后自动保存**（`GameCLI.runLoop` 调用 `SaveService.saveRun`）。
 - 主菜单会根据 `SaveService.hasSave()` 决定是否显示“继续上次冒险”入口。
 - `FileRunSaveStore` 支持通过环境变量 `SALU_DATA_DIR` 覆盖存档目录（用于测试/调试；默认仍写入系统 Application Support/LOCALAPPDATA/~/.salu）。
+- `FileRunSaveStore` / `FileBattleHistoryStore` 支持通过环境变量 `SALU_DATA_DIR` 覆盖数据目录（用于测试/调试；默认仍写入系统 Application Support/LOCALAPPDATA/~/.salu）。
 
 ---
 

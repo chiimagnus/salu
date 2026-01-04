@@ -6,6 +6,7 @@ import GameCore
 final class FileBattleHistoryStore: BattleHistoryStore, @unchecked Sendable {
     
     private let fileName = "battle_history.json"
+    private let dataDirEnvKey = "SALU_DATA_DIR"
     private var cachedRecords: [BattleRecord] = []
     private var isLoaded = false
     
@@ -68,6 +69,14 @@ final class FileBattleHistoryStore: BattleHistoryStore, @unchecked Sendable {
     
     /// 获取存储路径
     private func getStoragePath() -> URL? {
+        // 允许通过环境变量覆盖存储目录（用于测试/调试）
+        if let overridePath = ProcessInfo.processInfo.environment[dataDirEnvKey],
+           !overridePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            let dir = URL(fileURLWithPath: overridePath, isDirectory: true)
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            return dir.appendingPathComponent(fileName)
+        }
+        
         #if os(Windows)
         // Windows: 使用 LOCALAPPDATA 环境变量
         if let localAppData = ProcessInfo.processInfo.environment["LOCALAPPDATA"] {
