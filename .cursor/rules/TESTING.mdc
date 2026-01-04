@@ -1,10 +1,10 @@
-### Salu 测试技术文档（XCTest / CLI UI Tests / Coverage）
+## Salu 测试技术文档（XCTest / CLI UI Tests / Coverage）
 
 本文件用于说明本仓库的测试分层、组织方式、运行方式、覆盖率与 CI 策略，以及当测试失败时如何判断是“测试代码问题”还是“项目代码问题”。
 
 ---
 
-### 1) 测试分层（为什么要分这么多测试文件/Target）
+## 1) 测试分层（为什么要分这么多测试文件/Target）
 
 本仓库分成三层测试（每层解决的问题不同）：
 
@@ -29,7 +29,7 @@
 
 ---
 
-### 2) 如何运行测试（本地/CI 一致）
+## 2) 如何运行测试（本地/CI 一致）
 
 - **运行所有 Swift 测试（推荐）**
 
@@ -60,7 +60,7 @@ swift test --enable-code-coverage
 
 ---
 
-### 3) CLI UI tests 的稳定化机制（SALU_TEST_MODE / SALU_DATA_DIR）
+## 3) CLI UI tests 的稳定化机制（SALU_TEST_MODE / SALU_DATA_DIR）
 
 CLI UI tests 的核心难点是：随机性与流程过长会导致测试慢/不稳定。因此我们使用两类环境变量：
 
@@ -74,7 +74,7 @@ CLI UI tests 的核心难点是：随机性与流程过长会导致测试慢/不
 
 ---
 
-### 4) UI tests 使用哪个 GameCLI 可执行文件（覆盖率关键）
+## 4) UI tests 使用哪个 GameCLI 可执行文件（覆盖率关键）
 
 `Tests/GameCLIUITests/Support/CLIRunner.swift` 的默认策略：
 
@@ -87,7 +87,7 @@ CLI UI tests 的核心难点是：随机性与流程过长会导致测试慢/不
 
 ---
 
-### 5) 如何看覆盖率（本地手工查看）
+## 5) 如何看覆盖率（本地手工查看）
 
 示例（macOS）：
 
@@ -106,7 +106,7 @@ xcrun llvm-cov report \
 
 ---
 
-### 6) 测试失败时，怎么判断是测试代码问题还是项目代码问题？
+## 6) 测试失败时，怎么判断是测试代码问题还是项目代码问题？
 
 按失败类型分：
 
@@ -128,7 +128,7 @@ xcrun llvm-cov report \
 
 ---
 
-### 7) 新增测试的推荐写法（保持可维护性）
+## 7) 新增测试的推荐写法（保持可维护性）
 
 - **按领域建文件**
   - 例如：卡牌纯函数测试放 `CardDefinitionPlayTests.swift`
@@ -145,7 +145,7 @@ xcrun llvm-cov report \
 
 ---
 
-### 8) CI 策略（确保每次都跑全量）
+## 8) CI 策略（确保每次都跑全量）
 
 当前 CI（`.github/workflows/test.yml`）会：
 - `swift build`（debug）
