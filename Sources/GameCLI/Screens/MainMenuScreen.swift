@@ -4,11 +4,11 @@ import GameCore
 /// 主菜单界面
 enum MainMenuScreen {
     
-    static func show() {
+    static func show(historyService: HistoryService) {
         Terminal.clear()
         
         // 获取统计信息显示
-        let stats = HistoryManager.shared.getStatistics()
+        let stats = historyService.getStatistics()
         let statsLine: String
         if stats.totalBattles > 0 {
             statsLine = "📈 \(stats.wins)胜 \(stats.losses)负 (胜率 \(String(format: "%.1f", stats.winRate))%)"

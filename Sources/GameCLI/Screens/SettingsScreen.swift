@@ -4,10 +4,10 @@ import GameCore
 /// 设置菜单界面
 enum SettingsScreen {
     
-    static func show() {
+    static func show(historyService: HistoryService) {
         Terminal.clear()
         
-        let recordCount = HistoryManager.shared.recordCount
+        let recordCount = historyService.recordCount
         
         print("""
         \(Terminal.bold)\(Terminal.yellow)

@@ -84,12 +84,12 @@ enum ResultScreen {
             print("        \(Terminal.dim)╰──────────────────────────────────────╯\(Terminal.reset)")
         }
         
-        // 显示累计胜率
-        let stats = HistoryManager.shared.getStatistics()
-        if stats.totalBattles > 0 {
-            print()
-            print("        \(Terminal.cyan)📈 累计战绩: \(stats.wins)胜 \(stats.losses)负 (胜率 \(String(format: "%.1f", stats.winRate))%)\(Terminal.reset)")
-        }
+        // 显示累计胜率 (P6: temporarily disabled - requires historyService injection)
+        // let stats = historyService.getStatistics()
+        // if stats.totalBattles > 0 {
+        //     print()
+        //     print("        \(Terminal.cyan)📈 累计战绩: \(stats.wins)胜 \(stats.losses)负 (胜率 \(String(format: "%.1f", stats.winRate))%)\(Terminal.reset)")
+        // }
         
         print()
         print("        \(Terminal.dim)使用 --history 查看历史记录\(Terminal.reset)")

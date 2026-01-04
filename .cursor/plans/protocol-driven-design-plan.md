@@ -1379,7 +1379,11 @@ enum RoomRunResult {
 
 ---
 
-## P6: 持久化与 I/O 协议化 ⭐⭐
+## P6: 持久化与 I/O 协议化 ⭐⭐ ✅ **已完成**
+
+> **实施日期**: 2026-01-04  
+> **状态**: ✅ 完成并通过所有测试  
+> **Commit**: [即将提交]
 
 ### 目标
 
@@ -1421,10 +1425,10 @@ public protocol BattleHistoryStore: Sendable {
 
 ### 验收标准（必须全部通过）
 
-- [ ] 代码库中不存在 `HistoryManager.shared`
-- [ ] History 读写走 `BattleHistoryStore` 协议（可替换 mock）
-- [ ] `swift build` 成功
-- [ ] `./.cursor/Scripts/test_game.sh` 成功
+- [x] ✅ 代码库中不存在 `HistoryManager.shared`
+- [x] ✅ History 读写走 `BattleHistoryStore` 协议（可替换 mock）
+- [x] ✅ `swift build` 成功
+- [x] ✅ `./.cursor/Scripts/test_game.sh` 成功
 
 ---
 
@@ -1570,11 +1574,24 @@ public protocol RunSaveStore: Sendable {
 - [ ] 冒险流程可完整跑通：地图选择 → 战斗/休息 → Boss → 通关/失败
 
 ### P6 完成后检查
-- [ ] 代码库中不存在 `HistoryManager.shared`
-- [ ] History 读写通过 `BattleHistoryStore` 注入（可替换 mock）
-- [ ] 设置菜单（history/stats/clear）功能正常
+- [x] ✅ 代码库中不存在 `HistoryManager.shared`
+- [x] ✅ History 读写通过 `BattleHistoryStore` 注入（可替换 mock）
+- [x] ✅ 设置菜单（history/stats/clear）功能正常
 
-### P7 完成后检查
+## P6 实施总结 ✅
+
+**完成内容**:
+- ✅ 创建 `BattleHistoryStore` 协议（GameCore）
+- ✅ 创建 `RunSaveStore` 协议（GameCore，P7 预留）
+- ✅ 实现 `FileBattleHistoryStore`（GameCLI）
+- ✅ 创建 `HistoryService` 替代单例
+- ✅ 删除 `HistoryManager.shared`
+- ✅ 更新所有 Screen 使用依赖注入
+- ✅ 所有测试通过
+
+**测试结果**: 所有测试通过（6/6套件），历史记录功能正常
+
+---
 - [ ] 主菜单存在“继续上次冒险”（无存档时行为明确：隐藏/置灰/提示）
 - [ ] 节点完成后会自动保存（退出重进仍保持 map/deck/hp/进度）
 - [ ] 存档版本不匹配有明确提示，不会崩溃

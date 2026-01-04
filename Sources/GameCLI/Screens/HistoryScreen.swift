@@ -4,10 +4,10 @@ import GameCore
 /// 历史记录界面
 enum HistoryScreen {
     
-    static func show() {
+    static func show(historyService: HistoryService) {
         Terminal.clear()
         
-        let records = HistoryManager.shared.getRecentRecords(10)
+        let records = historyService.getRecentRecords(10)
         
         print("""
         \(Terminal.bold)\(Terminal.cyan)
@@ -37,7 +37,7 @@ enum HistoryScreen {
             }
             
             print()
-            print("        \(Terminal.dim)显示最近 \(records.count) 场战斗 (共 \(HistoryManager.shared.recordCount) 场)\(Terminal.reset)")
+            print("        \(Terminal.dim)显示最近 \(records.count) 场战斗 (共 \(historyService.recordCount) 场)\(Terminal.reset)")
         }
         
         print()

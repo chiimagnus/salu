@@ -7,8 +7,8 @@ enum Screens {
     
     // MARK: - 主菜单
     
-    static func showMainMenu() {
-        MainMenuScreen.show()
+    static func showMainMenu(historyService: HistoryService) {
+        MainMenuScreen.show(historyService: historyService)
     }
     
     // MARK: - 地图屏幕
@@ -27,8 +27,8 @@ enum Screens {
     
     // MARK: - 设置菜单
     
-    static func showSettingsMenu() {
-        SettingsScreen.show()
+    static func showSettingsMenu(historyService: HistoryService) {
+        SettingsScreen.show(historyService: historyService)
     }
     
     // MARK: - 帮助屏幕
@@ -59,13 +59,13 @@ enum Screens {
     
     // MARK: - 历史记录屏幕
     
-    static func showHistory() {
-        HistoryScreen.show()
+    static func showHistory(historyService: HistoryService) {
+        HistoryScreen.show(historyService: historyService)
     }
     
     // MARK: - 统计屏幕
     
-    static func showStatistics() {
-        StatisticsScreen.show()
+    static func showStatistics(historyService: HistoryService) {
+        StatisticsScreen.show(historyService: historyService)
     }
 }

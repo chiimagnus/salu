@@ -17,17 +17,24 @@ struct GameCLI {
     /// 是否显示事件日志
     private nonisolated(unsafe) static var showEventLog: Bool = false
     
+    /// 历史记录服务（依赖注入，替代单例）
+    private nonisolated(unsafe) static var historyService: HistoryService!
+    
     // MARK: - Main Entry
     
     static func main() {
+        // 初始化历史记录服务（依赖注入）
+        let store = FileBattleHistoryStore()
+        historyService = HistoryService(store: store)
+        
         // 检查命令行快捷参数
         if CommandLine.arguments.contains("--history") || CommandLine.arguments.contains("-H") {
-            Screens.showHistory()
+            Screens.showHistory(historyService: historyService)
             return
         }
         
         if CommandLine.arguments.contains("--stats") || CommandLine.arguments.contains("-S") {
-            Screens.showStatistics()
+            Screens.showStatistics(historyService: historyService)
             return
         }
         
@@ -42,7 +49,7 @@ struct GameCLI {
     
     static func mainMenuLoop() {
         while true {
-            Screens.showMainMenu()
+            Screens.showMainMenu(historyService: historyService)
             
             guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
                 // EOF 或输入关闭，退出主菜单
@@ -73,7 +80,7 @@ struct GameCLI {
     
     static func settingsMenuLoop() {
         while true {
-            Screens.showSettingsMenu()
+            Screens.showSettingsMenu(historyService: historyService)
             
             guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
                 // EOF 或输入关闭，退出设置菜单
@@ -83,13 +90,13 @@ struct GameCLI {
             switch input {
             case "1":
                 // 查看历史记录
-                Screens.showHistory()
+                Screens.showHistory(historyService: historyService)
                 print("\(Terminal.dim)按 Enter 返回...\(Terminal.reset)")
                 _ = readLine()
                 
             case "2":
                 // 查看统计数据
-                Screens.showStatistics()
+                Screens.showStatistics(historyService: historyService)
                 print("\(Terminal.dim)按 Enter 返回...\(Terminal.reset)")
                 _ = readLine()
                 
@@ -117,7 +124,7 @@ struct GameCLI {
         ║                                                       ║
         ║  此操作不可恢复！                                     ║
         ║                                                       ║
-        ║  当前共有 \(String(format: "%3d", HistoryManager.shared.recordCount)) 条记录                                ║
+        ║  当前共有 \(String(format: "%3d", historyService.recordCount)) 条记录                                ║
         ║                                                       ║
         ╠═══════════════════════════════════════════════════════╣
         ║  输入 \(Terminal.reset)yes\(Terminal.bold)\(Terminal.red) 确认删除，其他任意键取消                     ║
@@ -127,7 +134,7 @@ struct GameCLI {
         
         print("\(Terminal.yellow)> \(Terminal.reset)", terminator: "")
         if let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased(), input == "yes" {
-            HistoryManager.shared.clearHistory()
+            historyService.clearHistory()
             Terminal.clear()
             print("\n        \(Terminal.green)✓ 历史记录已清除\(Terminal.reset)\n")
             print("\(Terminal.dim)按 Enter 返回...\(Terminal.reset)")
@@ -305,7 +312,7 @@ struct GameCLI {
         
         // 战斗结束 - 保存战绩
         let record = BattleRecordBuilder.build(from: engine, seed: seed)
-        HistoryManager.shared.addRecord(record)
+        historyService.addRecord(record)
         
         Screens.showFinal(state: engine.state, record: record)
         
