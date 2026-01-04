@@ -60,10 +60,7 @@ public final class BattleEngine: @unchecked Sendable {
     public func startBattle() {
         events.removeAll()
         emit(.battleStarted)
-        
-        // P4: 触发战斗开始的遗物效果
-        triggerRelics(.battleStart)
-        
+
         startNewTurn()
     }
     
@@ -124,13 +121,18 @@ public final class BattleEngine: @unchecked Sendable {
         state.isPlayerTurn = true
         
         emit(.turnStarted(turn: state.turn))
-        
-        // P4: 触发回合开始的遗物效果
-        triggerRelics(.turnStart(turn: state.turn))
-        
+
         // 重置能量
         state.energy = state.maxEnergy
         emit(.energyReset(amount: state.energy))
+
+        // P4: 触发战斗开始的遗物效果（仅第 1 回合）
+        if state.turn == 1 {
+            triggerRelics(.battleStart)
+        }
+        
+        // P4: 触发回合开始的遗物效果（在能量重置之后，避免被覆盖）
+        triggerRelics(.turnStart(turn: state.turn))
         
         // 清除玩家格挡
         if state.player.block > 0 {

@@ -72,6 +72,12 @@
   - `Sources/GameCore/Relics/*`
   - `Sources/GameCore/Battle/BattleEngine.swift`：`triggerRelics(_:)` 集成
 
+## P4 审查发现的问题（已修复）
+
+1. **战斗开始遗物效果会被“回合开始能量重置”覆盖（已修复）**
+   - 现象：`battleStart` 触发发生在能量重置之前，导致如 Lantern（+1 能量）这类效果在第 1 回合开始时被覆盖，实际无效。
+   - 修复：将 `battleStart` 触发移动到第 1 回合能量重置之后，并将 `turnStart` 触发顺序放在能量重置之后，保证能量类遗物效果可生效。
+
 ## P5：Run/房间/地图流程协议化 ✅
 
 - **关键点**：
