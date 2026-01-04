@@ -1,7 +1,13 @@
 import XCTest
 @testable import GameCore
 
+/// 遗物系统集成级单元测试（在 GameCore 内通过 BattleEngine 驱动）
+///
+/// 目的：
+/// - 验证遗物触发点（BattleTrigger）与 BattleEngine 的集成是否正确
+/// - 防止出现“触发时机被能量重置覆盖/触发点缺失”等回归
 final class RelicIntegrationTests: XCTestCase {
+    /// 灯笼（Lantern）：战斗开始应 +1 能量，且不应被回合开始的能量重置覆盖。
     func testLanternBattleStartAddsEnergyWithoutBeingOverwritten() {
         // 给玩家灯笼：战斗开始 +1 能量
         var relics = RelicManager()
@@ -18,6 +24,7 @@ final class RelicIntegrationTests: XCTestCase {
         XCTAssertEqual(engine.state.energy, 4)
     }
     
+    /// 燃烧之血（Burning Blood）：战斗胜利后应恢复 6 HP。
     func testBurningBloodHealsOnBattleWin() {
         var relics = RelicManager()
         relics.add("burning_blood")

@@ -1,7 +1,13 @@
 import XCTest
 @testable import GameCore
 
+/// RewardGenerator（战斗后奖励）单元测试
+///
+/// 目的：
+/// - 确认奖励生成是**可复现**的（同 context → 同结果）
+/// - 确认奖励候选满足基础规则（去重、排除起始牌）
 final class RewardGeneratorTests: XCTestCase {
+    /// 同一个 `RewardContext` 重复生成奖励，结果必须一致（可复现性）。
     func testGenerateCardReward_isDeterministic() {
         let context = RewardContext(
             seed: 123,
@@ -17,6 +23,10 @@ final class RewardGeneratorTests: XCTestCase {
         XCTAssertEqual(a, b)
     }
     
+    /// 生成的候选卡牌必须：
+    /// - 数量不超过 3
+    /// - 同一次 offer 内不重复
+    /// - 不包含起始牌（starter）
     func testGenerateCardReward_choicesAreUniqueAndNonStarter() {
         let context = RewardContext(
             seed: 42,
