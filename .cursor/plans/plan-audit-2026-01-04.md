@@ -40,6 +40,12 @@
   - `Sources/GameCore/Status/*`：Definition/Registry/Container 已存在
   - `Sources/GameCore/Battle/BattleEngine.swift`：`calculateDamage`/`applyBlock` 走 phase+priority
 
+## P2 审查发现的问题（已修复）
+
+1. **缺失 `DamageCalculator` / `BlockCalculator`（已补齐）**
+   - 现象：计划文档要求将状态修正的确定性顺序集中在 `DamageCalculator`，但代码中逻辑散落在 `BattleEngine.calculateDamage/applyBlock`。
+   - 修复：新增 `Sources/GameCore/Battle/DamageCalculator.swift`（包含 `DamageCalculator` 与 `BlockCalculator`），并在 `BattleEngine` 中统一调用。
+
 ## P3：敌人系统统一 ✅
 
 - **关键点**：
