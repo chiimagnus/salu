@@ -48,6 +48,14 @@ final class MapGeneratorTests: XCTestCase {
             }
         }
     }
+
+    /// MapGenerating 的默认实现应委托给 MapGenerator（用于覆盖扩展点与防回归）。
+    func testBranchingMapGenerator_delegatesToMapGenerator() {
+        let generator = BranchingMapGenerator()
+        let a = generator.generate(seed: 42, rows: 15)
+        let b = MapGenerator.generateBranching(seed: 42, rows: 15)
+        XCTAssertEqual(a, b)
+    }
 }
 
 
