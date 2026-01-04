@@ -18,17 +18,10 @@ swift run GameCLI --seed 1
 swift run GameCLI
 
 # 运行测试（从项目根目录执行）
-./.cursor/Scripts/test_game.sh           # 运行所有测试 (~2秒)
-./.cursor/Scripts/test_game.sh build     # 仅测试编译
-./.cursor/Scripts/test_game.sh startup   # 启动测试
-./.cursor/Scripts/test_game.sh enemy     # 敌人系统测试
-./.cursor/Scripts/test_game.sh relic     # 遗物系统测试
-./.cursor/Scripts/test_game.sh map       # 地图系统测试
-./.cursor/Scripts/test_game.sh save      # 存档系统测试
-./.cursor/Scripts/test_game.sh unit      # 单元测试（swift test）
-./.cursor/Scripts/test_game.sh reward    # 战斗后奖励系统测试
-./.cursor/Scripts/test_game.sh integration # 集成测试（完整冒险流程）
-./.cursor/Scripts/test_game.sh quick     # 快速测试（编译+启动）
+swift test                               # 运行全量 XCTest (~2秒)
+
+# 可选：先验证 release 也能编译（CI 会同时 build debug + release）
+swift build -c release
 ```
 
 ## 开发规范

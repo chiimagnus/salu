@@ -1,176 +1,100 @@
-# Plan A：用 Swift XCTest 替代 sh 脚本测试（单元测试 + CLI「UI」测试）- 2026-01-04
+# Plan A：Swift XCTest 测试体系（单元测试 + CLI UI 测试）- 2026-01-04
 
-> 目标：彻底解决“脚本跑过但内部逻辑未实现也可能绿”的问题。  
-> 方案：把现有 `.cursor/Scripts/tests/test_*.sh` 的覆盖面迁移为 **Swift XCTest**：  
-> - **单元测试（Unit）**：直接断言 GameCore 内部逻辑（纯逻辑、可复现、强断言）。  
-> - **CLI「UI」测试（E2E/Black-box）**：用 `Process` 启动 `GameCLI`，通过 stdin 驱动流程，断言 stdout 关键锚点 + 存档/战绩文件副作用。
+> 状态：✅ 已落地（本地 `swift build`/`swift build -c release`/`swift test` 全量通过）
 
 ---
 
-## 0. 现状基线（基于当前代码）
+## 1. 目标
 
-### 0.1 已有的 Swift 单元测试（✅）
-
-- 目录：`Tests/GameCoreTests/`
-- 特点：
-  - 已经有明确的中文 doc comment（“目的/规则/确定性”）
-  - 覆盖了：伤害/格挡修正顺序、敌人 determinism、地图生成约束、注册表冒烟、遗物集成、奖励生成、RunSnapshot JSON、deck 实例 ID、状态容器与状态定义
-
-### 0.2 现有的 sh 脚本测试（⚠️ 易“假绿”）
-
-- 入口：`.cursor/Scripts/test_game.sh`
-- 套件：`.cursor/Scripts/tests/test_{startup,enemy,map,save,reward,integration,relic,build,unit}.sh`
-- 主要问题：
-  - 很多检查是「跑 GameCLI + grep 输出」或「检查文件存在」，对“内部逻辑分支是否正确”缺少强断言
-  - 使用 `pkill`、`grep` 等外部行为会让测试语义变得模糊（尤其在 CI / 不同 OS 上）
-
-### 0.3 CI 现状
-
-- 目前 CI：`.github/workflows/test.yml` 运行 `./.cursor/Scripts/test_game.sh all`  
-- 你期望：CI 每次跑 **Swift XCTest 的全量测试**（不再以 sh 作为测试实现）。
+- **只用 Swift XCTest** 做测试实现（单元测试 + CLI「UI」测试），避免“跑一遍脚本/grep 输出也能绿”的假阳性。
+- **CI 每次跑全量测试**：同时验证 debug/release 编译 + 全量 XCTest。
+- **每个测试写清楚用途**：每个 `XCTestCase`/`test*` 都必须有中文说明。
 
 ---
 
-## 1. 测试分层与命名（统一口径）
+## 2. 测试分层（明确边界，避免互相污染）
 
-### 1.1 Unit（单元测试）
+### 2.1 单元测试（Unit）
 
-**职责**：验证 GameCore 里“内部逻辑确实实现”，不依赖 CLI 输出、不依赖文件系统（除 `RunSnapshotCodableTests` 这类明确测试 Codable 的场景）。
+- **位置**：`Tests/GameCoreTests/`
+- **覆盖对象**：`GameCore` 纯逻辑（卡牌/状态/敌人/地图/奖励/遗物/战斗计算等）
+- **断言风格**：强断言（数值/顺序/确定性/回归保护），不依赖任何 CLI 输出
 
-**位置**：继续放在 `Tests/GameCoreTests/`，按领域拆分文件（Battle/Run/Map/Rewards/Relics/Status…）。
+### 2.2 CLI UI 测试（黑盒 E2E）
 
-### 1.2 CLI UI Tests（终端 UI / E2E 测试）
+- **位置**：`Tests/GameCLIUITests/`
+- **实现方式**：使用 `Foundation.Process` 启动 `GameCLI` 可执行文件，通过 stdin 驱动流程，断言：
+  - **文件副作用（最强）**：`run_save.json` / `battle_history.json` 存在且可解码
+  - **关键字段（强）**：`RunSnapshot.deck.count`、`RunSnapshot.seed`、战绩条数等
+  - **stdout 锚点（辅助）**：例如“存档加载成功”“战斗奖励”等（断言前会去 ANSI 控制码）
 
-**职责**：验证“从用户角度真实可玩”的关键流程没有断链：
+已覆盖的关键路径：
 
-- 主菜单能启动并退出（不挂死）
-- 新冒险 → 地图 → 进入战斗 → 退出到主菜单（不挂死）
-- 存档创建与继续冒险（文件副作用 + 提示文案）
-- 战斗胜利后奖励界面出现，并且选择后 deck 变化能进入存档
-- 战绩文件写入（battle_history.json 追加记录）
-
-**实现方式**：Swift XCTest 内使用 `Foundation.Process`：
-
-- `stdin`：写入模拟输入（多行字符串）
-- `stdout/stderr`：用 `Pipe` 捕获
-- `SALU_DATA_DIR`：指向临时目录，隔离测试数据（与现有实现一致）
-- **超时**：每个进程测试必须有 timeout，超时就 kill 并 fail（防止卡死）
-- **ANSI 去除**：断言前建议 strip ANSI color code，避免环境差异
+- 启动主菜单并退出（不挂死）
+- 进入第一场战斗并退出（不挂死）
+- 存档创建 + 继续冒险（文件副作用 + 文案提示）
+- 战斗胜利后奖励入牌并写入存档（deck 增长）
+- 战绩落盘并可 JSON 解码（battle_history.json）
 
 ---
 
-## 2. P1（最高优先级）：建立 Swift「CLI UI Test」测试基建 + CI 跑 `swift test`
+## 3. CI 运行策略（全量 & 可复现）
 
-### 2.1 新增测试 Target（建议）
+### 3.1 Tests workflow
 
-在 `Package.swift` 新增一个测试 target（命名示例）：
-
-- `GameCLIUITests`
-  - 只依赖 `GameCore`（用于解析 `RunSnapshot`/`BattleRecord`），不直接 `@testable import GameCLI`
-  - 通过 `Process` 运行 `.build/release/GameCLI`（CI 先 build）
-
-> 这样可以避免把 `@main` 的可执行模块直接作为测试依赖（减少潜在的 entrypoint/linking 风险）。
-
-### 2.2 新增测试工具（Test Support）
-
-新增目录：`Tests/TestSupport/`（或 `Tests/GameCLIUITests/Support/`）
-
-建议提供：
-
-- `TemporaryDirectory`
-  - 创建/清理临时目录（每个测试独立目录）
-- `CLIRunner`
-  - 输入：`binaryURL`、`arguments`、`stdin` 字符串、`env`、`timeout`
-  - 输出：`exitCode`、`stdout`、`stderr`
-  - 支持：`stripANSI()`
-  - 支持：超时 kill
-- `BinaryLocator`
-  - 优先寻找 `.build/release/GameCLI`
-  - fallback `.build/debug/GameCLI`
-  - 都不存在时 fail，并提示先 `swift build -c release`
-
-### 2.3 CI 改造（不再用 sh 作为测试实现）
-
-改 `.github/workflows/test.yml`：
-
-- **Build（release）**：`swift build -c release`
-- **Run all tests**：`swift test`
-
-说明：
-
-- `swift test` 负责跑 **Unit + CLI UI Tests**（Swift 实现）
-- `swift build -c release` 负责确保 GameCLI release 可编译，并为 UI tests 提供可执行文件路径
-- 如果想保留产物上传，建议上传 `.build/release/GameCLI` 而不是 debug
-
-验收：
-
-- PR/Push 每次必跑 `swift test` 全量套件
-- 不再依赖 `.cursor/Scripts/test_game.sh all`
-
----
-
-## 3. P2：把现有 sh 场景逐个迁移为 Swift XCTest（对齐你关心的“真实实现”）
-
-### 3.1 对应关系（脚本 → Swift 测试）
-
-| 旧脚本 | Swift 替代策略 | 断言重点（避免假绿） |
-|---|---|---|
-| `test_startup.sh` | `GameCLIUITests.testMainMenuBootAndExit()` | 输出包含主菜单关键字；进程正常退出 |
-| `test_map.sh` | `GameCLIUITests.testEnterRunAndRenderMap()` | 输出包含地图标识（起点/Boss/节点图标）；不挂死 |
-| `test_enemy.sh` | **优先用现有 `EnemyDeterminismTests`**；如需 UI 覆盖：跑一次进入战斗 | Unit：determinism；UI：战斗界面出现 |
-| `test_save.sh` | `GameCLIUITests.testSaveCreateAndContinue()` | `run_save.json` 创建；二次启动出现“存档加载成功！” |
-| `test_reward.sh` | `GameCLIUITests.testBattleRewardAddsCardToDeckAndPersists()` | 奖励界面出现；存档里 `deck.count` 增加；`RunSnapshot` 可 decode |
-| `test_relic.sh` | **优先用现有 `RelicIntegrationTests`**；如需 UI 覆盖：验证某触发导致可观察副作用（如能量变化） | Unit：触发点/效果；UI：输出锚点 +（可选）副作用 |
-| `test_integration.sh` | `GameCLIUITests.testShortAdventurePathDoesNotHang()` | 重点：不挂死；关键页面出现；必要时用存档/战绩文件断言 |
-| `test_build.sh` | CI step `swift build -c release` | 编译是否通过（不属于 XCTest 的职责） |
-| `test_unit.sh` | `swift test` | 全量 Unit + UI tests |
-
-### 3.2 CLI UI Tests 的「强断言」优先级
-
-为了避免“grep 输出=通过”的老问题，UI tests 的断言顺序建议：
-
-1) **文件副作用**（最强）：`run_save.json` / `battle_history.json` 存在且可被 `JSONDecoder` 解码  
-2) **关键状态字段**（强）：比如 `RunSnapshot.deck.count`、`relicIds`、`player.currentHP`  
-3) **输出锚点**（辅助）：比如“存档加载成功！”、“🎁 战斗奖励”
-
----
-
-## 4. P3：移除/降级 sh 脚本为「本地辅助」并更新文档
-
-你希望“不再用 sh 做测试实现”，因此建议两步走（破坏性更小）：
-
-### 4.1 第一阶段（推荐）
-
-- CI 完全切换到 `swift build` + `swift test`
-- `.cursor/Scripts/*` 保留但标注为“本地调试脚本 / 已不作为 CI 测试来源”
-
-### 4.2 第二阶段（更彻底）
-
-- 删除 `.cursor/Scripts/tests/test_*.sh` 与 `test_game.sh`
-- README/开发规范改为只保留：
+- 文件：`.github/workflows/test.yml`
+- 步骤：
+  - `swift build`
+  - `swift build -c release`
   - `swift test`
-  - （可选）`swift build -c release`
+
+### 3.2 Release workflow
+
+- 文件：`.github/workflows/release.yml`
+- 在打包发布前增加 `swift test`，确保发版也被全量测试保护。
 
 ---
 
-## 5. 单元测试书写规范（你要求“写清楚每个测试干嘛”）
+## 4. UI 测试稳定性机制（CLI 版「UI Testing」常见难点）
 
-从现有 `GameCoreTests` 的风格延伸，新增/迁移测试统一要求：
+为了避免 UI 测试因为战斗过长导致超时/概率性失败，引入了 **仅测试启用** 的稳定化开关：
 
-- 每个 `XCTestCase` 顶部有 `///` 说明：**目的/覆盖范围/为何重要**
-- 每个 test 方法都有 `///` 说明：**场景 + 期望 + 失败代表什么回归**
-- 方法体结构固定为：
-  - **Arrange**：构造输入/seed/临时目录
-  - **Act**：调用函数或运行 CLI
-  - **Assert**：对关键字段/文件副作用/事件做断言
+- 环境变量：`SALU_TEST_MODE=1`
+- 作用（仅在设置该 env 时生效）：
+  - 敌人 HP 压缩为 1（快速结束战斗）
+  - 战斗牌组压缩为稳定的小牌组（避免抽牌/能量导致的不确定性）
+- 实现：`Sources/GameCLI/TestMode.swift` + `GameCLI` 的 enemy/deck 创建处接入
+
+> 生产运行不设置 `SALU_TEST_MODE` 时，行为不变。
 
 ---
 
-## 6. 验收清单（完成 P1~P3 后你能得到什么）
+## 5. 测试失败时如何判断：测试代码问题 vs 项目代码问题
 
-- ✅ `swift test` 能在本地和 CI 跑完全部测试（不再依赖 sh 作为测试实现）
-- ✅ GameCore 的核心规则有强断言单元测试覆盖（内部逻辑不可“空实现”）
-- ✅ GameCLI 的关键用户路径有 Swift UI tests 覆盖（可执行文件真实运行）
-- ✅ 每个测试都有中文说明，未来扩展也有稳定回归保护
+### 5.1 先看“失败类型”
 
+- **编译失败（Compile error）**：
+  - 大概率是 **测试代码或接口变更** 导致（例如类型改名/可见性变化）
+- **断言失败（XCTAssert… failed）**：
+  - Unit：通常是 **业务逻辑回归** 或 **规则改变但测试未同步**
+  - CLI UI：通常是 **流程断链/文案锚点变化/副作用文件未生成**
+- **超时（timed out）**：
+  - 多数是 **程序卡死/等待输入/死循环** 或 UI 测试输入序列不足
 
+### 5.2 具体排查路径（建议顺序）
+
+1) **看失败用例的 doc comment**：确认这个测试定义的“规格”是什么  
+2) **看失败输出**：`GameCLIUITests` 的 runner 会在超时时打印部分 stdout/stderr（便于定位卡在哪个屏幕）  
+3) **本地复现**：按测试里相同的 `--seed` 和 `SALU_DATA_DIR`/`SALU_TEST_MODE` 运行一次（必要时把 stdin 输入保存出来）  
+4) **判断是不是“需求变更”**：
+   - 如果你确实改了规则/文案 → 更新测试是合理的（测试是规格）  
+   - 如果规则没变但测试失败 → 优先修项目代码
+
+---
+
+## 6. 后续扩展（可选）
+
+- 为更多房间类型/更长冒险流程增加 CLI UI tests（仍以“文件副作用/关键字段”为主）
+- 将更多“必须可复现”的随机决策做成 Unit tests（例如更多敌人 AI、更多遗物触发点）
+
+ 

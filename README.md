@@ -34,8 +34,7 @@ git checkout -b feature/你的功能名
 ### 3. 开发与测试
 
 ```bash
-# 本地测试（必须全部通过）
-./.cursor/Scripts/test_game.sh all
+swift test
 ```
 
 ### 4. 提交代码
