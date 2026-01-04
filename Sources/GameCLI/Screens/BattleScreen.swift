@@ -86,10 +86,14 @@ enum BattleScreen {
             lines.append("     \(statusLine)")
         }
         
-        // 显示敌人意图（从 Entity.intent 读取）
-        let intentIcon = enemy.intent.displayIcon
-        let intentText = enemy.intent.displayText
-        lines.append("     \(Terminal.yellow)📢 意图: \(intentIcon) \(intentText)\(Terminal.reset)")
+        // 显示敌人意图（P3: 从 Entity.plannedMove 读取）
+        if let move = enemy.plannedMove {
+            let intentIcon = move.intent.icon
+            let intentText = move.intent.text
+            lines.append("     \(Terminal.yellow)📢 意图: \(intentIcon) \(intentText)\(Terminal.reset)")
+        } else {
+            lines.append("     \(Terminal.yellow)📢 意图: ❓ 未知\(Terminal.reset)")
+        }
         
         return lines
     }
@@ -127,37 +131,23 @@ enum BattleScreen {
         lines.append("  \(Terminal.bold)🃏 手牌 (\(state.hand.count)张)\(Terminal.reset)")
         
         for (index, card) in state.hand.enumerated() {
-            let canPlay = card.cost <= state.energy
+            let def = CardRegistry.require(card.cardId)
+            let canPlay = def.cost <= state.energy
             let statusIcon = canPlay ? "\(Terminal.green)●\(Terminal.reset)" : "\(Terminal.red)○\(Terminal.reset)"
             let cardColor = canPlay ? Terminal.bold : Terminal.dim
             
-            let effect: String
+            // 从 CardDefinition 获取类型图标
             let effectIcon: String
-            switch card.kind {
-            case .strike:
-                effect = "造成 \(card.damage) 伤害"
+            switch def.type {
+            case .attack:
                 effectIcon = "⚔️"
-            case .pommelStrike:
-                effect = "造成 \(card.damage) 伤害, 抽 1 张"
-                effectIcon = "⚔️"
-            case .bash:
-                effect = "造成 \(card.damage) 伤害, 易伤 2"
-                effectIcon = "💥"
-            case .clothesline:
-                effect = "造成 \(card.damage) 伤害, 虚弱 2"
-                effectIcon = "💥"
-            case .defend:
-                effect = "获得 \(card.block) 格挡"
+            case .skill:
                 effectIcon = "🛡️"
-            case .shrugItOff:
-                effect = "获得 \(card.block) 格挡, 抽 1 张"
-                effectIcon = "🛡️"
-            case .inflame:
-                effect = "获得 2 力量"
+            case .power:
                 effectIcon = "💪"
             }
             
-            lines.append("     \(statusIcon) \(cardColor)[\(index + 1)] \(card.displayName)\(Terminal.reset)  \(Terminal.yellow)◆\(card.cost)\(Terminal.reset)  \(effectIcon) \(effect)")
+            lines.append("     \(statusIcon) \(cardColor)[\(index + 1)] \(def.name)\(Terminal.reset)  \(Terminal.yellow)◆\(def.cost)\(Terminal.reset)  \(effectIcon) \(def.rulesText)")
         }
         
         return lines
@@ -201,18 +191,21 @@ enum BattleScreen {
     private static func buildStatusLine(entity: Entity) -> String {
         var parts: [String] = []
         
-        if entity.vulnerable > 0 {
-            parts.append("\(Terminal.red)💔易伤\(entity.vulnerable)\(Terminal.reset)")
-        }
-        
-        if entity.weak > 0 {
-            parts.append("\(Terminal.yellow)😵虚弱\(entity.weak)\(Terminal.reset)")
-        }
-        
-        if entity.strength > 0 {
-            parts.append("\(Terminal.green)💪力量+\(entity.strength)\(Terminal.reset)")
-        } else if entity.strength < 0 {
-            parts.append("\(Terminal.dim)💪力量\(entity.strength)\(Terminal.reset)")
+        // P2: 使用 StatusRegistry 驱动状态显示
+        for (statusId, stacks) in entity.statuses.all {
+            guard let def = StatusRegistry.get(statusId) else { continue }
+            
+            let color = def.isPositive ? Terminal.green : Terminal.red
+            let stackDisplay: String
+            
+            // 对于永久状态（不递减），显示带符号
+            if case .none = def.decay {
+                stackDisplay = stacks >= 0 ? "+\(stacks)" : "\(stacks)"
+            } else {
+                stackDisplay = "\(stacks)"
+            }
+            
+            parts.append("\(color)\(def.icon)\(def.name)\(stackDisplay)\(Terminal.reset)")
         }
         
         return parts.joined(separator: " ")

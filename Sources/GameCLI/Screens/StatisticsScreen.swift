@@ -4,10 +4,10 @@ import GameCore
 /// 统计数据界面
 enum StatisticsScreen {
     
-    static func show() {
+    static func show(historyService: HistoryService) {
         Terminal.clear()
         
-        let stats = HistoryManager.shared.getStatistics()
+        let stats = historyService.getStatistics()
         
         print("""
         \(Terminal.bold)\(Terminal.cyan)

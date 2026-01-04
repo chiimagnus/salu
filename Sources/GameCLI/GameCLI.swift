@@ -17,17 +17,31 @@ struct GameCLI {
     /// 是否显示事件日志
     private nonisolated(unsafe) static var showEventLog: Bool = false
     
+    /// 历史记录服务（依赖注入，替代单例）
+    private nonisolated(unsafe) static var historyService: HistoryService!
+    
+    /// 存档服务（依赖注入）
+    private nonisolated(unsafe) static var saveService: SaveService!
+    
     // MARK: - Main Entry
     
     static func main() {
+        // 初始化历史记录服务（依赖注入）
+        let historyStore = FileBattleHistoryStore()
+        historyService = HistoryService(store: historyStore)
+        
+        // 初始化存档服务（依赖注入）
+        let saveStore = FileRunSaveStore()
+        saveService = SaveService(store: saveStore)
+        
         // 检查命令行快捷参数
         if CommandLine.arguments.contains("--history") || CommandLine.arguments.contains("-H") {
-            Screens.showHistory()
+            Screens.showHistory(historyService: historyService)
             return
         }
         
         if CommandLine.arguments.contains("--stats") || CommandLine.arguments.contains("-S") {
-            Screens.showStatistics()
+            Screens.showStatistics(historyService: historyService)
             return
         }
         
@@ -42,7 +56,8 @@ struct GameCLI {
     
     static func mainMenuLoop() {
         while true {
-            Screens.showMainMenu()
+            let hasSave = saveService.hasSave()
+            Screens.showMainMenu(historyService: historyService, hasSave: hasSave)
             
             guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
                 // EOF 或输入关闭，退出主菜单
@@ -50,15 +65,19 @@ struct GameCLI {
             }
             
             switch input {
-            case "1":
-                // 开始冒险
+            case "1" where hasSave:
+                // 继续上次冒险
+                continueRun()
+                
+            case "1" where !hasSave, "2":
+                // 开始新冒险（如果没有存档，1 就是新冒险；否则 2 是新冒险）
                 startNewRun()
                 
-            case "2":
+            case "2" where hasSave, "3" where !hasSave:
                 // 设置菜单
                 settingsMenuLoop()
                 
-            case "3", "q":
+            case "3" where hasSave, "4" where !hasSave, "q":
                 // 退出游戏
                 Screens.showExit()
                 return
@@ -73,7 +92,7 @@ struct GameCLI {
     
     static func settingsMenuLoop() {
         while true {
-            Screens.showSettingsMenu()
+            Screens.showSettingsMenu(historyService: historyService)
             
             guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
                 // EOF 或输入关闭，退出设置菜单
@@ -83,13 +102,13 @@ struct GameCLI {
             switch input {
             case "1":
                 // 查看历史记录
-                Screens.showHistory()
+                Screens.showHistory(historyService: historyService)
                 print("\(Terminal.dim)按 Enter 返回...\(Terminal.reset)")
                 _ = readLine()
                 
             case "2":
                 // 查看统计数据
-                Screens.showStatistics()
+                Screens.showStatistics(historyService: historyService)
                 print("\(Terminal.dim)按 Enter 返回...\(Terminal.reset)")
                 _ = readLine()
                 
@@ -117,7 +136,7 @@ struct GameCLI {
         ║                                                       ║
         ║  此操作不可恢复！                                     ║
         ║                                                       ║
-        ║  当前共有 \(String(format: "%3d", HistoryManager.shared.recordCount)) 条记录                                ║
+        ║  当前共有 \(String(format: "%3d", historyService.recordCount)) 条记录                                ║
         ║                                                       ║
         ╠═══════════════════════════════════════════════════════╣
         ║  输入 \(Terminal.reset)yes\(Terminal.bold)\(Terminal.red) 确认删除，其他任意键取消                     ║
@@ -127,7 +146,7 @@ struct GameCLI {
         
         print("\(Terminal.yellow)> \(Terminal.reset)", terminator: "")
         if let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased(), input == "yes" {
-            HistoryManager.shared.clearHistory()
+            historyService.clearHistory()
             Terminal.clear()
             print("\n        \(Terminal.green)✓ 历史记录已清除\(Terminal.reset)\n")
             print("\(Terminal.dim)按 Enter 返回...\(Terminal.reset)")
@@ -150,8 +169,63 @@ struct GameCLI {
         runLoop()
     }
     
+    static func continueRun() {
+        do {
+            // 尝试加载存档
+            guard let runState = try saveService.loadRun() else {
+                print("\(Terminal.red)没有找到存档！\(Terminal.reset)")
+                print("按 Enter 返回...")
+                _ = readLine()
+                return
+            }
+            
+            // 恢复冒险
+            currentRunState = runState
+            print("\(Terminal.green)存档加载成功！\(Terminal.reset)")
+            print("\(Terminal.dim)正在继续冒险...\(Terminal.reset)")
+            Thread.sleep(forTimeInterval: 1.0)
+            
+            // 进入冒险循环
+            runLoop()
+            
+        } catch SaveError.incompatibleVersion(let saved, let current) {
+            print("\(Terminal.red)存档版本不兼容！\(Terminal.reset)")
+            print("\(Terminal.dim)存档版本: \(saved), 当前版本: \(current)\(Terminal.reset)")
+            print("\(Terminal.yellow)请开始新的冒险。\(Terminal.reset)")
+            print("按 Enter 返回...")
+            _ = readLine()
+        } catch {
+            print("\(Terminal.red)加载存档失败: \(error)\(Terminal.reset)")
+            print("按 Enter 返回...")
+            _ = readLine()
+        }
+    }
+    
     static func runLoop() {
         guard var runState = currentRunState else { return }
+        
+        // 创建房间处理器注册表
+        let registry = RoomHandlerRegistry.makeDefault()
+        
+        // 创建房间上下文
+        let context = RoomContext(
+            appendEvents: { events in
+                recentEvents.removeAll()
+                currentMessage = nil
+                appendEvents(events)
+            },
+            clearEvents: {
+                recentEvents.removeAll()
+                currentMessage = nil
+            },
+            battleLoop: { engine, seed in
+                battleLoop(engine: engine, seed: seed)
+            },
+            createEnemy: { enemyId, rng in
+                createEnemy(enemyId: enemyId, rng: &rng)
+            },
+            historyService: historyService
+        )
         
         while !runState.isOver {
             // 显示地图
@@ -190,147 +264,38 @@ struct GameCLI {
                 continue
             }
             
-            // 根据房间类型处理
-            switch selectedNode.roomType {
-            case .start:
-                // 起点，直接完成
-                runState.completeCurrentNode()
+            // 使用 handler 处理房间（消除 switch 分支）
+            guard let handler = registry.handler(for: selectedNode.roomType) else {
+                // 未注册的房间类型，跳过
+                continue
+            }
+            
+            let result = handler.run(node: selectedNode, runState: &runState, context: context)
+            
+            // 根据结果更新冒险状态
+            switch result {
+            case .completedNode:
+                // 节点完成，继续冒险
+                // 自动保存进度
+                saveService.saveRun(runState)
+                break
                 
-            case .battle, .elite:
-                // 战斗节点
-                let won = handleBattleNode(runState: &runState, isElite: selectedNode.roomType == .elite)
-                if !won {
-                    // 战斗失败，冒险结束
-                    runState.isOver = true
-                    runState.won = false
-                }
-                
-            case .rest:
-                // 休息节点
-                handleRestNode(runState: &runState)
-                
-            case .boss:
-                // Boss 战斗
-                let won = handleBossNode(runState: &runState)
-                if won {
-                    runState.isOver = true
-                    runState.won = true
-                } else {
-                    runState.isOver = true
-                    runState.won = false
-                }
+            case .runEnded(let won):
+                // 冒险结束
+                runState.isOver = true
+                runState.won = won
             }
             
             // 更新全局状态
             currentRunState = runState
         }
         
+        // 冒险结束，清除存档
+        saveService.clearSave()
+        
         // 冒险结束
         showRunResult(runState: runState)
         currentRunState = nil
-    }
-    
-    /// 处理战斗节点
-    private static func handleBattleNode(runState: inout RunState, isElite: Bool) -> Bool {
-        // 使用当前 RNG 状态创建新的种子
-        let battleSeed = runState.seed &+ UInt64(runState.currentRow) &* 1000
-        
-        // 选择敌人
-        var rng = SeededRNG(seed: battleSeed)
-        let enemyKind: EnemyKind
-        if isElite {
-            // 精英战斗：使用 medium 池
-            enemyKind = Act1EnemyPool.randomAny(rng: &rng)
-        } else {
-            // 普通战斗
-            enemyKind = Act1EnemyPool.randomWeak(rng: &rng)
-        }
-        let enemy = createEnemy(kind: enemyKind, rng: &rng)
-        
-        // 创建战斗引擎（使用冒险中的玩家状态）
-        let engine = BattleEngine(
-            player: runState.player,
-            enemy: enemy,
-            deck: runState.deck,
-            seed: battleSeed
-        )
-        engine.startBattle()
-        
-        // 清空事件
-        recentEvents.removeAll()
-        currentMessage = nil
-        appendEvents(engine.events)
-        engine.clearEvents()
-        
-        // 战斗循环
-        battleLoop(engine: engine, seed: battleSeed)
-        
-        // 更新玩家状态
-        runState.updateFromBattle(playerHP: engine.state.player.currentHP)
-        
-        // 如果胜利，完成节点
-        if engine.state.playerWon == true {
-            runState.completeCurrentNode()
-            return true
-        }
-        
-        return false
-    }
-    
-    /// 处理休息节点
-    private static func handleRestNode(runState: inout RunState) {
-        Screens.showRestOptions(runState: runState)
-        
-        // 等待输入
-        _ = readLine()
-        
-        // 执行休息
-        let healed = runState.restAtNode()
-        
-        // 显示结果
-        Screens.showRestResult(
-            healedAmount: healed,
-            newHP: runState.player.currentHP,
-            maxHP: runState.player.maxHP
-        )
-        
-        _ = readLine()
-        
-        // 完成节点
-        runState.completeCurrentNode()
-    }
-    
-    /// 处理 Boss 节点
-    private static func handleBossNode(runState: inout RunState) -> Bool {
-        // Boss 战斗使用特殊种子
-        let bossSeed = runState.seed &+ 99999
-        
-        // 创建 Boss 敌人（目前使用 slimeMediumAcid 作为临时 Boss）
-        var rng = SeededRNG(seed: bossSeed)
-        let enemy = createEnemy(kind: .slimeMediumAcid, rng: &rng)
-        
-        // 创建战斗引擎
-        let engine = BattleEngine(
-            player: runState.player,
-            enemy: enemy,
-            deck: runState.deck,
-            seed: bossSeed
-        )
-        engine.startBattle()
-        
-        // 清空事件
-        recentEvents.removeAll()
-        currentMessage = nil
-        appendEvents(engine.events)
-        engine.clearEvents()
-        
-        // 战斗循环
-        battleLoop(engine: engine, seed: bossSeed)
-        
-        // 更新玩家状态
-        runState.updateFromBattle(playerHP: engine.state.player.currentHP)
-        
-        return engine.state.playerWon == true
     }
     
     /// 显示冒险结果
@@ -397,7 +362,7 @@ struct GameCLI {
         
         // 战斗结束 - 保存战绩
         let record = BattleRecordBuilder.build(from: engine, seed: seed)
-        HistoryManager.shared.addRecord(record)
+        historyService.addRecord(record)
         
         Screens.showFinal(state: engine.state, record: record)
         

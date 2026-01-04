@@ -1,7 +1,7 @@
 # Salu 架构设计文档
 
 > 创建时间：2026-01-01
-> 状态：讨论中
+> 状态：已归档（宏观架构参考，实施细节以 `protocol-driven-design-plan.md` 为准）
 >
 > ⚠️ 注意：协议驱动重构的**实施主文档**已迁移到 `.cursor/plans/protocol-driven-design-plan.md`。
 > 本文档建议只保留“宏观架构/愿景”，其中的路线图（P 编号）可能与实施计划不一致，请以实施计划为准。
@@ -34,52 +34,43 @@
                  └─────────────────────────────────────────┘
 ```
 
-### 当前文件结构
+### 当前文件结构（实施后）
 
 ```
 Sources/
 ├── GameCore/                       # 纯逻辑层
-│   ├── Battle/                     # 战斗系统
-│   │   ├── BattleEngine.swift      # 战斗引擎（核心逻辑）
-│   │   ├── BattleState.swift       # 战斗状态
-│   │   └── BattleStats.swift       # 战斗统计
-│   ├── Cards/                      # 卡牌系统
-│   │   ├── CardKind.swift          # 卡牌种类枚举
-│   │   ├── Card.swift              # 卡牌模型
-│   │   └── StarterDeck.swift       # 初始牌组配置
-│   ├── Entity/                     # 实体系统
-│   │   └── Entity.swift            # 实体模型（玩家/敌人）
+│   ├── Kernel/                     # 强类型 ID、Effect、Trigger 等基座
+│   ├── Cards/                      # CardDefinition / CardRegistry / StarterDeck
+│   ├── Status/                     # StatusDefinition / StatusRegistry / StatusContainer
+│   ├── Enemies/                    # EnemyDefinition / EnemyRegistry / EnemyPool
+│   ├── Relics/                     # 遗物定义与管理器
+│   ├── Map/                        # 地图生成与节点
+│   ├── Run/                        # 冒险状态 / 存档版本
+│   ├── Persistence/                # BattleHistoryStore / RunSaveStore 协议
+│   ├── Battle/                     # 战斗引擎与状态
 │   ├── Actions.swift               # 玩家动作定义
 │   ├── Events.swift                # 战斗事件定义
 │   ├── History.swift               # 战绩数据模型
 │   └── RNG.swift                   # 随机数生成器
 │
 └── GameCLI/                        # 表现层
-    ├── Screens/                    # 界面系统
-    │   ├── MainMenuScreen.swift
-    │   ├── SettingsScreen.swift
-    │   ├── HelpScreen.swift
-    │   ├── BattleScreen.swift
-    │   ├── ResultScreen.swift
-    │   ├── HistoryScreen.swift
-    │   └── StatisticsScreen.swift
-    ├── Components/                 # UI 组件
-    │   └── EventFormatter.swift
-    ├── GameCLI.swift               # 主入口
-    ├── Terminal.swift              # ANSI 控制码
-    ├── Screens.swift               # 界面统一入口
-    └── HistoryManager.swift        # 战绩持久化
+    ├── Flow/                       # Room handler 协议与注册表
+    ├── Rooms/Handlers/             # 战斗/精英/休息/Boss 等房间处理器
+    ├── Screens/                    # 界面系统（主菜单/战斗/地图/历史等）
+    ├── Components/                 # UI 组件（事件格式化等）
+    ├── Persistence/                # 文件存储实现（History/Run 保存）
+    └── GameCLI.swift / Terminal.swift / Screens.swift 等入口与终端工具
 ```
 
 ### 当前限制
 
 | 限制 | 说明 |
 |------|------|
-| 单场战斗 | 每次运行只有一场战斗 |
-| 单一敌人 | 只有下颚虫一种敌人 |
-| 无地图 | 没有冒险进度系统 |
-| 无遗物 | 没有被动效果系统 |
-| 无卡牌升级 | 卡牌效果固定 |
+| 奖励/商店 | 战斗后奖励与商店交互尚未落地（P3 计划中） |
+| Run 存档 | 主菜单“继续冒险”与存档读写在 P7 进行中 |
+| 多角色 | 仍仅有铁甲战士，角色专属卡组/遗物待实现 |
+| AI 集成 | 外部/本地 LLM 决策未接入 |
+| 卡牌升级 | 规划中，当前卡牌定义未区分升级版 |
 
 ---
 
@@ -484,4 +475,3 @@ enum AIQuestion {
 | 日期 | 版本 | 变更 |
 |------|------|------|
 | 2026-01-01 | v0.1 | 初稿 |
-
