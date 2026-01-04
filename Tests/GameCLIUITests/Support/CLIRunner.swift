@@ -145,7 +145,7 @@ enum CLIRunner {
 
 // MARK: - Pipe Collector
 
-private final class PipeCollector {
+private final class PipeCollector: @unchecked Sendable {
     private let lock = NSLock()
     private var buffer = Data()
     private var handle: FileHandle?
