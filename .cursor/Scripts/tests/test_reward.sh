@@ -53,8 +53,8 @@ INPUT_FILE="$TMP_DIR/input.txt"
   printf "1\n"   # 开始冒险
   printf "1\n"   # 选择起点节点
   printf "1\n"   # 选择第一个可选节点（战斗）
-  # 战斗输入：30 个回合的操作序列（足够覆盖所有弱敌人）
-  for _ in $(seq 1 30); do
+  # 战斗输入：2 个回合的操作序列（避免过多残留输入导致继续推进并清档）
+  for _ in $(seq 1 2); do
     printf "1\n1\n1\n1\n1\n0\n"
   done
   printf "1\n"   # 奖励选择：选第 1 张
@@ -62,9 +62,10 @@ INPUT_FILE="$TMP_DIR/input.txt"
   printf "4\n"   # 退出（有存档时）
 } > "$INPUT_FILE"
 
-OUTPUT=$("$GAME_BIN" --seed 123 < "$INPUT_FILE" 2>&1 || true)
+OUTPUT_FILE="$TMP_DIR/output.log"
+"$GAME_BIN" --seed 123 < "$INPUT_FILE" > "$OUTPUT_FILE" 2>&1 || true
 
-if echo "$OUTPUT" | grep -q "战斗奖励" 2>/dev/null; then
+if grep -q "战斗奖励" "$OUTPUT_FILE" 2>/dev/null; then
     show_success "检测到奖励界面"
 else
     show_failure "未检测到奖励界面（可能未赢得战斗）"
