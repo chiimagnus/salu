@@ -19,6 +19,15 @@ if [ ! -f "$GAME_BIN" ]; then
     swift build -c release 2>&1
 fi
 
+# 使用临时数据目录，避免污染真实用户数据
+TMP_DIR=$(mktemp -d)
+cleanup() {
+    rm -rf "$TMP_DIR" 2>/dev/null || true
+    pkill -f "GameCLI --seed" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+export SALU_DATA_DIR="$TMP_DIR"
+
 FAILED=0
 
 # 快速启动测试
