@@ -191,6 +191,9 @@ public final class BattleEngine: @unchecked Sendable {
         
         // 处理玩家回合结束的状态效果（触发 + 递减）
         processStatusesAtTurnEnd(for: .player)
+
+        // P4: 触发回合结束遗物效果（仅玩家回合结束）
+        triggerRelics(.turnEnd(turn: state.turn))
         
         emit(.turnEnded(turn: state.turn))
         
@@ -260,6 +263,9 @@ public final class BattleEngine: @unchecked Sendable {
         state.hand.remove(at: handIndex)
         
         emit(.played(cardId: card.cardId, cost: def.cost))
+
+        // P4: 触发打出卡牌的遗物效果
+        triggerRelics(.cardPlayed(cardId: card.cardId))
         
         // 执行卡牌效果（新架构：通过 BattleEffect）
         executeCardEffect(card)
@@ -360,6 +366,14 @@ public final class BattleEngine: @unchecked Sendable {
             amount: damageResult.0,
             blocked: damageResult.1
         ))
+
+        // P4: 触发伤害相关遗物效果（以玩家视角：造成伤害/受到伤害）
+        switch target {
+        case .enemy:
+            triggerRelics(.damageDealt(amount: damageResult.0))
+        case .player:
+            triggerRelics(.damageTaken(amount: damageResult.0))
+        }
     }
     
     /// 应用格挡效果
@@ -373,6 +387,8 @@ public final class BattleEngine: @unchecked Sendable {
             state.player.gainBlock(block)
             battleStats.totalBlockGained += block
             emit(.blockGained(target: state.player.name, amount: block))
+            // P4: 触发获得格挡遗物效果（仅玩家）
+            triggerRelics(.blockGained(amount: block))
         case .enemy:
             state.enemy.gainBlock(block)
             emit(.blockGained(target: state.enemy.name, amount: block))
@@ -430,6 +446,9 @@ public final class BattleEngine: @unchecked Sendable {
         let card = state.drawPile.removeLast()
         state.hand.append(card)
         emit(.drew(cardId: card.cardId))
+
+        // P4: 触发抽到卡牌的遗物效果
+        triggerRelics(.cardDrawn(cardId: card.cardId))
     }
     
     private func shuffleDiscardIntoDraw() {
@@ -499,10 +518,14 @@ public final class BattleEngine: @unchecked Sendable {
     // MARK: Battle End Check
     
     private func checkBattleEnd() {
+        guard !state.isOver else { return }
+        
         if !state.enemy.isAlive {
             emit(.entityDied(entityId: state.enemy.id, name: state.enemy.name))
             state.isOver = true
             state.playerWon = true
+            // P4: 敌人被击杀
+            triggerRelics(.enemyKilled)
             emit(.battleWon)
             // P4: 触发战斗结束（胜利）- 包括燃烧之血恢复生命
             triggerRelics(.battleEnd(won: true))

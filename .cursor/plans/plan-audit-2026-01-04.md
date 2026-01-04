@@ -78,6 +78,10 @@
    - 现象：`battleStart` 触发发生在能量重置之前，导致如 Lantern（+1 能量）这类效果在第 1 回合开始时被覆盖，实际无效。
    - 修复：将 `battleStart` 触发移动到第 1 回合能量重置之后，并将 `turnStart` 触发顺序放在能量重置之后，保证能量类遗物效果可生效。
 
+2. **部分 BattleTrigger 未被引擎触发（已修复）**
+   - 现象：虽然 `BattleTrigger` 定义了 `cardPlayed/cardDrawn/damageDealt/damageTaken/blockGained/enemyKilled/turnEnd`，但 `BattleEngine` 未在对应时机调用 `RelicManager.onBattleTrigger`，导致新增遗物仍需改引擎（违背“新增只需 Definition + 注册”）。
+   - 修复：在 `BattleEngine` 补齐对应触发点（按玩家视角触发），确保未来新增遗物无需修改引擎即可生效。
+
 ## P5：Run/房间/地图流程协议化 ✅
 
 - **关键点**：
