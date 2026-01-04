@@ -92,6 +92,14 @@
   - `Sources/GameCLI/Rooms/Handlers/*`
   - `Sources/GameCore/Map/MapGenerating.swift`
 
+## P5 审查发现的问题（已修复）
+
+1. **精英战斗可能刷出弱敌人（已修复）**
+   - 现象：`EliteRoomHandler` 选择敌人时使用 `Act1EnemyPool.randomAny`（包含弱敌人池），导致精英节点可能出现弱敌人；同时 `BattleRoomHandler` 中存在无效的 `isElite` 分支（永远为 false）。
+   - 修复：
+     - `Act1EnemyPool` 补充 `randomMedium` 并在 `EliteRoomHandler` 使用（精英节点只从中等敌人池选取）。
+     - 简化 `BattleRoomHandler`，移除无效的 elite 分支，避免误导与潜在错误扩散。
+
 ## P6：持久化与 I/O 协议化 ✅
 
 - **关键点**：

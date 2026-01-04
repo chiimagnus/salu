@@ -18,9 +18,9 @@ struct EliteRoomHandler: RoomHandling {
         // 使用当前 RNG 状态创建新的种子
         let battleSeed = runState.seed &+ UInt64(runState.currentRow) &* 1000
         
-        // 选择敌人（精英战斗：使用 medium 池）
+        // 选择敌人（精英战斗：中等敌人池）
         var rng = SeededRNG(seed: battleSeed)
-        let enemyId = Act1EnemyPool.randomAny(rng: &rng)
+        let enemyId = Act1EnemyPool.randomMedium(rng: &rng)
         let enemy = context.createEnemy(enemyId, &rng)
         
         // 创建战斗引擎（使用冒险中的玩家状态和遗物）
