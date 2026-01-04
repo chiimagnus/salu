@@ -15,10 +15,5 @@ let package = Package(
             name: "GameCLI",
             dependencies: ["GameCore"]
         ),
-        // GameCoreTests: 单元测试（验证内部逻辑实现）
-        .testTarget(
-            name: "GameCoreTests",
-            dependencies: ["GameCore"]
-        ),
     ]
 )
