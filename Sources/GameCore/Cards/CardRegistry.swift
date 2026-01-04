@@ -32,4 +32,9 @@ public enum CardRegistry {
         }
         return def
     }
+
+    /// 获取所有已注册的卡牌 ID（按 rawValue 排序，保证确定性）
+    public static var allCardIds: [CardID] {
+        Array(defs.keys).sorted { $0.rawValue < $1.rawValue }
+    }
 }

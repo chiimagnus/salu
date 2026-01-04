@@ -170,11 +170,32 @@ public struct RunState: Sendable {
     public mutating func addCardToDeck(_ card: Card) {
         deck.append(card)
     }
+
+    /// 添加卡牌到牌组（自动生成实例 ID）
+    /// - Note: 实例 ID 规则：`<cardId.rawValue>_<n>`（n 为同 cardId 的序号）
+    public mutating func addCardToDeck(cardId: CardID) {
+        let instanceId = makeNextCardInstanceId(for: cardId)
+        deck.append(Card(id: instanceId, cardId: cardId))
+    }
     
     /// 从牌组移除卡牌
     public mutating func removeCardFromDeck(at index: Int) {
         guard index >= 0 && index < deck.count else { return }
         deck.remove(at: index)
+    }
+
+    private func makeNextCardInstanceId(for cardId: CardID) -> String {
+        let prefix = "\(cardId.rawValue)_"
+        var maxIndex = 0
+        
+        for card in deck where card.id.hasPrefix(prefix) {
+            let suffix = card.id.dropFirst(prefix.count)
+            if let n = Int(suffix), n > maxIndex {
+                maxIndex = n
+            }
+        }
+        
+        return "\(prefix)\(maxIndex + 1)"
     }
     
     // MARK: - 地图查询
