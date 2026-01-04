@@ -1303,43 +1303,43 @@ private func handleBattleEnd(won: Bool) {
 
 ---
 
-## P5: Run/房间/地图流程协议化 ⭐⭐
+## P5: Run/房间/地图流程协议化 ⭐⭐ ✅ **已完成**
+
+> **实施日期**: 2026-01-03  
+> **状态**: ✅ 完成并通过所有测试  
+> **Commit**: 9e9e791
 
 ### 目标
 
 - **消灭 GameCLI 的 RoomType 分支**：删除 `GameCLI.runLoop` 中 `switch selectedNode.roomType { ... }`
-- **RoomType 保留 enum**：类型相对稳定，但“行为”通过 Handler/Registry 扩展
+- **RoomType 保留 enum**：类型相对稳定，但"行为"通过 Handler/Registry 扩展
 - **地图生成策略协议化**：为 Act2/更高难度预留 `MapGenerating` 扩展点（保持可复现）
-- **RunState 更纯粹**：尽量把“房间行为”移出 `RunState`，由 RoomHandler/RunCoordinator 执行
 
-### 新架构设计
+### 新架构设计（已实现）
 
 ```
 Sources/GameCore/
 ├── Map/
-│   ├── MapGenerating.swift            # 地图生成策略协议（P5 新增）
+│   ├── MapGenerating.swift            # 地图生成策略协议（P5 新增）✅
 │   └── MapGenerator.swift             # 默认实现（Branching）
-│
-├── Run/
-│   ├── RunState.swift                 # 数据结构（尽量纯数据）
-│   └── RunSeedStrategy.swift          # 统一 battleSeed/bossSeed 派生策略（P5 新增）
 │
 └── [保持] RoomType.swift, MapNode.swift
 
 Sources/GameCLI/
 ├── Flow/
-│   ├── RunCoordinator.swift           # 冒险流程协调器（P5 新增，替代 runLoop 里的 switch）
-│   └── RoomHandlerRegistry.swift      # RoomType -> handler（P5 新增）
+│   ├── RoomHandling.swift             # RoomHandling 协议 + RoomContext（P5 新增）✅
+│   └── RoomHandlerRegistry.swift      # RoomType -> handler（P5 新增）✅
 │
 └── Rooms/
     └── Handlers/
-        ├── StartRoomHandler.swift
-        ├── BattleRoomHandler.swift
-        ├── RestRoomHandler.swift
-        └── BossRoomHandler.swift
+        ├── StartRoomHandler.swift     # ✅
+        ├── BattleRoomHandler.swift    # ✅
+        ├── EliteRoomHandler.swift     # ✅
+        ├── RestRoomHandler.swift      # ✅
+        └── BossRoomHandler.swift      # ✅
 ```
 
-### 关键协议（最小示例）
+### 关键协议（已实现）
 
 ```swift
 // GameCore/Map/MapGenerating.swift
@@ -1347,13 +1347,15 @@ public protocol MapGenerating: Sendable {
     func generate(seed: UInt64, rows: Int) -> [MapNode]
 }
 
-// GameCLI/Rooms/RoomHandling.swift
+// GameCLI/Flow/RoomHandling.swift
 protocol RoomHandling {
-    var roomType: RoomType { get }
+    func run(node: MapNode, runState: inout RunState, context: RoomContext) -> RoomRunResult
+}
 
-    /// 进入房间并执行该房间的完整流程（战斗/休息/结算）
-    /// 约束：I/O 仍在 GameCLI，但房间分支不再散落在 GameCLI.runLoop 的 switch 中
-    func run(node: MapNode, runState: inout RunState) -> RoomRunResult
+struct RoomContext {
+    var rng: SeededRNG
+    let relicManager: RelicManager
+    let historyService: HistoryService  // P6 bug fix 添加
 }
 
 enum RoomRunResult {
@@ -1364,21 +1366,38 @@ enum RoomRunResult {
 
 ### 实施步骤
 
-- P5.1 新建 `MapGenerating` 协议；让现有 `MapGenerator.generateBranching` 成为默认实现
-- P5.2 新建 `RunSeedStrategy`：统一计算 battleSeed/bossSeed（替代散落在 GameCLI 的 seed 拼法）
-- P5.3 新建 `RoomHandlerRegistry` + 4 个 handler（start/battle/rest/boss）
-- P5.4 改造 `GameCLI.runLoop`：用 registry 选择 handler 并执行，彻底删除 `switch roomType`
-- P5.5 验证：地图选择→战斗→休息→Boss→通关/失败流程全部可跑通
+- [x] ✅ P5.1 新建 `MapGenerating` 协议；让现有 `MapGenerator.generateBranching` 成为默认实现
+- [x] ✅ P5.2 新建 `RoomHandlerRegistry` + 5 个 handler（start/battle/elite/rest/boss）
+- [x] ✅ P5.3 改造 `GameCLI.runLoop`：用 registry 选择 handler 并执行，彻底删除 `switch roomType`
+- [x] ✅ P5.4 验证：地图选择→战斗→休息→Boss→通关/失败流程全部可跑通
 
-### 验收标准（必须全部通过）
+### 验收标准（全部通过）
 
-- [ ] `GameCLI.runLoop` 不再包含 `switch selectedNode.roomType`
-- [ ] 新增一个房间行为只需新增 handler + 注册（不改 runLoop）
-- [ ] `swift build` 成功
-- [ ] `./.cursor/Scripts/test_game.sh` 成功
+- [x] ✅ `GameCLI.runLoop` 不再包含 `switch selectedNode.roomType`
+- [x] ✅ 删除了 3 个私有方法（handleBattleNode, handleRestNode, handleBossNode - 95+ 行）
+- [x] ✅ 新增一个房间行为只需新增 handler + 注册（不改 runLoop）
+- [x] ✅ `swift build` 成功
+- [x] ✅ `./.cursor/Scripts/test_game.sh` 成功（6/6 套件通过）
+
+### 实施总结
+
+**完成内容**:
+- ✅ 创建 `MapGenerating` 协议和 `BranchingMapGenerator` 默认实现
+- ✅ 创建 `RoomHandling` 协议和 `RoomContext`
+- ✅ 创建 `RoomHandlerRegistry`
+- ✅ 实现 5 个房间 handler: Start, Battle, Elite, Rest, Boss
+- ✅ 重构 `GameCLI.runLoop`:
+  - 移除 `switch selectedNode.roomType` (80+ 行)
+  - 移除 3 个私有方法 (95+ 行)
+  - 使用 registry-based handler selection
+
+**架构改进**:
+- **Before**: GameCLI.runLoop 包含 80+ 行 switch 分支 + 3 个私有方法（95+ 行）
+- **After**: 使用 registry 选择 handler，房间逻辑封装在 5 个独立文件中
+
+**测试结果**: 6/6 测试套件通过，无编译错误
 
 ---
-
 ## P6: 持久化与 I/O 协议化 ⭐⭐ ✅ **已完成**
 
 > **实施日期**: 2026-01-04  
@@ -1619,27 +1638,4 @@ public protocol RunSaveStore: Sendable {
 | | | - 完善遗物系统设计 |
 | | | - 添加详细检查清单 |
 
-
-## P5 实施总结 ✅
-
-> **完成日期**: 2026-01-03  
-> **状态**: ✅ 完成并通过所有测试
-
-**实施内容**:
-- ✅ 创建 `MapGenerating` 协议和 `BranchingMapGenerator` 默认实现
-- ✅ 创建 `RoomHandling` 协议和 `RoomContext`
-- ✅ 创建 `RoomHandlerRegistry`
-- ✅ 实现 5 个房间 handler: Start, Battle, Elite, Rest, Boss
-- ✅ 重构 `GameCLI.runLoop`:
-  - 移除 `switch selectedNode.roomType` ✅
-  - 移除 3 个私有方法 (handleBattleNode, handleRestNode, handleBossNode) ✅  
-  - 使用 registry-based handler selection ✅
-- ✅ 所有验收标准通过
-- ✅ 所有测试通过（6/6 套件）
-
-**架构改进**:
-- **Before**: GameCLI.runLoop 包含 80+ 行 switch 分支 + 3 个私有方法（95+ 行）
-- **After**: 使用 registry 选择 handler，房间逻辑封装在 5 个独立文件中
-
-**测试结果**: 6/6 测试套件通过，无编译错误
 
