@@ -11,3 +11,5 @@ DerivedData/
 .cursorignore
 
 tmp/
+*.exitcode
+*.log
