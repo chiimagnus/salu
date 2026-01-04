@@ -7,8 +7,8 @@ enum Screens {
     
     // MARK: - 主菜单
     
-    static func showMainMenu(historyService: HistoryService) {
-        MainMenuScreen.show(historyService: historyService)
+    static func showMainMenu(historyService: HistoryService, hasSave: Bool = false) {
+        MainMenuScreen.show(historyService: historyService, hasSave: hasSave)
     }
     
     // MARK: - 地图屏幕

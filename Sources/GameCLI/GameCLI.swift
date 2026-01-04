@@ -20,12 +20,19 @@ struct GameCLI {
     /// 历史记录服务（依赖注入，替代单例）
     private nonisolated(unsafe) static var historyService: HistoryService!
     
+    /// 存档服务（依赖注入）
+    private nonisolated(unsafe) static var saveService: SaveService!
+    
     // MARK: - Main Entry
     
     static func main() {
         // 初始化历史记录服务（依赖注入）
-        let store = FileBattleHistoryStore()
-        historyService = HistoryService(store: store)
+        let historyStore = FileBattleHistoryStore()
+        historyService = HistoryService(store: historyStore)
+        
+        // 初始化存档服务（依赖注入）
+        let saveStore = FileRunSaveStore()
+        saveService = SaveService(store: saveStore)
         
         // 检查命令行快捷参数
         if CommandLine.arguments.contains("--history") || CommandLine.arguments.contains("-H") {
@@ -49,7 +56,8 @@ struct GameCLI {
     
     static func mainMenuLoop() {
         while true {
-            Screens.showMainMenu(historyService: historyService)
+            let hasSave = saveService.hasSave()
+            Screens.showMainMenu(historyService: historyService, hasSave: hasSave)
             
             guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
                 // EOF 或输入关闭，退出主菜单
@@ -57,15 +65,19 @@ struct GameCLI {
             }
             
             switch input {
-            case "1":
-                // 开始冒险
+            case "1" where hasSave:
+                // 继续上次冒险
+                continueRun()
+                
+            case "1" where !hasSave, "2":
+                // 开始新冒险（如果没有存档，1 就是新冒险；否则 2 是新冒险）
                 startNewRun()
                 
-            case "2":
+            case "2" where hasSave, "3" where !hasSave:
                 // 设置菜单
                 settingsMenuLoop()
                 
-            case "3", "q":
+            case "3" where hasSave, "4" where !hasSave, "q":
                 // 退出游戏
                 Screens.showExit()
                 return
@@ -157,6 +169,38 @@ struct GameCLI {
         runLoop()
     }
     
+    static func continueRun() {
+        do {
+            // 尝试加载存档
+            guard let runState = try saveService.loadRun() else {
+                print("\(Terminal.red)没有找到存档！\(Terminal.reset)")
+                print("按 Enter 返回...")
+                _ = readLine()
+                return
+            }
+            
+            // 恢复冒险
+            currentRunState = runState
+            print("\(Terminal.green)存档加载成功！\(Terminal.reset)")
+            print("\(Terminal.dim)正在继续冒险...\(Terminal.reset)")
+            Thread.sleep(forTimeInterval: 1.0)
+            
+            // 进入冒险循环
+            runLoop()
+            
+        } catch SaveError.incompatibleVersion(let saved, let current) {
+            print("\(Terminal.red)存档版本不兼容！\(Terminal.reset)")
+            print("\(Terminal.dim)存档版本: \(saved), 当前版本: \(current)\(Terminal.reset)")
+            print("\(Terminal.yellow)请开始新的冒险。\(Terminal.reset)")
+            print("按 Enter 返回...")
+            _ = readLine()
+        } catch {
+            print("\(Terminal.red)加载存档失败: \(error)\(Terminal.reset)")
+            print("按 Enter 返回...")
+            _ = readLine()
+        }
+    }
+    
     static func runLoop() {
         guard var runState = currentRunState else { return }
         
@@ -232,6 +276,8 @@ struct GameCLI {
             switch result {
             case .completedNode:
                 // 节点完成，继续冒险
+                // 自动保存进度
+                saveService.saveRun(runState)
                 break
                 
             case .runEnded(let won):
@@ -243,6 +289,9 @@ struct GameCLI {
             // 更新全局状态
             currentRunState = runState
         }
+        
+        // 冒险结束，清除存档
+        saveService.clearSave()
         
         // 冒险结束
         showRunResult(runState: runState)
