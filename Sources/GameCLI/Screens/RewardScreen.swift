@@ -38,33 +38,37 @@ enum RewardScreen {
         }
         
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(max(offer.choices.count, 1))]\(Terminal.reset) 选择  \(Terminal.cyan)[0]\(Terminal.reset) 跳过  \(Terminal.cyan)[q]\(Terminal.reset) 返回")
+        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(max(offer.choices.count, 1))]\(Terminal.reset) 选择  \(Terminal.cyan)[0]\(Terminal.reset) 跳过")
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
-        Terminal.flush()
         
-        // EOF（管道输入结束）默认跳过，避免测试/脚本卡死
-        guard let input = readLine()?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() else {
-            return nil
+        while true {
+            print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+            Terminal.flush()
+            
+            // EOF（管道输入结束）默认跳过，避免测试/脚本卡死
+            guard let raw = readLine() else {
+                return nil
+            }
+            
+            let input = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if input.isEmpty {
+                continue
+            }
+            
+            if offer.canSkip, input == "0" {
+                return nil
+            }
+            
+            if let number = Int(input) {
+                let idx = number - 1
+                if idx >= 0, idx < offer.choices.count {
+                    return offer.choices[idx]
+                }
+            }
+            
+            // // 无效输入：提示并继续读
+            // print("\(Terminal.red)⚠️ 无效输入：请输入 1-\(offer.choices.count) 或 0 跳过\(Terminal.reset)")
         }
-        
-        if input == "q" {
-            return nil
-        }
-        if input == "0" {
-            return nil
-        }
-        
-        guard let number = Int(input) else {
-            return nil
-        }
-        
-        let idx = number - 1
-        guard idx >= 0, idx < offer.choices.count else {
-            return nil
-        }
-        
-        return offer.choices[idx]
     }
 }
 
