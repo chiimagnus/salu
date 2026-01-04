@@ -127,10 +127,23 @@ enum CLIRunner {
         #else
         let binaryName = "GameCLI"
         #endif
+
+        // 允许显式指定可执行文件路径（用于 CI/本地调试）
+        // - 优先级最高：SALU_CLI_BINARY_PATH
+        // - 用途：需要验证 release binary 时可以强制指定；默认测试仍建议走 debug（更利于覆盖率与调试）
+        let overrideKey = "SALU_CLI_BINARY_PATH"
+        if let overridePath = ProcessInfo.processInfo.environment[overrideKey],
+           !overridePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            let url = URL(fileURLWithPath: overridePath)
+            if FileManager.default.fileExists(atPath: url.path) {
+                return url
+            }
+        }
         
         let candidates: [URL] = [
-            root.appendingPathComponent(".build/release/\(binaryName)"),
-            root.appendingPathComponent(".build/debug/\(binaryName)")
+            // 默认优先 debug（更符合测试/覆盖率；CI 通常会先 build release 再跑 tests）
+            root.appendingPathComponent(".build/debug/\(binaryName)"),
+            root.appendingPathComponent(".build/release/\(binaryName)")
         ]
         
         for url in candidates {
