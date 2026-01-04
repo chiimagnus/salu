@@ -133,7 +133,7 @@ struct GameCLI {
                 // 清除历史记录
                 confirmClearHistory()
                 
-            case "0", "q", "b":
+            case "0":
                 // 返回主菜单
                 return
                 
