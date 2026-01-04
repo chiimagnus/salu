@@ -64,7 +64,7 @@ public struct Cultist: EnemyDefinition {
         if snapshot.turn == 1 {
             // 第一回合必定念咒
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "💪", text: "仪式 +3"),
+                intent: EnemyIntentDisplay(icon: "💪", text: "力量 +3"),
                 effects: [.applyStatus(target: .enemy, statusId: "strength", stacks: 3)]
             )
         }

@@ -56,6 +56,12 @@
   - `Sources/GameCore/Enemies/EnemyPool.swift`：pool 只返回 `EnemyID`
   - `Sources/GameCore/Battle/BattleEngine.swift`：使用 `EnemyRegistry.require(enemyId).chooseMove(...)`
 
+## P3 审查发现的问题（已修复）
+
+1. **意图文本与实际效果不一致（已修复）**
+   - 现象：信徒第一回合意图显示为“仪式 +3”，但实际效果是 `strength +3`（力量）。
+   - 修复：统一意图文本为“力量 +3”，与实现和业务规则保持一致。
+
 ## P4：遗物系统 ✅
 
 - **关键点**：
