@@ -179,7 +179,8 @@ struct GameCLI {
             },
             createEnemy: { enemyId, rng in
                 createEnemy(enemyId: enemyId, rng: &rng)
-            }
+            },
+            historyService: historyService
         )
         
         while !runState.isOver {

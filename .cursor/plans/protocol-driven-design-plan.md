@@ -1588,8 +1588,15 @@ public protocol RunSaveStore: Sendable {
 - ✅ 删除 `HistoryManager.shared`
 - ✅ 更新所有 Screen 使用依赖注入
 - ✅ 所有测试通过
+- ✅ **Bug修复**: 添加战斗记录保存到所有房间处理器（BattleRoomHandler, EliteRoomHandler, BossRoomHandler）
 
 **测试结果**: 所有测试通过（6/6套件），历史记录功能正常
+
+**已知问题修复**:
+- ✅ 修复冒险模式战斗记录不保存的问题：
+  - 原因：`BattleRoomHandler`、`EliteRoomHandler`、`BossRoomHandler` 缺少战斗记录保存逻辑
+  - 解决：在 `RoomContext` 添加 `historyService` 字段，所有战斗处理器在战斗结束后调用 `BattleRecordBuilder.build()` 并保存记录
+  - 验证：测试完成后历史记录和统计数据正确显示
 
 ---
 - [ ] 主菜单存在“继续上次冒险”（无存档时行为明确：隐藏/置灰/提示）

@@ -35,6 +35,10 @@ struct BossRoomHandler: RoomHandling {
         // 战斗循环
         context.battleLoop(engine, bossSeed)
         
+        // 保存战斗记录
+        let record = BattleRecordBuilder.build(from: engine, seed: bossSeed)
+        context.historyService.addRecord(record)
+        
         // 更新玩家状态
         runState.updateFromBattle(playerHP: engine.state.player.currentHP)
         
