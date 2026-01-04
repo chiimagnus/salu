@@ -46,7 +46,10 @@
 - 步骤：
   - `swift build`
   - `swift build -c release`
-  - `swift test`
+  - `swift test --enable-code-coverage`
+  - 上传 coverage 产物：`.build/**/debug/codecov/Salu.json`
+
+> 注意：由于 CLI UI tests 是通过 **外部进程** 运行 `GameCLI`，因此该 coverage 报告目前主要反映 **GameCore + 测试进程内执行的代码**；若要把外部进程的 GameCLI 执行计入覆盖率，需要额外做跨进程 profile 合并或重构为可注入的 in-process runner。
 
 ### 3.2 Release workflow
 

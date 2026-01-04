@@ -35,8 +35,8 @@ jobs:
       - name: Build release
         run: swift build -c release
       
-      - name: Run all Swift tests (XCTest)
-        run: swift test
+      - name: Run all Swift tests (XCTest) + coverage
+        run: swift test --enable-code-coverage
 
       - name: Upload build artifacts
         if: success()
@@ -47,3 +47,13 @@ jobs:
             .build/debug/GameCLI
             .build/release/GameCLI
           retention-days: 7
+      
+      - name: Upload coverage artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: salu-coverage
+          path: |
+            .build/**/debug/codecov/Salu.json
+            .build/**/debug/codecov/default.profdata
+          retention-days: 14
