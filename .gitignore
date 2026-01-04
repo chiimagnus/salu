@@ -9,3 +9,5 @@ DerivedData/
 
 ## AI LLM
 .cursorignore
+
+tmp/
