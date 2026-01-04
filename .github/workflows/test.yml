@@ -37,6 +37,17 @@ jobs:
       
       - name: Run all Swift tests (XCTest) + coverage
         run: swift test --enable-code-coverage
+      
+      # 覆盖率摘要（用于 PR/CI 日志快速判断“覆盖率是否明显下降”）
+      - name: Coverage summary (llvm-cov)
+        run: |
+          set -euo pipefail
+          TEST_BIN=".build/debug/SaluPackageTests.xctest/Contents/MacOS/SaluPackageTests"
+          PROF_DATA="$(find .build -path "*debug/codecov/default.profdata" -print -quit)"
+          echo "Test binary: ${TEST_BIN}"
+          echo "Profile data: ${PROF_DATA}"
+          echo ""
+          xcrun llvm-cov report "${TEST_BIN}" --instr-profile="${PROF_DATA}" --ignore-filename-regex "Tests|test" | tail -n 25
 
       - name: Upload build artifacts
         if: success()
