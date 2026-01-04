@@ -21,7 +21,7 @@ struct BossRoomHandler: RoomHandling {
         let engine = BattleEngine(
             player: runState.player,
             enemy: enemy,
-            deck: runState.deck,
+            deck: TestMode.battleDeck(from: runState.deck),
             relicManager: runState.relicManager,
             seed: bossSeed
         )

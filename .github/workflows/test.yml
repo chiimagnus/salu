@@ -25,17 +25,25 @@ jobs:
 
       - name: Swift version
         run: swift --version
-
-      - name: Make test script executable
-        run: chmod +x .cursor/Scripts/test_game.sh
-
-      - name: Run all tests
-        run: ./.cursor/Scripts/test_game.sh all
+      
+      # Build（debug + release），确保：
+      # 1) 可执行文件可生成（供 CLI UI Tests 用 Process 启动）
+      # 2) release 配置也能编译通过（避免“只在 debug 能 build”）
+      - name: Build debug
+        run: swift build
+      
+      - name: Build release
+        run: swift build -c release
+      
+      - name: Run all Swift tests (XCTest)
+        run: swift test
 
       - name: Upload build artifacts
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: salu-debug-macos
-          path: .build/debug/GameCLI
+          path: |
+            .build/debug/GameCLI
+            .build/release/GameCLI
           retention-days: 7

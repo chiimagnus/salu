@@ -239,7 +239,7 @@ struct GameCLI {
                 battleLoop(engine: engine, seed: seed)
             },
             createEnemy: { enemyId, rng in
-                createEnemy(enemyId: enemyId, rng: &rng)
+                TestMode.createEnemy(enemyId: enemyId, rng: &rng)
             },
             historyService: historyService
         )

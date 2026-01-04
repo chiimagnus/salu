@@ -20,5 +20,10 @@ let package = Package(
             name: "GameCoreTests",
             dependencies: ["GameCore"]
         ),
+        // GameCLIUITests: 使用 XCTest + Process 对 GameCLI 做黑盒「UI」测试（替代 sh 脚本）
+        .testTarget(
+            name: "GameCLIUITests",
+            dependencies: ["GameCore"]
+        ),
     ]
 )
