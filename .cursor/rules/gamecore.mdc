@@ -32,6 +32,19 @@ Sources/GameCore/  ← 本规范适用范围
 
 ---
 
+## 协议驱动开发（PDD）原则
+
+GameCore 的核心目标是把“内容扩展点”从 `enum + switch` 迁移到 **Definition + Registry**：
+
+- **强类型 ID**：`CardID/StatusID/EnemyID/RelicID`（禁止散落字符串）
+- **定义协议**：`CardDefinition/StatusDefinition/EnemyDefinition/RelicDefinition`（只做决策/产出效果，不直接 I/O）
+- **注册表**：`CardRegistry/StatusRegistry/EnemyRegistry/RelicRegistry`（新增内容的唯一入口）
+- **统一效果管线**：`BattleEffect` + `BattleEngine.apply(effect:)`（引擎只负责执行效果并产出事件）
+
+约束：新增卡牌/状态/敌人/遗物应当尽量只做 **新增 Definition + 在 Registry 注册**，避免修改 `BattleEngine` 或引入新的 switch 扩展点。
+
+---
+
 ## 设计原则
 
 ### 单一职责原则（SRP）

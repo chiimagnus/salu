@@ -56,6 +56,12 @@ run_terminal_cmd(command: "swift build", is_background: false)
 2. **Xcode 调试**：`swift package generate-xcodeproj`（可使用 Instruments 分析内存）
 3. **打印调试**：通过 `BattleEvent` 事件系统追踪状态变化
 
+### 架构实现说明（协议驱动开发）
+
+- 核心系统采用**协议驱动 + 注册表**的扩展方式：`CardDefinition/StatusDefinition/EnemyDefinition/RelicDefinition` + `*Registry` + 强类型 `*ID`
+- `BattleEngine` 统一执行 `BattleEffect` 管线（新增内容尽量只新增 Definition + 注册，避免在引擎里写 switch）
+- CLI 展示层（GameCLI）从 Registry 读取 `name/rulesText/icon` 渲染，避免硬编码分支
+
 ---
 
 ## 游戏规则

@@ -80,6 +80,14 @@ GameCLI.swift
 
 ---
 
+## 协议驱动开发（PDD）在 GameCLI 的落地点
+
+- **UI 渲染不写 switch**：卡牌/状态/敌人展示从 `CardRegistry/StatusRegistry/EnemyRegistry` 取 `name/rulesText/icon/intent` 渲染
+- **房间流程可插拔**：通过 `RoomHandling` + `RoomHandlerRegistry` 扩展房间行为，`GameCLI.runLoop` 不写 roomType 分支
+- **依赖注入优先**：History/Save 等 I/O 能力通过 Service 注入到 Screens/Handlers，避免在 Screen 内部创建文件存储
+
+---
+
 ## 核心约束
 
 ### 必须遵守
