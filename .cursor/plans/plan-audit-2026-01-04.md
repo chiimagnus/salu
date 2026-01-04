@@ -23,6 +23,12 @@
   - `Sources/GameCore/Events.swift`：`.drew(cardId:)`/`.played(cardId:, cost:)`
   - `Sources/GameCLI/Screens/BattleScreen.swift`：使用 `def.rulesText` 渲染手牌
 
+## P1 审查发现的问题（已修复）
+
+1. **卡牌显示名非中文（已修复）**
+   - 现象：`CardDefinition.name` 仍为英文（例如 "Strike"），会直接影响 UI 与事件日志显示，违背“所有用户可见文本使用中文”的约束。
+   - 修复：将 `Strike/Defend/Bash/...` 的 `name` 统一改为中文（含 `+` 版本）。
+
 ## P2：状态效果系统协议化 ✅
 
 - **关键点**：
