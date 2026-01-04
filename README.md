@@ -48,6 +48,3 @@ git push origin feature/你的功能名
 ### 5. 创建 Pull Request
 
 在 GitHub 上创建 PR，填写清晰的标题和描述。
-
-## 📋 路线图
-详细规划请查看 [architecture-design.md](.cursor/plans/architecture-design.md)。
