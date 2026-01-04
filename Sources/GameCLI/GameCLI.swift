@@ -376,7 +376,7 @@ struct GameCLI {
     static func battleLoop(engine: BattleEngine, seed: UInt64) {
         while !engine.state.isOver {
             // 刷新整个屏幕
-            ScreenRenderer.renderBattleScreen(
+            BattleScreen.renderBattleScreen(
                 engine: engine,
                 seed: seed,
                 events: recentEvents,

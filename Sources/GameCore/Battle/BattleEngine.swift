@@ -261,26 +261,6 @@ public final class BattleEngine: @unchecked Sendable {
         checkBattleEnd()
     }
     
-    /// 对目标施加 Debuff（P3: 已废弃，保留用于向后兼容）
-    @available(*, deprecated, message: "Use BattleEffect.applyStatus instead")
-    private func applyDebuff(to target: inout Entity, debuff: String, stacks: Int) {
-        // 将旧的字符串 debuff 映射到 StatusID
-        let statusId: StatusID
-        switch debuff {
-        case "虚弱":
-            statusId = "weak"
-        case "易伤":
-            statusId = "vulnerable"
-        default:
-            return // 未知 debuff，忽略
-        }
-        
-        target.statuses.apply(statusId, stacks: stacks)
-        if let def = StatusRegistry.get(statusId) {
-            emit(.statusApplied(target: target.name, effect: def.name, stacks: stacks))
-        }
-    }
-    
     // MARK: Card Playing
     
     private func playCard(at handIndex: Int) -> Bool {
