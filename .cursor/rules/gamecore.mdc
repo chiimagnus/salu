@@ -13,58 +13,22 @@ GameCore 是**纯逻辑层**，负责游戏规则、状态管理、计算。
 ```
 Sources/GameCore/  ← 本规范适用范围
 │
-├── Battle/                 # ✅ 战斗系统
-│   ├── BattleEngine.swift  # 战斗引擎（核心逻辑）
-│   ├── BattleState.swift   # 战斗状态
-│   └── BattleStats.swift   # 战斗统计
-│
-├── Cards/                  # ✅ 卡牌系统
-│   ├── CardKind.swift      # 卡牌种类枚举
-│   ├── Card.swift          # 卡牌模型
-│   └── StarterDeck.swift   # 初始牌组配置
-│
-├── Entity/                 # ✅ 实体系统
-│   └── Entity.swift        # 实体模型（玩家/敌人）
-│
-├── Run/                    # 🔜 游戏会话系统（计划中）
-│   ├── RunState.swift      # 当前冒险状态
-│   ├── RunProgress.swift   # 玩家进度
-│   └── RunManager.swift    # 冒险管理器
-│
-├── Map/                    # 🔜 地图系统（计划中）
-│   ├── MapNode.swift       # 地图节点
-│   ├── MapPath.swift       # 路径定义
-│   ├── MapGenerator.swift  # 地图生成
-│   └── RoomType.swift      # 房间类型
-│
-├── Enemies/                # 🔜 敌人系统（计划中）
-│   ├── EnemyKind.swift     # 敌人种类枚举
-│   ├── EnemyAI.swift       # 敌人 AI 行为
-│   ├── EnemyIntent.swift   # 敌人意图
-│   └── EnemyPool.swift     # 敌人池/遭遇表
-│
-├── Relics/                 # 🔜 遗物系统（计划中）
-│   ├── RelicKind.swift     # 遗物种类
-│   ├── RelicEffect.swift   # 遗物效果
-│   └── RelicTrigger.swift  # 触发时机
-│
-├── Rewards/                # 🔜 奖励系统（计划中）
-│   ├── RewardType.swift    # 奖励类型
-│   └── RewardGenerator.swift # 奖励生成
-│
-├── AI/                     # 🔜 AI 子系统（计划中）
-│   ├── AIProvider.swift    # AI 服务协议
-│   ├── AIPromptBuilder.swift # 构建 AI 提示词
-│   ├── AIDecision.swift    # AI 决策模型
-│   └── GameStateEncoder.swift # 游戏状态序列化
-│
-├── Actions.swift           # ✅ 玩家动作定义
-├── Events.swift            # ✅ 战斗事件定义
-├── History.swift           # ✅ 战绩数据模型
-└── RNG.swift               # ✅ 随机数生成器
+├── Kernel/                 # 强类型 ID / Effect / Trigger 框架
+├── Cards/                  # CardDefinition / CardRegistry / StarterDeck
+├── Status/                 # StatusDefinition / StatusRegistry / StatusContainer
+├── Enemies/                # EnemyDefinition / EnemyRegistry / EnemyPool
+├── Relics/                 # 遗物定义与管理器
+├── Map/                    # 地图节点与生成策略
+├── Run/                    # 冒险状态 / 存档版本 / Snapshot
+├── Persistence/            # BattleHistoryStore / RunSaveStore 协议
+├── Battle/                 # 战斗引擎与状态
+├── Actions.swift           # 玩家动作定义
+├── Events.swift            # 战斗事件定义
+├── History.swift           # 战绩数据模型
+└── RNG.swift               # 随机数生成器
 ```
 
-> 说明：✅ 已实现 | 🔜 计划中（详见 `.cursor/plans/architecture-design.md`）
+> 说明：奖励/AI/多角色仍在规划中，落地请参见 `.cursor/plans/protocol-driven-design-plan.md`。
 
 ---
 
@@ -74,14 +38,15 @@ Sources/GameCore/  ← 本规范适用范围
 
 每个文件只负责一个明确的领域：
 
-| 文件 | 单一职责 | 禁止混入 |
+| 文件/目录 | 单一职责 | 禁止混入 |
 |------|----------|----------|
-| `Models.swift` | 数据结构定义 | 业务逻辑、计算 |
-| `Events.swift` | 事件类型定义 | 事件处理逻辑 |
-| `Actions.swift` | 动作类型定义 | 动作执行逻辑 |
-| `RNG.swift` | 随机数生成 | 游戏规则 |
-| `BattleEngine.swift` | 战斗逻辑 | 数据模型定义 |
-| `History.swift` | 战绩数据结构 | 持久化逻辑 |
+| `Kernel/IDs.swift` | 强类型 ID 定义 | 业务逻辑 |
+| `Kernel/BattleEffect.swift` | 效果枚举/目标 | 状态修改 |
+| `Cards/*` | 卡牌定义/注册表 | 直接修改 BattleState |
+| `Status/*` | 状态定义/注册表/容器 | I/O、事件输出 |
+| `Enemies/*` | 敌人定义/注册表/遭遇表 | UI/输入输出 |
+| `Battle/BattleEngine.swift` | 战斗流程与效果执行 | UI、持久化 |
+| `Run/*` | 冒险状态/存档版本 | CLI 逻辑 |
 
 ### 组件化原则
 
@@ -101,14 +66,15 @@ Sources/GameCore/  ← 本规范适用范围
 ### 依赖方向
 
 ```
-BattleEngine.swift
+Battle/BattleEngine.swift
     ↓ 使用
 ┌──────────────────────────────────────────┐
-│ Models.swift │ Events.swift │ Actions.swift │
+│ Kernel/*  Cards/*  Status/*  Enemies/*   │
+│ Relics/*  Run/*   Map/*  Actions.swift   │
 └──────────────────────────────────────────┘
     ↓ 使用
 ┌──────────────────────────────────────────┐
-│              RNG.swift                    │
+│ RNG.swift                                 │
 └──────────────────────────────────────────┘
 ```
 
@@ -174,13 +140,21 @@ let shuffled = deck.shuffled()  // 不可复现！
 
 ## 文件职责详解
 
-| 文件 | 职责 | 关键类型 |
+| 文件/目录 | 职责 | 关键类型 |
 |------|------|----------|
-| `Models.swift` | 数据模型 | Card, Entity, BattleState |
-| `RNG.swift` | 随机数 | SeededRNG |
-| `Events.swift` | 事件定义 | BattleEvent |
+| `Kernel/IDs.swift` | 强类型 ID | CardID, EnemyID, StatusID, RelicID |
+| `Kernel/BattleEffect.swift` | 战斗效果与目标 | BattleEffect, EffectTarget |
+| `Kernel/BattleTrigger.swift` | 战斗触发点 | BattleTrigger |
+| `Cards/*` | 卡牌定义/注册表/起始牌组 | CardDefinition, CardRegistry, Card |
+| `Status/*` | 状态定义/注册表/容器 | StatusDefinition, StatusRegistry, StatusContainer |
+| `Enemies/*` | 敌人定义/注册表/遭遇表 | EnemyDefinition, EnemyRegistry, EnemyMove |
+| `Relics/*` | 遗物定义/注册表/管理器 | RelicDefinition, RelicRegistry, RelicManager |
+| `Map/*` | 地图节点与生成 | MapNode, MapGenerating |
+| `Run/*` | 冒险状态/存档数据 | RunState, RunSnapshot |
+| `Persistence/*` | 持久化协议 | BattleHistoryStore, RunSaveStore |
+| `Battle/BattleEngine.swift` | 战斗引擎 | BattleEngine |
 | `Actions.swift` | 动作定义 | PlayerAction |
-| `BattleEngine.swift` | 战斗引擎 | BattleEngine |
+| `Events.swift` | 事件定义 | BattleEvent |
 | `History.swift` | 战绩模型 | BattleRecord, BattleStatistics |
 
 ---
@@ -189,15 +163,16 @@ let shuffled = deck.shuffled()  // 不可复现！
 
 ### 添加新卡牌
 
-1. 在 `CardKind` 枚举添加新值
-2. 在 `Card` 中添加对应的 cost/damage/block
-3. 在 `BattleEngine.executeCardEffect()` 实现效果
-4. 如需添加到初始牌组，更新 `createStarterDeck()`
+1. 创建新的 `CardDefinition` 类型（建议放在 `Cards/Definitions/` 子目录）。
+2. 在 `CardRegistry` 中注册 `CardID -> Definition`。
+3. 如需加入起始牌组，更新 `createStarterDeck()`；其余场景通过发牌/奖励直接使用 `CardID`。
+4. 不要在 `BattleEngine` 添加 switch，效果由 `CardDefinition.play` 返回的 `BattleEffect` 统一执行。
 
 ### 添加状态效果 (Buff/Debuff)
 
-1. 在 `Entity` 中添加状态字段（如 `vulnerable: Int`）
-2. 创建 `StatusEffect` 枚举（可在 Models.swift 或新文件）
+1. 创建新的 `StatusDefinition`，定义修正/触发逻辑。
+2. 在 `StatusRegistry` 注册 `StatusID -> Definition`。
+3. 通过 `StatusContainer.apply` 管理层数，所有修正/触发以 `BattleEffect` 形式返回，由 `BattleEngine` 执行。
 3. 在 `BattleEngine` 伤害计算中应用修正
 4. 在回合结束时递减持续时间
 5. 添加对应的 `BattleEvent` 事件
