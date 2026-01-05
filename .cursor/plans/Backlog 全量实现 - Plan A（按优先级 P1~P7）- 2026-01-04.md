@@ -3,13 +3,13 @@
 > 目标：把目前“已具备主干闭环（地图/房间/战斗/存档/历史）”的 Salu，推进到具备《杀戮尖塔》核心成长循环（奖励/商店/升级/遗物/事件/多敌人/内容扩展）的版本。  
 > 约束：遵守现有的**协议驱动开发（PDD）**架构（Definition + Registry + ID + Effect 管线），并确保**可复现性**（所有随机来自注入的 `SeededRNG`）。
 
-> 说明：P1~P4 已完成并已从本文档移除；当前仅保留未完成的 P5~P7。
+> 说明：P1~P5 已完成并已从本文档移除；当前仅保留未完成的 P6~P7。
 
 ## 0. 现状基线（已完成）
 
 - 结构：GameCore（逻辑）/ GameCLI（表现）模块分离
-- 框架：Cards/Status/Enemies/Relics 均已协议化 + registry 化
-- Run：地图（Act1）+ 房间 handler 流程 + HP 跨战斗保持
+- 框架：Cards/Status/Enemies/Relics/Events 均已协议化 + registry 化
+- Run：地图（Act1）+ 房间 handler 流程 + HP/金币/牌组/遗物 跨房间保持
 - I/O：History/Save 已隔离在 GameCLI
 - 测试：`swift test` 可通过
 
@@ -17,37 +17,10 @@
 
 优先做“玩家体验闭环”，再做大规模架构改动：
 
-1) **成长循环**：事件（P5）  
-2) **战斗复杂度提升**：多敌人 + 目标选择（P6，架构级）  
-3) **内容扩展**：Act2、更多敌人/精英/Boss/卡牌/遗物（P7）
+1) **战斗复杂度提升**：多敌人 + 目标选择（P6，架构级）  
+2) **内容扩展**：Act2、更多敌人/精英/Boss/卡牌/遗物（P7）
 
 每完成一个 Px：必须执行一次验证（至少 `build + all tests`）。
-
----
-
-## P5：事件房间（Event）+ RunEffect ⭐⭐⭐⭐
-
-### 目标
-
-- 地图生成 event 节点
-- 事件房间提供多选项，并对 RunState 产生影响（金币/卡牌/遗物/HP 等）
-
-### 实施步骤（建议）
-
-1. GameCore：
-   - 定义 `RunEffect`（Run 维度效果）
-   - 定义 `EventDefinition` + `EventRegistry` + `EventPool`
-2. GameCLI：`EventScreen` + `EventRoomHandler` 接入
-3. 测试：新增 Swift XCTest（固定 seed，事件选择后 RunState 变化可断言/可复现）
-
-### 验收标准
-
-- 事件节点可生成；事件选择可复现；影响正确落到 RunState
-
-### 验证
-
-- `swift test`
-- `swift build -c release`
 
 ---
 
@@ -86,4 +59,4 @@
 - `swift test`
 - `swift build -c release`
 
-
+ 
