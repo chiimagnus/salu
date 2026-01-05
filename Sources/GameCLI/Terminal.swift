@@ -34,6 +34,17 @@ enum Terminal {
     static func flush() {
         fflush(stdout)
     }
+
+    /// 终端宽度（用于布局与日志横排）
+    /// - Note: 优先读取环境变量 `COLUMNS`；取不到时回退到 80。
+    static func columns(default fallback: Int = 80) -> Int {
+        if let raw = ProcessInfo.processInfo.environment["COLUMNS"],
+           let value = Int(raw.trimmingCharacters(in: .whitespacesAndNewlines)),
+           value > 0 {
+            return value
+        }
+        return fallback
+    }
     
     /// 生成血量条
     /// - Parameters:
