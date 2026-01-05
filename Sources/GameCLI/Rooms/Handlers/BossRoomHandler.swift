@@ -5,11 +5,11 @@ struct BossRoomHandler: RoomHandling {
     var roomType: RoomType { .boss }
     
     func run(node: MapNode, runState: inout RunState, context: RoomContext) -> RoomRunResult {
-        let won = handleBossFight(runState: &runState, context: context)
+        let won = handleBossFight(node: node, runState: &runState, context: context)
         return .runEnded(won: won)
     }
     
-    private func handleBossFight(runState: inout RunState, context: RoomContext) -> Bool {
+    private func handleBossFight(node: MapNode, runState: inout RunState, context: RoomContext) -> Bool {
         // Boss 战斗使用特殊种子
         let bossSeed = runState.seed &+ 99999
         
@@ -42,7 +42,27 @@ struct BossRoomHandler: RoomHandling {
         // 更新玩家状态
         runState.updateFromBattle(playerHP: engine.state.player.currentHP)
         
-        // 返回是否胜利
+        // 胜利后掉落遗物
+        if engine.state.playerWon == true {
+            let rewardContext = RewardContext(
+                seed: runState.seed,
+                floor: runState.floor,
+                currentRow: runState.currentRow,
+                nodeId: node.id,
+                roomType: node.roomType
+            )
+            
+            if let relicId = RelicDropStrategy.generateRelicDrop(
+                context: rewardContext,
+                source: .boss,
+                ownedRelics: runState.relicManager.all
+            ) {
+                if RelicRewardScreen.chooseRelic(relicId: relicId) {
+                    runState.relicManager.add(relicId)
+                }
+            }
+        }
+        
         return engine.state.playerWon == true
     }
 }

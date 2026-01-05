@@ -28,6 +28,6 @@ public enum RelicRegistry {
     
     /// 获取所有已注册的遗物 ID
     public static var allRelicIds: [RelicID] {
-        return Array(defs.keys)
+        return Array(defs.keys).sorted { $0.rawValue < $1.rawValue }
     }
 }

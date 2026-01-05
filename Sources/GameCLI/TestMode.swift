@@ -7,15 +7,62 @@ import GameCore
 /// - 目的：让 UI 测试更快、更稳定（例如把战斗压缩为“极低 HP 敌人 + 极小牌组”）。
 enum TestMode {
     private static let envKey = "SALU_TEST_MODE"
+    private static let mapKey = "SALU_TEST_MAP"
     
     static var isEnabled: Bool {
         ProcessInfo.processInfo.environment[envKey] == "1"
+    }
+    
+    static var useTestMap: Bool {
+        ProcessInfo.processInfo.environment[mapKey] == "1"
     }
     
     /// 在测试模式下，返回一个极小且稳定的战斗牌组，避免 UI 测试跑很久或出现概率性失败。
     static func battleDeck(from runDeck: [Card]) -> [Card] {
         guard isEnabled else { return runDeck }
         return [Card(id: "strike_test_1", cardId: "strike")]
+    }
+    
+    /// 在测试模式下生成一张极小地图（起点 → 精英 → Boss）
+    static func testRunState(seed: UInt64) -> RunState {
+        let player = createDefaultPlayer()
+        let deck = createStarterDeck()
+        
+        var relicManager = RelicManager()
+        relicManager.add("burning_blood")
+        
+        let map: [MapNode] = [
+            MapNode(
+                id: "0_0",
+                row: 0,
+                column: 0,
+                roomType: .start,
+                connections: ["1_0"],
+                isAccessible: true
+            ),
+            MapNode(
+                id: "1_0",
+                row: 1,
+                column: 0,
+                roomType: .elite,
+                connections: ["2_0"]
+            ),
+            MapNode(
+                id: "2_0",
+                row: 2,
+                column: 0,
+                roomType: .boss
+            )
+        ]
+        
+        return RunState(
+            player: player,
+            deck: deck,
+            gold: RunState.startingGold,
+            relicManager: relicManager,
+            map: map,
+            seed: seed
+        )
     }
     
     /// 创建敌人（测试模式下压缩 HP，提升 UI 测试稳定性）
@@ -28,5 +75,3 @@ enum TestMode {
         return Entity(id: enemyId.rawValue, name: def.name, maxHP: 1, enemyId: enemyId)
     }
 }
-
-
