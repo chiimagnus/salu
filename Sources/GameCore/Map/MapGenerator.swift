@@ -33,6 +33,9 @@ public enum MapGenerator {
             rowNodeCounts.append(rowNodes.count)
             nodes.append(contentsOf: rowNodes)
         }
+
+        // P2：保证至少有 1 个商店节点（避免极端种子导致整张图没有商店）
+        ensureAtLeastOneShop(&nodes, totalRows: rows, rng: &rng)
         
         // 生成节点间的连接
         connectNodes(&nodes, rowNodeCounts: rowNodeCounts, rng: &rng)
@@ -74,6 +77,23 @@ public enum MapGenerator {
                 roomType: roomType
             )
             rowNodes.append(node)
+        }
+
+        // P3：休息点行（第 6/12 层）至少保证有一个休息节点
+        if (row == 6 || row == 12),
+           !rowNodes.isEmpty,
+           !rowNodes.contains(where: { $0.roomType == .rest }) {
+            let pick = rng.nextInt(upperBound: rowNodes.count)
+            let old = rowNodes[pick]
+            rowNodes[pick] = MapNode(
+                id: old.id,
+                row: old.row,
+                column: old.column,
+                roomType: .rest,
+                connections: old.connections,
+                isCompleted: old.isCompleted,
+                isAccessible: old.isAccessible
+            )
         }
         
         return rowNodes
@@ -194,5 +214,38 @@ public enum MapGenerator {
                 }
             }
         }
+    }
+
+    // MARK: - Post Processing
+    
+    private static func ensureAtLeastOneShop(_ nodes: inout [MapNode], totalRows: Int, rng: inout SeededRNG) {
+        guard !nodes.contains(where: { $0.roomType == .shop }) else { return }
+        
+        // 优先在中段 battle 节点中挑一个变成商店，避免抢走精英/休息/Boss
+        let preferredRowsUpperBound = max(1, totalRows - 4) // 排除最后 3 行（通常包含休息/Boss）
+        let preferredCandidates = nodes.indices.filter { idx in
+            let node = nodes[idx]
+            return node.roomType == .battle && node.row >= 3 && node.row <= preferredRowsUpperBound
+        }
+        
+        let candidates = preferredCandidates.isEmpty
+            ? nodes.indices.filter { idx in
+                let node = nodes[idx]
+                return node.roomType == .battle && node.row > 0 && node.row < totalRows - 1
+            }
+            : preferredCandidates
+        
+        guard !candidates.isEmpty else { return }
+        let chosenIndex = candidates[rng.nextInt(upperBound: candidates.count)]
+        let old = nodes[chosenIndex]
+        nodes[chosenIndex] = MapNode(
+            id: old.id,
+            row: old.row,
+            column: old.column,
+            roomType: .shop,
+            connections: old.connections,
+            isCompleted: old.isCompleted,
+            isAccessible: old.isAccessible
+        )
     }
 }

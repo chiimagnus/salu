@@ -57,6 +57,9 @@ struct EliteRoomHandler: RoomHandling {
                 nodeId: node.id,
                 roomType: node.roomType
             )
+
+            // P2：精英胜利获得金币（可复现）
+            runState.gold += GoldRewardStrategy.generateGoldReward(context: rewardContext)
             
             // 精英战斗：遗物掉落
             if let relicId = RelicDropStrategy.generateRelicDrop(

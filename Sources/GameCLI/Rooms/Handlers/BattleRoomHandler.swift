@@ -58,6 +58,9 @@ struct BattleRoomHandler: RoomHandling {
                 nodeId: node.id,
                 roomType: node.roomType
             )
+            
+            // P2：战斗胜利获得金币（可复现）
+            runState.gold += GoldRewardStrategy.generateGoldReward(context: rewardContext)
             let offer = RewardGenerator.generateCardReward(context: rewardContext)
             if let chosen = RewardScreen.chooseCard(offer: offer) {
                 runState.addCardToDeck(cardId: chosen)

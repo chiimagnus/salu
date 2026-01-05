@@ -23,7 +23,7 @@ enum BattleScreen {
         lines.append("")
         
         // 玩家区域
-        lines.append(contentsOf: buildPlayerArea(engine.state))
+        lines.append(contentsOf: buildPlayerArea(engine.state, relicIds: engine.relicIds))
         lines.append("")
         
         // 手牌区域
@@ -98,7 +98,7 @@ enum BattleScreen {
         return lines
     }
     
-    private static func buildPlayerArea(_ state: BattleState) -> [String] {
+    private static func buildPlayerArea(_ state: BattleState, relicIds: [RelicID]) -> [String] {
         var lines: [String] = []
         
         let hpPercent = Double(state.player.currentHP) / Double(state.player.maxHP)
@@ -123,6 +123,17 @@ enum BattleScreen {
         let energyDisplay = String(repeating: "◆", count: filledEnergy) +
                            String(repeating: "◇", count: emptyEnergy)
         lines.append("     \(Terminal.yellow)⚡ \(energyDisplay) \(state.energy)/\(state.maxEnergy)\(Terminal.reset)")
+
+        // P4：遗物展示（至少 icon + 名称）
+        if relicIds.isEmpty {
+            lines.append("     \(Terminal.dim)🏺 遗物：暂无\(Terminal.reset)")
+        } else {
+            let relicText = relicIds.compactMap { relicId -> String? in
+                guard let def = RelicRegistry.get(relicId) else { return nil }
+                return "\(def.icon)\(def.name)"
+            }.joined(separator: "  ")
+            lines.append("     \(Terminal.dim)🏺 遗物：\(Terminal.reset)\(relicText)")
+        }
         
         return lines
     }

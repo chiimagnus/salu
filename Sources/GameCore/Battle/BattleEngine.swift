@@ -16,6 +16,11 @@ public final class BattleEngine: @unchecked Sendable {
     // P4: 遗物管理器（从 RunState 传入）
     private let relicManager: RelicManager
     
+    /// 当前战斗携带的遗物（用于 UI 展示）
+    public var relicIds: [RelicID] {
+        relicManager.all
+    }
+    
     // MARK: - Initialization
     
     /// 初始化战斗引擎

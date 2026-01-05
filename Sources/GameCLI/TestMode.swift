@@ -14,7 +14,14 @@ enum TestMode {
     }
     
     static var useTestMap: Bool {
-        ProcessInfo.processInfo.environment[mapKey] == "1"
+        testMapKind != nil
+    }
+    
+    private static var testMapKind: String? {
+        guard let raw = ProcessInfo.processInfo.environment[mapKey] else { return nil }
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed != "0" else { return nil }
+        return trimmed
     }
     
     /// 在测试模式下，返回一个极小且稳定的战斗牌组，避免 UI 测试跑很久或出现概率性失败。
@@ -30,35 +37,128 @@ enum TestMode {
         
         var relicManager = RelicManager()
         relicManager.add("burning_blood")
+
+        let kind = testMapKind ?? "1"
+        let map: [MapNode]
+        switch kind {
+        case "1", "mini":
+            // 起点 → 精英 → Boss（原有默认）
+            map = [
+                MapNode(
+                    id: "0_0",
+                    row: 0,
+                    column: 0,
+                    roomType: .start,
+                    connections: ["1_0"],
+                    isAccessible: true
+                ),
+                MapNode(
+                    id: "1_0",
+                    row: 1,
+                    column: 0,
+                    roomType: .elite,
+                    connections: ["2_0"]
+                ),
+                MapNode(
+                    id: "2_0",
+                    row: 2,
+                    column: 0,
+                    roomType: .boss
+                )
+            ]
+            
+        case "shop":
+            // 起点 → 商店 → Boss（用于 P2 UI 测试）
+            map = [
+                MapNode(
+                    id: "0_0",
+                    row: 0,
+                    column: 0,
+                    roomType: .start,
+                    connections: ["1_0"],
+                    isAccessible: true
+                ),
+                MapNode(
+                    id: "1_0",
+                    row: 1,
+                    column: 0,
+                    roomType: .shop,
+                    connections: ["2_0"]
+                ),
+                MapNode(
+                    id: "2_0",
+                    row: 2,
+                    column: 0,
+                    roomType: .boss
+                )
+            ]
+            
+        case "rest":
+            // 起点 → 休息点 → Boss（用于 P3 UI 测试）
+            map = [
+                MapNode(
+                    id: "0_0",
+                    row: 0,
+                    column: 0,
+                    roomType: .start,
+                    connections: ["1_0"],
+                    isAccessible: true
+                ),
+                MapNode(
+                    id: "1_0",
+                    row: 1,
+                    column: 0,
+                    roomType: .rest,
+                    connections: ["2_0"]
+                ),
+                MapNode(
+                    id: "2_0",
+                    row: 2,
+                    column: 0,
+                    roomType: .boss
+                )
+            ]
+            
+        default:
+            // fallback：沿用 mini
+            map = [
+                MapNode(
+                    id: "0_0",
+                    row: 0,
+                    column: 0,
+                    roomType: .start,
+                    connections: ["1_0"],
+                    isAccessible: true
+                ),
+                MapNode(
+                    id: "1_0",
+                    row: 1,
+                    column: 0,
+                    roomType: .elite,
+                    connections: ["2_0"]
+                ),
+                MapNode(
+                    id: "2_0",
+                    row: 2,
+                    column: 0,
+                    roomType: .boss
+                )
+            ]
+        }
         
-        let map: [MapNode] = [
-            MapNode(
-                id: "0_0",
-                row: 0,
-                column: 0,
-                roomType: .start,
-                connections: ["1_0"],
-                isAccessible: true
-            ),
-            MapNode(
-                id: "1_0",
-                row: 1,
-                column: 0,
-                roomType: .elite,
-                connections: ["2_0"]
-            ),
-            MapNode(
-                id: "2_0",
-                row: 2,
-                column: 0,
-                roomType: .boss
-            )
-        ]
+        let gold: Int
+        switch kind {
+        case "shop":
+            // UI 测试时提供足够金币，避免因未来卡池变化导致购买失败
+            gold = 999
+        default:
+            gold = RunState.startingGold
+        }
         
         return RunState(
             player: player,
             deck: deck,
-            gold: RunState.startingGold,
+            gold: gold,
             relicManager: relicManager,
             map: map,
             seed: seed
