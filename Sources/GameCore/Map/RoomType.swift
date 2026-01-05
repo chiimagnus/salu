@@ -6,6 +6,7 @@ public enum RoomType: String, Sendable, Equatable, CaseIterable {
     case elite = "elite"        // 精英战斗
     case rest = "rest"          // 休息点
     case shop = "shop"          // 商店
+    case event = "event"        // 事件（未知）
     case boss = "boss"          // Boss
     
     /// 显示名称
@@ -16,6 +17,7 @@ public enum RoomType: String, Sendable, Equatable, CaseIterable {
         case .elite: return "精英"
         case .rest: return "休息"
         case .shop: return "商店"
+        case .event: return "未知事件"
         case .boss: return "Boss"
         }
     }
@@ -28,6 +30,7 @@ public enum RoomType: String, Sendable, Equatable, CaseIterable {
         case .elite: return "💀"
         case .rest: return "💤"
         case .shop: return "🏪"
+        case .event: return "？"
         case .boss: return "👹"
         }
     }

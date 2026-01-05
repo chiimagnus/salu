@@ -26,6 +26,7 @@ struct RoomHandlerRegistry {
             EliteRoomHandler(),
             RestRoomHandler(),
             ShopRoomHandler(),
+            EventRoomHandler(),
             BossRoomHandler()
         ])
     }

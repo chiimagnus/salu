@@ -118,6 +118,32 @@ enum TestMode {
                     roomType: .boss
                 )
             ]
+
+        case "event":
+            // 起点 → 事件 → Boss（用于 P5 UI 测试）
+            map = [
+                MapNode(
+                    id: "0_0",
+                    row: 0,
+                    column: 0,
+                    roomType: .start,
+                    connections: ["1_0"],
+                    isAccessible: true
+                ),
+                MapNode(
+                    id: "1_0",
+                    row: 1,
+                    column: 0,
+                    roomType: .event,
+                    connections: ["2_0"]
+                ),
+                MapNode(
+                    id: "2_0",
+                    row: 2,
+                    column: 0,
+                    roomType: .boss
+                )
+            ]
             
         default:
             // fallback：沿用 mini
