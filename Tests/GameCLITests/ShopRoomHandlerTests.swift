@@ -39,7 +39,7 @@ final class ShopRoomHandlerTests: XCTestCase {
         close(readFD)
         
         let data = input.data(using: .utf8) ?? Data()
-        _ = data.withUnsafeBytes { ptr in
+        data.withUnsafeBytes { ptr in
             guard let base = ptr.baseAddress else { return }
             write(writeFD, base, data.count)
         }
