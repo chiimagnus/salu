@@ -23,6 +23,31 @@ final class RunStateDeckTests: XCTestCase {
         XCTAssertEqual(last.cardId.rawValue, "inflame")
         XCTAssertEqual(last.id, "inflame_2")
     }
+    
+    func testUpgradeableCardIndices_filtersUpgradeableCards() {
+        print("🧪 测试：testUpgradeableCardIndices_filtersUpgradeableCards")
+        let deck: [Card] = [
+            Card(id: "strike_1", cardId: "strike"),
+            Card(id: "inflame_1", cardId: "inflame"),
+            Card(id: "defend_1", cardId: "defend"),
+            Card(id: "bash_1", cardId: "bash+")
+        ]
+        
+        let indices = RunState.upgradeableCardIndices(in: deck)
+        
+        XCTAssertEqual(indices, [0, 2])
+    }
+    
+    func testUpgradeCard_replacesCardIdAndKeepsInstanceId() {
+        print("🧪 测试：testUpgradeCard_replacesCardIdAndKeepsInstanceId")
+        var runState = RunState.newRun(seed: 1)
+        let originalId = runState.deck[0].id
+        
+        let upgraded = runState.upgradeCard(at: 0)
+        
+        XCTAssertTrue(upgraded)
+        XCTAssertEqual(runState.deck[0].id, originalId)
+        XCTAssertEqual(runState.deck[0].cardId.rawValue, "strike+")
+    }
 }
-
 

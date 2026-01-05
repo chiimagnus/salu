@@ -16,10 +16,26 @@ enum Screens {
         MapScreen.show(runState: runState, message: message)
     }
     
-    static func showRestOptions(runState: RunState) {
-        MapScreen.showRestOptions(runState: runState)
+    static func showRestOptions(runState: RunState, message: String? = nil) {
+        MapScreen.showRestOptions(runState: runState, message: message)
     }
     
+    static func showRestUpgradeOptions(
+        runState: RunState,
+        upgradeableIndices: [Int],
+        message: String? = nil
+    ) {
+        MapScreen.showRestUpgradeOptions(
+            runState: runState,
+            upgradeableIndices: upgradeableIndices,
+            message: message
+        )
+    }
+    
+    static func showRestUpgradeResult(originalName: String, upgradedName: String) {
+        MapScreen.showRestUpgradeResult(originalName: originalName, upgradedName: upgradedName)
+    }
+
     static func showRestResult(healedAmount: Int, newHP: Int, maxHP: Int) {
         MapScreen.showRestResult(healedAmount: healedAmount, newHP: newHP, maxHP: maxHP)
     }

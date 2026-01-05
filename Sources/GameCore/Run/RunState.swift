@@ -190,6 +190,52 @@ public struct RunState: Sendable {
         deck.remove(at: index)
     }
 
+    // MARK: - 卡牌升级
+
+    /// 获取可升级卡牌在牌组中的索引（按牌组顺序）
+    public var upgradeableCardIndices: [Int] {
+        RunState.upgradeableCardIndices(in: deck)
+    }
+
+    /// 获取可升级卡牌在牌组中的索引（按牌组顺序）
+    public static func upgradeableCardIndices(in deck: [Card]) -> [Int] {
+        deck.enumerated().compactMap { index, card in
+            guard let def = CardRegistry.get(card.cardId), def.upgradedId != nil else {
+                return nil
+            }
+            return index
+        }
+    }
+
+    /// 生成升级后的卡牌实例（保持实例 ID 不变）
+    public static func upgradedCard(from card: Card) -> Card? {
+        guard let def = CardRegistry.get(card.cardId),
+              let upgradedId = def.upgradedId else {
+            return nil
+        }
+        return Card(id: card.id, cardId: upgradedId)
+    }
+
+    /// 生成升级后的牌组（纯函数）
+    public static func upgradedDeck(from deck: [Card], at index: Int) -> [Card]? {
+        guard index >= 0 && index < deck.count else { return nil }
+        guard let upgradedCard = upgradedCard(from: deck[index]) else { return nil }
+        
+        var updated = deck
+        updated[index] = upgradedCard
+        return updated
+    }
+
+    /// 升级指定索引的卡牌
+    @discardableResult
+    public mutating func upgradeCard(at index: Int) -> Bool {
+        guard let updated = RunState.upgradedDeck(from: deck, at: index) else {
+            return false
+        }
+        deck = updated
+        return true
+    }
+
     private func makeNextCardInstanceId(for cardId: CardID) -> String {
         let prefix = "\(cardId.rawValue)_"
         var maxIndex = 0

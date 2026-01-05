@@ -75,7 +75,7 @@
 
 ---
 
-## P2：金币系统 + 商店（买卡/删卡）⭐⭐⭐
+## P2：金币系统 + 商店（买卡/删卡）⭐⭐⭐ ✅ 已完成（基础版）
 
 ### 目标
 
@@ -106,7 +106,7 @@
 
 ---
 
-## P3：休息点升级卡牌（利用 upgradedId）⭐⭐
+## P3：休息点升级卡牌（利用 upgradedId）⭐⭐ ✅ 已完成
 
 ### 目标
 
@@ -115,12 +115,11 @@
 
 ### 实施步骤
 
-1. GameCore：提供纯函数 `upgradeCard(in deck:)`（输入 deck + index → 输出新 deck）
-2. GameCLI：扩展 `MapScreen.showRestOptions`，加入“升级卡牌”流程与 deck 选择 UI
+1. GameCore：提供纯函数/方法升级逻辑（输入 deck + index → 输出新 deck / 就地替换）
+2. GameCLI：扩展 `MapScreen.showRestOptions`，加入“升级卡牌”流程与卡牌选择 UI（中文）
 3. 测试：
-   - 新增 Swift XCTest：
-     - Unit：升级规则（`upgradedId` 替换、仅可升级项可选）
-     - CLI UI：覆盖“进入休息点 → 升级卡牌 → 存档 deck.cardId 变化”的黑盒流程
+   - Unit：升级规则（`upgradedId` 替换、仅可升级项可选）
+   - CLI UI：覆盖“进入休息点 → 升级卡牌 → 存档 deck.cardId 变化”的黑盒流程
 
 ### 验收标准
 
@@ -218,4 +217,3 @@
 ### 验证
 
 - `swift test`
-

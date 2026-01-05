@@ -163,12 +163,13 @@ enum MapScreen {
     // MARK: - 休息界面
     
     /// 显示休息选项界面
-    static func showRestOptions(runState: RunState) {
+    static func showRestOptions(runState: RunState, message: String? = nil) {
         Terminal.clear()
         
         let player = runState.player
         let healAmount = player.maxHP * 30 / 100
         let newHP = min(player.maxHP, player.currentHP + healAmount)
+        let upgradeableCount = runState.upgradeableCardIndices.count
         
         print("""
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
@@ -178,15 +179,74 @@ enum MapScreen {
           当前 HP: \(Terminal.yellow)\(player.currentHP)/\(player.maxHP)\(Terminal.reset)
           
           \(Terminal.green)[1] 休息\(Terminal.reset) - 恢复 \(healAmount) HP (→ \(newHP) HP)
+          \(upgradeableCount > 0 ? "\(Terminal.blue)[2] 升级卡牌\(Terminal.reset) - 可升级 \(upgradeableCount) 张" : "\(Terminal.dim)[2] 升级卡牌 - 当前无可升级卡牌\(Terminal.reset)")
           
         \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)
-        \(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1]\(Terminal.reset) 休息
+        \(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1]\(Terminal.reset) 休息  \(Terminal.cyan)[2]\(Terminal.reset) 升级卡牌
         \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)
         """)
+        if let message {
+            print(message)
+            print("")
+        }
         print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
         Terminal.flush()
     }
     
+    /// 显示升级卡牌选择
+    static func showRestUpgradeOptions(
+        runState: RunState,
+        upgradeableIndices: [Int],
+        message: String? = nil
+    ) {
+        Terminal.clear()
+        
+        print("""
+        \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.cyan)  🔧 升级卡牌\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
+        
+        \(Terminal.bold)选择一张卡牌进行升级：\(Terminal.reset)
+        """)
+        
+        for (index, deckIndex) in upgradeableIndices.enumerated() {
+            let card = runState.deck[deckIndex]
+            let def = CardRegistry.require(card.cardId)
+            guard let upgradedId = def.upgradedId else { continue }
+            let upgradedDef = CardRegistry.require(upgradedId)
+            print("  \(Terminal.cyan)[\(index + 1)]\(Terminal.reset) \(Terminal.bold)\(def.name)\(Terminal.reset) → \(Terminal.green)\(upgradedDef.name)\(Terminal.reset)")
+        }
+        
+        print("")
+        
+        if let message {
+            print(message)
+            print("")
+        }
+        
+        print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(max(1, upgradeableIndices.count))]\(Terminal.reset) 选择卡牌  \(Terminal.cyan)[q]\(Terminal.reset) 返回")
+        print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+        Terminal.flush()
+    }
+
+    /// 显示升级结果
+    static func showRestUpgradeResult(originalName: String, upgradedName: String) {
+        Terminal.clear()
+        
+        print("""
+        \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.cyan)  🔧 升级完成\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
+        
+          \(Terminal.green)已升级：\(Terminal.reset)\(Terminal.bold)\(originalName)\(Terminal.reset) → \(Terminal.bold)\(upgradedName)\(Terminal.reset)
+          
+        \(Terminal.dim)按 Enter 继续...\(Terminal.reset)
+        """)
+        Terminal.flush()
+    }
+
     /// 显示休息结果
     static func showRestResult(healedAmount: Int, newHP: Int, maxHP: Int) {
         Terminal.clear()
