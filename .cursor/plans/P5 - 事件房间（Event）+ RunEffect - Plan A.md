@@ -5,6 +5,9 @@
 > 用户交互约束：**地图上先显示“？”事件节点信息**；进入节点后再展示事件与选项。
 >
 > 全局约束：遵守现有 PDD（Definition + Registry + ID + Effect 管线），保持 **可复现性**（同 seed + 同路径 + 同选择 → 结果稳定）。
+>
+> 状态：✅ 已完成（2026-01-05）  
+> 验证：`swift test` + `swift build -c release`
 
 ---
 
