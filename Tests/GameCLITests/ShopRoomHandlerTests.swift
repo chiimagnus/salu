@@ -79,6 +79,7 @@ final class ShopRoomHandlerTests: XCTestCase {
         let context = RoomContext(
             appendEvents: { _ in },
             clearEvents: { },
+            appendRunLog: { _ in },
             battleLoop: { _, _ in },
             createEnemy: { _, _ in Entity(id: "enemy", name: "敌人", maxHP: 1, enemyId: "jaw_worm") },
             historyService: historyService

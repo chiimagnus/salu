@@ -18,8 +18,10 @@ struct EventRoomHandler: RoomHandling {
         )
         
         let offer = EventGenerator.generate(context: eventContext)
+        context.appendRunLog("\(Terminal.magenta)事件：\(offer.icon)\(offer.name)\(Terminal.reset)")
         guard let choiceIndex = EventScreen.chooseOption(offer: offer) else {
             // 默认视为离开（不产生效果）
+            context.appendRunLog("\(Terminal.dim)事件：离开\(Terminal.reset)")
             runState.completeCurrentNode()
             return .completedNode
         }
@@ -30,6 +32,7 @@ struct EventRoomHandler: RoomHandling {
         }
         
         let picked = offer.options[choiceIndex]
+        context.appendRunLog("\(Terminal.cyan)事件选择：\(picked.title)\(Terminal.reset)")
         
         // 应用效果
         for effect in picked.effects {
@@ -48,6 +51,7 @@ struct EventRoomHandler: RoomHandling {
                         let upgradedDef = CardRegistry.require(upgradedId)
                         _ = runState.apply(.upgradeCard(deckIndex: deckIndex))
                         followUpLines.append("升级：\(beforeDef.name) → \(upgradedDef.name)")
+                        context.appendRunLog("\(Terminal.cyan)升级：\(beforeDef.name) → \(upgradedDef.name)\(Terminal.reset)")
                     }
                 }
             }

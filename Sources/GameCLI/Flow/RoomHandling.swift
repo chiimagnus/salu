@@ -28,6 +28,9 @@ struct RoomContext {
     
     /// 清空事件日志
     let clearEvents: () -> Void
+
+    /// 追加冒险日志（Run 维度，跨房间保留）
+    let appendRunLog: (String) -> Void
     
     /// 战斗循环（复用现有逻辑）
     let battleLoop: (BattleEngine, UInt64) -> Void

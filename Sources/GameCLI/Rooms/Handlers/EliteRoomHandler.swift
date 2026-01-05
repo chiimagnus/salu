@@ -50,6 +50,7 @@ struct EliteRoomHandler: RoomHandling {
         
         // 如果胜利，完成节点
         if engine.state.playerWon == true {
+            context.appendRunLog("\(Terminal.green)精英胜利：击败 \(engine.state.enemy.name)\(Terminal.reset)")
             let rewardContext = RewardContext(
                 seed: runState.seed,
                 floor: runState.floor,
@@ -61,6 +62,7 @@ struct EliteRoomHandler: RoomHandling {
             // P2：精英胜利获得金币（可复现）
             let goldEarned = GoldRewardStrategy.generateGoldReward(context: rewardContext)
             runState.gold += goldEarned
+            context.appendRunLog("\(Terminal.yellow)获得金币：+\(goldEarned)\(Terminal.reset)")
             
             // 精英战斗：遗物掉落
             if let relicId = RelicDropStrategy.generateRelicDrop(
@@ -68,8 +70,12 @@ struct EliteRoomHandler: RoomHandling {
                 source: .elite,
                 ownedRelics: runState.relicManager.all
             ) {
+                let relicDef = RelicRegistry.require(relicId)
                 if RelicRewardScreen.chooseRelic(relicId: relicId) {
                     runState.relicManager.add(relicId)
+                    context.appendRunLog("\(Terminal.magenta)获得遗物：\(relicDef.icon)\(relicDef.name)\(Terminal.reset)")
+                } else {
+                    context.appendRunLog("\(Terminal.dim)遗物奖励：跳过（\(relicDef.icon)\(relicDef.name)）\(Terminal.reset)")
                 }
             }
             
@@ -77,6 +83,9 @@ struct EliteRoomHandler: RoomHandling {
             let offer = RewardGenerator.generateCardReward(context: rewardContext)
             if let chosen = RewardScreen.chooseCard(offer: offer, goldEarned: goldEarned) {
                 runState.addCardToDeck(cardId: chosen)
+                context.appendRunLog("\(Terminal.cyan)卡牌奖励：获得「\(CardRegistry.require(chosen).name)」\(Terminal.reset)")
+            } else {
+                context.appendRunLog("\(Terminal.dim)卡牌奖励：跳过\(Terminal.reset)")
             }
             
             runState.completeCurrentNode()

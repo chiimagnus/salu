@@ -44,6 +44,7 @@ struct BossRoomHandler: RoomHandling {
         
         // 胜利后掉落遗物
         if engine.state.playerWon == true {
+            context.appendRunLog("\(Terminal.green)Boss 胜利：击败 \(engine.state.enemy.name)\(Terminal.reset)")
             let rewardContext = RewardContext(
                 seed: runState.seed,
                 floor: runState.floor,
@@ -57,10 +58,16 @@ struct BossRoomHandler: RoomHandling {
                 source: .boss,
                 ownedRelics: runState.relicManager.all
             ) {
+                let relicDef = RelicRegistry.require(relicId)
                 if RelicRewardScreen.chooseRelic(relicId: relicId) {
                     runState.relicManager.add(relicId)
+                    context.appendRunLog("\(Terminal.magenta)获得遗物：\(relicDef.icon)\(relicDef.name)\(Terminal.reset)")
+                } else {
+                    context.appendRunLog("\(Terminal.dim)遗物奖励：跳过（\(relicDef.icon)\(relicDef.name)）\(Terminal.reset)")
                 }
             }
+        } else {
+            context.appendRunLog("\(Terminal.red)Boss 失败：倒在 \(engine.state.enemy.name) 面前\(Terminal.reset)")
         }
         
         return engine.state.playerWon == true

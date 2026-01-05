@@ -18,6 +18,7 @@ struct RestRoomHandler: RoomHandling {
             if input == "1" {
                 // 执行休息
                 let healed = runState.restAtNode()
+                context.appendRunLog("\(Terminal.green)休息：恢复 \(healed) HP\(Terminal.reset)")
                 
                 // 显示结果
                 Screens.showRestResult(
@@ -37,7 +38,7 @@ struct RestRoomHandler: RoomHandling {
                     continue
                 }
                 
-                let completed = handleUpgradeSelection(runState: &runState, upgradeableIndices: upgradeableIndices)
+                let completed = handleUpgradeSelection(runState: &runState, upgradeableIndices: upgradeableIndices, context: context)
                 if completed {
                     break
                 }
@@ -53,7 +54,7 @@ struct RestRoomHandler: RoomHandling {
         return .completedNode
     }
     
-    private func handleUpgradeSelection(runState: inout RunState, upgradeableIndices: [Int]) -> Bool {
+    private func handleUpgradeSelection(runState: inout RunState, upgradeableIndices: [Int], context: RoomContext) -> Bool {
         var message: String? = nil
         while true {
             Screens.showRestUpgradeOptions(
@@ -88,6 +89,7 @@ struct RestRoomHandler: RoomHandling {
             
             let upgradedDef = CardRegistry.require(upgradedId)
             _ = runState.upgradeCard(at: deckIndex)
+            context.appendRunLog("\(Terminal.cyan)升级：\(def.name) → \(upgradedDef.name)\(Terminal.reset)")
             
             Screens.showRestUpgradeResult(originalName: def.name, upgradedName: upgradedDef.name)
             _ = readLine()

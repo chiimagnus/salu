@@ -10,12 +10,19 @@ struct GameCLI {
     /// 事件日志
     private nonisolated(unsafe) static var recentEvents: [String] = []
     private static let maxRecentEvents = 12
+
+    /// 冒险日志（跨房间保留）
+    private nonisolated(unsafe) static var recentRunLogs: [String] = []
+    private static let maxRecentRunLogs = 50
     
     /// 当前消息
     private nonisolated(unsafe) static var currentMessage: String? = nil
     
     /// 是否显示事件日志
     private nonisolated(unsafe) static var showEventLog: Bool = false
+
+    /// 是否显示冒险日志（地图界面）
+    private nonisolated(unsafe) static var showRunLog: Bool = false
     
     /// 历史记录服务（依赖注入，替代单例）
     private nonisolated(unsafe) static var historyService: HistoryService!
@@ -239,6 +246,9 @@ struct GameCLI {
                 recentEvents.removeAll()
                 currentMessage = nil
             },
+            appendRunLog: { line in
+                appendRunLog(line)
+            },
             battleLoop: { engine, seed in
                 battleLoop(engine: engine, seed: seed)
             },
@@ -250,7 +260,7 @@ struct GameCLI {
         
         while !runState.isOver {
             // 显示地图
-            Screens.showMap(runState: runState)
+            Screens.showMap(runState: runState, logs: recentRunLogs, showLog: showRunLog)
             
             // 读取玩家输入
             guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
@@ -262,6 +272,12 @@ struct GameCLI {
                 // 返回主菜单
                 currentRunState = nil
                 return
+            }
+
+            if input == "l" {
+                // 切换冒险日志显示
+                showRunLog.toggle()
+                continue
             }
             
             // 获取可选节点
@@ -284,6 +300,9 @@ struct GameCLI {
             guard runState.enterNode(selectedNode.id) else {
                 continue
             }
+
+            // 记录进入房间（冒险日志）
+            context.appendRunLog("\(Terminal.dim)进入：\(selectedNode.roomType.icon) \(selectedNode.roomType.displayName)\(Terminal.reset)")
             
             // 使用 handler 处理房间（消除 switch 分支）
             guard let handler = registry.handler(for: selectedNode.roomType) else {
@@ -467,6 +486,15 @@ struct GameCLI {
         // 保持事件数量限制
         while recentEvents.count > maxRecentEvents * 2 {
             recentEvents.removeFirst()
+        }
+    }
+
+    // MARK: - Run Log
+    
+    static func appendRunLog(_ line: String) {
+        recentRunLogs.append(line)
+        while recentRunLogs.count > maxRecentRunLogs {
+            recentRunLogs.removeFirst()
         }
     }
     

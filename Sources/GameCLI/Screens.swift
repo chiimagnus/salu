@@ -12,8 +12,8 @@ enum Screens {
     
     // MARK: - 地图屏幕
     
-    static func showMap(runState: RunState, message: String? = nil) {
-        MapScreen.show(runState: runState, message: message)
+    static func showMap(runState: RunState, logs: [String], showLog: Bool, message: String? = nil) {
+        MapScreen.show(runState: runState, logs: logs, showLog: showLog, message: message)
     }
     
     static func showRestOptions(runState: RunState, message: String? = nil) {
