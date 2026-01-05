@@ -27,10 +27,8 @@ public enum CardRegistry {
     
     /// 强制获取卡牌定义（找不到会崩溃，用于必须存在的卡牌）
     public static func require(_ id: CardID) -> any CardDefinition.Type {
-        guard let def = defs[id] else {
-            fatalError("CardRegistry: 未找到卡牌定义 '\(id.rawValue)'")
-        }
-        return def
+        precondition(defs[id] != nil, "CardRegistry: 未找到卡牌定义 '\(id.rawValue)'")
+        return defs[id]!
     }
 
     /// 获取所有已注册的卡牌 ID（按 rawValue 排序，保证确定性）

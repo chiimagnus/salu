@@ -23,9 +23,7 @@ public enum StatusRegistry {
     
     /// 强制获取状态定义（找不到会崩溃，用于必须存在的状态）
     public static func require(_ id: StatusID) -> any StatusDefinition.Type {
-        guard let def = defs[id] else {
-            fatalError("StatusRegistry: 未找到状态定义 '\(id.rawValue)'")
-        }
-        return def
+        precondition(defs[id] != nil, "StatusRegistry: 未找到状态定义 '\(id.rawValue)'")
+        return defs[id]!
     }
 }

@@ -20,10 +20,8 @@ public enum RelicRegistry {
     
     /// 强制获取遗物定义（找不到会崩溃，用于必须存在的遗物）
     public static func require(_ id: RelicID) -> any RelicDefinition.Type {
-        guard let def = defs[id] else {
-            fatalError("RelicRegistry: 未找到遗物定义 '\(id.rawValue)'")
-        }
-        return def
+        precondition(defs[id] != nil, "RelicRegistry: 未找到遗物定义 '\(id.rawValue)'")
+        return defs[id]!
     }
     
     /// 获取所有已注册的遗物 ID
