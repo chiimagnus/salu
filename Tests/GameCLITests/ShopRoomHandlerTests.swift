@@ -35,6 +35,7 @@ final class ShopRoomHandlerTests: XCTestCase {
         XCTAssertNotEqual(savedStdin, -1)
         
         XCTAssertEqual(dup2(readFD, STDIN_FILENO), STDIN_FILENO)
+        clearerr(stdin)
         close(readFD)
         
         let data = input.data(using: .utf8) ?? Data()
@@ -47,6 +48,7 @@ final class ShopRoomHandlerTests: XCTestCase {
         work()
         
         XCTAssertEqual(dup2(savedStdin, STDIN_FILENO), STDIN_FILENO)
+        clearerr(stdin)
         close(savedStdin)
     }
     
