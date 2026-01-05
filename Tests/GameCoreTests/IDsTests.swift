@@ -14,7 +14,8 @@ final class IDsTests: XCTestCase {
         XCTAssertEqual(s1.rawValue, "weak")
         XCTAssertEqual(s2.rawValue, "weak")
         
-        let e1 = EnemyID("jaw_worm")
+        let enemyRaw = String("jaw_worm")
+        let e1 = EnemyID(enemyRaw)
         let e2: EnemyID = "jaw_worm"
         XCTAssertEqual(e1.rawValue, "jaw_worm")
         XCTAssertEqual(e2.rawValue, "jaw_worm")
@@ -24,7 +25,8 @@ final class IDsTests: XCTestCase {
         XCTAssertEqual(r1.rawValue, "burning_blood")
         XCTAssertEqual(r2.rawValue, "burning_blood")
         
-        let ev1 = EventID("scavenger")
+        let eventRaw = String("scavenger")
+        let ev1 = EventID(eventRaw)
         let ev2: EventID = "scavenger"
         XCTAssertEqual(ev1.rawValue, "scavenger")
         XCTAssertEqual(ev2.rawValue, "scavenger")
