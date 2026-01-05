@@ -190,6 +190,49 @@ public struct RunState: Sendable {
         deck.remove(at: index)
     }
 
+    // MARK: - RunEffect（P5：事件系统）
+    
+    /// 应用一个 RunEffect 到当前冒险状态
+    @discardableResult
+    public mutating func apply(_ effect: RunEffect) -> Bool {
+        switch effect {
+        case .gainGold(let amount):
+            guard amount != 0 else { return true }
+            gold = max(0, gold + amount)
+            return true
+            
+        case .loseGold(let amount):
+            guard amount > 0 else { return true }
+            gold = max(0, gold - amount)
+            return true
+            
+        case .heal(let amount):
+            guard amount > 0 else { return true }
+            player.currentHP = min(player.maxHP, player.currentHP + amount)
+            return true
+            
+        case .takeDamage(let amount):
+            guard amount > 0 else { return true }
+            player.currentHP = max(0, player.currentHP - amount)
+            if !player.isAlive {
+                isOver = true
+                won = false
+            }
+            return true
+            
+        case .addCard(let cardId):
+            addCardToDeck(cardId: cardId)
+            return true
+            
+        case .addRelic(let relicId):
+            relicManager.add(relicId)
+            return true
+            
+        case .upgradeCard(let deckIndex):
+            return upgradeCard(at: deckIndex)
+        }
+    }
+
     // MARK: - 卡牌升级
 
     /// 获取可升级卡牌在牌组中的索引（按牌组顺序）
