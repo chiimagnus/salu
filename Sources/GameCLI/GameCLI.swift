@@ -180,7 +180,11 @@ struct GameCLI {
         let seed = parseSeed(from: CommandLine.arguments)
         
         // 创建新冒险
-        currentRunState = RunState.newRun(seed: seed)
+        if TestMode.useTestMap {
+            currentRunState = TestMode.testRunState(seed: seed)
+        } else {
+            currentRunState = RunState.newRun(seed: seed)
+        }
         
         // 进入冒险循环
         runLoop()

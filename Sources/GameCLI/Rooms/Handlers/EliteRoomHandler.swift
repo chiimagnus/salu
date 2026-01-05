@@ -50,7 +50,6 @@ struct EliteRoomHandler: RoomHandling {
         
         // 如果胜利，完成节点
         if engine.state.playerWon == true {
-            // P1：精英战斗同样提供卡牌奖励（后续 P4 会额外加入遗物掉落）
             let rewardContext = RewardContext(
                 seed: runState.seed,
                 floor: runState.floor,
@@ -58,6 +57,19 @@ struct EliteRoomHandler: RoomHandling {
                 nodeId: node.id,
                 roomType: node.roomType
             )
+            
+            // 精英战斗：遗物掉落
+            if let relicId = RelicDropStrategy.generateRelicDrop(
+                context: rewardContext,
+                source: .elite,
+                ownedRelics: runState.relicManager.all
+            ) {
+                if RelicRewardScreen.chooseRelic(relicId: relicId) {
+                    runState.relicManager.add(relicId)
+                }
+            }
+            
+            // 卡牌奖励（3 选 1）
             let offer = RewardGenerator.generateCardReward(context: rewardContext)
             if let chosen = RewardScreen.chooseCard(offer: offer) {
                 runState.addCardToDeck(cardId: chosen)

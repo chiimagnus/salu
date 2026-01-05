@@ -118,8 +118,10 @@ enum BattleScreen {
             lines.append("     \(statusLine)")
         }
         
-        let energyDisplay = String(repeating: "◆", count: state.energy) + 
-                           String(repeating: "◇", count: state.maxEnergy - state.energy)
+        let filledEnergy = min(state.energy, state.maxEnergy)
+        let emptyEnergy = max(state.maxEnergy - state.energy, 0)
+        let energyDisplay = String(repeating: "◆", count: filledEnergy) +
+                           String(repeating: "◇", count: emptyEnergy)
         lines.append("     \(Terminal.yellow)⚡ \(energyDisplay) \(state.energy)/\(state.maxEnergy)\(Terminal.reset)")
         
         return lines

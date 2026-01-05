@@ -149,6 +149,7 @@ GameCore → GameCLI  ❌ 禁止
 - 主菜单会根据 `SaveService.hasSave()` 决定是否显示“继续上次冒险”入口。
 - `FileRunSaveStore` 支持通过环境变量 `SALU_DATA_DIR` 覆盖存档目录（用于测试/调试；默认仍写入系统 Application Support/LOCALAPPDATA/~/.salu）。
 - `FileRunSaveStore` / `FileBattleHistoryStore` 支持通过环境变量 `SALU_DATA_DIR` 覆盖数据目录（用于测试/调试；默认仍写入系统 Application Support/LOCALAPPDATA/~/.salu）。
+- CLI 测试模式支持 `SALU_TEST_MAP=1` 使用极小地图（起点→精英→Boss）以加速 UI 测试流程。
 
 ---
 

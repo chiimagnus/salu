@@ -59,9 +59,22 @@ enum MapScreen {
         let hpBar = Terminal.healthBar(percent: hpPercent, width: 15)
         let hpColor = Terminal.colorForPercent(hpPercent)
         
-        return [
+        var lines: [String] = [
             "  \(Terminal.bold)\(Terminal.blue)🧑 \(player.name)\(Terminal.reset)  \(hpColor)\(hpBar)\(Terminal.reset) \(player.currentHP)/\(player.maxHP) HP  \(Terminal.dim)📚 \(runState.deck.count)张牌  \(Terminal.yellow)💰 \(runState.gold)金币\(Terminal.reset)"
         ]
+        
+        let relicIds = runState.relicManager.all
+        if relicIds.isEmpty {
+            lines.append("  \(Terminal.dim)🏺 遗物：暂无\(Terminal.reset)")
+        } else {
+            let relicText = relicIds.compactMap { relicId -> String? in
+                guard let def = RelicRegistry.get(relicId) else { return nil }
+                return "\(def.icon)\(def.name)"
+            }.joined(separator: "  ")
+            lines.append("  \(Terminal.dim)🏺 遗物：\(Terminal.reset)\(relicText)")
+        }
+        
+        return lines
     }
     
     private static func buildMapDisplay(runState: RunState) -> [String] {
