@@ -15,10 +15,8 @@ public enum EventRegistry {
     }
     
     public static func require(_ id: EventID) -> any EventDefinition.Type {
-        guard let def = defs[id] else {
-            fatalError("EventRegistry: 未找到事件定义 '\(id.rawValue)'")
-        }
-        return def
+        precondition(defs[id] != nil, "EventRegistry: 未找到事件定义 '\(id.rawValue)'")
+        return defs[id]!
     }
     
     /// 所有已注册事件 ID（按 rawValue 排序，保证确定性）

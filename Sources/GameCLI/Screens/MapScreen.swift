@@ -9,8 +9,10 @@ enum MapScreen {
     /// 显示地图界面
     /// - Parameters:
     ///   - runState: 冒险状态
+    ///   - logs: 冒险日志（跨房间）
+    ///   - showLog: 是否显示冒险日志面板
     ///   - message: 可选消息
-    static func show(runState: RunState, message: String? = nil) {
+    static func show(runState: RunState, logs: [String], showLog: Bool, message: String? = nil) {
         var lines: [String] = []
         
         // 标题栏
@@ -24,6 +26,12 @@ enum MapScreen {
         // 地图显示
         lines.append(contentsOf: buildMapDisplay(runState: runState))
         lines.append("")
+
+        // 冒险日志（可折叠）
+        if showLog {
+            lines.append(contentsOf: buildRunLog(logs))
+            lines.append("")
+        }
         
         // 消息区域
         if let msg = message {
@@ -166,10 +174,30 @@ enum MapScreen {
             
             lines.append("")
             lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-            lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(accessibleNodes.count)]\(Terminal.reset) 选择节点  \(Terminal.cyan)[q]\(Terminal.reset) 返回主菜单")
+            lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(accessibleNodes.count)]\(Terminal.reset) 选择节点  \(Terminal.cyan)[l]\(Terminal.reset) 日志  \(Terminal.cyan)[q]\(Terminal.reset) 返回主菜单")
             lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
         }
         
+        return lines
+    }
+
+    private static func buildRunLog(_ logs: [String], maxLines: Int = 6) -> [String] {
+        var lines: [String] = []
+        lines.append("\(Terminal.bold)───────────── 日志 ─────────────\(Terminal.reset)")
+        
+        let display = logs.suffix(maxLines)
+        for line in display {
+            lines.append("  \(line)")
+        }
+        
+        let padding = maxLines - display.count
+        if padding > 0 {
+            for _ in 0..<padding {
+                lines.append("")
+            }
+        }
+        
+        lines.append("\(Terminal.bold)────────────────────────────────────\(Terminal.reset)")
         return lines
     }
     

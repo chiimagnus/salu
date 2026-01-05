@@ -77,8 +77,8 @@ final class ShopRoomHandlerTests: XCTestCase {
         
         let historyService = HistoryService(store: InMemoryBattleHistoryStore())
         let context = RoomContext(
-            appendEvents: { _ in },
-            clearEvents: { },
+            logBattleEvents: { _ in },
+            logLine: { _ in },
             battleLoop: { _, _ in },
             createEnemy: { _, _ in Entity(id: "enemy", name: "敌人", maxHP: 1, enemyId: "jaw_worm") },
             historyService: historyService

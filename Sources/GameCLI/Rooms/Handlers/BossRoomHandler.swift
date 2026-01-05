@@ -27,9 +27,8 @@ struct BossRoomHandler: RoomHandling {
         )
         engine.startBattle()
         
-        // 清空事件
-        context.clearEvents()
-        context.appendEvents(engine.events)
+        // 收集初始事件（统一日志）
+        context.logBattleEvents(engine.events)
         engine.clearEvents()
         
         // 战斗循环
@@ -44,6 +43,7 @@ struct BossRoomHandler: RoomHandling {
         
         // 胜利后掉落遗物
         if engine.state.playerWon == true {
+            context.logLine("\(Terminal.green)Boss 胜利：击败 \(engine.state.enemy.name)\(Terminal.reset)")
             let rewardContext = RewardContext(
                 seed: runState.seed,
                 floor: runState.floor,
@@ -57,10 +57,16 @@ struct BossRoomHandler: RoomHandling {
                 source: .boss,
                 ownedRelics: runState.relicManager.all
             ) {
+                let relicDef = RelicRegistry.require(relicId)
                 if RelicRewardScreen.chooseRelic(relicId: relicId) {
                     runState.relicManager.add(relicId)
+                    context.logLine("\(Terminal.magenta)获得遗物：\(relicDef.icon)\(relicDef.name)\(Terminal.reset)")
+                } else {
+                    context.logLine("\(Terminal.dim)遗物奖励：跳过（\(relicDef.icon)\(relicDef.name)）\(Terminal.reset)")
                 }
             }
+        } else {
+            context.logLine("\(Terminal.red)Boss 失败：倒在 \(engine.state.enemy.name) 面前\(Terminal.reset)")
         }
         
         return engine.state.playerWon == true

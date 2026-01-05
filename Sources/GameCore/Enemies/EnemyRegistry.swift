@@ -20,9 +20,7 @@ public enum EnemyRegistry {
     
     /// 强制获取敌人定义（找不到会崩溃，用于必须存在的敌人）
     public static func require(_ id: EnemyID) -> any EnemyDefinition.Type {
-        guard let def = defs[id] else {
-            fatalError("EnemyRegistry: 未找到敌人定义 '\(id.rawValue)'")
-        }
-        return def
+        precondition(defs[id] != nil, "EnemyRegistry: 未找到敌人定义 '\(id.rawValue)'")
+        return defs[id]!
     }
 }
