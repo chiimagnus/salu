@@ -15,9 +15,9 @@
 
 > 备注：以下计数基于当前仓库状态；**P3 已按你的决定全部删除**。
 
-- **GameCoreTests**：P0=8，P1=12，P2=2，P3=0（已删除 6）
-- **GameCLITests**：P0=1，P1=4，P2=1，P3=0（已删除 1）
-- **GameCLIUITests**：P0=2，P1=5，P2=1
+- **GameCoreTests**：P0=8，P1=12，P2=0（已删除 2），P3=0（已删除 6）
+- **GameCLITests**：P0=1，P1=4，P2=0（已删除 1），P3=0（已删除 1）
+- **GameCLIUITests**：P0=2，P1=5，P2=0（已删除 1）
 
 ---
 
@@ -49,10 +49,10 @@
 - **`Tests/GameCoreTests/ShopInventoryTests.swift`**：商店定价与库存生成确定性、去重、排除 starter 卡。
 - **`Tests/GameCoreTests/StatusContainerTests.swift`**：状态容器增减/清除规则 + `all` 输出排序确定性。
 
-### P2（可考虑删除）
+### P2（可考虑删除｜已删除）
 
-- **`Tests/GameCoreTests/BattleEventDescriptionTests.swift`**：事件 description 文案稳定性/非空；偏 UI/输出层质量（不直接影响规则正确性）。
-- **`Tests/GameCoreTests/RunStateUpgradeTests.swift`**：与 `RunStateDeckTests` 有明显重叠（升级相关多处重复验证），更多是“细分单元测试冗余”。
+- **`Tests/GameCoreTests/BattleEventDescriptionTests.swift`**：事件 description 文案稳定性/非空；偏 UI/输出层质量（不直接影响规则正确性）。（已删除）
+- **`Tests/GameCoreTests/RunStateUpgradeTests.swift`**：与 `RunStateDeckTests` 有明显重叠（升级相关多处重复验证），更多是"细分单元测试冗余"。（已删除）
 
 ### P3（优先候选删除｜已删除）
 
@@ -78,9 +78,9 @@
 - **`Tests/GameCLITests/ShopRoomHandlerTests.swift`**：商店交互（买卡/删牌）能改变 runState 且可持久化。
 - **`Tests/GameCLITests/ScreenAndRoomCoverageTests.swift`**：BossRoomHandler 快速胜利路径 + 写战绩；以及 History/Stats/Result 屏幕非空分支覆盖。
 
-### P2（可考虑删除）
+### P2（可考虑删除｜已删除）
 
-- **`Tests/GameCLITests/EventFormatterTests.swift`**：EventFormatter 输出覆盖与关键字断言，偏 UI 文案/格式稳定性。
+- **`Tests/GameCLITests/EventFormatterTests.swift`**：EventFormatter 输出覆盖与关键字断言，偏 UI 文案/格式稳定性。（已删除）
 
 ### P3（优先候选删除｜已删除）
 
@@ -103,9 +103,9 @@
 - **`Tests/GameCLIUITests/GameCLIHistoryUITests.swift`**：真实落盘 battle_history.json 且可 JSONDecoder 解码（链路：handler → service → file store）。
 - **`Tests/GameCLIUITests/GameCLIRelicRewardUITests.swift`**：精英掉落遗物 → 存档 → 继续冒险遗物效果仍生效。
 
-### P2（可考虑删除）
+### P2（可考虑删除｜已删除）
 
-- **`Tests/GameCLIUITests/GameCLIArgumentUITests.swift`**：`--history`/`--stats` 早退分支（属于“入口分支稳定性”，价值中等偏低）。
+- **`Tests/GameCLIUITests/GameCLIArgumentUITests.swift`**：`--history`/`--stats` 早退分支（属于"入口分支稳定性"，价值中等偏低）。（已删除）
 
 ### Support（不是测试，但删除会破坏 UI 测试）
 
@@ -128,11 +128,11 @@
   - `Tests/GameCoreTests/RegistryEnumerationTests.swift`
   - `Tests/GameCLITests/TerminalAndLogPanelTests.swift`
 
-- **第二批（P2，仍偏低风险但会少一层保障）**：
-  - `Tests/GameCoreTests/BattleEventDescriptionTests.swift`
-  - `Tests/GameCLITests/EventFormatterTests.swift`
-  - `Tests/GameCLIUITests/GameCLIArgumentUITests.swift`
-  - `Tests/GameCoreTests/RunStateUpgradeTests.swift`（建议保留 `RunStateDeckTests.swift`，删这个即可显著减冗余）
+- **第二批（P2，仍偏低风险但会少一层保障）**：✅ 已按你的决定全部删除
+  - `Tests/GameCoreTests/BattleEventDescriptionTests.swift`（已删除）
+  - `Tests/GameCLITests/EventFormatterTests.swift`（已删除）
+  - `Tests/GameCLIUITests/GameCLIArgumentUITests.swift`（已删除）
+  - `Tests/GameCoreTests/RunStateUpgradeTests.swift`（建议保留 `RunStateDeckTests.swift`，删这个即可显著减冗余，已删除）
 
 删除任意一批后，建议至少跑一次：
 
