@@ -49,7 +49,7 @@ final class StatusDefinitionTests: XCTestCase {
         let snapshot = BattleSnapshot(
             turn: 1,
             player: Entity(id: "p", name: "玩家", maxHP: 10),
-            enemy: Entity(id: "e", name: "敌人", maxHP: 10, enemyId: "jaw_worm"),
+            enemies: [Entity(id: "e", name: "敌人", maxHP: 10, enemyId: "jaw_worm")],
             energy: 3
         )
         

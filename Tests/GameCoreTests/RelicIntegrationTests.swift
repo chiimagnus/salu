@@ -41,7 +41,7 @@ final class RelicIntegrationTests: XCTestCase {
         engine.startBattle()
         
         // 打出 Strike 直接击杀
-        _ = engine.handleAction(.playCard(handIndex: 0))
+        _ = engine.handleAction(.playCard(handIndex: 0, targetEnemyIndex: 0))
         
         XCTAssertTrue(engine.state.isOver)
         XCTAssertEqual(engine.state.playerWon, true)

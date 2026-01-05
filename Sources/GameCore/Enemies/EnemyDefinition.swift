@@ -13,5 +13,8 @@ public protocol EnemyDefinition: Sendable {
     static var hpRange: ClosedRange<Int> { get }
     
     /// AI：根据快照选择下一步行动（可使用 rng，但必须把随机结果固化进 effects）
-    static func chooseMove(snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove
+    ///
+    /// - Parameters:
+    ///   - selfIndex: 该敌人在当前战斗 `BattleState.enemies` 中的索引（用于把“对自己施加效果”等落到正确目标）
+    static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove
 }

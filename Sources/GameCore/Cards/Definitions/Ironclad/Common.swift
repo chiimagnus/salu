@@ -14,9 +14,10 @@ public struct PommelStrike: CardDefinition {
     public static let cost = 1
     public static let rulesText = "造成 9 点伤害，抽 1 张牌"
     
-    public static func play(snapshot: BattleSnapshot) -> [BattleEffect] {
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
+        let target = EffectTarget.enemy(index: targetEnemyIndex ?? 0)
         return [
-            .dealDamage(source: .player, target: .enemy(index: 0), base: 9),
+            .dealDamage(source: .player, target: target, base: 9),
             .drawCards(count: 1)
         ]
     }
@@ -36,7 +37,7 @@ public struct ShrugItOff: CardDefinition {
     public static let cost = 1
     public static let rulesText = "获得 8 点格挡，抽 1 张牌"
     
-    public static func play(snapshot: BattleSnapshot) -> [BattleEffect] {
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
         return [
             .gainBlock(target: .player, base: 8),
             .drawCards(count: 1)
@@ -58,7 +59,7 @@ public struct Inflame: CardDefinition {
     public static let cost = 1
     public static let rulesText = "获得 2 点力量"
     
-    public static func play(snapshot: BattleSnapshot) -> [BattleEffect] {
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
         return [
             .applyStatus(target: .player, statusId: "strength", stacks: 2)
         ]
@@ -79,10 +80,11 @@ public struct Clothesline: CardDefinition {
     public static let cost = 2
     public static let rulesText = "造成 12 点伤害，给予 2 层虚弱"
     
-    public static func play(snapshot: BattleSnapshot) -> [BattleEffect] {
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
+        let target = EffectTarget.enemy(index: targetEnemyIndex ?? 0)
         return [
-            .dealDamage(source: .player, target: .enemy(index: 0), base: 12),
-            .applyStatus(target: .enemy(index: 0), statusId: "weak", stacks: 2)
+            .dealDamage(source: .player, target: target, base: 12),
+            .applyStatus(target: target, statusId: "weak", stacks: 2)
         ]
     }
 }

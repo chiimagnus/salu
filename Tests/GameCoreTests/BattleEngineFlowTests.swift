@@ -28,13 +28,13 @@ final class BattleEngineFlowTests: XCTestCase {
         engine.clearEvents()
         
         // 初始能量为 3：连续打出 3 张 Strike 应当成功
-        XCTAssertTrue(engine.handleAction(.playCard(handIndex: 0)))
-        XCTAssertTrue(engine.handleAction(.playCard(handIndex: 0)))
-        XCTAssertTrue(engine.handleAction(.playCard(handIndex: 0)))
+        XCTAssertTrue(engine.handleAction(.playCard(handIndex: 0, targetEnemyIndex: 0)))
+        XCTAssertTrue(engine.handleAction(.playCard(handIndex: 0, targetEnemyIndex: 0)))
+        XCTAssertTrue(engine.handleAction(.playCard(handIndex: 0, targetEnemyIndex: 0)))
         XCTAssertEqual(engine.state.energy, 0)
         
         // 能量耗尽后再出牌，应提示能量不足并失败
-        XCTAssertFalse(engine.handleAction(.playCard(handIndex: 0)))
+        XCTAssertFalse(engine.handleAction(.playCard(handIndex: 0, targetEnemyIndex: 0)))
         XCTAssertTrue(
             engine.events.contains(.notEnoughEnergy(required: 1, available: 0)),
             "期望出现 notEnoughEnergy 事件，避免 UI 层只能靠字符串判断"
@@ -48,7 +48,7 @@ final class BattleEngineFlowTests: XCTestCase {
         engine.startBattle()
         engine.clearEvents()
         
-        XCTAssertFalse(engine.handleAction(.playCard(handIndex: 999)))
+        XCTAssertFalse(engine.handleAction(.playCard(handIndex: 999, targetEnemyIndex: 0)))
         XCTAssertTrue(engine.events.contains(.invalidAction(reason: "无效的卡牌索引")))
     }
     
@@ -81,7 +81,7 @@ final class BattleEngineFlowTests: XCTestCase {
         engine.startBattle()
         engine.clearEvents()
         
-        XCTAssertTrue(engine.handleAction(.playCard(handIndex: 0)))
+        XCTAssertTrue(engine.handleAction(.playCard(handIndex: 0, targetEnemyIndex: 0)))
         XCTAssertTrue(engine.state.isOver)
         XCTAssertEqual(engine.state.playerWon, true)
         XCTAssertTrue(engine.events.contains(.battleWon))

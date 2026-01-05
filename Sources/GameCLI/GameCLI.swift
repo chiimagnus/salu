@@ -464,7 +464,7 @@ struct GameCLI {
             if number == 0 {
                 engine.handleAction(.endTurn)
             } else if number >= 1, number <= engine.state.hand.count {
-                engine.handleAction(.playCard(handIndex: number - 1))
+                engine.handleAction(.playCard(handIndex: number - 1, targetEnemyIndex: nil))
             } else {
                 currentMessage = "\(Terminal.red)⚠️ 无效选择: 1-\(engine.state.hand.count) / 0\(Terminal.reset)"
                 continue

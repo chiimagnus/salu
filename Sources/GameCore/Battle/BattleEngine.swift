@@ -84,8 +84,8 @@ public final class BattleEngine: @unchecked Sendable {
         }
         
         switch action {
-        case .playCard(let handIndex):
-            return playCard(at: handIndex)
+        case .playCard(let handIndex, let targetEnemyIndex):
+            return playCard(at: handIndex, targetEnemyIndex: targetEnemyIndex)
             
         case .endTurn:
             endPlayerTurn()
@@ -151,43 +151,6 @@ public final class BattleEngine: @unchecked Sendable {
         }
     }
 
-    /// P2 过渡：把“敌人定义里用 `.enemy(index: 0)` 表示自己”的效果，规范化为真实 enemyIndex。
-    ///
-    /// - Note: P3 会把 EnemyDefinition 升级为显式 selfIndex，此过渡逻辑届时应删除。
-    private func normalizeEnemyAuthoredEffect(_ effect: BattleEffect, actingEnemyIndex: Int) -> BattleEffect {
-        func normalizeTarget(_ target: EffectTarget) -> EffectTarget {
-            switch target {
-            case .enemy(index: 0):
-                return .enemy(index: actingEnemyIndex)
-            case .player:
-                return .player
-            case .enemy(index: let index):
-                return .enemy(index: index)
-            }
-        }
-        
-        switch effect {
-        case .dealDamage(let source, let target, let base):
-            return .dealDamage(
-                source: normalizeTarget(source),
-                target: normalizeTarget(target),
-                base: base
-            )
-            
-        case .gainBlock(let target, let base):
-            return .gainBlock(target: normalizeTarget(target), base: base)
-            
-        case .drawCards, .gainEnergy:
-            return effect
-            
-        case .applyStatus(let target, let statusId, let stacks):
-            return .applyStatus(target: normalizeTarget(target), statusId: statusId, stacks: stacks)
-            
-        case .heal(let target, let amount):
-            return .heal(target: normalizeTarget(target), amount: amount)
-        }
-    }
-    
     // MARK: Turn Management
     
     private func startNewTurn() {
@@ -244,23 +207,15 @@ public final class BattleEngine: @unchecked Sendable {
             let snapshot = BattleSnapshot(
                 turn: state.turn,
                 player: state.player,
-                enemy: state.enemies[index],
+                enemies: state.enemies,
                 energy: state.energy
             )
-            let move = def.chooseMove(snapshot: snapshot, rng: &rng)
-            
-            // P2：过渡期处理（在 P3 把 EnemyDefinition 升级为 selfIndex 后移除）
-            // 约定：敌人定义返回的 `.enemy(index: 0)` 表示“自己”。
-            let normalizedMove = EnemyMove(
-                intent: move.intent,
-                effects: move.effects.map { normalizeEnemyAuthoredEffect($0, actingEnemyIndex: index) }
-            )
-            
-            state.enemies[index].plannedMove = normalizedMove
+            let move = def.chooseMove(selfIndex: index, snapshot: snapshot, rng: &rng)
+            state.enemies[index].plannedMove = move
             
             // 发出敌人意图事件
-            let intentDamage = normalizedMove.intent.previewDamage ?? 0
-            let actionName = normalizedMove.intent.text
+            let intentDamage = move.intent.previewDamage ?? 0
+            let actionName = move.intent.text
             emit(.enemyIntent(enemyId: state.enemies[index].id, action: actionName, damage: intentDamage))
         }
     }
@@ -334,7 +289,7 @@ public final class BattleEngine: @unchecked Sendable {
     
     // MARK: Card Playing
     
-    private func playCard(at handIndex: Int) -> Bool {
+    private func playCard(at handIndex: Int, targetEnemyIndex: Int?) -> Bool {
         // 验证索引
         guard handIndex >= 0, handIndex < state.hand.count else {
             emit(.invalidAction(reason: "无效的卡牌索引"))
@@ -362,7 +317,7 @@ public final class BattleEngine: @unchecked Sendable {
         triggerRelics(.cardPlayed(cardId: card.cardId))
         
         // 执行卡牌效果（新架构：通过 BattleEffect）
-        executeCardEffect(card)
+        executeCardEffect(card, targetEnemyIndex: targetEnemyIndex)
         
         // 卡牌进入弃牌堆
         state.discardPile.append(card)
@@ -373,7 +328,7 @@ public final class BattleEngine: @unchecked Sendable {
         return true
     }
     
-    private func executeCardEffect(_ card: Card) {
+    private func executeCardEffect(_ card: Card, targetEnemyIndex: Int?) {
         let def = CardRegistry.require(card.cardId)
         
         // 统计卡牌使用（基于类型）
@@ -391,12 +346,12 @@ public final class BattleEngine: @unchecked Sendable {
         let snapshot = BattleSnapshot(
             turn: state.turn,
             player: state.player,
-            enemy: state.enemies.first ?? state.player,
+            enemies: state.enemies,
             energy: state.energy
         )
         
         // 获取卡牌效果
-        let effects = def.play(snapshot: snapshot)
+        let effects = def.play(snapshot: snapshot, targetEnemyIndex: targetEnemyIndex)
         
         // 执行所有效果
         for effect in effects {
@@ -575,23 +530,11 @@ public final class BattleEngine: @unchecked Sendable {
     /// 处理实体的回合结束状态效果（触发 + 递减）
     private func processStatusesAtTurnEnd(for target: EffectTarget) {
         let entity = resolveEntity(for: target)
-        
-        let snapshotEnemy: Entity
-        switch target {
-        case .player:
-            snapshotEnemy = state.enemies.first ?? state.player
-        case .enemy(index: let enemyIndex):
-            if enemyIndex >= 0, enemyIndex < state.enemies.count {
-                snapshotEnemy = state.enemies[enemyIndex]
-            } else {
-                snapshotEnemy = state.enemies.first ?? state.player
-            }
-        }
-        
+
         let snapshot = BattleSnapshot(
             turn: state.turn,
             player: state.player,
-            enemy: snapshotEnemy,
+            enemies: state.enemies,
             energy: state.energy
         )
         
@@ -666,11 +609,10 @@ public final class BattleEngine: @unchecked Sendable {
     
     /// 触发遗物效果
     private func triggerRelics(_ trigger: BattleTrigger) {
-        let snapshotEnemy = state.enemies.first ?? state.player
         let snapshot = BattleSnapshot(
             turn: state.turn,
             player: state.player,
-            enemy: snapshotEnemy,
+            enemies: state.enemies,
             energy: state.energy
         )
         

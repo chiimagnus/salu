@@ -15,8 +15,9 @@ public struct Strike: CardDefinition {
     public static let rulesText = "造成 6 点伤害"
     public static let upgradedId: CardID? = "strike+"
     
-    public static func play(snapshot: BattleSnapshot) -> [BattleEffect] {
-        return [.dealDamage(source: .player, target: .enemy(index: 0), base: 6)]
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
+        let target = EffectTarget.enemy(index: targetEnemyIndex ?? 0)
+        return [.dealDamage(source: .player, target: target, base: 6)]
     }
 }
 
@@ -31,8 +32,9 @@ public struct StrikePlus: CardDefinition {
     public static let rulesText = "造成 9 点伤害"
     public static let upgradedId: CardID? = nil
     
-    public static func play(snapshot: BattleSnapshot) -> [BattleEffect] {
-        return [.dealDamage(source: .player, target: .enemy(index: 0), base: 9)]
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
+        let target = EffectTarget.enemy(index: targetEnemyIndex ?? 0)
+        return [.dealDamage(source: .player, target: target, base: 9)]
     }
 }
 
@@ -51,7 +53,7 @@ public struct Defend: CardDefinition {
     public static let rulesText = "获得 5 点格挡"
     public static let upgradedId: CardID? = "defend+"
     
-    public static func play(snapshot: BattleSnapshot) -> [BattleEffect] {
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
         return [.gainBlock(target: .player, base: 5)]
     }
 }
@@ -67,7 +69,7 @@ public struct DefendPlus: CardDefinition {
     public static let rulesText = "获得 8 点格挡"
     public static let upgradedId: CardID? = nil
     
-    public static func play(snapshot: BattleSnapshot) -> [BattleEffect] {
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
         return [.gainBlock(target: .player, base: 8)]
     }
 }
@@ -87,10 +89,11 @@ public struct Bash: CardDefinition {
     public static let rulesText = "造成 8 点伤害，给予 2 层易伤"
     public static let upgradedId: CardID? = "bash+"
     
-    public static func play(snapshot: BattleSnapshot) -> [BattleEffect] {
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
+        let target = EffectTarget.enemy(index: targetEnemyIndex ?? 0)
         return [
-            .dealDamage(source: .player, target: .enemy(index: 0), base: 8),
-            .applyStatus(target: .enemy(index: 0), statusId: "vulnerable", stacks: 2)
+            .dealDamage(source: .player, target: target, base: 8),
+            .applyStatus(target: target, statusId: "vulnerable", stacks: 2)
         ]
     }
 }
@@ -106,10 +109,11 @@ public struct BashPlus: CardDefinition {
     public static let rulesText = "造成 10 点伤害，给予 3 层易伤"
     public static let upgradedId: CardID? = nil
     
-    public static func play(snapshot: BattleSnapshot) -> [BattleEffect] {
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
+        let target = EffectTarget.enemy(index: targetEnemyIndex ?? 0)
         return [
-            .dealDamage(source: .player, target: .enemy(index: 0), base: 10),
-            .applyStatus(target: .enemy(index: 0), statusId: "vulnerable", stacks: 3)
+            .dealDamage(source: .player, target: target, base: 10),
+            .applyStatus(target: target, statusId: "vulnerable", stacks: 3)
         ]
     }
 }
