@@ -60,9 +60,10 @@ struct BattleRoomHandler: RoomHandling {
             )
             
             // P2：战斗胜利获得金币（可复现）
-            runState.gold += GoldRewardStrategy.generateGoldReward(context: rewardContext)
+            let goldEarned = GoldRewardStrategy.generateGoldReward(context: rewardContext)
+            runState.gold += goldEarned
             let offer = RewardGenerator.generateCardReward(context: rewardContext)
-            if let chosen = RewardScreen.chooseCard(offer: offer) {
+            if let chosen = RewardScreen.chooseCard(offer: offer, goldEarned: goldEarned) {
                 runState.addCardToDeck(cardId: chosen)
             }
             

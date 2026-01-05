@@ -59,7 +59,8 @@ struct EliteRoomHandler: RoomHandling {
             )
 
             // P2：精英胜利获得金币（可复现）
-            runState.gold += GoldRewardStrategy.generateGoldReward(context: rewardContext)
+            let goldEarned = GoldRewardStrategy.generateGoldReward(context: rewardContext)
+            runState.gold += goldEarned
             
             // 精英战斗：遗物掉落
             if let relicId = RelicDropStrategy.generateRelicDrop(
@@ -74,7 +75,7 @@ struct EliteRoomHandler: RoomHandling {
             
             // 卡牌奖励（3 选 1）
             let offer = RewardGenerator.generateCardReward(context: rewardContext)
-            if let chosen = RewardScreen.chooseCard(offer: offer) {
+            if let chosen = RewardScreen.chooseCard(offer: offer, goldEarned: goldEarned) {
                 runState.addCardToDeck(cardId: chosen)
             }
             

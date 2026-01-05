@@ -4,7 +4,7 @@ import GameCore
 enum RewardScreen {
     /// 显示卡牌奖励并读取选择
     /// - Returns: 选中的 CardID；nil 表示跳过
-    static func chooseCard(offer: CardRewardOffer) -> CardID? {
+    static func chooseCard(offer: CardRewardOffer, goldEarned: Int? = nil) -> CardID? {
         Terminal.clear()
         
         print("""
@@ -12,6 +12,7 @@ enum RewardScreen {
         \(Terminal.bold)\(Terminal.cyan)  🎁 战斗奖励\(Terminal.reset)
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
         
+        \(goldEarned.map { "  \(Terminal.yellow)💰 获得 \($0) 金币\(Terminal.reset)\n" } ?? "")
         \(Terminal.bold)选择一张卡牌加入牌组（或跳过）：\(Terminal.reset)
         """)
         
