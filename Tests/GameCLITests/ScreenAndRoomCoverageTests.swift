@@ -34,9 +34,9 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
             playerName: "玩家",
             playerMaxHP: 80,
             playerFinalHP: won ? 50 : 0,
-            enemyName: "敌人",
-            enemyMaxHP: 40,
-            enemyFinalHP: won ? 0 : 10,
+            enemies: [
+                EnemyBattleRecord(entityId: "enemy#0", enemyId: "jaw_worm", name: "敌人", maxHP: 40, finalHP: won ? 0 : 10)
+            ],
             cardsPlayed: 3,
             strikesPlayed: 2,
             defendsPlayed: 1,

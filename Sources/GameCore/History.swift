@@ -2,6 +2,27 @@ import Foundation
 
 // MARK: - Battle Record
 
+/// 单个敌人的战斗记录快照（用于战绩落盘）
+public struct EnemyBattleRecord: Codable, Sendable, Equatable {
+    /// 实体实例 ID（用于同类敌人同场区分）
+    public let entityId: String
+    
+    /// 敌人类型 ID（EnemyRegistry 的 key；可能为空，例如某些测试构造的“木桩”）
+    public let enemyId: String?
+    
+    public let name: String
+    public let maxHP: Int
+    public let finalHP: Int
+    
+    public init(entityId: String, enemyId: String?, name: String, maxHP: Int, finalHP: Int) {
+        self.entityId = entityId
+        self.enemyId = enemyId
+        self.name = name
+        self.maxHP = maxHP
+        self.finalHP = finalHP
+    }
+}
+
 /// 单场战斗记录
 public struct BattleRecord: Codable, Sendable, Identifiable {
     public let id: String
@@ -17,10 +38,8 @@ public struct BattleRecord: Codable, Sendable, Identifiable {
     public let playerMaxHP: Int
     public let playerFinalHP: Int
     
-    // 敌人状态
-    public let enemyName: String
-    public let enemyMaxHP: Int
-    public let enemyFinalHP: Int
+    // 敌人状态（P6：支持多敌人）
+    public let enemies: [EnemyBattleRecord]
     
     // 卡牌统计
     public let cardsPlayed: Int
@@ -41,9 +60,7 @@ public struct BattleRecord: Codable, Sendable, Identifiable {
         playerName: String,
         playerMaxHP: Int,
         playerFinalHP: Int,
-        enemyName: String,
-        enemyMaxHP: Int,
-        enemyFinalHP: Int,
+        enemies: [EnemyBattleRecord],
         cardsPlayed: Int,
         strikesPlayed: Int,
         defendsPlayed: Int,
@@ -59,9 +76,7 @@ public struct BattleRecord: Codable, Sendable, Identifiable {
         self.playerName = playerName
         self.playerMaxHP = playerMaxHP
         self.playerFinalHP = playerFinalHP
-        self.enemyName = enemyName
-        self.enemyMaxHP = enemyMaxHP
-        self.enemyFinalHP = enemyFinalHP
+        self.enemies = enemies
         self.cardsPlayed = cardsPlayed
         self.strikesPlayed = strikesPlayed
         self.defendsPlayed = defendsPlayed
@@ -124,7 +139,16 @@ public struct BattleRecordBuilder {
     public static func build(from engine: BattleEngine, seed: UInt64) -> BattleRecord {
         let state = engine.state
         let stats = engine.battleStats
-        let primaryEnemy = state.enemies.first ?? Entity(id: "enemy", name: "敌人", maxHP: 1)
+        
+        let enemies: [EnemyBattleRecord] = state.enemies.map { enemy in
+            EnemyBattleRecord(
+                entityId: enemy.id,
+                enemyId: enemy.enemyId?.rawValue,
+                name: enemy.name,
+                maxHP: enemy.maxHP,
+                finalHP: enemy.currentHP
+            )
+        }
         
         return BattleRecord(
             seed: seed,
@@ -133,9 +157,7 @@ public struct BattleRecordBuilder {
             playerName: state.player.name,
             playerMaxHP: state.player.maxHP,
             playerFinalHP: state.player.currentHP,
-            enemyName: primaryEnemy.name,
-            enemyMaxHP: primaryEnemy.maxHP,
-            enemyFinalHP: primaryEnemy.currentHP,
+            enemies: enemies,
             cardsPlayed: stats.cardsPlayed,
             strikesPlayed: stats.strikesPlayed,
             defendsPlayed: stats.defendsPlayed,
