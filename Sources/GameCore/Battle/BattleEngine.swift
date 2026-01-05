@@ -26,19 +26,19 @@ public final class BattleEngine: @unchecked Sendable {
     /// 初始化战斗引擎
     /// - Parameters:
     ///   - player: 玩家实体
-    ///   - enemy: 敌人实体
+    ///   - enemies: 敌人实体列表（顺序即战斗中的“槽位顺序”）
     ///   - deck: 初始牌组
     ///   - relicManager: 遗物管理器（P4 新增）
     ///   - seed: 随机数种子（用于可复现性）
     public init(
         player: Entity,
-        enemy: Entity,
+        enemies: [Entity],
         deck: [Card],
         relicManager: RelicManager = RelicManager(),
         seed: UInt64
     ) {
         self.rng = SeededRNG(seed: seed)
-        self.state = BattleState(player: player, enemy: enemy)
+        self.state = BattleState(player: player, enemies: enemies)
         self.relicManager = relicManager
         
         // 初始化抽牌堆并洗牌
@@ -53,7 +53,7 @@ public final class BattleEngine: @unchecked Sendable {
         
         self.init(
             player: createDefaultPlayer(),
-            enemy: enemy,
+            enemies: [enemy],
             deck: createStarterDeck(),
             seed: seed
         )
@@ -123,25 +123,68 @@ public final class BattleEngine: @unchecked Sendable {
 
     /// 将 EffectTarget 解析为当前战斗中的实体快照（用于计算/修正）
     ///
-    /// - Note: P1 阶段仍是单敌人结构，因此任何 enemy(index:) 都会被解析到 `state.enemy`。
     private func resolveEntity(for target: EffectTarget) -> Entity {
         switch target {
         case .player:
             return state.player
-        case .enemy(index: _):
-            return state.enemy
+        case .enemy(index: let index):
+            // P2：多敌人结构
+            if index >= 0, index < state.enemies.count {
+                return state.enemies[index]
+            }
+            // 兜底：避免越界导致崩溃（后续 P3/P4 会在输入层保证合法索引）
+            return state.enemies.first ?? state.player
         }
     }
 
     /// 将 EffectTarget 解析为用于事件/日志的展示名
     ///
-    /// - Note: P1 阶段仍是单敌人结构，因此敌人展示名暂不带序号；P2 会升级为多敌人并补齐区分。
     private func resolveDisplayName(for target: EffectTarget) -> String {
         switch target {
         case .player:
             return state.player.name
-        case .enemy(index: _):
-            return state.enemy.name
+        case .enemy(index: let index):
+            if index >= 0, index < state.enemies.count {
+                return state.enemies[index].name
+            }
+            return state.enemies.first?.name ?? "敌人"
+        }
+    }
+
+    /// P2 过渡：把“敌人定义里用 `.enemy(index: 0)` 表示自己”的效果，规范化为真实 enemyIndex。
+    ///
+    /// - Note: P3 会把 EnemyDefinition 升级为显式 selfIndex，此过渡逻辑届时应删除。
+    private func normalizeEnemyAuthoredEffect(_ effect: BattleEffect, actingEnemyIndex: Int) -> BattleEffect {
+        func normalizeTarget(_ target: EffectTarget) -> EffectTarget {
+            switch target {
+            case .enemy(index: 0):
+                return .enemy(index: actingEnemyIndex)
+            case .player:
+                return .player
+            case .enemy(index: let index):
+                return .enemy(index: index)
+            }
+        }
+        
+        switch effect {
+        case .dealDamage(let source, let target, let base):
+            return .dealDamage(
+                source: normalizeTarget(source),
+                target: normalizeTarget(target),
+                base: base
+            )
+            
+        case .gainBlock(let target, let base):
+            return .gainBlock(target: normalizeTarget(target), base: base)
+            
+        case .drawCards, .gainEnergy:
+            return effect
+            
+        case .applyStatus(let target, let statusId, let stacks):
+            return .applyStatus(target: normalizeTarget(target), statusId: statusId, stacks: stacks)
+            
+        case .heal(let target, let amount):
+            return .heal(target: normalizeTarget(target), amount: amount)
         }
     }
     
@@ -178,36 +221,48 @@ public final class BattleEngine: @unchecked Sendable {
         drawCards(cardsPerTurn)
         
         // AI 决定敌人意图
-        decideEnemyIntent()
+        decideEnemyIntents()
     }
     
-    /// 让敌人 AI 决定下一个意图
-    private func decideEnemyIntent() {
-        // P3: 使用 EnemyRegistry 获取定义并选择行动
-        guard let enemyId = state.enemy.enemyId else {
-            // 如果没有 enemyId（不应该发生），使用默认行动
-            state.enemy.plannedMove = EnemyMove(
-                intent: EnemyIntentDisplay(icon: "❓", text: "未知"),
-                effects: []
+    /// 让所有敌人 AI 决定下一个意图
+    private func decideEnemyIntents() {
+        for index in state.enemies.indices {
+            guard state.enemies[index].isAlive else { continue }
+            
+            // P3: 使用 EnemyRegistry 获取定义并选择行动
+            guard let enemyId = state.enemies[index].enemyId else {
+                // 如果没有 enemyId（不应该发生），使用默认行动
+                state.enemies[index].plannedMove = EnemyMove(
+                    intent: EnemyIntentDisplay(icon: "❓", text: "未知"),
+                    effects: []
+                )
+                emit(.enemyIntent(enemyId: state.enemies[index].id, action: "未知", damage: 0))
+                continue
+            }
+            
+            let def = EnemyRegistry.require(enemyId)
+            let snapshot = BattleSnapshot(
+                turn: state.turn,
+                player: state.player,
+                enemy: state.enemies[index],
+                energy: state.energy
             )
-            emit(.enemyIntent(enemyId: state.enemy.id, action: "未知", damage: 0))
-            return
+            let move = def.chooseMove(snapshot: snapshot, rng: &rng)
+            
+            // P2：过渡期处理（在 P3 把 EnemyDefinition 升级为 selfIndex 后移除）
+            // 约定：敌人定义返回的 `.enemy(index: 0)` 表示“自己”。
+            let normalizedMove = EnemyMove(
+                intent: move.intent,
+                effects: move.effects.map { normalizeEnemyAuthoredEffect($0, actingEnemyIndex: index) }
+            )
+            
+            state.enemies[index].plannedMove = normalizedMove
+            
+            // 发出敌人意图事件
+            let intentDamage = normalizedMove.intent.previewDamage ?? 0
+            let actionName = normalizedMove.intent.text
+            emit(.enemyIntent(enemyId: state.enemies[index].id, action: actionName, damage: intentDamage))
         }
-        
-        let def = EnemyRegistry.require(enemyId)
-        let snapshot = BattleSnapshot(
-            turn: state.turn,
-            player: state.player,
-            enemy: state.enemy,
-            energy: state.energy
-        )
-        let move = def.chooseMove(snapshot: snapshot, rng: &rng)
-        state.enemy.plannedMove = move
-        
-        // 发出敌人意图事件
-        let intentDamage = move.intent.previewDamage ?? 0
-        let actionName = move.intent.text
-        emit(.enemyIntent(enemyId: state.enemy.id, action: actionName, damage: intentDamage))
     }
     
     private func endPlayerTurn() {
@@ -236,37 +291,45 @@ public final class BattleEngine: @unchecked Sendable {
         // 如果战斗未结束，开始新回合
         if !state.isOver {
             // 清除敌人格挡（在敌人回合结束后、玩家回合开始前）
-            if state.enemy.block > 0 {
-                let clearedBlock = state.enemy.block
-                state.enemy.clearBlock()
-                emit(.blockCleared(target: state.enemy.name, amount: clearedBlock))
+            for index in state.enemies.indices {
+                if state.enemies[index].block > 0 {
+                    let clearedBlock = state.enemies[index].block
+                    state.enemies[index].clearBlock()
+                    emit(.blockCleared(target: state.enemies[index].name, amount: clearedBlock))
+                }
             }
             startNewTurn()
         }
     }
     
     private func executeEnemyTurn() {
-        // P3: 执行敌人的计划行动（通过 BattleEffect）
-        guard let move = state.enemy.plannedMove else {
-            // 没有计划行动（不应该发生）
-            emit(.enemyAction(enemyId: state.enemy.id, action: "跳过"))
-            processStatusesAtTurnEnd(for: .enemy(index: 0))
+        for index in state.enemies.indices {
+            guard !state.isOver else { return }
+            guard state.enemies[index].isAlive else { continue }
+            
+            // 执行敌人的计划行动（通过 BattleEffect）
+            guard let move = state.enemies[index].plannedMove else {
+                // 没有计划行动（不应该发生）
+                emit(.enemyAction(enemyId: state.enemies[index].id, action: "跳过"))
+                processStatusesAtTurnEnd(for: .enemy(index: index))
+                checkBattleEnd()
+                continue
+            }
+            
+            emit(.enemyAction(enemyId: state.enemies[index].id, action: move.intent.text))
+            
+            // 执行所有效果
+            for effect in move.effects {
+                apply(effect)
+                if state.isOver { break }
+            }
+            
+            // 处理敌人回合结束的状态效果（触发 + 递减）
+            processStatusesAtTurnEnd(for: .enemy(index: index))
+            
+            // 检查玩家是否死亡 / 是否全灭
             checkBattleEnd()
-            return
         }
-        
-        emit(.enemyAction(enemyId: state.enemy.id, action: move.intent.text))
-        
-        // 执行所有效果
-        for effect in move.effects {
-            apply(effect)
-        }
-        
-        // 处理敌人回合结束的状态效果（触发 + 递减）
-        processStatusesAtTurnEnd(for: .enemy(index: 0))
-        
-        // 检查玩家是否死亡
-        checkBattleEnd()
     }
     
     // MARK: Card Playing
@@ -328,7 +391,7 @@ public final class BattleEngine: @unchecked Sendable {
         let snapshot = BattleSnapshot(
             turn: state.turn,
             player: state.player,
-            enemy: state.enemy,
+            enemy: state.enemies.first ?? state.player,
             energy: state.energy
         )
         
@@ -377,9 +440,21 @@ public final class BattleEngine: @unchecked Sendable {
         case .player:
             damageResult = state.player.takeDamage(finalDamage)
             battleStats.totalDamageTaken += damageResult.dealt
-        case .enemy(index: _):
-            damageResult = state.enemy.takeDamage(finalDamage)
+        case .enemy(index: let enemyIndex):
+            guard enemyIndex >= 0, enemyIndex < state.enemies.count else {
+                emit(.invalidAction(reason: "无效的敌人索引"))
+                return
+            }
+            
+            let wasAlive = state.enemies[enemyIndex].isAlive
+            damageResult = state.enemies[enemyIndex].takeDamage(finalDamage)
             battleStats.totalDamageDealt += damageResult.dealt
+            
+            // 敌人被击杀（P2：多敌人时应在击杀瞬间发出死亡事件）
+            if wasAlive && !state.enemies[enemyIndex].isAlive {
+                emit(.entityDied(entityId: state.enemies[enemyIndex].id, name: state.enemies[enemyIndex].name))
+                triggerRelics(.enemyKilled)
+            }
         }
         
         emit(.damageDealt(
@@ -411,9 +486,13 @@ public final class BattleEngine: @unchecked Sendable {
             emit(.blockGained(target: state.player.name, amount: block))
             // P4: 触发获得格挡遗物效果（仅玩家）
             triggerRelics(.blockGained(amount: block))
-        case .enemy(index: _):
-            state.enemy.gainBlock(block)
-            emit(.blockGained(target: state.enemy.name, amount: block))
+        case .enemy(index: let enemyIndex):
+            guard enemyIndex >= 0, enemyIndex < state.enemies.count else {
+                emit(.invalidAction(reason: "无效的敌人索引"))
+                return
+            }
+            state.enemies[enemyIndex].gainBlock(block)
+            emit(.blockGained(target: state.enemies[enemyIndex].name, amount: block))
         }
     }
     
@@ -429,9 +508,13 @@ public final class BattleEngine: @unchecked Sendable {
         case .player:
             state.player.statuses.apply(statusId, stacks: stacks)
             emit(.statusApplied(target: state.player.name, effect: def.name, stacks: stacks))
-        case .enemy(index: _):
-            state.enemy.statuses.apply(statusId, stacks: stacks)
-            emit(.statusApplied(target: state.enemy.name, effect: def.name, stacks: stacks))
+        case .enemy(index: let enemyIndex):
+            guard enemyIndex >= 0, enemyIndex < state.enemies.count else {
+                emit(.invalidAction(reason: "无效的敌人索引"))
+                return
+            }
+            state.enemies[enemyIndex].statuses.apply(statusId, stacks: stacks)
+            emit(.statusApplied(target: state.enemies[enemyIndex].name, effect: def.name, stacks: stacks))
         }
     }
     
@@ -441,8 +524,12 @@ public final class BattleEngine: @unchecked Sendable {
         case .player:
             state.player.currentHP = min(state.player.currentHP + amount, state.player.maxHP)
             // 治疗事件（目前没有对应的 BattleEvent，暂不 emit）
-        case .enemy(index: _):
-            state.enemy.currentHP = min(state.enemy.currentHP + amount, state.enemy.maxHP)
+        case .enemy(index: let enemyIndex):
+            guard enemyIndex >= 0, enemyIndex < state.enemies.count else {
+                emit(.invalidAction(reason: "无效的敌人索引"))
+                return
+            }
+            state.enemies[enemyIndex].currentHP = min(state.enemies[enemyIndex].currentHP + amount, state.enemies[enemyIndex].maxHP)
             // 治疗事件（目前没有对应的 BattleEvent，暂不 emit）
         }
     }
@@ -488,10 +575,23 @@ public final class BattleEngine: @unchecked Sendable {
     /// 处理实体的回合结束状态效果（触发 + 递减）
     private func processStatusesAtTurnEnd(for target: EffectTarget) {
         let entity = resolveEntity(for: target)
+        
+        let snapshotEnemy: Entity
+        switch target {
+        case .player:
+            snapshotEnemy = state.enemies.first ?? state.player
+        case .enemy(index: let enemyIndex):
+            if enemyIndex >= 0, enemyIndex < state.enemies.count {
+                snapshotEnemy = state.enemies[enemyIndex]
+            } else {
+                snapshotEnemy = state.enemies.first ?? state.player
+            }
+        }
+        
         let snapshot = BattleSnapshot(
             turn: state.turn,
             player: state.player,
-            enemy: state.enemy,
+            enemy: snapshotEnemy,
             energy: state.energy
         )
         
@@ -519,8 +619,12 @@ public final class BattleEngine: @unchecked Sendable {
                 switch target {
                 case .player:
                     state.player.statuses.set(statusId, stacks: newStacks)
-                case .enemy(index: _):
-                    state.enemy.statuses.set(statusId, stacks: newStacks)
+                case .enemy(index: let enemyIndex):
+                    guard enemyIndex >= 0, enemyIndex < state.enemies.count else {
+                        emit(.invalidAction(reason: "无效的敌人索引"))
+                        return
+                    }
+                    state.enemies[enemyIndex].statuses.set(statusId, stacks: newStacks)
                 }
                 
                 if newStacks <= 0 {
@@ -542,12 +646,9 @@ public final class BattleEngine: @unchecked Sendable {
     private func checkBattleEnd() {
         guard !state.isOver else { return }
         
-        if !state.enemy.isAlive {
-            emit(.entityDied(entityId: state.enemy.id, name: state.enemy.name))
+        if state.enemies.allSatisfy({ !$0.isAlive }) {
             state.isOver = true
             state.playerWon = true
-            // P4: 敌人被击杀
-            triggerRelics(.enemyKilled)
             emit(.battleWon)
             // P4: 触发战斗结束（胜利）- 包括燃烧之血恢复生命
             triggerRelics(.battleEnd(won: true))
@@ -565,10 +666,11 @@ public final class BattleEngine: @unchecked Sendable {
     
     /// 触发遗物效果
     private func triggerRelics(_ trigger: BattleTrigger) {
+        let snapshotEnemy = state.enemies.first ?? state.player
         let snapshot = BattleSnapshot(
             turn: state.turn,
             player: state.player,
-            enemy: state.enemy,
+            enemy: snapshotEnemy,
             energy: state.energy
         )
         

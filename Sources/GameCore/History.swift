@@ -124,6 +124,7 @@ public struct BattleRecordBuilder {
     public static func build(from engine: BattleEngine, seed: UInt64) -> BattleRecord {
         let state = engine.state
         let stats = engine.battleStats
+        let primaryEnemy = state.enemies.first ?? Entity(id: "enemy", name: "敌人", maxHP: 1)
         
         return BattleRecord(
             seed: seed,
@@ -132,9 +133,9 @@ public struct BattleRecordBuilder {
             playerName: state.player.name,
             playerMaxHP: state.player.maxHP,
             playerFinalHP: state.player.currentHP,
-            enemyName: state.enemy.name,
-            enemyMaxHP: state.enemy.maxHP,
-            enemyFinalHP: state.enemy.currentHP,
+            enemyName: primaryEnemy.name,
+            enemyMaxHP: primaryEnemy.maxHP,
+            enemyFinalHP: primaryEnemy.currentHP,
             cardsPlayed: stats.cardsPlayed,
             strikesPlayed: stats.strikesPlayed,
             defendsPlayed: stats.defendsPlayed,

@@ -26,7 +26,7 @@ struct BattleRoomHandler: RoomHandling {
         // 创建战斗引擎（使用冒险中的玩家状态和遗物）
         let engine = BattleEngine(
             player: runState.player,
-            enemy: enemy,
+            enemies: [enemy],
             deck: TestMode.battleDeck(from: runState.deck),
             relicManager: runState.relicManager,
             seed: battleSeed
@@ -49,7 +49,8 @@ struct BattleRoomHandler: RoomHandling {
         
         // 如果胜利，完成节点
         if engine.state.playerWon == true {
-            context.logLine("\(Terminal.green)战斗胜利：击败 \(engine.state.enemy.name)\(Terminal.reset)")
+            let enemyName = engine.state.enemies.first?.name ?? "敌人"
+            context.logLine("\(Terminal.green)战斗胜利：击败 \(enemyName)\(Terminal.reset)")
             // P1：战斗奖励（卡牌 3 选 1）
             let rewardContext = RewardContext(
                 seed: runState.seed,

@@ -17,7 +17,7 @@ final class BattleEngineFlowTests: XCTestCase {
         deck: [Card],
         seed: UInt64 = 1
     ) -> BattleEngine {
-        BattleEngine(player: player, enemy: enemy, deck: deck, seed: seed)
+        BattleEngine(player: player, enemies: [enemy], deck: deck, seed: seed)
     }
     
     func testPlayCardsUntilEnergyZero_thenNotEnoughEnergyEventEmitted() {

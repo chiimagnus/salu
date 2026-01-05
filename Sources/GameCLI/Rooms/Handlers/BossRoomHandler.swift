@@ -20,7 +20,7 @@ struct BossRoomHandler: RoomHandling {
         // 创建战斗引擎（使用冒险中的玩家状态和遗物）
         let engine = BattleEngine(
             player: runState.player,
-            enemy: enemy,
+            enemies: [enemy],
             deck: TestMode.battleDeck(from: runState.deck),
             relicManager: runState.relicManager,
             seed: bossSeed
@@ -43,7 +43,8 @@ struct BossRoomHandler: RoomHandling {
         
         // 胜利后掉落遗物
         if engine.state.playerWon == true {
-            context.logLine("\(Terminal.green)Boss 胜利：击败 \(engine.state.enemy.name)\(Terminal.reset)")
+            let enemyName = engine.state.enemies.first?.name ?? "敌人"
+            context.logLine("\(Terminal.green)Boss 胜利：击败 \(enemyName)\(Terminal.reset)")
             let rewardContext = RewardContext(
                 seed: runState.seed,
                 floor: runState.floor,
@@ -66,7 +67,8 @@ struct BossRoomHandler: RoomHandling {
                 }
             }
         } else {
-            context.logLine("\(Terminal.red)Boss 失败：倒在 \(engine.state.enemy.name) 面前\(Terminal.reset)")
+            let enemyName = engine.state.enemies.first?.name ?? "敌人"
+            context.logLine("\(Terminal.red)Boss 失败：倒在 \(enemyName) 面前\(Terminal.reset)")
         }
         
         return engine.state.playerWon == true

@@ -113,7 +113,7 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
         player.currentHP = 55
         
         let enemy = Entity(id: "enemy", name: "敌人", maxHP: 40, enemyId: "jaw_worm")
-        var state = BattleState(player: player, enemy: enemy)
+        var state = BattleState(player: player, enemies: [enemy])
         state.turn = 3
         state.playerWon = true
         

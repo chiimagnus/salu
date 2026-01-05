@@ -2,7 +2,7 @@
 /// 包含玩家、敌人、能量、回合数、牌堆等信息
 public struct BattleState: Sendable {
     public var player: Entity
-    public var enemy: Entity
+    public var enemies: [Entity]
     
     public var energy: Int
     public let maxEnergy: Int
@@ -19,11 +19,11 @@ public struct BattleState: Sendable {
     
     public init(
         player: Entity,
-        enemy: Entity,
+        enemies: [Entity],
         maxEnergy: Int = 3
     ) {
         self.player = player
-        self.enemy = enemy
+        self.enemies = enemies
         self.energy = maxEnergy
         self.maxEnergy = maxEnergy
         self.turn = 0

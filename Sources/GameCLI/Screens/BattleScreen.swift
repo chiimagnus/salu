@@ -15,7 +15,8 @@ enum BattleScreen {
         lines.append("")
         
         // 敌人区域
-        lines.append(contentsOf: buildEnemyArea(engine.state.enemy))
+        let enemy = engine.state.enemies.first ?? Entity(id: "enemy", name: "敌人", maxHP: 1)
+        lines.append(contentsOf: buildEnemyArea(enemy))
         lines.append("")
         
         // 分隔线
