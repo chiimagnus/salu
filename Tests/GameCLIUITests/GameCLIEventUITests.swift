@@ -24,7 +24,8 @@ final class GameCLIEventUITests: XCTestCase {
         let result = try CLIRunner.runGameCLI(
             arguments: ["--seed", "\(seed)"],
             // 新冒险 → 起点 → 事件 → 选项 1 → Enter 继续 → 回地图 q → 退出
-            stdin: "1\n1\n1\n1\n\nq\n4\n",
+            // 备注：若选项 1 需要二次选择（例如选择要升级的卡牌），这里额外提供一次“1 + Enter”作为兼容输入。
+            stdin: "1\n1\n1\n1\n1\n\nq\n4\n",
             environment: env,
             timeout: 12
         )

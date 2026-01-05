@@ -99,8 +99,8 @@ final class EventGeneratorTests: XCTestCase {
         }
     }
     
-    func testTrainingEvent_upgradeOption_targetsFirstUpgradeableCardWhenAvailable() {
-        print("🧪 测试：testTrainingEvent_upgradeOption_targetsFirstUpgradeableCardWhenAvailable")
+    func testTrainingEvent_upgradeOption_requiresFollowUpChoice() {
+        print("🧪 测试：testTrainingEvent_upgradeOption_requiresFollowUpChoice")
         let run = RunState.newRun(seed: 1)
         var rng = SeededRNG(seed: 2)
         let context = EventContext(
@@ -118,16 +118,18 @@ final class EventGeneratorTests: XCTestCase {
         let offer = TrainingEvent.generate(context: context, rng: &rng)
         XCTAssertEqual(offer.eventId, TrainingEvent.id)
         
-        // 牌组第一张是 strike_1，且可升级，故训练的“专注训练”应升级 index 0
-        if let upgrade = offer.options.first(where: { $0.effects.contains(where: { if case .upgradeCard = $0 { return true }; return false }) }) {
-            guard let effect = upgrade.effects.first else { return XCTFail("升级选项应包含 effect") }
-            if case .upgradeCard(let deckIndex) = effect {
-                XCTAssertEqual(deckIndex, 0)
-            } else {
-                XCTFail("期望 upgradeCard effect")
-            }
-        } else {
-            XCTFail("期望存在升级选项")
+        guard let upgrade = offer.options.first(where: { $0.title == "专注训练" }) else {
+            return XCTFail("期望存在“专注训练”选项")
+        }
+        
+        guard let followUp = upgrade.followUp else {
+            return XCTFail("期望“专注训练”是二次选择（followUp）")
+        }
+        
+        switch followUp {
+        case .chooseUpgradeableCard(let indices):
+            // 起始牌组第 1 张 strike_1 可升级，应包含 index 0
+            XCTAssertTrue(indices.contains(0))
         }
     }
 }

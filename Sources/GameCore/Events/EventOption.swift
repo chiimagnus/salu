@@ -8,11 +8,15 @@ public struct EventOption: Sendable, Equatable {
     
     /// 选择该选项后产生的效果列表
     public let effects: [RunEffect]
+
+    /// 需要二次选择时的附加信息（例如：选择要升级的卡牌）
+    public let followUp: EventFollowUp?
     
-    public init(title: String, preview: String? = nil, effects: [RunEffect]) {
+    public init(title: String, preview: String? = nil, effects: [RunEffect], followUp: EventFollowUp? = nil) {
         self.title = title
         self.preview = preview
         self.effects = effects
+        self.followUp = followUp
     }
 }
 

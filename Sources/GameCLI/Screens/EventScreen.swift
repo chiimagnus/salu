@@ -66,6 +66,54 @@ enum EventScreen {
         print("\(Terminal.dim)按 Enter 继续...\(Terminal.reset)")
         Terminal.flush()
     }
+
+    /// 事件二次选择：选择要升级的卡牌（返回牌组索引）
+    static func chooseUpgradeableCard(runState: RunState, upgradeableIndices: [Int]) -> Int? {
+        Terminal.clear()
+        
+        print("""
+        \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.cyan)  ？ 选择要升级的卡牌\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
+        
+        \(Terminal.bold)从可升级卡中选择 1 张：\(Terminal.reset)
+        """)
+        
+        for (index, deckIndex) in upgradeableIndices.enumerated() {
+            let card = runState.deck[deckIndex]
+            let def = CardRegistry.require(card.cardId)
+            guard let upgradedId = def.upgradedId else { continue }
+            let upgradedDef = CardRegistry.require(upgradedId)
+            print("  \(Terminal.cyan)[\(index + 1)]\(Terminal.reset) \(Terminal.bold)\(def.name)\(Terminal.reset) → \(Terminal.green)\(upgradedDef.name)\(Terminal.reset)")
+        }
+        
+        print("")
+        print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(max(1, upgradeableIndices.count))]\(Terminal.reset) 选择  \(Terminal.cyan)[0]\(Terminal.reset) 取消")
+        print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+        
+        while true {
+            print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+            Terminal.flush()
+            
+            guard let raw = readLine() else {
+                return nil
+            }
+            
+            let input = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            if input.isEmpty {
+                continue
+            }
+            
+            if input == "0" {
+                return nil
+            }
+            
+            if let n = Int(input), n >= 1, n <= upgradeableIndices.count {
+                return upgradeableIndices[n - 1]
+            }
+        }
+    }
 }
 
 

@@ -117,21 +117,17 @@ public struct TrainingEvent: EventDefinition {
     public static func generate(context: EventContext, rng: inout SeededRNG) -> EventOffer {
         var options: [EventOption] = []
         
-        // 1) 升级：若存在可升级卡，则升级第一张（按牌组顺序，确定性）
+        // 1) 升级：若存在可升级卡，则让玩家选择要升级的卡牌（P5：二次选择）
         let upgradeable = RunState.upgradeableCardIndices(in: context.deck)
-        if let deckIndex = upgradeable.first {
-            let card = context.deck[deckIndex]
-            if let def = CardRegistry.get(card.cardId),
-               let upgradedId = def.upgradedId {
-                let upgradedDef = CardRegistry.require(upgradedId)
-                options.append(
-                    EventOption(
-                        title: "专注训练",
-                        preview: "升级：\(def.name) → \(upgradedDef.name)",
-                        effects: [.upgradeCard(deckIndex: deckIndex)]
-                    )
+        if !upgradeable.isEmpty {
+            options.append(
+                EventOption(
+                    title: "专注训练",
+                    preview: "升级 1 张可升级卡牌",
+                    effects: [],
+                    followUp: .chooseUpgradeableCard(indices: upgradeable)
                 )
-            }
+            )
         }
         
         // 2) 学习新招：从可奖励卡池中选一张（确定性）
