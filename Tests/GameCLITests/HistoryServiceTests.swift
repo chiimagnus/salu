@@ -52,6 +52,8 @@ final class HistoryServiceTests: XCTestCase {
     }
     
     func testGetAllRecords_usesCache_betweenCalls() {
+    
+        print("🧪 测试：testGetAllRecords_usesCache_betweenCalls")
         let store = InMemoryBattleHistoryStore()
         let service = HistoryService(store: store)
         
@@ -62,6 +64,8 @@ final class HistoryServiceTests: XCTestCase {
     }
     
     func testAddRecord_invalidatesCache_andPersistsToStore() {
+    
+        print("🧪 测试：testAddRecord_invalidatesCache_andPersistsToStore")
         let store = InMemoryBattleHistoryStore()
         let service = HistoryService(store: store)
         
@@ -81,6 +85,8 @@ final class HistoryServiceTests: XCTestCase {
     }
     
     func testClearHistory_clearsStore_andResetsCacheToEmpty() {
+    
+        print("🧪 测试：testClearHistory_clearsStore_andResetsCacheToEmpty")
         let store = InMemoryBattleHistoryStore()
         let service = HistoryService(store: store)
         

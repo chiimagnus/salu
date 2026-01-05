@@ -10,6 +10,7 @@ import XCTest
 final class GameCLISaveUITests: XCTestCase {
     /// 创建存档后再次启动，主菜单应出现“继续上次冒险”，并打印“存档加载成功！”。
     func testSaveCreateAndContinue() throws {
+        print("🧪 测试：testSaveCreateAndContinue")
         let tmp = try TemporaryDirectory()
         defer { tmp.cleanup() }
         

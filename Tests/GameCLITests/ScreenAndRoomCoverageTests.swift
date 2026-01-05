@@ -73,6 +73,8 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
     // MARK: - Tests
     
     func testHistoryScreen_withRecords_rendersTableAndCountLine() {
+    
+        print("🧪 测试：testHistoryScreen_withRecords_rendersTableAndCountLine")
         let store = InMemoryBattleHistoryStore()
         let service = HistoryService(store: store)
         service.addRecord(makeRecord(seed: 1, won: true, turns: 3))
@@ -88,6 +90,8 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
     }
     
     func testStatisticsScreen_withRecords_rendersSummary() {
+    
+        print("🧪 测试：testStatisticsScreen_withRecords_rendersSummary")
         let store = InMemoryBattleHistoryStore()
         let service = HistoryService(store: store)
         service.addRecord(makeRecord(seed: 1, won: true, turns: 3))
@@ -103,6 +107,8 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
     }
     
     func testResultScreen_showFinal_withRecord_rendersVictoryAndStatsPanel() {
+    
+        print("🧪 测试：testResultScreen_showFinal_withRecord_rendersVictoryAndStatsPanel")
         var player = Entity(id: "player", name: "玩家", maxHP: 80)
         player.currentHP = 55
         
@@ -123,6 +129,8 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
     }
     
     func testBossRoomHandler_win_returnsRunEndedTrue_andWritesHistory() {
+    
+        print("🧪 测试：testBossRoomHandler_win_returnsRunEndedTrue_andWritesHistory")
         let store = InMemoryBattleHistoryStore()
         let historyService = HistoryService(store: store)
         

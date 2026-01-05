@@ -10,6 +10,7 @@ import XCTest
 final class GameCLIHistoryUITests: XCTestCase {
     /// 跑一场（测试模式下的）快速战斗后，应写入 battle_history.json，且记录可被 JSONDecoder 解码。
     func testBattleHistory_isWrittenAndDecodable() throws {
+        print("🧪 测试：testBattleHistory_isWrittenAndDecodable")
         let tmp = try TemporaryDirectory()
         defer { tmp.cleanup() }
         

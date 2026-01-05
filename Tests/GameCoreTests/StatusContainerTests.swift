@@ -9,6 +9,7 @@ import XCTest
 final class StatusContainerTests: XCTestCase {
     /// `apply` 增减层数，降到 0（或以下）时应自动移除该状态。
     func testApplyAndRemove_whenStacksDropToZero_removesStatus() {
+        print("🧪 测试：testApplyAndRemove_whenStacksDropToZero_removesStatus")
         var container = StatusContainer()
         container.apply("weak", stacks: 2)
         XCTAssertEqual(container.stacks(of: "weak"), 2)
@@ -20,6 +21,7 @@ final class StatusContainerTests: XCTestCase {
     
     /// `set` 直接设置层数，设置为 0（或以下）时应移除该状态。
     func testSet_whenStacksLessOrEqualZero_removesStatus() {
+        print("🧪 测试：testSet_whenStacksLessOrEqualZero_removesStatus")
         var container = StatusContainer()
         container.set("vulnerable", stacks: 1)
         XCTAssertTrue(container.hasAny)
@@ -31,6 +33,7 @@ final class StatusContainerTests: XCTestCase {
     
     /// `all` 必须按 StatusID.rawValue 排序，保证确定性（避免 Dictionary 迭代顺序带来不稳定）。
     func testAll_isSortedByIdRawValue() {
+        print("🧪 测试：testAll_isSortedByIdRawValue")
         var container = StatusContainer()
         container.apply("weak", stacks: 1)
         container.apply("strength", stacks: 2)

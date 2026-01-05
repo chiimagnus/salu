@@ -13,6 +13,7 @@ final class GameCLIIntegrationUITests: XCTestCase {
     /// 无存档时：主菜单应包含"开始冒险"，并且输入 `3` 可以正常退出。
     /// 原文件: GameCLIStartupUITests.swift
     func testMainMenuBootAndExit_withoutSave() throws {
+        print("🧪 测试：testMainMenuBootAndExit_withoutSave")
         let tmp = try TemporaryDirectory()
         defer { tmp.cleanup() }
         
@@ -38,6 +39,7 @@ final class GameCLIIntegrationUITests: XCTestCase {
     /// 进入第一场战斗后退出，stdout 应出现敌人标识（👹）或意图字段。
     /// 原文件: GameCLIBattleUITests.swift
     func testEnterBattleScreenAndQuit_doesNotHang() throws {
+        print("🧪 测试：testEnterBattleScreenAndQuit_doesNotHang")
         let tmp = try TemporaryDirectory()
         defer { tmp.cleanup() }
         
@@ -63,6 +65,7 @@ final class GameCLIIntegrationUITests: XCTestCase {
     /// 进入战斗后按 `h` 打开帮助，再返回并退出，stdout 应包含"游戏帮助"。
     /// 原文件: GameCLIHelpUITests.swift
     func testBattleHelp_canOpenAndReturn() throws {
+        print("🧪 测试：testBattleHelp_canOpenAndReturn")
         let tmp = try TemporaryDirectory()
         defer { tmp.cleanup() }
         
@@ -88,6 +91,7 @@ final class GameCLIIntegrationUITests: XCTestCase {
     /// 从主菜单进入设置，查看统计并清除历史（yes 分支），最终返回主菜单并退出。
     /// 原文件: GameCLISettingsUITests.swift
     func testSettingsMenu_statsAndClearHistory_canNavigate() throws {
+        print("🧪 测试：testSettingsMenu_statsAndClearHistory_canNavigate")
         let tmp = try TemporaryDirectory()
         defer { tmp.cleanup() }
         
@@ -115,6 +119,7 @@ final class GameCLIIntegrationUITests: XCTestCase {
     /// 新冒险 → 起点 → 进入战斗 → 直接 `q` 退出战斗（视为失败结束 run）→ 返回主菜单 → 退出。
     /// 原文件: GameCLISmokeNoTestModeUITests.swift
     func testSmoke_realMode_enterBattleAndQuit_doesNotHang() throws {
+        print("🧪 测试：testSmoke_realMode_enterBattleAndQuit_doesNotHang")
         let tmp = try TemporaryDirectory()
         defer { tmp.cleanup() }
         

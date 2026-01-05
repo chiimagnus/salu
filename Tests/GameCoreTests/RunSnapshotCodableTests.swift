@@ -10,6 +10,7 @@ import XCTest
 final class RunSnapshotCodableTests: XCTestCase {
     /// JSON round-trip 后关键字段必须保持一致（用于保护存档结构）。
     func testRunSnapshot_jsonRoundTrip_preservesKeyFields() throws {
+        print("🧪 测试：testRunSnapshot_jsonRoundTrip_preservesKeyFields")
         let snapshot = RunSnapshot(
             version: RunSaveVersion.current,
             seed: 123,

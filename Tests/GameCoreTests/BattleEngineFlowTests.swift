@@ -21,6 +21,8 @@ final class BattleEngineFlowTests: XCTestCase {
     }
     
     func testPlayCardsUntilEnergyZero_thenNotEnoughEnergyEventEmitted() {
+    
+        print("🧪 测试：testPlayCardsUntilEnergyZero_thenNotEnoughEnergyEventEmitted")
         let engine = makeEngine(deck: makeStrikeDeck(count: 5))
         engine.startBattle()
         engine.clearEvents()
@@ -40,6 +42,8 @@ final class BattleEngineFlowTests: XCTestCase {
     }
     
     func testInvalidHandIndex_emitsInvalidAction() {
+    
+        print("🧪 测试：testInvalidHandIndex_emitsInvalidAction")
         let engine = makeEngine(deck: makeStrikeDeck(count: 1))
         engine.startBattle()
         engine.clearEvents()
@@ -49,6 +53,8 @@ final class BattleEngineFlowTests: XCTestCase {
     }
     
     func testShuffleDiscardIntoDraw_emitsShuffledEvent_nextTurn() {
+    
+        print("🧪 测试：testShuffleDiscardIntoDraw_emitsShuffledEvent_nextTurn")
         // 使用“无 enemyId 的敌人”避免敌人 AI/效果干扰：plannedMove = 空 effects
         let enemy = Entity(id: "enemy", name: "木桩", maxHP: 999)
         let engine = makeEngine(enemy: enemy, deck: makeStrikeDeck(count: 5))
@@ -66,6 +72,8 @@ final class BattleEngineFlowTests: XCTestCase {
     }
     
     func testBattleEnd_emitsBattleWon_andSubsequentActionIsInvalid() {
+    
+        print("🧪 测试：testBattleEnd_emitsBattleWon_andSubsequentActionIsInvalid")
         let player = Entity(id: "player", name: "玩家", maxHP: 80)
         let enemy = Entity(id: "enemy", name: "木桩", maxHP: 1)
         let engine = makeEngine(player: player, enemy: enemy, deck: [Card(id: "strike_1", cardId: "strike")])
@@ -85,6 +93,8 @@ final class BattleEngineFlowTests: XCTestCase {
     }
     
     func testStatusDecay_turnEnd_decrementsAndEmitsExpiredEvent() {
+    
+        print("🧪 测试：testStatusDecay_turnEnd_decrementsAndEmitsExpiredEvent")
         var player = Entity(id: "player", name: "玩家", maxHP: 80)
         player.statuses.set("vulnerable", stacks: 1)
         
@@ -104,6 +114,8 @@ final class BattleEngineFlowTests: XCTestCase {
     }
     
     func testPoisonOnTurnEnd_dealsDamageAndDecays() {
+    
+        print("🧪 测试：testPoisonOnTurnEnd_dealsDamageAndDecays")
         var player = Entity(id: "player", name: "玩家", maxHP: 80)
         player.statuses.set("poison", stacks: 2)
         

@@ -9,6 +9,7 @@ import XCTest
 final class RewardGeneratorTests: XCTestCase {
     /// 同一个 `RewardContext` 重复生成奖励，结果必须一致（可复现性）。
     func testGenerateCardReward_isDeterministic() {
+        print("🧪 测试：testGenerateCardReward_isDeterministic")
         let context = RewardContext(
             seed: 123,
             floor: 1,
@@ -28,6 +29,7 @@ final class RewardGeneratorTests: XCTestCase {
     /// - 同一次 offer 内不重复
     /// - 不包含起始牌（starter）
     func testGenerateCardReward_choicesAreUniqueAndNonStarter() {
+        print("🧪 测试：testGenerateCardReward_choicesAreUniqueAndNonStarter")
         let context = RewardContext(
             seed: 42,
             floor: 1,

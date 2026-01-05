@@ -10,6 +10,7 @@ final class DamageAndBlockCalculatorTests: XCTestCase {
     /// 验证 DamageCalculator 的顺序为：Strength(+N) → Weak(*0.75)。
     /// 如果顺序反了（先乘再加），结果会不同，从而说明确定性被破坏。
     func testDamageCalculator_appliesAddBeforeMultiply_withRounding() {
+        print("🧪 测试：testDamageCalculator_appliesAddBeforeMultiply_withRounding")
         // base 3
         // Strength(+2) then Weak(*0.75) => (3+2)=5 -> 3
         // Weak then Strength would be 4（不同），用于验证顺序确定性
@@ -25,6 +26,7 @@ final class DamageAndBlockCalculatorTests: XCTestCase {
     
     /// 验证 BlockCalculator 的顺序为：Dexterity(+N) → Frail(*0.75)。
     func testBlockCalculator_appliesAddBeforeMultiply_withRounding() {
+        print("🧪 测试：testBlockCalculator_appliesAddBeforeMultiply_withRounding")
         // base 3
         // Dexterity(+2) then Frail(*0.75) => (3+2)=5 -> 3
         // Frail then Dexterity would be 4（不同）

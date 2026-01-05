@@ -17,6 +17,8 @@ final class SaveServiceTests: XCTestCase {
     }
     
     func testSaveAndLoad_roundTripPreservesKeyFields() throws {
+    
+        print("🧪 测试：testSaveAndLoad_roundTripPreservesKeyFields")
         let store = InMemoryRunSaveStore()
         let service = SaveService(store: store)
         
@@ -39,6 +41,8 @@ final class SaveServiceTests: XCTestCase {
     }
     
     func testRestoreRunState_incompatibleVersion_throws() {
+    
+        print("🧪 测试：testRestoreRunState_incompatibleVersion_throws")
         let service = SaveService(store: InMemoryRunSaveStore())
         let run = RunState.newRun(seed: 1)
         let snapshot = service.createSnapshot(from: run)
@@ -66,6 +70,8 @@ final class SaveServiceTests: XCTestCase {
     }
     
     func testRestoreRunState_unknownCard_throwsCorruptedSave() {
+    
+        print("🧪 测试：testRestoreRunState_unknownCard_throwsCorruptedSave")
         let service = SaveService(store: InMemoryRunSaveStore())
         let run = RunState.newRun(seed: 1)
         let snapshot = service.createSnapshot(from: run)
@@ -92,6 +98,8 @@ final class SaveServiceTests: XCTestCase {
     }
     
     func testRestoreRunState_unknownRelic_throwsCorruptedSave() {
+    
+        print("🧪 测试：testRestoreRunState_unknownRelic_throwsCorruptedSave")
         let service = SaveService(store: InMemoryRunSaveStore())
         let run = RunState.newRun(seed: 1)
         let snapshot = service.createSnapshot(from: run)

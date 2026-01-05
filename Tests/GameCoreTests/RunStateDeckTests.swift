@@ -9,6 +9,7 @@ final class RunStateDeckTests: XCTestCase {
     /// `RunState.addCardToDeck(cardId:)` 应当生成稳定且不冲突的实例 ID：
     /// - 规则：`<cardId.rawValue>_<n>`（n 为同 cardId 的序号）
     func testAddCardToDeck_generatesStableInstanceId() {
+        print("🧪 测试：testAddCardToDeck_generatesStableInstanceId")
         var runState = RunState.newRun(seed: 1)
         
         // starter deck 本来就有 inflame_1

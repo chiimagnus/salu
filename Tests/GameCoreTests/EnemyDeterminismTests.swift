@@ -9,6 +9,7 @@ import XCTest
 final class EnemyDeterminismTests: XCTestCase {
     /// Act1EnemyPool 的随机选择必须可复现（同 seed → 同 enemyId）。
     func testAct1EnemyPool_randomWeak_isDeterministic() {
+        print("🧪 测试：testAct1EnemyPool_randomWeak_isDeterministic")
         var rng1 = SeededRNG(seed: 100)
         var rng2 = SeededRNG(seed: 100)
         
@@ -20,6 +21,7 @@ final class EnemyDeterminismTests: XCTestCase {
     
     /// 敌人 AI（chooseMove）必须在同一 seed + 同一 snapshot 下产生相同的 EnemyMove（可复现性）。
     func testJawWorm_chooseMove_isDeterministic_givenSameSeedAndSnapshot() {
+        print("🧪 测试：testJawWorm_chooseMove_isDeterministic_givenSameSeedAndSnapshot")
         let snapshot = BattleSnapshot(
             turn: 2,
             player: Entity(id: "p", name: "玩家", maxHP: 10),

@@ -9,6 +9,7 @@ import XCTest
 final class RelicIntegrationTests: XCTestCase {
     /// 灯笼（Lantern）：战斗开始应 +1 能量，且不应被回合开始的能量重置覆盖。
     func testLanternBattleStartAddsEnergyWithoutBeingOverwritten() {
+        print("🧪 测试：testLanternBattleStartAddsEnergyWithoutBeingOverwritten")
         // 给玩家灯笼：战斗开始 +1 能量
         var relics = RelicManager()
         relics.add("lantern")
@@ -26,6 +27,7 @@ final class RelicIntegrationTests: XCTestCase {
     
     /// 燃烧之血（Burning Blood）：战斗胜利后应恢复 6 HP。
     func testBurningBloodHealsOnBattleWin() {
+        print("🧪 测试：testBurningBloodHealsOnBattleWin")
         var relics = RelicManager()
         relics.add("burning_blood")
         

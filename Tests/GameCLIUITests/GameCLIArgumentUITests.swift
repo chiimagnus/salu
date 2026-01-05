@@ -8,6 +8,7 @@ import XCTest
 final class GameCLIArgumentUITests: XCTestCase {
     /// `--history` 应打印历史界面标题并退出（不等待输入）。
     func testHistoryFlag_printsAndExits() throws {
+        print("🧪 测试：testHistoryFlag_printsAndExits")
         let tmp = try TemporaryDirectory()
         defer { tmp.cleanup() }
         
@@ -27,6 +28,7 @@ final class GameCLIArgumentUITests: XCTestCase {
     
     /// `--stats` 应打印统计界面标题并退出（不等待输入）。
     func testStatsFlag_printsAndExits() throws {
+        print("🧪 测试：testStatsFlag_printsAndExits")
         let tmp = try TemporaryDirectory()
         defer { tmp.cleanup() }
         

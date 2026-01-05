@@ -10,6 +10,7 @@ import XCTest
 final class GameCLIRewardUITests: XCTestCase {
     /// 在测试模式下（`SALU_TEST_MODE=1`），第一场战斗应很快胜利并出现奖励界面；选择后 deck 从 13 → 14。
     func testRewardAfterBattle_addsCardToDeckAndPersistsToSave() throws {
+        print("🧪 测试：testRewardAfterBattle_addsCardToDeckAndPersistsToSave")
         let tmp = try TemporaryDirectory()
         defer { tmp.cleanup() }
         
