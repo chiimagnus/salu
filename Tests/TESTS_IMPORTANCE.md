@@ -13,8 +13,10 @@
 
 ### 总览（按目录）
 
-- **GameCoreTests**：P0=8，P1=12，P2=2，P3=6
-- **GameCLITests**：P0=1，P1=4，P2=1，P3=1
+> 备注：以下计数基于当前仓库状态；**P3 已按你的决定全部删除**。
+
+- **GameCoreTests**：P0=8，P1=12，P2=2，P3=0（已删除 6）
+- **GameCLITests**：P0=1，P1=4，P2=1，P3=0（已删除 1）
 - **GameCLIUITests**：P0=2，P1=5，P2=1
 
 ---
@@ -52,14 +54,14 @@
 - **`Tests/GameCoreTests/BattleEventDescriptionTests.swift`**：事件 description 文案稳定性/非空；偏 UI/输出层质量（不直接影响规则正确性）。
 - **`Tests/GameCoreTests/RunStateUpgradeTests.swift`**：与 `RunStateDeckTests` 有明显重叠（升级相关多处重复验证），更多是“细分单元测试冗余”。
 
-### P3（优先候选删除）
+### P3（优先候选删除｜已删除）
 
-- **`Tests/GameCoreTests/IDsTests.swift`**：强类型 ID 的 init/string literal 语法层行为，回归风险极低。
-- **`Tests/GameCoreTests/RegistryRequireTests.swift`**：`require()` 基本行为测试，通常由更高层 smoke/集成路径隐式覆盖。
-- **`Tests/GameCoreTests/RegistryEnumerationTests.swift`**：unknown 返回 nil + allIds 排序，偏确定性细节但价值相对低。
-- **`Tests/GameCoreTests/ShopItemTests.swift`**：ShopItem equatable/init 等 trivial 行为，价值最低之一。
-- **`Tests/GameCoreTests/ShopTests.swift`**：与 `ShopInventoryTests` 重叠度高（定价/去重/确定性重复验证）。
-- **`Tests/GameCoreTests/StatusDefinitionDefaultImplementationTests.swift`**：协议默认实现“恒等/空数组”验证，属于很低风险的底层行为。
+- **`Tests/GameCoreTests/IDsTests.swift`**：强类型 ID 的 init/string literal 语法层行为，回归风险极低。（已删除）
+- **`Tests/GameCoreTests/RegistryRequireTests.swift`**：`require()` 基本行为测试，通常由更高层 smoke/集成路径隐式覆盖。（已删除）
+- **`Tests/GameCoreTests/RegistryEnumerationTests.swift`**：unknown 返回 nil + allIds 排序，偏确定性细节但价值相对低。（已删除）
+- **`Tests/GameCoreTests/ShopItemTests.swift`**：ShopItem equatable/init 等 trivial 行为，价值最低之一。（已删除）
+- **`Tests/GameCoreTests/ShopTests.swift`**：与 `ShopInventoryTests` 重叠度高（定价/去重/确定性重复验证）。（已删除）
+- **`Tests/GameCoreTests/StatusDefinitionDefaultImplementationTests.swift`**：协议默认实现“恒等/空数组”验证，属于很低风险的底层行为。（已删除）
 
 ---
 
@@ -80,9 +82,9 @@
 
 - **`Tests/GameCLITests/EventFormatterTests.swift`**：EventFormatter 输出覆盖与关键字断言，偏 UI 文案/格式稳定性。
 
-### P3（优先候选删除）
+### P3（优先候选删除｜已删除）
 
-- **`Tests/GameCLITests/TerminalAndLogPanelTests.swift`**：Terminal 工具方法与“不会崩溃”检查，价值较低且不直接保护玩法正确性。
+- **`Tests/GameCLITests/TerminalAndLogPanelTests.swift`**：Terminal 工具方法与“不会崩溃”检查，价值较低且不直接保护玩法正确性。（已删除）
 
 ---
 
@@ -117,7 +119,7 @@
 
 如果你的目标是“只删最无关紧要”，我建议**先只动 P3**（基本不会影响核心回归保护）：
 
-- **第一批（P3，基本无痛）**：
+- **第一批（P3，基本无痛）**：✅ 已按你的决定全部删除
   - `Tests/GameCoreTests/ShopItemTests.swift`
   - `Tests/GameCoreTests/RegistryRequireTests.swift`
   - `Tests/GameCoreTests/IDsTests.swift`
