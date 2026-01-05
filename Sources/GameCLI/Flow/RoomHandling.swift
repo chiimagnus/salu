@@ -23,14 +23,11 @@ protocol RoomHandling {
 /// 房间上下文
 /// 提供各个 handler 需要的共享功能（事件管理、CLI 输入输出等）
 struct RoomContext {
-    /// 添加事件到事件日志
-    let appendEvents: ([BattleEvent]) -> Void
-    
-    /// 清空事件日志
-    let clearEvents: () -> Void
+    /// 记录战斗事件（同一套日志系统）
+    let logBattleEvents: ([BattleEvent]) -> Void
 
-    /// 追加冒险日志（Run 维度，跨房间保留）
-    let appendRunLog: (String) -> Void
+    /// 记录一条日志（同一套日志系统）
+    let logLine: (String) -> Void
     
     /// 战斗循环（复用现有逻辑）
     let battleLoop: (BattleEngine, UInt64) -> Void

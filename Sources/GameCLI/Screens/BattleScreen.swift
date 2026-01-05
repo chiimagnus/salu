@@ -7,7 +7,7 @@ enum BattleScreen {
     // MARK: - 主屏幕渲染
     
     /// 渲染战斗主界面
-    static func renderBattleScreen(engine: BattleEngine, seed: UInt64, events: [String], message: String?, showEventLog: Bool = false) {
+    static func renderBattleScreen(engine: BattleEngine, seed: UInt64, logs: [String], message: String?, showLog: Bool = false) {
         var lines: [String] = []
         
         // 顶部标题栏
@@ -35,8 +35,8 @@ enum BattleScreen {
         lines.append("")
         
         // 事件日志区域（可折叠）
-        if showEventLog {
-            lines.append(contentsOf: buildEventLog(events))
+        if showLog {
+            lines.append(contentsOf: buildEventLog(logs))
             lines.append("")
         }
         
@@ -45,7 +45,7 @@ enum BattleScreen {
         lines.append("")
         
         // 操作提示
-        lines.append(contentsOf: buildInputPrompt(handCount: engine.state.hand.count, showEventLog: showEventLog))
+        lines.append(contentsOf: buildInputPrompt(handCount: engine.state.hand.count, showLog: showLog))
         
         // 清屏并打印
         Terminal.clear()
@@ -169,7 +169,7 @@ enum BattleScreen {
     private static func buildEventLog(_ events: [String], maxEvents: Int = 6) -> [String] {
         var lines: [String] = []
         
-        lines.append("\(Terminal.bold)───────────── 事件日志 ─────────────\(Terminal.reset)")
+        lines.append("\(Terminal.bold)───────────── 日志 ─────────────\(Terminal.reset)")
         
         let displayEvents = events.suffix(maxEvents)
         for event in displayEvents {
@@ -187,8 +187,8 @@ enum BattleScreen {
         return lines
     }
     
-    private static func buildInputPrompt(handCount: Int, showEventLog: Bool = false) -> [String] {
-        let logHint = showEventLog 
+    private static func buildInputPrompt(handCount: Int, showLog: Bool = false) -> [String] {
+        let logHint = showLog 
             ? "\(Terminal.dim)[l] 隐藏日志\(Terminal.reset)" 
             : "\(Terminal.cyan)[l]\(Terminal.reset) 日志"
         return [

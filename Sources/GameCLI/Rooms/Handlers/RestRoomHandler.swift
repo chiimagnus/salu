@@ -18,7 +18,7 @@ struct RestRoomHandler: RoomHandling {
             if input == "1" {
                 // 执行休息
                 let healed = runState.restAtNode()
-                context.appendRunLog("\(Terminal.green)休息：恢复 \(healed) HP\(Terminal.reset)")
+                context.logLine("\(Terminal.green)休息：恢复 \(healed) HP\(Terminal.reset)")
                 
                 // 显示结果
                 Screens.showRestResult(
@@ -89,7 +89,7 @@ struct RestRoomHandler: RoomHandling {
             
             let upgradedDef = CardRegistry.require(upgradedId)
             _ = runState.upgradeCard(at: deckIndex)
-            context.appendRunLog("\(Terminal.cyan)升级：\(def.name) → \(upgradedDef.name)\(Terminal.reset)")
+            context.logLine("\(Terminal.cyan)升级：\(def.name) → \(upgradedDef.name)\(Terminal.reset)")
             
             Screens.showRestUpgradeResult(originalName: def.name, upgradedName: upgradedDef.name)
             _ = readLine()

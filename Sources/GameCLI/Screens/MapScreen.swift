@@ -183,7 +183,7 @@ enum MapScreen {
 
     private static func buildRunLog(_ logs: [String], maxLines: Int = 6) -> [String] {
         var lines: [String] = []
-        lines.append("\(Terminal.bold)───────────── 冒险日志 ─────────────\(Terminal.reset)")
+        lines.append("\(Terminal.bold)───────────── 日志 ─────────────\(Terminal.reset)")
         
         let display = logs.suffix(maxLines)
         for line in display {

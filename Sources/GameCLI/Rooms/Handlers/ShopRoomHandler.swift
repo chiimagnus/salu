@@ -46,7 +46,7 @@ struct ShopRoomHandler: RoomHandling {
             runState.gold -= offer.price
             runState.addCardToDeck(cardId: offer.cardId)
             let boughtName = CardRegistry.require(offer.cardId).name
-            context.appendRunLog("\(Terminal.yellow)商店购买：\(boughtName)（-\(offer.price) 金币）\(Terminal.reset)")
+            context.logLine("\(Terminal.yellow)商店购买：\(boughtName)（-\(offer.price) 金币）\(Terminal.reset)")
             inventory = ShopInventory(
                 cardOffers: inventory.cardOffers.enumerated().compactMap { index, cardOffer in
                     index == choice - 1 ? nil : cardOffer
@@ -89,7 +89,7 @@ struct ShopRoomHandler: RoomHandling {
             runState.removeCardFromDeck(at: choice - 1)
             runState.gold -= inventory.removeCardPrice
             message = "\(Terminal.green)删牌成功\(Terminal.reset)"
-            context.appendRunLog("\(Terminal.yellow)商店删牌：\(removedName)（-\(inventory.removeCardPrice) 金币）\(Terminal.reset)")
+            context.logLine("\(Terminal.yellow)商店删牌：\(removedName)（-\(inventory.removeCardPrice) 金币）\(Terminal.reset)")
             return
         }
     }

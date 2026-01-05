@@ -147,9 +147,8 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
         let bossNode = MapNode(id: "14_0", row: 14, column: 0, roomType: .boss)
         
         let context = RoomContext(
-            appendEvents: { _ in },
-            clearEvents: { },
-            appendRunLog: { _ in },
+            logBattleEvents: { _ in },
+            logLine: { _ in },
             battleLoop: { engine, _ in
                 // 让战斗在测试里“稳定且快速”结束：打一张 Strike（敌人 HP=1）
                 _ = engine.handleAction(.playCard(handIndex: 0))

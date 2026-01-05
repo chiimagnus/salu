@@ -7,22 +7,15 @@ struct GameCLI {
     
     // MARK: - 状态
     
-    /// 事件日志
-    private nonisolated(unsafe) static var recentEvents: [String] = []
-    private static let maxRecentEvents = 12
-
-    /// 冒险日志（跨房间保留）
-    private nonisolated(unsafe) static var recentRunLogs: [String] = []
-    private static let maxRecentRunLogs = 50
+    /// 日志（统一：战斗事件 + 冒险事件）
+    private nonisolated(unsafe) static var recentLogs: [String] = []
+    private static let maxRecentLogs = 200
     
     /// 当前消息
     private nonisolated(unsafe) static var currentMessage: String? = nil
     
-    /// 是否显示事件日志
-    private nonisolated(unsafe) static var showEventLog: Bool = false
-
-    /// 是否显示冒险日志（地图界面）
-    private nonisolated(unsafe) static var showRunLog: Bool = false
+    /// 是否显示日志面板
+    private nonisolated(unsafe) static var showLog: Bool = false
     
     /// 历史记录服务（依赖注入，替代单例）
     private nonisolated(unsafe) static var historyService: HistoryService!
@@ -192,9 +185,9 @@ struct GameCLI {
     static func startNewRun() {
         let seed = parseSeed(from: CommandLine.arguments)
 
-        // 新冒险：清空内存冒险日志，并在文件日志写入分隔线
-        recentRunLogs.removeAll()
-        showRunLog = false
+        // 新冒险：清空内存日志，并在文件日志写入分隔线
+        recentLogs.removeAll()
+        showLog = false
         runLogService.appendSystem("开始新冒险（seed=\(seed)）")
         
         // 创建新冒险
@@ -220,8 +213,8 @@ struct GameCLI {
             
             // 恢复冒险
             currentRunState = runState
-            recentRunLogs.removeAll()
-            showRunLog = false
+            recentLogs.removeAll()
+            showLog = false
             runLogService.appendSystem("继续冒险（seed=\(runState.seed)）")
             print("\(Terminal.green)存档加载成功！\(Terminal.reset)")
             print("\(Terminal.dim)正在继续冒险...\(Terminal.reset)")
@@ -251,17 +244,11 @@ struct GameCLI {
         
         // 创建房间上下文
         let context = RoomContext(
-            appendEvents: { events in
-                recentEvents.removeAll()
-                currentMessage = nil
-                appendEvents(events)
+            logBattleEvents: { events in
+                appendBattleEvents(events)
             },
-            clearEvents: {
-                recentEvents.removeAll()
-                currentMessage = nil
-            },
-            appendRunLog: { line in
-                appendRunLog(line)
+            logLine: { line in
+                appendLogLine(line)
             },
             battleLoop: { engine, seed in
                 battleLoop(engine: engine, seed: seed)
@@ -274,7 +261,7 @@ struct GameCLI {
         
         while !runState.isOver {
             // 显示地图
-            Screens.showMap(runState: runState, logs: recentRunLogs, showLog: showRunLog)
+            Screens.showMap(runState: runState, logs: recentLogs, showLog: showLog)
             
             // 读取玩家输入
             guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
@@ -289,8 +276,8 @@ struct GameCLI {
             }
 
             if input == "l" {
-                // 切换冒险日志显示
-                showRunLog.toggle()
+                // 切换日志显示
+                showLog.toggle()
                 continue
             }
             
@@ -315,8 +302,8 @@ struct GameCLI {
                 continue
             }
 
-            // 记录进入房间（冒险日志）
-            context.appendRunLog("\(Terminal.dim)进入：\(selectedNode.roomType.icon) \(selectedNode.roomType.displayName)\(Terminal.reset)")
+            // 记录进入房间（统一日志）
+            context.logLine("\(Terminal.dim)进入：\(selectedNode.roomType.icon) \(selectedNode.roomType.displayName)\(Terminal.reset)")
             
             // 使用 handler 处理房间（消除 switch 分支）
             guard let handler = registry.handler(for: selectedNode.roomType) else {
@@ -403,12 +390,13 @@ struct GameCLI {
         let engine = BattleEngine(seed: seed)
         engine.startBattle()
         
-        // 清空之前的事件
-        recentEvents.removeAll()
+        // 清空之前的日志
+        recentLogs.removeAll()
+        showLog = false
         currentMessage = nil
         
         // 收集初始事件
-        appendEvents(engine.events)
+        appendBattleEvents(engine.events)
         engine.clearEvents()
         
         // 直接进入游戏主循环
@@ -433,9 +421,9 @@ struct GameCLI {
             BattleScreen.renderBattleScreen(
                 engine: engine,
                 seed: seed,
-                events: recentEvents,
+                logs: recentLogs,
                 message: currentMessage,
-                showEventLog: showEventLog
+                showLog: showLog
             )
             
             // 读取玩家输入
@@ -460,8 +448,8 @@ struct GameCLI {
                 continue
                 
             case "l", "log":
-                // 切换事件日志显示
-                showEventLog.toggle()
+                // 切换日志显示
+                showLog.toggle()
                 continue
                 
             default:
@@ -483,32 +471,26 @@ struct GameCLI {
             }
             
             // 收集新事件
-            appendEvents(engine.events)
+            appendBattleEvents(engine.events)
             engine.clearEvents()
         }
     }
     
-    // MARK: - Event Management
+    // MARK: - Log (Unified)
     
-    static func appendEvents(_ events: [BattleEvent]) {
+    static func appendBattleEvents(_ events: [BattleEvent]) {
         for event in events {
             let formatted = EventFormatter.format(event)
             if !formatted.isEmpty {
-                recentEvents.append(formatted)
+                appendLogLine(formatted)
             }
         }
-        // 保持事件数量限制
-        while recentEvents.count > maxRecentEvents * 2 {
-            recentEvents.removeFirst()
-        }
     }
-
-    // MARK: - Run Log
     
-    static func appendRunLog(_ line: String) {
-        recentRunLogs.append(line)
-        while recentRunLogs.count > maxRecentRunLogs {
-            recentRunLogs.removeFirst()
+    static func appendLogLine(_ line: String) {
+        recentLogs.append(line)
+        while recentLogs.count > maxRecentLogs {
+            recentLogs.removeFirst()
         }
         
         runLogService.append(uiLine: line)
