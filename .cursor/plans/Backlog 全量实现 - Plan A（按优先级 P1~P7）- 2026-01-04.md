@@ -23,7 +23,7 @@
 
 ---
 
-## P1：战斗后奖励系统（卡牌 3 选 1 + 入牌组）⭐⭐⭐ ✅ 已完成
+## P1：战斗后奖励系统（卡牌 3 选 1 + 入牌组）⭐⭐⭐ ✅ 已完成（基础版）
 
 ### 目标
 
@@ -34,6 +34,15 @@
 
 - GameCore 提供**奖励生成**（纯逻辑）：输入 `RewardContext` + rng → 输出 `RewardOffer`
 - GameCLI 仅负责 UI 展示与输入，把结果回写 `RunState`
+
+### 当前实现落点
+
+- `Sources/GameCore/Rewards/`
+- `Sources/GameCLI/Screens/RewardScreen.swift`
+- `Sources/GameCLI/Rooms/Handlers/BattleRoomHandler.swift`
+- `Sources/GameCLI/Rooms/Handlers/EliteRoomHandler.swift`
+- `Tests/GameCoreTests/RewardGeneratorTests.swift`
+- `Tests/GameCLIUITests/GameCLIRewardUITests.swift`
 
 ### 实施步骤（建议顺序）
 
@@ -62,8 +71,7 @@
 
 ### 验证
 
-- `swift build -c release`
-- `swift test`
+- P1 完成后必须验证通过：`swift test`
 
 ---
 
@@ -210,5 +218,4 @@
 ### 验证
 
 - `swift test`
-
 
