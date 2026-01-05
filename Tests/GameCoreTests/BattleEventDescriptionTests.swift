@@ -44,6 +44,43 @@ final class BattleEventDescriptionTests: XCTestCase {
         XCTAssertFalse(BattleEvent.notEnoughEnergy(required: 2, available: 1).description.isEmpty)
         XCTAssertFalse(BattleEvent.invalidAction(reason: "测试").description.isEmpty)
     }
+
+    func testAllEventCases_description_isNonEmptyAndStableFormat() {
+        print("🧪 测试：testAllEventCases_description_isNonEmptyAndStableFormat")
+        
+        let cases: [BattleEvent] = [
+            .battleStarted,
+            .turnStarted(turn: 1),
+            .energyReset(amount: 3),
+            .blockCleared(target: "玩家", amount: 5),
+            .drew(cardId: "strike"),
+            .shuffled(count: 10),
+            .played(cardId: "defend", cost: 1),
+            .damageDealt(source: "玩家", target: "敌人", amount: 6, blocked: 0),
+            .damageDealt(source: "玩家", target: "敌人", amount: 1, blocked: 2),
+            .blockGained(target: "玩家", amount: 8),
+            .handDiscarded(count: 5),
+            .enemyIntent(enemyId: "slime_medium_acid", action: "攻击", damage: 10),
+            .enemyAction(enemyId: "slime_medium_acid", action: "攻击"),
+            .turnEnded(turn: 1),
+            .entityDied(entityId: "enemy", name: "酸液史莱姆"),
+            .battleWon,
+            .battleLost,
+            .notEnoughEnergy(required: 2, available: 1),
+            .invalidAction(reason: "无效"),
+            .statusApplied(target: "玩家", effect: "易伤", stacks: 2),
+            .statusExpired(target: "玩家", effect: "易伤"),
+        ]
+        
+        for e in cases {
+            XCTAssertFalse(e.description.isEmpty, "BattleEvent \(e) 的 description 不应为空")
+        }
+        
+        // 关键分支：enemyIntent 文案包含 action 与 damage
+        let intent = BattleEvent.enemyIntent(enemyId: "x", action: "攻击", damage: 7).description
+        XCTAssertTrue(intent.contains("攻击"))
+        XCTAssertTrue(intent.contains("7"))
+    }
 }
 
 
