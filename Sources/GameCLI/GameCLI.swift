@@ -29,6 +29,9 @@ struct GameCLI {
     
     /// 存档服务（依赖注入）
     private nonisolated(unsafe) static var saveService: SaveService!
+
+    /// Run 日志服务（调试用落盘）
+    private nonisolated(unsafe) static var runLogService: RunLogService!
     
     // MARK: - Main Entry
     
@@ -40,6 +43,9 @@ struct GameCLI {
         // 初始化存档服务（依赖注入）
         let saveStore = FileRunSaveStore()
         saveService = SaveService(store: saveStore)
+
+        // 初始化 Run 日志服务（依赖注入）
+        runLogService = RunLogService(store: FileRunLogStore())
         
         // 检查命令行快捷参数
         if CommandLine.arguments.contains("--history") || CommandLine.arguments.contains("-H") {
@@ -185,6 +191,11 @@ struct GameCLI {
     
     static func startNewRun() {
         let seed = parseSeed(from: CommandLine.arguments)
+
+        // 新冒险：清空内存冒险日志，并在文件日志写入分隔线
+        recentRunLogs.removeAll()
+        showRunLog = false
+        runLogService.appendSystem("开始新冒险（seed=\(seed)）")
         
         // 创建新冒险
         if TestMode.useTestMap {
@@ -209,6 +220,9 @@ struct GameCLI {
             
             // 恢复冒险
             currentRunState = runState
+            recentRunLogs.removeAll()
+            showRunLog = false
+            runLogService.appendSystem("继续冒险（seed=\(runState.seed)）")
             print("\(Terminal.green)存档加载成功！\(Terminal.reset)")
             print("\(Terminal.dim)正在继续冒险...\(Terminal.reset)")
             Thread.sleep(forTimeInterval: 1.0)
@@ -496,6 +510,8 @@ struct GameCLI {
         while recentRunLogs.count > maxRecentRunLogs {
             recentRunLogs.removeFirst()
         }
+        
+        runLogService.append(uiLine: line)
     }
     
     // MARK: - Argument Parsing
