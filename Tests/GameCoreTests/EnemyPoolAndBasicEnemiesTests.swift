@@ -18,7 +18,7 @@ final class EnemyPoolAndBasicEnemiesTests: XCTestCase {
     func testCreateEnemy_hpRange() {
         print("🧪 测试：testCreateEnemy_hpRange")
         var rng = SeededRNG(seed: 123)
-        let enemy = createEnemy(enemyId: "jaw_worm", rng: &rng)
+        let enemy = createEnemy(enemyId: "jaw_worm", instanceIndex: 0, rng: &rng)
         XCTAssertTrue((40...44).contains(enemy.maxHP))
         XCTAssertEqual(enemy.currentHP, enemy.maxHP)
         XCTAssertEqual(enemy.enemyId, EnemyID("jaw_worm"))

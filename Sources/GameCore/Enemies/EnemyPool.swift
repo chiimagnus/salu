@@ -40,16 +40,17 @@ public enum Act1EnemyPool {
 /// 创建敌人实体 (P3: 使用 EnemyRegistry)
 /// - Parameters:
 ///   - enemyId: 敌人 ID
+///   - instanceIndex: 该敌人在遭遇中的序号（用于生成唯一的实体 id）
 ///   - rng: 随机数生成器（用于 HP 浮动）
 /// - Returns: 敌人实体
-public func createEnemy(enemyId: EnemyID, rng: inout SeededRNG) -> Entity {
+public func createEnemy(enemyId: EnemyID, instanceIndex: Int, rng: inout SeededRNG) -> Entity {
     let def = EnemyRegistry.require(enemyId)
     let hpRange = def.hpRange
     let range = hpRange.upperBound - hpRange.lowerBound + 1
     let hp = hpRange.lowerBound + rng.nextInt(upperBound: range)
     
     return Entity(
-        id: enemyId.rawValue,
+        id: "\(enemyId.rawValue)#\(instanceIndex)",
         name: def.name,
         maxHP: hp,
         enemyId: enemyId

@@ -14,7 +14,8 @@ enum HelpScreen {
         ║                                                       ║
         ║  \(Terminal.yellow)操作说明\(Terminal.cyan)                                          ║
         ║  ────────                                             ║
-        ║  \(Terminal.reset)1-N\(Terminal.cyan)    打出第 N 张手牌                            ║
+        ║  \(Terminal.reset)N\(Terminal.cyan)      打出第 N 张手牌（不需目标/单敌人）        ║
+        ║  \(Terminal.reset)N M\(Terminal.cyan)    打出第 N 张手牌，目标为第 M 个敌人         ║
         ║  \(Terminal.reset)0\(Terminal.cyan)      结束当前回合                              ║
         ║  \(Terminal.reset)h\(Terminal.cyan)      显示此帮助信息                            ║
         ║  \(Terminal.reset)l\(Terminal.cyan)      展开/折叠事件日志                         ║

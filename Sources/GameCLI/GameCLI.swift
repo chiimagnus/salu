@@ -253,8 +253,8 @@ struct GameCLI {
             battleLoop: { engine, seed in
                 battleLoop(engine: engine, seed: seed)
             },
-            createEnemy: { enemyId, rng in
-                TestMode.createEnemy(enemyId: enemyId, rng: &rng)
+            createEnemy: { enemyId, instanceIndex, rng in
+                TestMode.createEnemy(enemyId: enemyId, instanceIndex: instanceIndex, rng: &rng)
             },
             historyService: historyService
         )
@@ -456,19 +456,61 @@ struct GameCLI {
                 break
             }
             
-            guard let number = Int(input) else {
-                currentMessage = "\(Terminal.red)⚠️ 请输入有效数字，输入 h 查看帮助\(Terminal.reset)"
+            let parts = input.split { $0 == " " || $0 == "\t" }
+            guard !parts.isEmpty else {
+                currentMessage = "\(Terminal.red)⚠️ 请输入有效指令，输入 h 查看帮助\(Terminal.reset)"
                 continue
             }
             
-            if number == 0 {
+            // 0：结束回合
+            if parts.count == 1, let number = Int(parts[0]), number == 0 {
                 engine.handleAction(.endTurn)
-            } else if number >= 1, number <= engine.state.hand.count {
-                engine.handleAction(.playCard(handIndex: number - 1, targetEnemyIndex: nil))
-            } else {
+                // 收集新事件
+                appendBattleEvents(engine.events)
+                engine.clearEvents()
+                continue
+            }
+            
+            // 出牌：支持 `卡牌序号` 或 `卡牌序号 目标序号`
+            guard let cardNumber = Int(parts[0]),
+                  cardNumber >= 1,
+                  cardNumber <= engine.state.hand.count
+            else {
                 currentMessage = "\(Terminal.red)⚠️ 无效选择: 1-\(engine.state.hand.count) / 0\(Terminal.reset)"
                 continue
             }
+            
+            let handIndex = cardNumber - 1
+            let cardDef = CardRegistry.require(engine.state.hand[handIndex].cardId)
+            
+            let targetEnemyIndex: Int?
+            if parts.count >= 2, let targetNumber = Int(parts[1]) {
+                let idx = targetNumber - 1
+                guard idx >= 0, idx < engine.state.enemies.count else {
+                    currentMessage = "\(Terminal.red)⚠️ 无效目标：1-\(engine.state.enemies.count)\(Terminal.reset)"
+                    continue
+                }
+                guard engine.state.enemies[idx].isAlive else {
+                    currentMessage = "\(Terminal.red)⚠️ 目标已死亡，请选择存活敌人\(Terminal.reset)"
+                    continue
+                }
+                targetEnemyIndex = idx
+            } else {
+                switch cardDef.targeting {
+                case .none:
+                    targetEnemyIndex = nil
+                case .singleEnemy:
+                    let alive = engine.state.enemies.enumerated().compactMap { $0.element.isAlive ? $0.offset : nil }
+                    if alive.count <= 1 {
+                        targetEnemyIndex = alive.first
+                    } else {
+                        currentMessage = "\(Terminal.red)⚠️ 该牌需要选择目标，请输入：卡牌序号 目标序号（例如：1 2）\(Terminal.reset)"
+                        continue
+                    }
+                }
+            }
+            
+            engine.handleAction(.playCard(handIndex: handIndex, targetEnemyIndex: targetEnemyIndex))
             
             // 收集新事件
             appendBattleEvents(engine.events)

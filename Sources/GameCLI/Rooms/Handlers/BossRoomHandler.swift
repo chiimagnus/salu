@@ -15,7 +15,7 @@ struct BossRoomHandler: RoomHandling {
         
         // 创建 Boss 敌人（目前使用 slimeMediumAcid 作为临时 Boss）
         var rng = SeededRNG(seed: bossSeed)
-        let enemy = context.createEnemy("slime_medium_acid", &rng)
+        let enemy = context.createEnemy("slime_medium_acid", 0, &rng)
         
         // 创建战斗引擎（使用冒险中的玩家状态和遗物）
         let engine = BattleEngine(

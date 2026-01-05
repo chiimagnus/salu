@@ -49,7 +49,7 @@ public final class BattleEngine: @unchecked Sendable {
     public convenience init(seed: UInt64) {
         var tempRng = SeededRNG(seed: seed)
         let enemyId = Act1EnemyPool.randomWeak(rng: &tempRng)
-        let enemy = createEnemy(enemyId: enemyId, rng: &tempRng)
+        let enemy = createEnemy(enemyId: enemyId, instanceIndex: 0, rng: &tempRng)
         
         self.init(
             player: createDefaultPlayer(),

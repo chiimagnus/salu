@@ -153,8 +153,8 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
                 // 让战斗在测试里“稳定且快速”结束：打一张 Strike（敌人 HP=1）
                 _ = engine.handleAction(.playCard(handIndex: 0, targetEnemyIndex: 0))
             },
-            createEnemy: { enemyId, _ in
-                Entity(id: enemyId.rawValue, name: "Boss", maxHP: 1, enemyId: enemyId)
+            createEnemy: { enemyId, instanceIndex, _ in
+                Entity(id: "\(enemyId.rawValue)#\(instanceIndex)", name: "Boss", maxHP: 1, enemyId: enemyId)
             },
             historyService: historyService
         )

@@ -192,12 +192,12 @@ enum TestMode {
     }
     
     /// 创建敌人（测试模式下压缩 HP，提升 UI 测试稳定性）
-    static func createEnemy(enemyId: EnemyID, rng: inout SeededRNG) -> Entity {
+    static func createEnemy(enemyId: EnemyID, instanceIndex: Int, rng: inout SeededRNG) -> Entity {
         guard isEnabled else {
-            return GameCore.createEnemy(enemyId: enemyId, rng: &rng)
+            return GameCore.createEnemy(enemyId: enemyId, instanceIndex: instanceIndex, rng: &rng)
         }
         
         let def = EnemyRegistry.require(enemyId)
-        return Entity(id: enemyId.rawValue, name: def.name, maxHP: 1, enemyId: enemyId)
+        return Entity(id: "\(enemyId.rawValue)#\(instanceIndex)", name: def.name, maxHP: 1, enemyId: enemyId)
     }
 }
