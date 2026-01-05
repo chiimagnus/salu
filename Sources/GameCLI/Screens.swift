@@ -23,6 +23,16 @@ enum Screens {
     static func showRestResult(healedAmount: Int, newHP: Int, maxHP: Int) {
         MapScreen.showRestResult(healedAmount: healedAmount, newHP: newHP, maxHP: maxHP)
     }
+
+    // MARK: - 商店
+
+    static func showShop(inventory: ShopInventory, runState: RunState, message: String? = nil) {
+        ShopScreen.show(inventory: inventory, runState: runState, message: message)
+    }
+
+    static func showShopRemoveCard(runState: RunState, price: Int, message: String? = nil) {
+        ShopScreen.showRemoveCardOptions(runState: runState, price: price, message: message)
+    }
     
     // MARK: - 设置菜单
     

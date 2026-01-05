@@ -47,6 +47,7 @@ final class SaveService {
             version: RunSaveVersion.current,
             seed: runState.seed,
             floor: runState.floor,
+            gold: runState.gold,
             mapNodes: mapNodes,
             currentNodeId: runState.currentNodeId,
             player: player,
@@ -115,6 +116,7 @@ final class SaveService {
         var runState = RunState(
             player: player,
             deck: deck,
+            gold: snapshot.gold,
             relicManager: relicManager,
             map: mapNodes,
             seed: snapshot.seed,

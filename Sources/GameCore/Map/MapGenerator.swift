@@ -106,6 +106,14 @@ public enum MapGenerator {
             }
         }
         
+        // 商店分布：中段层数有机会出现商店
+        if row >= 3 && row <= 12 {
+            // 15% 概率是商店
+            if rng.nextInt(upperBound: 100) < 15 {
+                return .shop
+            }
+        }
+        
         // 默认是普通战斗
         return .battle
     }
@@ -188,4 +196,3 @@ public enum MapGenerator {
         }
     }
 }
-

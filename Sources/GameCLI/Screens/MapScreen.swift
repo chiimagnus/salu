@@ -60,7 +60,7 @@ enum MapScreen {
         let hpColor = Terminal.colorForPercent(hpPercent)
         
         return [
-            "  \(Terminal.bold)\(Terminal.blue)🧑 \(player.name)\(Terminal.reset)  \(hpColor)\(hpBar)\(Terminal.reset) \(player.currentHP)/\(player.maxHP) HP  \(Terminal.dim)📚 \(runState.deck.count)张牌\(Terminal.reset)"
+            "  \(Terminal.bold)\(Terminal.blue)🧑 \(player.name)\(Terminal.reset)  \(hpColor)\(hpBar)\(Terminal.reset) \(player.currentHP)/\(player.maxHP) HP  \(Terminal.dim)📚 \(runState.deck.count)张牌  \(Terminal.yellow)💰 \(runState.gold)金币\(Terminal.reset)"
         ]
     }
     
@@ -205,4 +205,3 @@ enum MapScreen {
         Terminal.flush()
     }
 }
-

@@ -10,6 +10,9 @@ public struct RunSnapshot: Codable, Sendable {
     /// 当前楼层
     public let floor: Int
     
+    /// 当前金币
+    public let gold: Int
+    
     // MARK: - Map
     
     /// 地图节点数据（简化序列化）
@@ -98,6 +101,7 @@ public struct RunSnapshot: Codable, Sendable {
         version: Int,
         seed: UInt64,
         floor: Int,
+        gold: Int,
         mapNodes: [NodeData],
         currentNodeId: String?,
         player: PlayerData,
@@ -109,6 +113,7 @@ public struct RunSnapshot: Codable, Sendable {
         self.version = version
         self.seed = seed
         self.floor = floor
+        self.gold = gold
         self.mapNodes = mapNodes
         self.currentNodeId = currentNodeId
         self.player = player
@@ -119,4 +124,51 @@ public struct RunSnapshot: Codable, Sendable {
     }
 }
 
+// MARK: - Codable (Backward Compatible)
+
+extension RunSnapshot {
+    private enum CodingKeys: String, CodingKey {
+        case version
+        case seed
+        case floor
+        case gold
+        case mapNodes
+        case currentNodeId
+        case player
+        case deck
+        case relicIds
+        case isOver
+        case won
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        version = try container.decode(Int.self, forKey: .version)
+        seed = try container.decode(UInt64.self, forKey: .seed)
+        floor = try container.decode(Int.self, forKey: .floor)
+        gold = try container.decodeIfPresent(Int.self, forKey: .gold) ?? RunState.startingGold
+        mapNodes = try container.decode([NodeData].self, forKey: .mapNodes)
+        currentNodeId = try container.decodeIfPresent(String.self, forKey: .currentNodeId)
+        player = try container.decode(PlayerData.self, forKey: .player)
+        deck = try container.decode([CardData].self, forKey: .deck)
+        relicIds = try container.decode([String].self, forKey: .relicIds)
+        isOver = try container.decode(Bool.self, forKey: .isOver)
+        won = try container.decode(Bool.self, forKey: .won)
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(version, forKey: .version)
+        try container.encode(seed, forKey: .seed)
+        try container.encode(floor, forKey: .floor)
+        try container.encode(gold, forKey: .gold)
+        try container.encode(mapNodes, forKey: .mapNodes)
+        try container.encode(currentNodeId, forKey: .currentNodeId)
+        try container.encode(player, forKey: .player)
+        try container.encode(deck, forKey: .deck)
+        try container.encode(relicIds, forKey: .relicIds)
+        try container.encode(isOver, forKey: .isOver)
+        try container.encode(won, forKey: .won)
+    }
+}
 
