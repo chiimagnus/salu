@@ -51,3 +51,16 @@ public struct RelicID: Hashable, Sendable, ExpressibleByStringLiteral {
         self.rawValue = value
     }
 }
+
+/// 事件 ID（强类型，P5 新增）
+public struct EventID: Hashable, Sendable, ExpressibleByStringLiteral {
+    public let rawValue: String
+    
+    public init(_ rawValue: String) {
+        self.rawValue = rawValue
+    }
+    
+    public init(stringLiteral value: String) {
+        self.rawValue = value
+    }
+}

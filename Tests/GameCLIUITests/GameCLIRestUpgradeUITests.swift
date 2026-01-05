@@ -74,6 +74,11 @@ final class GameCLIRestUpgradeUITests: XCTestCase {
                 inputs.append("0") // 商店：离开
                 runState.completeCurrentNode()
                 
+            case .event:
+                inputs.append("3") // 事件：离开（所有内置事件均提供“离开”选项）
+                inputs.append("")  // 事件结算：按 Enter 继续
+                runState.completeCurrentNode()
+
             case .rest:
                 inputs.append("2") // 休息点：升级卡牌
                 inputs.append("1") // 选择第一张可升级卡
@@ -95,12 +100,12 @@ final class GameCLIRestUpgradeUITests: XCTestCase {
         let map = RunState.newRun(seed: seed).map
         let startId = "0_0"
         
-        let primaryAllowed: Set<RoomType> = [.start, .battle, .elite, .rest]
+        let primaryAllowed: Set<RoomType> = [.start, .battle, .elite, .event, .rest]
         if let path = findPath(map: map, startId: startId, allowed: primaryAllowed) {
             return path
         }
         
-        let fallbackAllowed: Set<RoomType> = [.start, .battle, .elite, .shop, .rest]
+        let fallbackAllowed: Set<RoomType> = [.start, .battle, .elite, .shop, .event, .rest]
         if let path = findPath(map: map, startId: startId, allowed: fallbackAllowed) {
             return path
         }

@@ -125,6 +125,14 @@ public enum MapGenerator {
                 return .elite
             }
         }
+
+        // P5：事件分布：中段层数有机会出现事件（避免影响前两层的战斗/测试稳定性）
+        if row >= 3 && row <= 12 {
+            // 12% 概率是事件
+            if rng.nextInt(upperBound: 100) < 12 {
+                return .event
+            }
+        }
         
         // 商店分布：中段层数有机会出现商店
         if row >= 3 && row <= 12 {
