@@ -54,7 +54,7 @@ final class StatusDefinitionTests: XCTestCase {
         )
         
         let effects = Poison.onTurnEnd(owner: .player, stacks: 4, snapshot: snapshot)
-        XCTAssertEqual(effects, [.dealDamage(target: .player, base: 4)])
+        XCTAssertEqual(effects, [.dealDamage(source: .player, target: .player, base: 4)])
         XCTAssertEqual(Poison.decay, .turnEnd(decreaseBy: 1))
     }
 }

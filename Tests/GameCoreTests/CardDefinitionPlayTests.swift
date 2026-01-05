@@ -17,14 +17,14 @@ final class CardDefinitionPlayTests: XCTestCase {
     
         print("🧪 测试：testStrike_play_producesExpectedEffects")
         let effects = Strike.play(snapshot: makeSnapshot())
-        XCTAssertEqual(effects, [.dealDamage(target: .enemy, base: 6)])
+        XCTAssertEqual(effects, [.dealDamage(source: .player, target: .enemy(index: 0), base: 6)])
     }
     
     func testStrikePlus_play_producesExpectedEffects() {
     
         print("🧪 测试：testStrikePlus_play_producesExpectedEffects")
         let effects = StrikePlus.play(snapshot: makeSnapshot())
-        XCTAssertEqual(effects, [.dealDamage(target: .enemy, base: 9)])
+        XCTAssertEqual(effects, [.dealDamage(source: .player, target: .enemy(index: 0), base: 9)])
     }
     
     func testDefend_play_producesExpectedEffects() {
@@ -48,8 +48,8 @@ final class CardDefinitionPlayTests: XCTestCase {
         XCTAssertEqual(
             effects,
             [
-                .dealDamage(target: .enemy, base: 8),
-                .applyStatus(target: .enemy, statusId: "vulnerable", stacks: 2)
+                .dealDamage(source: .player, target: .enemy(index: 0), base: 8),
+                .applyStatus(target: .enemy(index: 0), statusId: "vulnerable", stacks: 2)
             ]
         )
     }
@@ -61,8 +61,8 @@ final class CardDefinitionPlayTests: XCTestCase {
         XCTAssertEqual(
             effects,
             [
-                .dealDamage(target: .enemy, base: 10),
-                .applyStatus(target: .enemy, statusId: "vulnerable", stacks: 3)
+                .dealDamage(source: .player, target: .enemy(index: 0), base: 10),
+                .applyStatus(target: .enemy(index: 0), statusId: "vulnerable", stacks: 3)
             ]
         )
     }
@@ -74,7 +74,7 @@ final class CardDefinitionPlayTests: XCTestCase {
         XCTAssertEqual(
             effects,
             [
-                .dealDamage(target: .enemy, base: 9),
+                .dealDamage(source: .player, target: .enemy(index: 0), base: 9),
                 .drawCards(count: 1)
             ]
         )
@@ -112,8 +112,8 @@ final class CardDefinitionPlayTests: XCTestCase {
         XCTAssertEqual(
             effects,
             [
-                .dealDamage(target: .enemy, base: 12),
-                .applyStatus(target: .enemy, statusId: "weak", stacks: 2)
+                .dealDamage(source: .player, target: .enemy(index: 0), base: 12),
+                .applyStatus(target: .enemy(index: 0), statusId: "weak", stacks: 2)
             ]
         )
     }

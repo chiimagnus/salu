@@ -16,7 +16,7 @@ public struct Strike: CardDefinition {
     public static let upgradedId: CardID? = "strike+"
     
     public static func play(snapshot: BattleSnapshot) -> [BattleEffect] {
-        return [.dealDamage(target: .enemy, base: 6)]
+        return [.dealDamage(source: .player, target: .enemy(index: 0), base: 6)]
     }
 }
 
@@ -32,7 +32,7 @@ public struct StrikePlus: CardDefinition {
     public static let upgradedId: CardID? = nil
     
     public static func play(snapshot: BattleSnapshot) -> [BattleEffect] {
-        return [.dealDamage(target: .enemy, base: 9)]
+        return [.dealDamage(source: .player, target: .enemy(index: 0), base: 9)]
     }
 }
 
@@ -89,8 +89,8 @@ public struct Bash: CardDefinition {
     
     public static func play(snapshot: BattleSnapshot) -> [BattleEffect] {
         return [
-            .dealDamage(target: .enemy, base: 8),
-            .applyStatus(target: .enemy, statusId: "vulnerable", stacks: 2)
+            .dealDamage(source: .player, target: .enemy(index: 0), base: 8),
+            .applyStatus(target: .enemy(index: 0), statusId: "vulnerable", stacks: 2)
         ]
     }
 }
@@ -108,8 +108,8 @@ public struct BashPlus: CardDefinition {
     
     public static func play(snapshot: BattleSnapshot) -> [BattleEffect] {
         return [
-            .dealDamage(target: .enemy, base: 10),
-            .applyStatus(target: .enemy, statusId: "vulnerable", stacks: 3)
+            .dealDamage(source: .player, target: .enemy(index: 0), base: 10),
+            .applyStatus(target: .enemy(index: 0), statusId: "vulnerable", stacks: 3)
         ]
     }
 }

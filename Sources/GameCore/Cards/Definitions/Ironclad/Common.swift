@@ -16,7 +16,7 @@ public struct PommelStrike: CardDefinition {
     
     public static func play(snapshot: BattleSnapshot) -> [BattleEffect] {
         return [
-            .dealDamage(target: .enemy, base: 9),
+            .dealDamage(source: .player, target: .enemy(index: 0), base: 9),
             .drawCards(count: 1)
         ]
     }
@@ -81,8 +81,8 @@ public struct Clothesline: CardDefinition {
     
     public static func play(snapshot: BattleSnapshot) -> [BattleEffect] {
         return [
-            .dealDamage(target: .enemy, base: 12),
-            .applyStatus(target: .enemy, statusId: "weak", stacks: 2)
+            .dealDamage(source: .player, target: .enemy(index: 0), base: 12),
+            .applyStatus(target: .enemy(index: 0), statusId: "weak", stacks: 2)
         ]
     }
 }

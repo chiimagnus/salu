@@ -118,6 +118,32 @@ public final class BattleEngine: @unchecked Sendable {
     private func calculateDamage(baseDamage: Int, attacker: Entity, defender: Entity) -> Int {
         DamageCalculator.calculate(baseDamage: baseDamage, attacker: attacker, defender: defender)
     }
+
+    // MARK: Target Resolution (P6)
+
+    /// 将 EffectTarget 解析为当前战斗中的实体快照（用于计算/修正）
+    ///
+    /// - Note: P1 阶段仍是单敌人结构，因此任何 enemy(index:) 都会被解析到 `state.enemy`。
+    private func resolveEntity(for target: EffectTarget) -> Entity {
+        switch target {
+        case .player:
+            return state.player
+        case .enemy(index: _):
+            return state.enemy
+        }
+    }
+
+    /// 将 EffectTarget 解析为用于事件/日志的展示名
+    ///
+    /// - Note: P1 阶段仍是单敌人结构，因此敌人展示名暂不带序号；P2 会升级为多敌人并补齐区分。
+    private func resolveDisplayName(for target: EffectTarget) -> String {
+        switch target {
+        case .player:
+            return state.player.name
+        case .enemy(index: _):
+            return state.enemy.name
+        }
+    }
     
     // MARK: Turn Management
     
@@ -224,7 +250,7 @@ public final class BattleEngine: @unchecked Sendable {
         guard let move = state.enemy.plannedMove else {
             // 没有计划行动（不应该发生）
             emit(.enemyAction(enemyId: state.enemy.id, action: "跳过"))
-            processStatusesAtTurnEnd(for: .enemy)
+            processStatusesAtTurnEnd(for: .enemy(index: 0))
             checkBattleEnd()
             return
         }
@@ -237,7 +263,7 @@ public final class BattleEngine: @unchecked Sendable {
         }
         
         // 处理敌人回合结束的状态效果（触发 + 递减）
-        processStatusesAtTurnEnd(for: .enemy)
+        processStatusesAtTurnEnd(for: .enemy(index: 0))
         
         // 检查玩家是否死亡
         checkBattleEnd()
@@ -318,8 +344,8 @@ public final class BattleEngine: @unchecked Sendable {
     /// 应用单个战斗效果（统一执行入口）
     private func apply(_ effect: BattleEffect) {
         switch effect {
-        case .dealDamage(let target, let base):
-            applyDamage(target: target, base: base)
+        case .dealDamage(let source, let target, let base):
+            applyDamage(source: source, target: target, base: base)
             
         case .gainBlock(let target, let base):
             applyBlock(target: target, base: base)
@@ -340,51 +366,42 @@ public final class BattleEngine: @unchecked Sendable {
     }
     
     /// 应用伤害效果
-    private func applyDamage(target: EffectTarget, base: Int) {
-        let (attackerName, defenderName): (String, String)
-        let (attacker, defender): (Entity, Entity)
-        let finalDamage: Int
-        let damageResult: (Int, Int)
+    private func applyDamage(source: EffectTarget, target: EffectTarget, base: Int) {
+        let attacker: Entity = resolveEntity(for: source)
+        let defenderBefore: Entity = resolveEntity(for: target)
         
+        let finalDamage = calculateDamage(baseDamage: base, attacker: attacker, defender: defenderBefore)
+        
+        let damageResult: (dealt: Int, blocked: Int)
         switch target {
-        case .enemy:
-            attacker = state.player
-            defender = state.enemy
-            finalDamage = calculateDamage(baseDamage: base, attacker: attacker, defender: defender)
-            damageResult = state.enemy.takeDamage(finalDamage)
-            battleStats.totalDamageDealt += damageResult.0
-            attackerName = state.player.name
-            defenderName = state.enemy.name
         case .player:
-            attacker = state.enemy
-            defender = state.player
-            finalDamage = calculateDamage(baseDamage: base, attacker: attacker, defender: defender)
             damageResult = state.player.takeDamage(finalDamage)
-            battleStats.totalDamageTaken += damageResult.0
-            attackerName = state.enemy.name
-            defenderName = state.player.name
+            battleStats.totalDamageTaken += damageResult.dealt
+        case .enemy(index: _):
+            damageResult = state.enemy.takeDamage(finalDamage)
+            battleStats.totalDamageDealt += damageResult.dealt
         }
         
         emit(.damageDealt(
-            source: attackerName,
-            target: defenderName,
-            amount: damageResult.0,
-            blocked: damageResult.1
+            source: resolveDisplayName(for: source),
+            target: resolveDisplayName(for: target),
+            amount: damageResult.dealt,
+            blocked: damageResult.blocked
         ))
 
         // P4: 触发伤害相关遗物效果（以玩家视角：造成伤害/受到伤害）
         switch target {
-        case .enemy:
-            triggerRelics(.damageDealt(amount: damageResult.0))
+        case .enemy(index: _):
+            triggerRelics(.damageDealt(amount: damageResult.dealt))
         case .player:
-            triggerRelics(.damageTaken(amount: damageResult.0))
+            triggerRelics(.damageTaken(amount: damageResult.dealt))
         }
     }
     
     /// 应用格挡效果
     private func applyBlock(target: EffectTarget, base: Int) {
         // 应用格挡修正（通过 BlockCalculator 按 phase+priority 排序）
-        let entity = target == .player ? state.player : state.enemy
+        let entity = resolveEntity(for: target)
         let block = BlockCalculator.calculate(baseBlock: base, entity: entity)
         
         switch target {
@@ -394,7 +411,7 @@ public final class BattleEngine: @unchecked Sendable {
             emit(.blockGained(target: state.player.name, amount: block))
             // P4: 触发获得格挡遗物效果（仅玩家）
             triggerRelics(.blockGained(amount: block))
-        case .enemy:
+        case .enemy(index: _):
             state.enemy.gainBlock(block)
             emit(.blockGained(target: state.enemy.name, amount: block))
         }
@@ -412,7 +429,7 @@ public final class BattleEngine: @unchecked Sendable {
         case .player:
             state.player.statuses.apply(statusId, stacks: stacks)
             emit(.statusApplied(target: state.player.name, effect: def.name, stacks: stacks))
-        case .enemy:
+        case .enemy(index: _):
             state.enemy.statuses.apply(statusId, stacks: stacks)
             emit(.statusApplied(target: state.enemy.name, effect: def.name, stacks: stacks))
         }
@@ -424,7 +441,7 @@ public final class BattleEngine: @unchecked Sendable {
         case .player:
             state.player.currentHP = min(state.player.currentHP + amount, state.player.maxHP)
             // 治疗事件（目前没有对应的 BattleEvent，暂不 emit）
-        case .enemy:
+        case .enemy(index: _):
             state.enemy.currentHP = min(state.enemy.currentHP + amount, state.enemy.maxHP)
             // 治疗事件（目前没有对应的 BattleEvent，暂不 emit）
         }
@@ -470,7 +487,7 @@ public final class BattleEngine: @unchecked Sendable {
     
     /// 处理实体的回合结束状态效果（触发 + 递减）
     private func processStatusesAtTurnEnd(for target: EffectTarget) {
-        let entity = target == .player ? state.player : state.enemy
+        let entity = resolveEntity(for: target)
         let snapshot = BattleSnapshot(
             turn: state.turn,
             player: state.player,
@@ -502,7 +519,7 @@ public final class BattleEngine: @unchecked Sendable {
                 switch target {
                 case .player:
                     state.player.statuses.set(statusId, stacks: newStacks)
-                case .enemy:
+                case .enemy(index: _):
                     state.enemy.statuses.set(statusId, stacks: newStacks)
                 }
                 
@@ -515,7 +532,7 @@ public final class BattleEngine: @unchecked Sendable {
         // 3) 发出状态过期事件
         for statusId in expired {
             guard let def = StatusRegistry.get(statusId) else { continue }
-            let entityName = target == .player ? state.player.name : state.enemy.name
+            let entityName = resolveDisplayName(for: target)
             emit(.statusExpired(target: entityName, effect: def.name))
         }
     }

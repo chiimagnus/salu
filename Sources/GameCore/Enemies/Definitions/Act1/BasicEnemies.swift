@@ -19,12 +19,12 @@ public struct JawWorm: EnemyDefinition {
             if roll < 75 {
                 return EnemyMove(
                     intent: EnemyIntentDisplay(icon: "⚔️", text: "攻击 11", previewDamage: 11),
-                    effects: [.dealDamage(target: .player, base: 11)]
+                    effects: [.dealDamage(source: .enemy(index: 0), target: .player, base: 11)]
                 )
             } else {
                 return EnemyMove(
                     intent: EnemyIntentDisplay(icon: "💪", text: "力量 +3"),
-                    effects: [.applyStatus(target: .enemy, statusId: "strength", stacks: 3)]
+                    effects: [.applyStatus(target: .enemy(index: 0), statusId: "strength", stacks: 3)]
                 )
             }
         }
@@ -33,17 +33,17 @@ public struct JawWorm: EnemyDefinition {
         if roll < 45 {
             return EnemyMove(
                 intent: EnemyIntentDisplay(icon: "⚔️", text: "攻击 11", previewDamage: 11),
-                effects: [.dealDamage(target: .player, base: 11)]
+                effects: [.dealDamage(source: .enemy(index: 0), target: .player, base: 11)]
             )
         } else if roll < 75 {
             return EnemyMove(
                 intent: EnemyIntentDisplay(icon: "💪", text: "力量 +3"),
-                effects: [.applyStatus(target: .enemy, statusId: "strength", stacks: 3)]
+                effects: [.applyStatus(target: .enemy(index: 0), statusId: "strength", stacks: 3)]
             )
         } else {
             return EnemyMove(
                 intent: EnemyIntentDisplay(icon: "⚔️", text: "猛扑 7", previewDamage: 7),
-                effects: [.dealDamage(target: .player, base: 7)]
+                effects: [.dealDamage(source: .enemy(index: 0), target: .player, base: 7)]
             )
         }
     }
@@ -65,13 +65,13 @@ public struct Cultist: EnemyDefinition {
             // 第一回合必定念咒
             return EnemyMove(
                 intent: EnemyIntentDisplay(icon: "💪", text: "力量 +3"),
-                effects: [.applyStatus(target: .enemy, statusId: "strength", stacks: 3)]
+                effects: [.applyStatus(target: .enemy(index: 0), statusId: "strength", stacks: 3)]
             )
         }
         // 后续回合攻击
         return EnemyMove(
             intent: EnemyIntentDisplay(icon: "⚔️", text: "攻击 6", previewDamage: 6),
-            effects: [.dealDamage(target: .player, base: 6)]
+            effects: [.dealDamage(source: .enemy(index: 0), target: .player, base: 6)]
         )
     }
 }
@@ -93,12 +93,12 @@ public struct LouseGreen: EnemyDefinition {
         if roll < 75 {
             return EnemyMove(
                 intent: EnemyIntentDisplay(icon: "⚔️", text: "攻击 6", previewDamage: 6),
-                effects: [.dealDamage(target: .player, base: 6)]
+                effects: [.dealDamage(source: .enemy(index: 0), target: .player, base: 6)]
             )
         } else {
             return EnemyMove(
                 intent: EnemyIntentDisplay(icon: "💪", text: "卷曲 +3"),
-                effects: [.applyStatus(target: .enemy, statusId: "strength", stacks: 3)]
+                effects: [.applyStatus(target: .enemy(index: 0), statusId: "strength", stacks: 3)]
             )
         }
     }
@@ -121,12 +121,12 @@ public struct LouseRed: EnemyDefinition {
         if roll < 75 {
             return EnemyMove(
                 intent: EnemyIntentDisplay(icon: "⚔️", text: "攻击 6", previewDamage: 6),
-                effects: [.dealDamage(target: .player, base: 6)]
+                effects: [.dealDamage(source: .enemy(index: 0), target: .player, base: 6)]
             )
         } else {
             return EnemyMove(
                 intent: EnemyIntentDisplay(icon: "💪", text: "卷曲 +3"),
-                effects: [.applyStatus(target: .enemy, statusId: "strength", stacks: 3)]
+                effects: [.applyStatus(target: .enemy(index: 0), statusId: "strength", stacks: 3)]
             )
         }
     }
@@ -149,13 +149,13 @@ public struct SlimeMediumAcid: EnemyDefinition {
         if roll < 70 {
             return EnemyMove(
                 intent: EnemyIntentDisplay(icon: "⚔️", text: "攻击 10", previewDamage: 10),
-                effects: [.dealDamage(target: .player, base: 10)]
+                effects: [.dealDamage(source: .enemy(index: 0), target: .player, base: 10)]
             )
         } else {
             return EnemyMove(
                 intent: EnemyIntentDisplay(icon: "⚔️💀", text: "涂抹 7 + 虚弱 1", previewDamage: 7),
                 effects: [
-                    .dealDamage(target: .player, base: 7),
+                    .dealDamage(source: .enemy(index: 0), target: .player, base: 7),
                     .applyStatus(target: .player, statusId: "weak", stacks: 1)
                 ]
             )
