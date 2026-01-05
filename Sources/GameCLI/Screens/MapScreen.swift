@@ -29,7 +29,8 @@ enum MapScreen {
 
         // 冒险日志（可折叠）
         if showLog {
-            lines.append(contentsOf: LogPanel.build(logs: logs, maxLines: 3))
+            lines.append(contentsOf: buildRunLog(logs))
+            lines.append("")
         }
         
         // 消息区域
@@ -180,7 +181,25 @@ enum MapScreen {
         return lines
     }
 
-    // 日志面板统一交由 Components/LogPanel 渲染（横排 3 行以内）
+    private static func buildRunLog(_ logs: [String], maxLines: Int = 6) -> [String] {
+        var lines: [String] = []
+        lines.append("\(Terminal.bold)───────────── 日志 ─────────────\(Terminal.reset)")
+        
+        let display = logs.suffix(maxLines)
+        for line in display {
+            lines.append("  \(line)")
+        }
+        
+        let padding = maxLines - display.count
+        if padding > 0 {
+            for _ in 0..<padding {
+                lines.append("")
+            }
+        }
+        
+        lines.append("\(Terminal.bold)────────────────────────────────────\(Terminal.reset)")
+        return lines
+    }
     
     // MARK: - 休息界面
     

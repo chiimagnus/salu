@@ -36,8 +36,8 @@ enum BattleScreen {
         
         // 事件日志区域（可折叠）
         if showLog {
-            // 横排日志：控制在 3 行以内
-            lines.append(contentsOf: LogPanel.build(logs: logs, maxLines: 3))
+            lines.append(contentsOf: buildEventLog(logs))
+            lines.append("")
         }
         
         // 消息区域
@@ -166,7 +166,26 @@ enum BattleScreen {
         return lines
     }
     
-    // 日志面板统一交由 Components/LogPanel 渲染（横排 3 行以内）
+    private static func buildEventLog(_ events: [String], maxEvents: Int = 6) -> [String] {
+        var lines: [String] = []
+        
+        lines.append("\(Terminal.bold)───────────── 日志 ─────────────\(Terminal.reset)")
+        
+        let displayEvents = events.suffix(maxEvents)
+        for event in displayEvents {
+            lines.append("  \(event)")
+        }
+        
+        // 填充空行保持高度一致
+        let padding = maxEvents - displayEvents.count
+        for _ in 0..<padding {
+            lines.append("")
+        }
+        
+        lines.append("\(Terminal.bold)─────────────────────────────────────\(Terminal.reset)")
+        
+        return lines
+    }
     
     private static func buildInputPrompt(handCount: Int, showLog: Bool = false) -> [String] {
         let logHint = showLog 
