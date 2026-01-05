@@ -15,6 +15,7 @@ final class RunSnapshotCodableTests: XCTestCase {
             version: RunSaveVersion.current,
             seed: 123,
             floor: 1,
+            gold: 120,
             mapNodes: [
                 .init(
                     id: "0_0",
@@ -43,12 +44,50 @@ final class RunSnapshotCodableTests: XCTestCase {
         XCTAssertEqual(decoded.version, RunSaveVersion.current)
         XCTAssertEqual(decoded.seed, 123)
         XCTAssertEqual(decoded.floor, 1)
+        XCTAssertEqual(decoded.gold, 120)
         XCTAssertEqual(decoded.player.currentHP, 72)
         XCTAssertEqual(decoded.player.statuses["strength"], 2)
         XCTAssertEqual(decoded.deck.count, 2)
         XCTAssertEqual(decoded.relicIds, ["burning_blood", "lantern"])
         XCTAssertEqual(decoded.mapNodes.first?.roomType, RoomType.start.rawValue)
     }
+    
+    /// 旧存档缺少 gold 字段时应使用默认值。
+    func testRunSnapshot_jsonDecode_withMissingGold_defaultsToStartingGold() throws {
+        print("🧪 测试：testRunSnapshot_jsonDecode_withMissingGold_defaultsToStartingGold")
+        let json: [String: Any] = [
+            "version": RunSaveVersion.current,
+            "seed": 321,
+            "floor": 1,
+            "mapNodes": [
+                [
+                    "id": "0_0",
+                    "row": 0,
+                    "column": 0,
+                    "roomType": RoomType.start.rawValue,
+                    "connections": ["1_0"],
+                    "isCompleted": true,
+                    "isAccessible": false,
+                ],
+            ],
+            "currentNodeId": NSNull(),
+            "player": [
+                "maxHP": 80,
+                "currentHP": 70,
+                "statuses": ["strength": 1],
+            ],
+            "deck": [
+                ["id": "strike_1", "cardId": "strike"],
+            ],
+            "relicIds": ["burning_blood"],
+            "isOver": false,
+            "won": false,
+        ]
+        
+        let data = try JSONSerialization.data(withJSONObject: json, options: [])
+        let decoded = try JSONDecoder().decode(RunSnapshot.self, from: data)
+        
+        XCTAssertEqual(decoded.gold, RunState.startingGold)
+    }
 }
-
 

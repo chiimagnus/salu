@@ -27,11 +27,13 @@ final class SaveServiceTests: XCTestCase {
         run.player.statuses.set("strength", stacks: 2)
         run.addCardToDeck(cardId: "inflame")
         run.relicManager.add("lantern")
+        run.gold = 120
         
         service.saveRun(run)
         let loaded = try XCTUnwrap(try service.loadRun())
         
         XCTAssertEqual(loaded.seed, 42)
+        XCTAssertEqual(loaded.gold, 120)
         XCTAssertEqual(loaded.player.currentHP, 55)
         XCTAssertEqual(loaded.player.statuses.stacks(of: "strength"), 2)
         XCTAssertEqual(loaded.deck.map(\.cardId.rawValue), run.deck.map(\.cardId.rawValue))
@@ -51,6 +53,7 @@ final class SaveServiceTests: XCTestCase {
             version: 0,
             seed: snapshot.seed,
             floor: snapshot.floor,
+            gold: snapshot.gold,
             mapNodes: snapshot.mapNodes,
             currentNodeId: snapshot.currentNodeId,
             player: snapshot.player,
@@ -80,6 +83,7 @@ final class SaveServiceTests: XCTestCase {
             version: snapshot.version,
             seed: snapshot.seed,
             floor: snapshot.floor,
+            gold: snapshot.gold,
             mapNodes: snapshot.mapNodes,
             currentNodeId: snapshot.currentNodeId,
             player: snapshot.player,
@@ -108,6 +112,7 @@ final class SaveServiceTests: XCTestCase {
             version: snapshot.version,
             seed: snapshot.seed,
             floor: snapshot.floor,
+            gold: snapshot.gold,
             mapNodes: snapshot.mapNodes,
             currentNodeId: snapshot.currentNodeId,
             player: snapshot.player,
@@ -125,5 +130,4 @@ final class SaveServiceTests: XCTestCase {
         }
     }
 }
-
 

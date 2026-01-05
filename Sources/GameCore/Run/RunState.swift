@@ -10,6 +10,9 @@ public struct RunState: Sendable {
     /// 当前牌组
     public var deck: [Card]
     
+    /// 当前金币
+    public var gold: Int
+    
     /// 遗物管理器（P4 新增）
     public var relicManager: RelicManager
     
@@ -36,6 +39,7 @@ public struct RunState: Sendable {
     public init(
         player: Entity,
         deck: [Card],
+        gold: Int = RunState.startingGold,
         relicManager: RelicManager = RelicManager(),
         map: [MapNode],
         seed: UInt64,
@@ -43,6 +47,7 @@ public struct RunState: Sendable {
     ) {
         self.player = player
         self.deck = deck
+        self.gold = gold
         self.relicManager = relicManager
         self.map = map
         self.currentNodeId = nil
@@ -65,6 +70,7 @@ public struct RunState: Sendable {
         return RunState(
             player: player,
             deck: deck,
+            gold: RunState.startingGold,
             relicManager: relicManager,
             map: map,
             seed: seed
@@ -216,3 +222,9 @@ public struct RunState: Sendable {
     }
 }
 
+// MARK: - Gold
+
+extension RunState {
+    /// 起始金币
+    public static let startingGold = 99
+}
