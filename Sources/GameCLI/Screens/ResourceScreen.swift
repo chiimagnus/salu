@@ -7,7 +7,57 @@ import GameCore
 /// - 查看关键“池子”内容（如 Act1 遭遇池）
 /// - 提供基础统计洞察（数量、分组、双敌人占比等）
 enum ResourceScreen {
-    static func show() {
+    enum Tab: CaseIterable {
+        case cards
+        case enemies
+        case relics
+        
+        var title: String {
+            switch self {
+            case .cards:
+                return "卡牌"
+            case .enemies:
+                return "敌人/遭遇"
+            case .relics:
+                return "遗物"
+            }
+        }
+        
+        func next() -> Tab {
+            let all = Self.allCases
+            guard let index = all.firstIndex(of: self) else {
+                return .cards
+            }
+            let nextIndex = (index + 1) % all.count
+            return all[nextIndex]
+        }
+    }
+    
+    static func run() {
+        var tab: Tab = .cards
+        
+        while true {
+            show(tab: tab)
+            print("\(Terminal.yellow)输入 Tab 切换，回车返回 > \(Terminal.reset)", terminator: "")
+            
+            let rawInput = readLine() ?? ""
+            if rawInput == "\t" {
+                tab = tab.next()
+                continue
+            }
+            
+            let input = rawInput.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if input.isEmpty {
+                return
+            }
+            
+            if input == "tab" || input == "t" {
+                tab = tab.next()
+            }
+        }
+    }
+    
+    static func show(tab: Tab) {
         Terminal.clear()
         
         var lines: [String] = []
@@ -16,8 +66,37 @@ enum ResourceScreen {
         lines.append("\(Terminal.bold)\(Terminal.cyan)  📦 资源管理（内容与池子一览）\(Terminal.reset)")
         lines.append("\(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)")
         lines.append("")
+        lines.append(renderTabBar(current: tab))
+        lines.append("")
         
-        // MARK: - Cards
+        switch tab {
+        case .cards:
+            lines.append(contentsOf: renderCards())
+        case .enemies:
+            lines.append(contentsOf: renderEnemies())
+        case .relics:
+            lines.append(contentsOf: renderRelics())
+        }
+        
+        for line in lines {
+            print(line)
+        }
+    }
+
+    private static func renderTabBar(current: Tab) -> String {
+        let tabs = Tab.allCases.map { tab in
+            if tab == current {
+                return "\(Terminal.bold)\(Terminal.cyan)[\(tab.title)]\(Terminal.reset)"
+            }
+            return "\(Terminal.dim)\(tab.title)\(Terminal.reset)"
+        }
+        
+        return "  " + tabs.joined(separator: "  ") + "  \(Terminal.dim)(Tab 切换)\(Terminal.reset)"
+    }
+    
+    private static func renderCards() -> [String] {
+        var lines: [String] = []
+        
         let cardIds = CardRegistry.allCardIds
         let cardDefs = cardIds.map { id in (id, CardRegistry.require(id)) }
         
@@ -33,8 +112,12 @@ enum ResourceScreen {
         lines.append(contentsOf: formatCardGroup(title: "🛡️ 技能牌", cards: skills))
         lines.append(contentsOf: formatCardGroup(title: "✨ 能力牌", cards: powers))
         
-        // MARK: - Enemies & Encounters
-        lines.append("")
+        return lines
+    }
+    
+    private static func renderEnemies() -> [String] {
+        var lines: [String] = []
+        
         lines.append("\(Terminal.bold)👹 敌人池/遭遇池（Act1/Act2）\(Terminal.reset)")
         lines.append("")
         
@@ -70,7 +153,6 @@ enum ResourceScreen {
             lines.append("    [\(i + 1)] \(names)")
         }
         
-        // Act2
         lines.append("")
         lines.append("\(Terminal.bold)Act2 敌人池\(Terminal.reset)")
         lines.append("  普通敌人（weak）数量：\(Terminal.yellow)\(Act2EnemyPool.weak.count)\(Terminal.reset)")
@@ -104,8 +186,12 @@ enum ResourceScreen {
             lines.append("    [\(i + 1)] \(names)")
         }
         
-        // MARK: - Relics
-        lines.append("")
+        return lines
+    }
+    
+    private static func renderRelics() -> [String] {
+        var lines: [String] = []
+        
         lines.append("\(Terminal.bold)🏺 遗物（Registry）\(Terminal.reset)")
         
         let droppable = RelicPool.availableRelicIds(excluding: [])
@@ -132,10 +218,7 @@ enum ResourceScreen {
             lines.append("")
         }
         
-        // Print
-        for line in lines {
-            print(line)
-        }
+        return lines
     }
     
     private static func formatCardGroup(
@@ -153,5 +236,4 @@ enum ResourceScreen {
         return lines
     }
 }
-
 

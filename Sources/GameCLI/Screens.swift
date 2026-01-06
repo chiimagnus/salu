@@ -59,7 +59,7 @@ enum Screens {
     // MARK: - 资源管理（开发者工具）
     
     static func showResources() {
-        ResourceScreen.show()
+        ResourceScreen.run()
     }
     
     // MARK: - 帮助屏幕
