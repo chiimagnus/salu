@@ -16,11 +16,11 @@ struct EliteRoomHandler: RoomHandling {
     
     private func handleEliteBattle(node: MapNode, runState: inout RunState, context: RoomContext) -> Bool {
         // 使用当前 RNG 状态创建新的种子
-        let battleSeed = runState.seed &+ UInt64(runState.currentRow) &* 1000
+        let battleSeed = runState.seed &+ UInt64(runState.floor) &* 1_000_000 &+ UInt64(runState.currentRow) &* 1000
         
         // 选择敌人（精英战斗：中等敌人池）
         var rng = SeededRNG(seed: battleSeed)
-        let enemyId = Act1EnemyPool.randomMedium(rng: &rng)
+        let enemyId = (runState.floor == 1) ? Act1EnemyPool.randomMedium(rng: &rng) : Act2EnemyPool.randomMedium(rng: &rng)
         let enemy = context.createEnemy(enemyId, 0, &rng)
         
         // 创建战斗引擎（使用冒险中的玩家状态和遗物）

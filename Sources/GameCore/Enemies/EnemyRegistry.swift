@@ -10,7 +10,21 @@ public enum EnemyRegistry {
         Cultist.id: Cultist.self,
         LouseGreen.id: LouseGreen.self,
         LouseRed.id: LouseRed.self,
+        SporeBeast.id: SporeBeast.self,
+        SlimeSmallAcid.id: SlimeSmallAcid.self,
         SlimeMediumAcid.id: SlimeMediumAcid.self,
+        StoneSentinel.id: StoneSentinel.self,
+        
+        // Act 1 Bosses
+        ToxicColossus.id: ToxicColossus.self,
+        
+        // Act 2 Enemies
+        ShadowStalker.id: ShadowStalker.self,
+        ClockworkSentinel.id: ClockworkSentinel.self,
+        RuneGuardian.id: RuneGuardian.self,
+        
+        // Act 2 Bosses
+        ChronoWatcher.id: ChronoWatcher.self,
     ]
     
     /// 获取敌人定义

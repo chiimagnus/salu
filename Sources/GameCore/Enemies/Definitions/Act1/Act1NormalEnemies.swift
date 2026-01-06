@@ -1,4 +1,4 @@
-// MARK: - Act 1 Enemy Definitions
+// MARK: - Act 1 Normal Enemy Definitions
 
 // ============================================================
 // Jaw Worm (下颚虫)
@@ -133,32 +133,81 @@ public struct LouseRed: EnemyDefinition {
 }
 
 // ============================================================
-// Slime Medium Acid (酸液史莱姆)
+// Spore Beast (孢子兽)
 // ============================================================
 
-/// 酸液史莱姆
-/// 行为模式：攻击 + 涂抹（施加虚弱）
-public struct SlimeMediumAcid: EnemyDefinition {
-    public static let id: EnemyID = "slime_medium_acid"
-    public static let name = "酸液史莱姆"
-    public static let hpRange: ClosedRange<Int> = 28...32
+/// 孢子兽（普通敌人）
+///
+/// 特点：带有轻度控制（脆弱/中毒），但伤害不高。
+public struct SporeBeast: EnemyDefinition {
+    public static let id: EnemyID = "spore_beast"
+    public static let name = "孢子兽"
+    public static let hpRange: ClosedRange<Int> = 24...28
+    
+    public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {
+        // 第一回合固定喷射，保证节奏可读
+        if snapshot.turn == 1 {
+            return EnemyMove(
+                intent: EnemyIntentDisplay(icon: "☁️", text: "孢子喷射 5 + 脆弱 1", previewDamage: 5),
+                effects: [
+                    .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 5),
+                    .applyStatus(target: .player, statusId: "frail", stacks: 1),
+                ]
+            )
+        }
+        
+        let roll = rng.nextInt(upperBound: 100)
+        if roll < 65 {
+            return EnemyMove(
+                intent: EnemyIntentDisplay(icon: "☁️", text: "孢子喷射 5 + 脆弱 1", previewDamage: 5),
+                effects: [
+                    .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 5),
+                    .applyStatus(target: .player, statusId: "frail", stacks: 1),
+                ]
+            )
+        } else {
+            return EnemyMove(
+                intent: EnemyIntentDisplay(icon: "🛡️", text: "孢子护甲：格挡 10"),
+                effects: [
+                    .gainBlock(target: .enemy(index: selfIndex), base: 10)
+                ]
+            )
+        }
+    }
+}
+
+// ============================================================
+// Acid Slime Small (酸液幼体)
+// ============================================================
+
+/// 酸液幼体（普通敌人）
+///
+/// 特点：较低生命值，攻击与“涂抹”两种动作。
+public struct SlimeSmallAcid: EnemyDefinition {
+    public static let id: EnemyID = "slime_small_acid"
+    public static let name = "酸液幼体"
+    public static let hpRange: ClosedRange<Int> = 20...24
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {
         let roll = rng.nextInt(upperBound: 100)
         
         if roll < 70 {
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "⚔️", text: "攻击 10", previewDamage: 10),
-                effects: [.dealDamage(source: .enemy(index: selfIndex), target: .player, base: 10)]
+                intent: EnemyIntentDisplay(icon: "⚔️", text: "攻击 7", previewDamage: 7),
+                effects: [
+                    .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 7)
+                ]
             )
         } else {
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "⚔️💀", text: "涂抹 7 + 虚弱 1", previewDamage: 7),
+                intent: EnemyIntentDisplay(icon: "⚔️💀", text: "涂抹 4 + 虚弱 1", previewDamage: 4),
                 effects: [
-                    .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 7),
-                    .applyStatus(target: .player, statusId: "weak", stacks: 1)
+                    .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 4),
+                    .applyStatus(target: .player, statusId: "weak", stacks: 1),
                 ]
             )
         }
     }
 }
+
+

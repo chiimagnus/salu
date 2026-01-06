@@ -13,6 +13,13 @@ final class CardDefinitionPlayTests: XCTestCase {
         return BattleSnapshot(turn: 1, player: player, enemies: [enemy], energy: energy)
     }
     
+    private func makeSnapshotWithTwoEnemies(energy: Int = 3) -> BattleSnapshot {
+        let player = Entity(id: "player", name: "玩家", maxHP: 80)
+        let e1 = Entity(id: "e1", name: "敌人A", maxHP: 40, enemyId: "jaw_worm")
+        let e2 = Entity(id: "e2", name: "敌人B", maxHP: 40, enemyId: "jaw_worm")
+        return BattleSnapshot(turn: 1, player: player, enemies: [e1, e2], energy: energy)
+    }
+    
     func testStrike_play_producesExpectedEffects() {
     
         print("🧪 测试：testStrike_play_producesExpectedEffects")
@@ -114,6 +121,57 @@ final class CardDefinitionPlayTests: XCTestCase {
             [
                 .dealDamage(source: .player, target: .enemy(index: 0), base: 12),
                 .applyStatus(target: .enemy(index: 0), statusId: "weak", stacks: 2)
+            ]
+        )
+    }
+    
+    func testCleave_play_producesExpectedEffects() {
+    
+        print("🧪 测试：testCleave_play_producesExpectedEffects")
+        let effects = Cleave.play(snapshot: makeSnapshotWithTwoEnemies(), targetEnemyIndex: nil)
+        XCTAssertEqual(
+            effects,
+            [
+                .dealDamage(source: .player, target: .enemy(index: 0), base: 4),
+                .dealDamage(source: .player, target: .enemy(index: 1), base: 4),
+            ]
+        )
+    }
+    
+    func testIntimidate_play_producesExpectedEffects() {
+    
+        print("🧪 测试：testIntimidate_play_producesExpectedEffects")
+        let effects = Intimidate.play(snapshot: makeSnapshotWithTwoEnemies(), targetEnemyIndex: nil)
+        XCTAssertEqual(
+            effects,
+            [
+                .applyStatus(target: .enemy(index: 0), statusId: "weak", stacks: 2),
+                .applyStatus(target: .enemy(index: 1), statusId: "weak", stacks: 2),
+            ]
+        )
+    }
+    
+    func testAgileStance_play_producesExpectedEffects() {
+    
+        print("🧪 测试：testAgileStance_play_producesExpectedEffects")
+        let effects = AgileStance.play(snapshot: makeSnapshot(), targetEnemyIndex: nil)
+        XCTAssertEqual(
+            effects,
+            [
+                .applyStatus(target: .player, statusId: "dexterity", stacks: 1)
+            ]
+        )
+    }
+    
+    func testPoisonedStrike_play_producesExpectedEffects() {
+    
+        print("🧪 测试：testPoisonedStrike_play_producesExpectedEffects")
+        let effects = PoisonedStrike.play(snapshot: makeSnapshotWithTwoEnemies(), targetEnemyIndex: 1)
+        XCTAssertEqual(
+            effects,
+            [
+                .dealDamage(source: .player, target: .enemy(index: 1), base: 5),
+                .applyStatus(target: .enemy(index: 1), statusId: "poison", stacks: 2),
             ]
         )
     }

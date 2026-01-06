@@ -41,4 +41,26 @@ final class RelicDropStrategyTests: XCTestCase {
         XCTAssertEqual(first, second)
         XCTAssertNotEqual(first, "lantern")
     }
+
+    func testBossRelicDrop_prefersBossRarity_whenAvailable() {
+        print("🧪 测试：testBossRelicDrop_prefersBossRarity_whenAvailable")
+        let context = RewardContext(
+            seed: 777,
+            floor: 1,
+            currentRow: 14,
+            nodeId: "14_0",
+            roomType: .boss
+        )
+        
+        let drop = RelicDropStrategy.generateRelicDrop(
+            context: context,
+            source: .boss,
+            ownedRelics: []
+        )
+        
+        XCTAssertNotNil(drop)
+        if let drop {
+            XCTAssertEqual(RelicRegistry.require(drop).rarity, .boss)
+        }
+    }
 }

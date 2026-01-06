@@ -1,23 +1,4 @@
-// MARK: - Basic Relic Definitions
-
-// ============================================================
-// Burning Blood (燃烧之血) - Ironclad Starter
-// ============================================================
-
-/// 燃烧之血（铁甲战士起始遗物）
-/// 效果：战斗胜利后恢复 6 点生命值
-public struct BurningBloodRelic: RelicDefinition {
-    public static let id: RelicID = "burning_blood"
-    public static let name = "燃烧之血"
-    public static let description = "战斗胜利后恢复 6 点生命值"
-    public static let rarity: RelicRarity = .starter
-    public static let icon = "🔥"
-    
-    public static func onBattleTrigger(_ trigger: BattleTrigger, snapshot: BattleSnapshot) -> [BattleEffect] {
-        guard case .battleEnd(let won) = trigger, won else { return [] }
-        return [.heal(target: .player, amount: 6)]
-    }
-}
+// MARK: - Common Relic Definitions (P7)
 
 // ============================================================
 // Vajra (金刚杵) - Common
@@ -56,3 +37,26 @@ public struct LanternRelic: RelicDefinition {
         return [.gainEnergy(amount: 1)]
     }
 }
+
+// ============================================================
+// Iron Bracer (铁护臂) - Common
+// ============================================================
+
+/// 铁护臂
+/// 效果：每次打出攻击牌，获得 2 点格挡
+public struct IronBracerRelic: RelicDefinition {
+    public static let id: RelicID = "iron_bracer"
+    public static let name = "铁护臂"
+    public static let description = "每次打出攻击牌，获得 2 点格挡"
+    public static let rarity: RelicRarity = .common
+    public static let icon = "🛡️"
+    
+    public static func onBattleTrigger(_ trigger: BattleTrigger, snapshot: BattleSnapshot) -> [BattleEffect] {
+        guard case .cardPlayed(let cardId) = trigger else { return [] }
+        let def = CardRegistry.require(cardId)
+        guard def.type == .attack else { return [] }
+        return [.gainBlock(target: .player, base: 2)]
+    }
+}
+
+

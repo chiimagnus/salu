@@ -20,7 +20,14 @@ public enum Act1EncounterPool {
         EnemyEncounter(enemyIds: ["cultist"]),
         EnemyEncounter(enemyIds: ["louse_green"]),
         EnemyEncounter(enemyIds: ["louse_red"]),
+        EnemyEncounter(enemyIds: ["spore_beast"]),
+        EnemyEncounter(enemyIds: ["slime_small_acid"]),
+        
+        // 多敌人遭遇（P6：目标选择；P7：内容扩充）
         EnemyEncounter(enemyIds: ["louse_green", "louse_red"]),
+        EnemyEncounter(enemyIds: ["cultist", "cultist"]),
+        EnemyEncounter(enemyIds: ["jaw_worm", "louse_green"]),
+        EnemyEncounter(enemyIds: ["spore_beast", "slime_small_acid"]),
     ]
     
     /// 随机选择弱遭遇（可复现）

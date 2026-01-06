@@ -106,6 +106,21 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
         XCTAssertTrue(output.contains("胜率"))
     }
     
+    func testResourceScreen_rendersRegistriesAndPools() {
+    
+        print("🧪 测试：testResourceScreen_rendersRegistriesAndPools")
+        let output = captureStdout {
+            ResourceScreen.show()
+        }.strippingANSICodes()
+        
+        XCTAssertTrue(output.contains("资源管理"))
+        XCTAssertTrue(output.contains("卡牌（Registry）"))
+        XCTAssertTrue(output.contains("遗物（Registry）"))
+        XCTAssertTrue(output.contains("遭遇池"))
+        XCTAssertTrue(output.contains("Act1EncounterPool.weak"))
+        XCTAssertTrue(output.contains("Act2"), "期望资源管理页包含 Act2 内容")
+    }
+    
     func testResultScreen_showFinal_withRecord_rendersVictoryAndStatsPanel() {
     
         print("🧪 测试：testResultScreen_showFinal_withRecord_rendersVictoryAndStatsPanel")
@@ -138,13 +153,25 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
             player: createDefaultPlayer(),
             deck: [Card(id: "strike_1", cardId: "strike")],
             relicManager: RelicManager(),
-            map: [],
+            map: [
+                MapNode(
+                    id: "14_0",
+                    row: 14,
+                    column: 0,
+                    roomType: .boss,
+                    connections: [],
+                    isCompleted: false,
+                    isAccessible: true
+                )
+            ],
             seed: 1,
-            floor: 1
+            floor: 1,
+            maxFloor: 1
         )
         
         let handler = BossRoomHandler()
         let bossNode = MapNode(id: "14_0", row: 14, column: 0, roomType: .boss)
+        run.currentNodeId = bossNode.id
         
         let context = RoomContext(
             logBattleEvents: { _ in },

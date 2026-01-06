@@ -32,6 +32,17 @@ final class RegistrySmokeTests: XCTestCase {
         }
     }
     
+    /// Act2EnemyPool 中出现的所有敌人，都必须能从 EnemyRegistry resolve 到定义。
+    func testEnemyRegistry_containsAct2PoolEnemies() {
+        print("🧪 测试：testEnemyRegistry_containsAct2PoolEnemies")
+        for id in Act2EnemyPool.all {
+            XCTAssertNotNil(EnemyRegistry.get(id))
+        }
+        
+        // Boss 也必须可 resolve
+        XCTAssertNotNil(EnemyRegistry.get("chrono_watcher"))
+    }
+    
     /// 基础遗物必须存在（用于 Run 起始遗物与遗物触发回归测试）。
     func testRelicRegistry_hasBasicRelics() {
         print("🧪 测试：testRelicRegistry_hasBasicRelics")

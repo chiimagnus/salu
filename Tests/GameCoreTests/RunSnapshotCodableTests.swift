@@ -15,6 +15,7 @@ final class RunSnapshotCodableTests: XCTestCase {
             version: RunSaveVersion.current,
             seed: 123,
             floor: 1,
+            maxFloor: 2,
             gold: 120,
             mapNodes: [
                 .init(
@@ -59,6 +60,7 @@ final class RunSnapshotCodableTests: XCTestCase {
             "version": RunSaveVersion.current,
             "seed": 321,
             "floor": 1,
+            "maxFloor": 2,
             "mapNodes": [
                 [
                     "id": "0_0",

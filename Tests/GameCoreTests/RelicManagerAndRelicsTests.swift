@@ -64,6 +64,38 @@ final class RelicManagerAndRelicsTests: XCTestCase {
         XCTAssertEqual(LanternRelic.onBattleTrigger(.battleEnd(won: true), snapshot: snapshot).count, 0)
         XCTAssertEqual(LanternRelic.onBattleTrigger(.battleStart, snapshot: snapshot), [.gainEnergy(amount: 1)])
     }
+
+    func testExtendedRelics_triggers() {
+        print("🧪 测试：testExtendedRelics_triggers")
+        let player = Entity(id: "player", name: "玩家", maxHP: 80)
+        let e1 = Entity(id: "e1", name: "敌人1", maxHP: 40, enemyId: "jaw_worm")
+        let e2 = Entity(id: "e2", name: "敌人2", maxHP: 40, enemyId: "cultist")
+        let snapshot = BattleSnapshot(turn: 1, player: player, enemies: [e1, e2], energy: 3)
+        
+        // Feather Cloak：战斗开始获得敏捷
+        XCTAssertEqual(
+            FeatherCloakRelic.onBattleTrigger(.battleStart, snapshot: snapshot),
+            [.applyStatus(target: .player, statusId: "dexterity", stacks: 1)]
+        )
+        
+        // War Banner：战斗开始获得力量+2
+        XCTAssertEqual(
+            WarBannerRelic.onBattleTrigger(.battleStart, snapshot: snapshot),
+            [.applyStatus(target: .player, statusId: "strength", stacks: 2)]
+        )
+        
+        // Colossus Core：战斗开始为所有敌人上毒
+        let poison = ColossusCoreRelic.onBattleTrigger(.battleStart, snapshot: snapshot)
+        XCTAssertTrue(poison.contains(.applyStatus(target: .enemy(index: 0), statusId: "poison", stacks: 3)))
+        XCTAssertTrue(poison.contains(.applyStatus(target: .enemy(index: 1), statusId: "poison", stacks: 3)))
+        
+        // Iron Bracer：打出攻击牌获得格挡，打出技能牌不触发
+        let bracerOnStrike = IronBracerRelic.onBattleTrigger(.cardPlayed(cardId: "strike"), snapshot: snapshot)
+        XCTAssertEqual(bracerOnStrike, [.gainBlock(target: .player, base: 2)])
+        
+        let bracerOnDefend = IronBracerRelic.onBattleTrigger(.cardPlayed(cardId: "defend"), snapshot: snapshot)
+        XCTAssertTrue(bracerOnDefend.isEmpty)
+    }
 }
 
 

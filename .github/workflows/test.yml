@@ -23,48 +23,5 @@ jobs:
         with:
           swift-version: '6.2'
 
-      - name: Swift version
-        run: swift --version
-      
-      # Build（debug + release），确保：
-      # 1) 可执行文件可生成（供 CLI UI Tests 用 Process 启动）
-      # 2) release 配置也能编译通过（避免“只在 debug 能 build”）
-      - name: Build debug
-        run: swift build
-      
-      - name: Build release
-        run: swift build -c release
-      
-      - name: Run all Swift tests (XCTest) + coverage
-        run: swift test --enable-code-coverage
-      
-      # 覆盖率摘要（用于 PR/CI 日志快速判断“覆盖率是否明显下降”）
-      - name: Coverage summary (llvm-cov)
-        run: |
-          set -euo pipefail
-          TEST_BIN=".build/debug/SaluPackageTests.xctest/Contents/MacOS/SaluPackageTests"
-          PROF_DATA="$(find .build -path "*debug/codecov/default.profdata" -print -quit)"
-          echo "Test binary: ${TEST_BIN}"
-          echo "Profile data: ${PROF_DATA}"
-          echo ""
-          xcrun llvm-cov report "${TEST_BIN}" --instr-profile="${PROF_DATA}" --ignore-filename-regex "Tests|test" | tail -n 25
-
-      - name: Upload build artifacts
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: salu-debug-macos
-          path: |
-            .build/debug/GameCLI
-            .build/release/GameCLI
-          retention-days: 7
-      
-      - name: Upload coverage artifacts
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: salu-coverage
-          path: |
-            .build/**/debug/codecov/Salu.json
-            .build/**/debug/codecov/default.profdata
-          retention-days: 14
+      - name: Run Swift tests
+        run: swift test

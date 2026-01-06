@@ -39,16 +39,16 @@ public enum RelicDropStrategy {
             preferredRarities = [.boss, .rare, .uncommon, .common]
         }
         
-        var pool: [RelicID] = []
+        // 按稀有度优先级：找到第一个有候选的稀有度，并只从该稀有度中抽取
         for rarity in preferredRarities {
-            pool.append(contentsOf: RelicPool.relicIds(rarity: rarity, excluding: ownedRelics))
+            let candidates = RelicPool.relicIds(rarity: rarity, excluding: ownedRelics)
+            if !candidates.isEmpty {
+                return candidates
+            }
         }
         
-        if pool.isEmpty {
-            pool = RelicPool.availableRelicIds(excluding: ownedRelics)
-        }
-        
-        return pool
+        // 兜底：如果上述稀有度都为空，则从全部可掉落遗物中抽取
+        return RelicPool.availableRelicIds(excluding: ownedRelics)
     }
     
     private static func deriveRelicSeed(context: RewardContext, source: RelicDropSource) -> UInt64 {
