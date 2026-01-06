@@ -1,3 +1,4 @@
+import Foundation
 import GameCore
 
 /// 战斗房间处理器
@@ -22,7 +23,11 @@ struct BattleRoomHandler: RoomHandling {
         var rng = SeededRNG(seed: battleSeed)
         
         let encounter: EnemyEncounter
-        if TestMode.isEnabled {
+        let forceMultiEnemy = ProcessInfo.processInfo.environment["SALU_FORCE_MULTI_ENEMY"] == "1"
+        if forceMultiEnemy {
+            // 用于本地调试/验收：强制进入双敌人遭遇（便于验证目标选择）
+            encounter = EnemyEncounter(enemyIds: ["louse_green", "louse_red"])
+        } else if TestMode.isEnabled {
             // 测试模式下保持单敌人，避免 UI 测试因多敌人导致战斗无法快速结束
             let enemyId = Act1EnemyPool.randomWeak(rng: &rng)
             encounter = EnemyEncounter(enemyIds: [enemyId])

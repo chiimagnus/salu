@@ -67,6 +67,32 @@ enum TestMode {
                 )
             ]
             
+        case "battle":
+            // 起点 → 普通战斗 → Boss（用于多敌人/目标选择 UI 测试）
+            map = [
+                MapNode(
+                    id: "0_0",
+                    row: 0,
+                    column: 0,
+                    roomType: .start,
+                    connections: ["1_0"],
+                    isAccessible: true
+                ),
+                MapNode(
+                    id: "1_0",
+                    row: 1,
+                    column: 0,
+                    roomType: .battle,
+                    connections: ["2_0"]
+                ),
+                MapNode(
+                    id: "2_0",
+                    row: 2,
+                    column: 0,
+                    roomType: .boss
+                )
+            ]
+            
         case "shop":
             // 起点 → 商店 → Boss（用于 P2 UI 测试）
             map = [

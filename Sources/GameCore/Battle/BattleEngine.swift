@@ -304,6 +304,36 @@ public final class BattleEngine: @unchecked Sendable {
             emit(.notEnoughEnergy(required: def.cost, available: state.energy))
             return false
         }
+
+        // 解析目标（P6：多敌人 + 目标选择）
+        let resolvedTargetEnemyIndex: Int?
+        switch def.targeting {
+        case .none:
+            resolvedTargetEnemyIndex = nil
+        case .singleEnemy:
+            if let targetEnemyIndex {
+                guard targetEnemyIndex >= 0, targetEnemyIndex < state.enemies.count else {
+                    emit(.invalidAction(reason: "无效的敌人目标"))
+                    return false
+                }
+                guard state.enemies[targetEnemyIndex].isAlive else {
+                    emit(.invalidAction(reason: "目标已死亡"))
+                    return false
+                }
+                resolvedTargetEnemyIndex = targetEnemyIndex
+            } else {
+                let aliveIndices = state.enemies.indices.filter { state.enemies[$0].isAlive }
+                if aliveIndices.count == 1 {
+                    resolvedTargetEnemyIndex = aliveIndices[0]
+                } else if aliveIndices.isEmpty {
+                    emit(.invalidAction(reason: "没有可选目标"))
+                    return false
+                } else {
+                    emit(.invalidAction(reason: "该牌需要选择目标"))
+                    return false
+                }
+            }
+        }
         
         // 消耗能量
         state.energy -= def.cost
@@ -317,7 +347,7 @@ public final class BattleEngine: @unchecked Sendable {
         triggerRelics(.cardPlayed(cardId: card.cardId))
         
         // 执行卡牌效果（新架构：通过 BattleEffect）
-        executeCardEffect(card, targetEnemyIndex: targetEnemyIndex)
+        executeCardEffect(card, targetEnemyIndex: resolvedTargetEnemyIndex)
         
         // 卡牌进入弃牌堆
         state.discardPile.append(card)
