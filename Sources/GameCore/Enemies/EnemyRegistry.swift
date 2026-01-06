@@ -11,6 +11,9 @@ public enum EnemyRegistry {
         LouseGreen.id: LouseGreen.self,
         LouseRed.id: LouseRed.self,
         SlimeMediumAcid.id: SlimeMediumAcid.self,
+        
+        // Act 1 Bosses
+        ToxicColossus.id: ToxicColossus.self,
     ]
     
     /// 获取敌人定义
