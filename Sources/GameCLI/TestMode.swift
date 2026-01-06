@@ -8,6 +8,7 @@ import GameCore
 enum TestMode {
     private static let envKey = "SALU_TEST_MODE"
     private static let mapKey = "SALU_TEST_MAP"
+    private static let maxFloorKey = "SALU_TEST_MAX_FLOOR"
     
     static var isEnabled: Bool {
         ProcessInfo.processInfo.environment[envKey] == "1"
@@ -22,6 +23,15 @@ enum TestMode {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, trimmed != "0" else { return nil }
         return trimmed
+    }
+    
+    /// 测试模式下可覆盖最大楼层（Act 数），用于验证 Act 推进链路。
+    /// - Note: 默认为 1，避免现有 UI 测试被 Act2 拉长。
+    private static var testMaxFloor: Int {
+        guard let raw = ProcessInfo.processInfo.environment[maxFloorKey] else { return 1 }
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let n = Int(trimmed), n > 0 else { return 1 }
+        return n
     }
     
     /// 在测试模式下，返回一个极小且稳定的战斗牌组，避免 UI 测试跑很久或出现概率性失败。
@@ -207,6 +217,8 @@ enum TestMode {
             gold = RunState.startingGold
         }
         
+        let maxFloor = testMaxFloor
+        
         return RunState(
             player: player,
             deck: deck,
@@ -215,7 +227,7 @@ enum TestMode {
             map: map,
             seed: seed,
             floor: 1,
-            maxFloor: 1
+            maxFloor: maxFloor
         )
     }
     

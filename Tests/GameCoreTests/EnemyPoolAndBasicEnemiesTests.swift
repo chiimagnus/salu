@@ -14,6 +14,16 @@ final class EnemyPoolAndBasicEnemiesTests: XCTestCase {
         let any = Act1EnemyPool.randomAny(rng: &rng)
         XCTAssertTrue(Act1EnemyPool.all.contains(any))
     }
+
+    func testAct2EnemyPool_randomPickWithinPools() {
+        print("🧪 测试：testAct2EnemyPool_randomPickWithinPools")
+        var rng = SeededRNG(seed: 2)
+        let w = Act2EnemyPool.randomWeak(rng: &rng)
+        XCTAssertTrue(Act2EnemyPool.weak.contains(w))
+        
+        let m = Act2EnemyPool.randomMedium(rng: &rng)
+        XCTAssertTrue(Act2EnemyPool.medium.contains(m))
+    }
     
     func testCreateEnemy_hpRange() {
         print("🧪 测试：testCreateEnemy_hpRange")
@@ -104,6 +114,72 @@ final class EnemyPoolAndBasicEnemiesTests: XCTestCase {
             let snap = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
             return SlimeMediumAcid.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng).intent.text.contains("涂抹")
         } != nil)
+    }
+    
+    func testAct2Enemies_chooseMove_coversBranches() {
+        print("🧪 测试：testAct2Enemies_chooseMove_coversBranches")
+        let player = Entity(id: "player", name: "玩家", maxHP: 80)
+        let enemy = Entity(id: "enemy", name: "敌人", maxHP: 40, enemyId: "shadow_stalker")
+        
+        // ShadowStalker turn 1: always weak
+        do {
+            var rng = SeededRNG(seed: 1)
+            let snap1 = BattleSnapshot(turn: 1, player: player, enemies: [enemy], energy: 3)
+            XCTAssertTrue(ShadowStalker.chooseMove(selfIndex: 0, snapshot: snap1, rng: &rng).intent.text.contains("虚弱"))
+        }
+        
+        // ShadowStalker later: attack or block
+        XCTAssertTrue(findSeed { rollSeed in
+            var rng = SeededRNG(seed: rollSeed)
+            let snap = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
+            return ShadowStalker.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng).intent.text.contains("刺杀")
+        } != nil)
+        XCTAssertTrue(findSeed { rollSeed in
+            var rng = SeededRNG(seed: rollSeed)
+            let snap = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
+            return ShadowStalker.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng).intent.text.contains("格挡")
+        } != nil)
+        
+        // ClockworkSentinel: three branches
+        XCTAssertTrue(findSeed { rollSeed in
+            var rng = SeededRNG(seed: rollSeed)
+            let snap = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
+            return ClockworkSentinel.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng).intent.text.contains("连射")
+        } != nil)
+        XCTAssertTrue(findSeed { rollSeed in
+            var rng = SeededRNG(seed: rollSeed)
+            let snap = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
+            return ClockworkSentinel.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng).intent.text.contains("装甲")
+        } != nil)
+        XCTAssertTrue(findSeed { rollSeed in
+            var rng = SeededRNG(seed: rollSeed)
+            let snap = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
+            return ClockworkSentinel.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng).intent.text.contains("力量")
+        } != nil)
+        
+        // RuneGuardian: deterministic cycle after turn 1
+        do {
+            var rng = SeededRNG(seed: 1)
+            let snap1 = BattleSnapshot(turn: 1, player: player, enemies: [enemy], energy: 3)
+            XCTAssertTrue(RuneGuardian.chooseMove(selfIndex: 0, snapshot: snap1, rng: &rng).intent.text.contains("易伤"))
+            
+            let snap2 = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
+            XCTAssertTrue(RuneGuardian.chooseMove(selfIndex: 0, snapshot: snap2, rng: &rng).intent.text.contains("重击"))
+            
+            let snap3 = BattleSnapshot(turn: 3, player: player, enemies: [enemy], energy: 3)
+            XCTAssertTrue(RuneGuardian.chooseMove(selfIndex: 0, snapshot: snap3, rng: &rng).intent.text.contains("护盾") || RuneGuardian.chooseMove(selfIndex: 0, snapshot: snap3, rng: &rng).intent.text.contains("格挡"))
+        }
+        
+        // ChronoWatcher: deterministic 3-turn loop
+        do {
+            var rng = SeededRNG(seed: 1)
+            let s1 = BattleSnapshot(turn: 1, player: player, enemies: [enemy], energy: 3)
+            XCTAssertTrue(ChronoWatcher.chooseMove(selfIndex: 0, snapshot: s1, rng: &rng).intent.text.contains("时序标记"))
+            let s2 = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
+            XCTAssertTrue(ChronoWatcher.chooseMove(selfIndex: 0, snapshot: s2, rng: &rng).intent.text.contains("时间崩解"))
+            let s3 = BattleSnapshot(turn: 3, player: player, enemies: [enemy], energy: 3)
+            XCTAssertTrue(ChronoWatcher.chooseMove(selfIndex: 0, snapshot: s3, rng: &rng).intent.text.contains("回溯连击"))
+        }
     }
     
     private func findSeed(_ predicate: (UInt64) -> Bool, max: UInt64 = 5000) -> UInt64? {

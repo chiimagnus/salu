@@ -118,6 +118,7 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
         XCTAssertTrue(output.contains("遗物（Registry）"))
         XCTAssertTrue(output.contains("遭遇池"))
         XCTAssertTrue(output.contains("Act1EncounterPool.weak"))
+        XCTAssertTrue(output.contains("Act2"), "期望资源管理页包含 Act2 内容")
     }
     
     func testResultScreen_showFinal_withRecord_rendersVictoryAndStatsPanel() {
