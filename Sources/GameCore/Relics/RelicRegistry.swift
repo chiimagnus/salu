@@ -11,6 +11,16 @@ public enum RelicRegistry {
         // Common Relics
         VajraRelic.id: VajraRelic.self,
         LanternRelic.id: LanternRelic.self,
+        IronBracerRelic.id: IronBracerRelic.self,
+        
+        // Uncommon Relics
+        FeatherCloakRelic.id: FeatherCloakRelic.self,
+        
+        // Rare Relics
+        WarBannerRelic.id: WarBannerRelic.self,
+        
+        // Boss Relics
+        ColossusCoreRelic.id: ColossusCoreRelic.self,
     ]
     
     /// 获取遗物定义
