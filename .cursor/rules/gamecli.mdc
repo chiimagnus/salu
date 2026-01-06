@@ -143,13 +143,17 @@ GameCore → GameCLI  ❌ 禁止
 1. 在 `GameCLI.main()` 添加参数检查
 2. 更新 CLAUDE.mdc 文档
 
-### 存档/继续冒险（P7）
+### 存档/继续冒险
 
 - 冒险模式会在**节点完成后自动保存**（`GameCLI.runLoop` 调用 `SaveService.saveRun`）。
 - 主菜单会根据 `SaveService.hasSave()` 决定是否显示“继续上次冒险”入口。
 - `FileRunSaveStore` 支持通过环境变量 `SALU_DATA_DIR` 覆盖存档目录（用于测试/调试；默认仍写入系统 Application Support/LOCALAPPDATA/~/.salu）。
 - `FileRunSaveStore` / `FileBattleHistoryStore` 支持通过环境变量 `SALU_DATA_DIR` 覆盖数据目录（用于测试/调试；默认仍写入系统 Application Support/LOCALAPPDATA/~/.salu）。
-- CLI 测试模式支持 `SALU_TEST_MAP=1` 使用极小地图（起点→精英→Boss）以加速 UI 测试流程。
+- CLI 测试模式支持 `SALU_TEST_MAP` 使用极小地图以加速 UI 测试流程：
+  - `SALU_TEST_MAP=1` 或 `mini`：起点 → 精英 → Boss
+  - `SALU_TEST_MAP=battle`：起点 → 普通战斗 → Boss（用于多敌人/目标选择 UI 测试）
+  - `SALU_TEST_MAP=shop/rest/event`：起点 → 对应房间 → Boss
+- （调试/验收）`SALU_FORCE_MULTI_ENEMY=1`：强制普通战斗进入双敌人遭遇（便于验证目标选择）
 
 ---
 
@@ -193,7 +197,7 @@ Terminal.flush()  // 刷新缓冲区
 ┌─────────────────────────────────────────────┐
 │ 标题栏（回合数、种子）                         │
 ├─────────────────────────────────────────────┤
-│ 敌人区域（名称、HP条、格挡、意图）              │
+│ 敌人区域（敌人列表：序号、名称、HP条、格挡、意图）│
 ├ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┤
 │ 玩家区域（名称、HP条、格挡、能量）              │
 ├─────────────────────────────────────────────┤

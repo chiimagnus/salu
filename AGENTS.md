@@ -38,6 +38,8 @@
 - 有用的环境变量:
   - `SALU_DATA_DIR=/tmp/salu`: 覆盖 save/history 目录 (测试/调试用)。
   - `SALU_TEST_MODE=1`: CLI UI 测试的稳定快速模式。
+  - `SALU_TEST_MAP=1|mini|battle|shop|rest|event`: 测试模式下使用极小地图（加速 UI 测试）。
+  - `SALU_FORCE_MULTI_ENEMY=1`: 强制普通战斗进入双敌人遭遇（便于验收目标选择）。
   - `SALU_CLI_BINARY_PATH=...`: 指向特定的已构建 `GameCLI` 二进制文件。
 
 ## 编码风格与命名规范
