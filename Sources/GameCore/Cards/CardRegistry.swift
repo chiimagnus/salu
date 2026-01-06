@@ -18,6 +18,12 @@ public enum CardRegistry {
         ShrugItOff.id: ShrugItOff.self,
         Inflame.id: Inflame.self,
         Clothesline.id: Clothesline.self,
+        
+        // Act 1 Expansion Cards (P7)
+        Cleave.id: Cleave.self,
+        Intimidate.id: Intimidate.self,
+        AgileStance.id: AgileStance.self,
+        PoisonedStrike.id: PoisonedStrike.self,
     ]
     
     /// 获取卡牌定义
