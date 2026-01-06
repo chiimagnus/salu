@@ -139,6 +139,12 @@ struct GameCLI {
                 // 清除历史记录
                 confirmClearHistory()
                 
+            case "4":
+                // 资源管理（开发者工具）
+                Screens.showResources()
+                print("\(Terminal.dim)按 Enter 返回...\(Terminal.reset)")
+                _ = readLine()
+                
             case "0":
                 // 返回主菜单
                 return

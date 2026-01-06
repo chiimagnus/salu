@@ -55,6 +55,12 @@ enum Screens {
     static func showSettingsMenu(historyService: HistoryService) {
         SettingsScreen.show(historyService: historyService)
     }
+
+    // MARK: - 资源管理（开发者工具）
+    
+    static func showResources() {
+        ResourceScreen.show()
+    }
     
     // MARK: - 帮助屏幕
     

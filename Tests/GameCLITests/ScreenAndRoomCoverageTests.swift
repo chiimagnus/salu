@@ -106,6 +106,20 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
         XCTAssertTrue(output.contains("胜率"))
     }
     
+    func testResourceScreen_rendersRegistriesAndPools() {
+    
+        print("🧪 测试：testResourceScreen_rendersRegistriesAndPools")
+        let output = captureStdout {
+            ResourceScreen.show()
+        }.strippingANSICodes()
+        
+        XCTAssertTrue(output.contains("资源管理"))
+        XCTAssertTrue(output.contains("卡牌（Registry）"))
+        XCTAssertTrue(output.contains("遗物（Registry）"))
+        XCTAssertTrue(output.contains("遭遇池"))
+        XCTAssertTrue(output.contains("Act1EncounterPool.weak"))
+    }
+    
     func testResultScreen_showFinal_withRecord_rendersVictoryAndStatsPanel() {
     
         print("🧪 测试：testResultScreen_showFinal_withRecord_rendersVictoryAndStatsPanel")
