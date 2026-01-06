@@ -17,7 +17,7 @@ final class BattleEngineFlowTests: XCTestCase {
         deck: [Card],
         seed: UInt64 = 1
     ) -> BattleEngine {
-        BattleEngine(player: player, enemy: enemy, deck: deck, seed: seed)
+        BattleEngine(player: player, enemies: [enemy], deck: deck, seed: seed)
     }
     
     func testPlayCardsUntilEnergyZero_thenNotEnoughEnergyEventEmitted() {
@@ -28,13 +28,13 @@ final class BattleEngineFlowTests: XCTestCase {
         engine.clearEvents()
         
         // 初始能量为 3：连续打出 3 张 Strike 应当成功
-        XCTAssertTrue(engine.handleAction(.playCard(handIndex: 0)))
-        XCTAssertTrue(engine.handleAction(.playCard(handIndex: 0)))
-        XCTAssertTrue(engine.handleAction(.playCard(handIndex: 0)))
+        XCTAssertTrue(engine.handleAction(.playCard(handIndex: 0, targetEnemyIndex: 0)))
+        XCTAssertTrue(engine.handleAction(.playCard(handIndex: 0, targetEnemyIndex: 0)))
+        XCTAssertTrue(engine.handleAction(.playCard(handIndex: 0, targetEnemyIndex: 0)))
         XCTAssertEqual(engine.state.energy, 0)
         
         // 能量耗尽后再出牌，应提示能量不足并失败
-        XCTAssertFalse(engine.handleAction(.playCard(handIndex: 0)))
+        XCTAssertFalse(engine.handleAction(.playCard(handIndex: 0, targetEnemyIndex: 0)))
         XCTAssertTrue(
             engine.events.contains(.notEnoughEnergy(required: 1, available: 0)),
             "期望出现 notEnoughEnergy 事件，避免 UI 层只能靠字符串判断"
@@ -48,8 +48,38 @@ final class BattleEngineFlowTests: XCTestCase {
         engine.startBattle()
         engine.clearEvents()
         
-        XCTAssertFalse(engine.handleAction(.playCard(handIndex: 999)))
+        XCTAssertFalse(engine.handleAction(.playCard(handIndex: 999, targetEnemyIndex: 0)))
         XCTAssertTrue(engine.events.contains(.invalidAction(reason: "无效的卡牌索引")))
+    }
+
+    func testPlayAttackCard_requiresTarget_whenMultipleEnemiesAlive() {
+
+        print("🧪 测试：testPlayAttackCard_requiresTarget_whenMultipleEnemiesAlive")
+        let player = Entity(id: "player", name: "玩家", maxHP: 80)
+        let e1 = Entity(id: "e1", name: "敌人A", maxHP: 999, enemyId: "jaw_worm")
+        let e2 = Entity(id: "e2", name: "敌人B", maxHP: 999, enemyId: "jaw_worm")
+        let engine = BattleEngine(
+            player: player,
+            enemies: [e1, e2],
+            deck: [Card(id: "strike_1", cardId: "strike")],
+            seed: 1
+        )
+        engine.startBattle()
+        engine.clearEvents()
+
+        let energyBefore = engine.state.energy
+        let handCountBefore = engine.state.hand.count
+        let e1HPBefore = engine.state.enemies[0].currentHP
+        let e2HPBefore = engine.state.enemies[1].currentHP
+
+        XCTAssertFalse(engine.handleAction(.playCard(handIndex: 0, targetEnemyIndex: nil)))
+        XCTAssertTrue(engine.events.contains(.invalidAction(reason: "该牌需要选择目标")))
+
+        // 失败不应消耗能量/移除手牌/造成伤害
+        XCTAssertEqual(engine.state.energy, energyBefore)
+        XCTAssertEqual(engine.state.hand.count, handCountBefore)
+        XCTAssertEqual(engine.state.enemies[0].currentHP, e1HPBefore)
+        XCTAssertEqual(engine.state.enemies[1].currentHP, e2HPBefore)
     }
     
     func testShuffleDiscardIntoDraw_emitsShuffledEvent_nextTurn() {
@@ -81,7 +111,7 @@ final class BattleEngineFlowTests: XCTestCase {
         engine.startBattle()
         engine.clearEvents()
         
-        XCTAssertTrue(engine.handleAction(.playCard(handIndex: 0)))
+        XCTAssertTrue(engine.handleAction(.playCard(handIndex: 0, targetEnemyIndex: 0)))
         XCTAssertTrue(engine.state.isOver)
         XCTAssertEqual(engine.state.playerWon, true)
         XCTAssertTrue(engine.events.contains(.battleWon))

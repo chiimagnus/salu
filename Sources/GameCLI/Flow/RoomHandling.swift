@@ -33,7 +33,7 @@ struct RoomContext {
     let battleLoop: (BattleEngine, UInt64) -> Void
     
     /// 创建敌人（复用现有逻辑）
-    let createEnemy: (EnemyID, inout SeededRNG) -> Entity
+    let createEnemy: (EnemyID, Int, inout SeededRNG) -> Entity
     
     /// 历史记录服务（用于保存战斗记录）
     let historyService: HistoryService

@@ -18,7 +18,7 @@ final class RelicIntegrationTests: XCTestCase {
         let enemy = Entity(id: "jaw_worm", name: "下颚虫", maxHP: 1, enemyId: "jaw_worm")
         let deck = [Card(id: "strike_1", cardId: "strike")]
         
-        let engine = BattleEngine(player: player, enemy: enemy, deck: deck, relicManager: relics, seed: 1)
+        let engine = BattleEngine(player: player, enemies: [enemy], deck: deck, relicManager: relics, seed: 1)
         engine.startBattle()
         
         // 默认 maxEnergy=3，灯笼应在第 1 回合开始后把能量提升到 4
@@ -37,11 +37,11 @@ final class RelicIntegrationTests: XCTestCase {
         let enemy = Entity(id: "jaw_worm", name: "下颚虫", maxHP: 1, enemyId: "jaw_worm")
         let deck = [Card(id: "strike_1", cardId: "strike")]
         
-        let engine = BattleEngine(player: player, enemy: enemy, deck: deck, relicManager: relics, seed: 1)
+        let engine = BattleEngine(player: player, enemies: [enemy], deck: deck, relicManager: relics, seed: 1)
         engine.startBattle()
         
         // 打出 Strike 直接击杀
-        _ = engine.handleAction(.playCard(handIndex: 0))
+        _ = engine.handleAction(.playCard(handIndex: 0, targetEnemyIndex: 0))
         
         XCTAssertTrue(engine.state.isOver)
         XCTAssertEqual(engine.state.playerWon, true)

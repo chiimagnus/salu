@@ -21,15 +21,23 @@ public enum CardRarity: String, Sendable {
 public struct BattleSnapshot: Sendable {
     public let turn: Int
     public let player: Entity
-    public let enemy: Entity
+    public let enemies: [Entity]
     public let energy: Int
     
-    public init(turn: Int, player: Entity, enemy: Entity, energy: Int) {
+    public init(turn: Int, player: Entity, enemies: [Entity], energy: Int) {
         self.turn = turn
         self.player = player
-        self.enemy = enemy
+        self.enemies = enemies
         self.energy = energy
     }
+}
+
+/// 卡牌目标需求
+public enum CardTargeting: Sendable, Equatable {
+    /// 不需要目标（如防御/能力）
+    case none
+    /// 需要选择一个敌人目标（单体攻击）
+    case singleEnemy
 }
 
 /// 卡牌定义协议
@@ -56,11 +64,18 @@ public protocol CardDefinition: Sendable {
     /// 升级版 ID（如果有升级版）
     static var upgradedId: CardID? { get }
     
-    /// 出牌效果（纯决策：输入是快照，输出是效果）
-    static func play(snapshot: BattleSnapshot) -> [BattleEffect]
+    /// 目标需求（用于输入校验与 UI 提示）
+    static var targeting: CardTargeting { get }
+    
+    /// 出牌效果（纯决策：输入是快照+目标，输出是效果）
+    static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect]
 }
 
 // 默认实现
 extension CardDefinition {
     public static var upgradedId: CardID? { nil }
+    
+    public static var targeting: CardTargeting {
+        type == .attack ? .singleEnemy : .none
+    }
 }

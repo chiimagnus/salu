@@ -25,15 +25,15 @@ final class EnemyDeterminismTests: XCTestCase {
         let snapshot = BattleSnapshot(
             turn: 2,
             player: Entity(id: "p", name: "玩家", maxHP: 10),
-            enemy: Entity(id: "e", name: "下颚虫", maxHP: 10, enemyId: "jaw_worm"),
+            enemies: [Entity(id: "e", name: "下颚虫", maxHP: 10, enemyId: "jaw_worm")],
             energy: 3
         )
         
         var rng1 = SeededRNG(seed: 999)
         var rng2 = SeededRNG(seed: 999)
         
-        let a = JawWorm.chooseMove(snapshot: snapshot, rng: &rng1)
-        let b = JawWorm.chooseMove(snapshot: snapshot, rng: &rng2)
+        let a = JawWorm.chooseMove(selfIndex: 0, snapshot: snapshot, rng: &rng1)
+        let b = JawWorm.chooseMove(selfIndex: 0, snapshot: snapshot, rng: &rng2)
         
         XCTAssertEqual(a, b)
     }

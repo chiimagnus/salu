@@ -39,9 +39,9 @@ final class HistoryServiceTests: XCTestCase {
             playerName: "玩家",
             playerMaxHP: 80,
             playerFinalHP: 50,
-            enemyName: "敌人",
-            enemyMaxHP: 40,
-            enemyFinalHP: 0,
+            enemies: [
+                EnemyBattleRecord(entityId: "enemy#0", enemyId: "jaw_worm", name: "敌人", maxHP: 40, finalHP: 0)
+            ],
             cardsPlayed: 3,
             strikesPlayed: 2,
             defendsPlayed: 1,

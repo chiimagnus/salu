@@ -18,7 +18,7 @@ final class EnemyPoolAndBasicEnemiesTests: XCTestCase {
     func testCreateEnemy_hpRange() {
         print("🧪 测试：testCreateEnemy_hpRange")
         var rng = SeededRNG(seed: 123)
-        let enemy = createEnemy(enemyId: "jaw_worm", rng: &rng)
+        let enemy = createEnemy(enemyId: "jaw_worm", instanceIndex: 0, rng: &rng)
         XCTAssertTrue((40...44).contains(enemy.maxHP))
         XCTAssertEqual(enemy.currentHP, enemy.maxHP)
         XCTAssertEqual(enemy.enemyId, EnemyID("jaw_worm"))
@@ -32,77 +32,77 @@ final class EnemyPoolAndBasicEnemiesTests: XCTestCase {
         // JawWorm turn 1: bite or strength
         XCTAssertTrue(findSeed { rollSeed in
             var rng = SeededRNG(seed: rollSeed)
-            let snap = BattleSnapshot(turn: 1, player: player, enemy: enemy, energy: 3)
-            return JawWorm.chooseMove(snapshot: snap, rng: &rng).intent.text.contains("攻击")
+            let snap = BattleSnapshot(turn: 1, player: player, enemies: [enemy], energy: 3)
+            return JawWorm.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng).intent.text.contains("攻击")
         } != nil)
         
         XCTAssertTrue(findSeed { rollSeed in
             var rng = SeededRNG(seed: rollSeed)
-            let snap = BattleSnapshot(turn: 1, player: player, enemy: enemy, energy: 3)
-            return JawWorm.chooseMove(snapshot: snap, rng: &rng).intent.text.contains("力量")
+            let snap = BattleSnapshot(turn: 1, player: player, enemies: [enemy], energy: 3)
+            return JawWorm.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng).intent.text.contains("力量")
         } != nil)
         
         // JawWorm later turns: three options (attack 11 / strength / pounce 7)
         XCTAssertTrue(findSeed { rollSeed in
             var rng = SeededRNG(seed: rollSeed)
-            let snap = BattleSnapshot(turn: 2, player: player, enemy: enemy, energy: 3)
-            return JawWorm.chooseMove(snapshot: snap, rng: &rng).intent.text.contains("攻击 11")
+            let snap = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
+            return JawWorm.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng).intent.text.contains("攻击 11")
         } != nil)
         
         XCTAssertTrue(findSeed { rollSeed in
             var rng = SeededRNG(seed: rollSeed)
-            let snap = BattleSnapshot(turn: 2, player: player, enemy: enemy, energy: 3)
-            return JawWorm.chooseMove(snapshot: snap, rng: &rng).intent.text.contains("力量")
+            let snap = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
+            return JawWorm.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng).intent.text.contains("力量")
         } != nil)
         
         XCTAssertTrue(findSeed { rollSeed in
             var rng = SeededRNG(seed: rollSeed)
-            let snap = BattleSnapshot(turn: 2, player: player, enemy: enemy, energy: 3)
-            return JawWorm.chooseMove(snapshot: snap, rng: &rng).intent.text.contains("猛扑")
+            let snap = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
+            return JawWorm.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng).intent.text.contains("猛扑")
         } != nil)
         
         // Cultist: turn 1 strength, later attack
         do {
             var rng = SeededRNG(seed: 1)
-            let snap1 = BattleSnapshot(turn: 1, player: player, enemy: enemy, energy: 3)
-            XCTAssertTrue(Cultist.chooseMove(snapshot: snap1, rng: &rng).intent.text.contains("力量"))
-            let snap2 = BattleSnapshot(turn: 2, player: player, enemy: enemy, energy: 3)
-            XCTAssertTrue(Cultist.chooseMove(snapshot: snap2, rng: &rng).intent.text.contains("攻击"))
+            let snap1 = BattleSnapshot(turn: 1, player: player, enemies: [enemy], energy: 3)
+            XCTAssertTrue(Cultist.chooseMove(selfIndex: 0, snapshot: snap1, rng: &rng).intent.text.contains("力量"))
+            let snap2 = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
+            XCTAssertTrue(Cultist.chooseMove(selfIndex: 0, snapshot: snap2, rng: &rng).intent.text.contains("攻击"))
         }
         
         // Louse (green/red): attack or curl
         XCTAssertTrue(findSeed { rollSeed in
             var rng = SeededRNG(seed: rollSeed)
-            let snap = BattleSnapshot(turn: 2, player: player, enemy: enemy, energy: 3)
-            return LouseGreen.chooseMove(snapshot: snap, rng: &rng).intent.text.contains("攻击")
+            let snap = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
+            return LouseGreen.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng).intent.text.contains("攻击")
         } != nil)
         XCTAssertTrue(findSeed { rollSeed in
             var rng = SeededRNG(seed: rollSeed)
-            let snap = BattleSnapshot(turn: 2, player: player, enemy: enemy, energy: 3)
-            return LouseGreen.chooseMove(snapshot: snap, rng: &rng).intent.text.contains("卷曲")
+            let snap = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
+            return LouseGreen.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng).intent.text.contains("卷曲")
         } != nil)
         
         XCTAssertTrue(findSeed { rollSeed in
             var rng = SeededRNG(seed: rollSeed)
-            let snap = BattleSnapshot(turn: 2, player: player, enemy: enemy, energy: 3)
-            return LouseRed.chooseMove(snapshot: snap, rng: &rng).intent.text.contains("攻击")
+            let snap = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
+            return LouseRed.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng).intent.text.contains("攻击")
         } != nil)
         XCTAssertTrue(findSeed { rollSeed in
             var rng = SeededRNG(seed: rollSeed)
-            let snap = BattleSnapshot(turn: 2, player: player, enemy: enemy, energy: 3)
-            return LouseRed.chooseMove(snapshot: snap, rng: &rng).intent.text.contains("卷曲")
+            let snap = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
+            return LouseRed.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng).intent.text.contains("卷曲")
         } != nil)
         
         // Slime: attack or smear
         XCTAssertTrue(findSeed { rollSeed in
             var rng = SeededRNG(seed: rollSeed)
-            let snap = BattleSnapshot(turn: 2, player: player, enemy: enemy, energy: 3)
-            return SlimeMediumAcid.chooseMove(snapshot: snap, rng: &rng).intent.text.contains("攻击 10")
+            let snap = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
+            return SlimeMediumAcid.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng).intent.text.contains("攻击 10")
         } != nil)
         XCTAssertTrue(findSeed { rollSeed in
             var rng = SeededRNG(seed: rollSeed)
-            let snap = BattleSnapshot(turn: 2, player: player, enemy: enemy, energy: 3)
-            return SlimeMediumAcid.chooseMove(snapshot: snap, rng: &rng).intent.text.contains("涂抹")
+            let snap = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
+            return SlimeMediumAcid.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng).intent.text.contains("涂抹")
         } != nil)
     }
     

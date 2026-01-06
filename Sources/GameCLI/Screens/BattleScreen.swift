@@ -15,7 +15,7 @@ enum BattleScreen {
         lines.append("")
         
         // 敌人区域
-        lines.append(contentsOf: buildEnemyArea(engine.state.enemy))
+        lines.append(contentsOf: buildEnemiesArea(engine.state.enemies))
         lines.append("")
         
         // 分隔线
@@ -45,7 +45,7 @@ enum BattleScreen {
         lines.append("")
         
         // 操作提示
-        lines.append(contentsOf: buildInputPrompt(handCount: engine.state.hand.count, showLog: showLog))
+        lines.append(contentsOf: buildInputPrompt(handCount: engine.state.hand.count, enemyCount: engine.state.enemies.count, showLog: showLog))
         
         // 清屏并打印
         Terminal.clear()
@@ -59,21 +59,41 @@ enum BattleScreen {
     // MARK: - 组件构建
     
     private static func buildHeader(turn: Int, seed: UInt64) -> [String] {
+        let testModeTag = TestMode.isEnabled ? "  🧪测试模式" : ""
         return [
             "\(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)",
-            "\(Terminal.bold)\(Terminal.cyan)  ⚔️ SALU - 杀戮尖塔 CLI   \(Terminal.dim)第 \(turn) 回合  🎲 \(seed)\(Terminal.reset)",
+            "\(Terminal.bold)\(Terminal.cyan)  ⚔️ SALU - 杀戮尖塔 CLI   \(Terminal.dim)第 \(turn) 回合  🎲 \(seed)\(testModeTag)\(Terminal.reset)",
             "\(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)"
         ]
     }
     
-    private static func buildEnemyArea(_ enemy: Entity) -> [String] {
+    private static func buildEnemiesArea(_ enemies: [Entity]) -> [String] {
+        var lines: [String] = []
+        
+        guard !enemies.isEmpty else {
+            lines.append("  \(Terminal.bold)\(Terminal.red)👹 敌人：无\(Terminal.reset)")
+            return lines
+        }
+        
+        for (index, enemy) in enemies.enumerated() {
+            lines.append(contentsOf: buildEnemyArea(enemy, index: index))
+            if index != enemies.count - 1 {
+                lines.append("")
+            }
+        }
+        
+        return lines
+    }
+    
+    private static func buildEnemyArea(_ enemy: Entity, index: Int) -> [String] {
         var lines: [String] = []
         
         let hpPercent = Double(enemy.currentHP) / Double(enemy.maxHP)
         let hpBar = Terminal.healthBar(percent: hpPercent)
         let hpColor = Terminal.colorForPercent(hpPercent)
         
-        lines.append("  \(Terminal.bold)\(Terminal.red)👹 \(enemy.name)\(Terminal.reset)")
+        let deadText = enemy.isAlive ? "" : " \(Terminal.dim)(已死亡)\(Terminal.reset)"
+        lines.append("  \(Terminal.bold)\(Terminal.red)👹 [\(index + 1)] \(enemy.name)\(Terminal.reset)\(deadText)")
         lines.append("     \(hpColor)\(hpBar)\(Terminal.reset) \(enemy.currentHP)/\(enemy.maxHP) HP")
         
         if enemy.block > 0 {
@@ -187,13 +207,16 @@ enum BattleScreen {
         return lines
     }
     
-    private static func buildInputPrompt(handCount: Int, showLog: Bool = false) -> [String] {
+    private static func buildInputPrompt(handCount: Int, enemyCount: Int, showLog: Bool = false) -> [String] {
         let logHint = showLog 
             ? "\(Terminal.dim)[l] 隐藏日志\(Terminal.reset)" 
             : "\(Terminal.cyan)[l]\(Terminal.reset) 日志"
+        let targetHint = enemyCount > 1
+            ? "  \(Terminal.cyan)输入「卡牌 目标」\(Terminal.reset) 选择目标（目标 1-\(enemyCount)）"
+            : "  \(Terminal.dim)（单敌人：可直接输入卡牌序号）\(Terminal.reset)"
         return [
             "\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)",
-            "\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(handCount)]\(Terminal.reset) 出牌  \(Terminal.cyan)[0]\(Terminal.reset) 结束  \(Terminal.cyan)[h]\(Terminal.reset) 帮助  \(logHint)  \(Terminal.cyan)[q]\(Terminal.reset) 退出",
+            "\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(handCount)]\(Terminal.reset) 出牌  \(Terminal.cyan)[0]\(Terminal.reset) 结束  \(Terminal.cyan)[h]\(Terminal.reset) 帮助  \(logHint)  \(Terminal.cyan)[q]\(Terminal.reset) 退出\(targetHint)",
             "\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)"
         ]
     }

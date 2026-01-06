@@ -10,46 +10,46 @@ final class CardDefinitionPlayTests: XCTestCase {
     private func makeSnapshot(energy: Int = 3) -> BattleSnapshot {
         let player = Entity(id: "player", name: "玩家", maxHP: 80)
         let enemy = Entity(id: "jaw_worm", name: "下颚虫", maxHP: 40, enemyId: "jaw_worm")
-        return BattleSnapshot(turn: 1, player: player, enemy: enemy, energy: energy)
+        return BattleSnapshot(turn: 1, player: player, enemies: [enemy], energy: energy)
     }
     
     func testStrike_play_producesExpectedEffects() {
     
         print("🧪 测试：testStrike_play_producesExpectedEffects")
-        let effects = Strike.play(snapshot: makeSnapshot())
-        XCTAssertEqual(effects, [.dealDamage(target: .enemy, base: 6)])
+        let effects = Strike.play(snapshot: makeSnapshot(), targetEnemyIndex: 0)
+        XCTAssertEqual(effects, [.dealDamage(source: .player, target: .enemy(index: 0), base: 6)])
     }
     
     func testStrikePlus_play_producesExpectedEffects() {
     
         print("🧪 测试：testStrikePlus_play_producesExpectedEffects")
-        let effects = StrikePlus.play(snapshot: makeSnapshot())
-        XCTAssertEqual(effects, [.dealDamage(target: .enemy, base: 9)])
+        let effects = StrikePlus.play(snapshot: makeSnapshot(), targetEnemyIndex: 0)
+        XCTAssertEqual(effects, [.dealDamage(source: .player, target: .enemy(index: 0), base: 9)])
     }
     
     func testDefend_play_producesExpectedEffects() {
     
         print("🧪 测试：testDefend_play_producesExpectedEffects")
-        let effects = Defend.play(snapshot: makeSnapshot())
+        let effects = Defend.play(snapshot: makeSnapshot(), targetEnemyIndex: nil)
         XCTAssertEqual(effects, [.gainBlock(target: .player, base: 5)])
     }
     
     func testDefendPlus_play_producesExpectedEffects() {
     
         print("🧪 测试：testDefendPlus_play_producesExpectedEffects")
-        let effects = DefendPlus.play(snapshot: makeSnapshot())
+        let effects = DefendPlus.play(snapshot: makeSnapshot(), targetEnemyIndex: nil)
         XCTAssertEqual(effects, [.gainBlock(target: .player, base: 8)])
     }
     
     func testBash_play_producesExpectedEffects() {
     
         print("🧪 测试：testBash_play_producesExpectedEffects")
-        let effects = Bash.play(snapshot: makeSnapshot())
+        let effects = Bash.play(snapshot: makeSnapshot(), targetEnemyIndex: 0)
         XCTAssertEqual(
             effects,
             [
-                .dealDamage(target: .enemy, base: 8),
-                .applyStatus(target: .enemy, statusId: "vulnerable", stacks: 2)
+                .dealDamage(source: .player, target: .enemy(index: 0), base: 8),
+                .applyStatus(target: .enemy(index: 0), statusId: "vulnerable", stacks: 2)
             ]
         )
     }
@@ -57,12 +57,12 @@ final class CardDefinitionPlayTests: XCTestCase {
     func testBashPlus_play_producesExpectedEffects() {
     
         print("🧪 测试：testBashPlus_play_producesExpectedEffects")
-        let effects = BashPlus.play(snapshot: makeSnapshot())
+        let effects = BashPlus.play(snapshot: makeSnapshot(), targetEnemyIndex: 0)
         XCTAssertEqual(
             effects,
             [
-                .dealDamage(target: .enemy, base: 10),
-                .applyStatus(target: .enemy, statusId: "vulnerable", stacks: 3)
+                .dealDamage(source: .player, target: .enemy(index: 0), base: 10),
+                .applyStatus(target: .enemy(index: 0), statusId: "vulnerable", stacks: 3)
             ]
         )
     }
@@ -70,11 +70,11 @@ final class CardDefinitionPlayTests: XCTestCase {
     func testPommelStrike_play_producesExpectedEffects() {
     
         print("🧪 测试：testPommelStrike_play_producesExpectedEffects")
-        let effects = PommelStrike.play(snapshot: makeSnapshot())
+        let effects = PommelStrike.play(snapshot: makeSnapshot(), targetEnemyIndex: 0)
         XCTAssertEqual(
             effects,
             [
-                .dealDamage(target: .enemy, base: 9),
+                .dealDamage(source: .player, target: .enemy(index: 0), base: 9),
                 .drawCards(count: 1)
             ]
         )
@@ -83,7 +83,7 @@ final class CardDefinitionPlayTests: XCTestCase {
     func testShrugItOff_play_producesExpectedEffects() {
     
         print("🧪 测试：testShrugItOff_play_producesExpectedEffects")
-        let effects = ShrugItOff.play(snapshot: makeSnapshot())
+        let effects = ShrugItOff.play(snapshot: makeSnapshot(), targetEnemyIndex: nil)
         XCTAssertEqual(
             effects,
             [
@@ -96,7 +96,7 @@ final class CardDefinitionPlayTests: XCTestCase {
     func testInflame_play_producesExpectedEffects() {
     
         print("🧪 测试：testInflame_play_producesExpectedEffects")
-        let effects = Inflame.play(snapshot: makeSnapshot())
+        let effects = Inflame.play(snapshot: makeSnapshot(), targetEnemyIndex: nil)
         XCTAssertEqual(
             effects,
             [
@@ -108,12 +108,12 @@ final class CardDefinitionPlayTests: XCTestCase {
     func testClothesline_play_producesExpectedEffects() {
     
         print("🧪 测试：testClothesline_play_producesExpectedEffects")
-        let effects = Clothesline.play(snapshot: makeSnapshot())
+        let effects = Clothesline.play(snapshot: makeSnapshot(), targetEnemyIndex: 0)
         XCTAssertEqual(
             effects,
             [
-                .dealDamage(target: .enemy, base: 12),
-                .applyStatus(target: .enemy, statusId: "weak", stacks: 2)
+                .dealDamage(source: .player, target: .enemy(index: 0), base: 12),
+                .applyStatus(target: .enemy(index: 0), statusId: "weak", stacks: 2)
             ]
         )
     }

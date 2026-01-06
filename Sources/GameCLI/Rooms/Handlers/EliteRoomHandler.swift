@@ -21,12 +21,12 @@ struct EliteRoomHandler: RoomHandling {
         // 选择敌人（精英战斗：中等敌人池）
         var rng = SeededRNG(seed: battleSeed)
         let enemyId = Act1EnemyPool.randomMedium(rng: &rng)
-        let enemy = context.createEnemy(enemyId, &rng)
+        let enemy = context.createEnemy(enemyId, 0, &rng)
         
         // 创建战斗引擎（使用冒险中的玩家状态和遗物）
         let engine = BattleEngine(
             player: runState.player,
-            enemy: enemy,
+            enemies: [enemy],
             deck: TestMode.battleDeck(from: runState.deck),
             relicManager: runState.relicManager,
             seed: battleSeed
@@ -49,7 +49,8 @@ struct EliteRoomHandler: RoomHandling {
         
         // 如果胜利，完成节点
         if engine.state.playerWon == true {
-            context.logLine("\(Terminal.green)精英胜利：击败 \(engine.state.enemy.name)\(Terminal.reset)")
+            let enemyName = engine.state.enemies.first?.name ?? "敌人"
+            context.logLine("\(Terminal.green)精英胜利：击败 \(enemyName)\(Terminal.reset)")
             let rewardContext = RewardContext(
                 seed: runState.seed,
                 floor: runState.floor,

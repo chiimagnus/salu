@@ -77,6 +77,6 @@ public struct Poison: StatusDefinition {
     
     public static func onTurnEnd(owner: EffectTarget, stacks: Int, snapshot: BattleSnapshot) -> [BattleEffect] {
         // 中毒：回合结束时造成等同于层数的伤害
-        return [.dealDamage(target: owner, base: stacks)]
+        return [.dealDamage(source: owner, target: owner, base: stacks)]
     }
 }

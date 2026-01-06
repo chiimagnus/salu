@@ -49,12 +49,12 @@ final class StatusDefinitionTests: XCTestCase {
         let snapshot = BattleSnapshot(
             turn: 1,
             player: Entity(id: "p", name: "玩家", maxHP: 10),
-            enemy: Entity(id: "e", name: "敌人", maxHP: 10, enemyId: "jaw_worm"),
+            enemies: [Entity(id: "e", name: "敌人", maxHP: 10, enemyId: "jaw_worm")],
             energy: 3
         )
         
         let effects = Poison.onTurnEnd(owner: .player, stacks: 4, snapshot: snapshot)
-        XCTAssertEqual(effects, [.dealDamage(target: .player, base: 4)])
+        XCTAssertEqual(effects, [.dealDamage(source: .player, target: .player, base: 4)])
         XCTAssertEqual(Poison.decay, .turnEnd(decreaseBy: 1))
     }
 }

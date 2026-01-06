@@ -45,6 +45,26 @@ GameCore 的核心目标是把“内容扩展点”从 `enum + switch` 迁移到
 
 ---
 
+## 多敌人战斗 + 目标选择（已接入）
+
+为了支持“多敌人同场 + 显式目标”，核心接口已升级，新增/扩展内容时请遵守：
+
+- **目标模型**：统一使用 `EffectTarget`
+  - 玩家：`.player`
+  - 敌人实例：`.enemy(index: Int)`（索引对应 `BattleState.enemies`）
+- **战斗状态**：`BattleState.enemies: [Entity]`（不再是单个 enemy）
+- **快照**：`BattleSnapshot` 现在包含 `enemies: [Entity]`（不再包含单个 enemy）
+- **玩家动作**：`PlayerAction.playCard(handIndex:targetEnemyIndex:)`
+  - 当牌需要目标且场上存在多个存活敌人时，必须提供 `targetEnemyIndex`
+  - `BattleEngine` 会对目标合法性做校验（越界/已死亡/缺目标都会返回 `invalidAction`）
+- **卡牌定义**：`CardDefinition.play(snapshot:targetEnemyIndex:)` + `CardDefinition.targeting`
+  - 攻击牌默认 `targeting = .singleEnemy`；技能/能力默认 `targeting = .none`
+  - **不要硬编码敌人索引为 0**；应使用传入的 `targetEnemyIndex` 生成 `.enemy(index:)`
+- **敌人 AI**：`EnemyDefinition.chooseMove(selfIndex:snapshot:rng:)`
+  - 需要把“自己”作为 source/target 的效果，必须使用 `selfIndex` 生成 `.enemy(index: selfIndex)`（禁止再写死 0）
+
+---
+
 ## 设计原则
 
 ### 单一职责原则（SRP）

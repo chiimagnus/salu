@@ -1,3 +1,4 @@
+import Foundation
 import GameCore
 
 /// 战斗房间处理器
@@ -18,15 +19,30 @@ struct BattleRoomHandler: RoomHandling {
         // 使用当前 RNG 状态创建新的种子
         let battleSeed = runState.seed &+ UInt64(runState.currentRow) &* 1000
         
-        // 选择敌人（普通战斗：弱敌人池）
+        // 选择敌人（普通战斗：弱遭遇池；P6：可能为多敌人）
         var rng = SeededRNG(seed: battleSeed)
-        let enemyId = Act1EnemyPool.randomWeak(rng: &rng)
-        let enemy = context.createEnemy(enemyId, &rng)
+        
+        let encounter: EnemyEncounter
+        let forceMultiEnemy = ProcessInfo.processInfo.environment["SALU_FORCE_MULTI_ENEMY"] == "1"
+        if forceMultiEnemy {
+            // 用于本地调试/验收：强制进入双敌人遭遇（便于验证目标选择）
+            encounter = EnemyEncounter(enemyIds: ["louse_green", "louse_red"])
+        } else if TestMode.isEnabled {
+            // 测试模式下保持单敌人，避免 UI 测试因多敌人导致战斗无法快速结束
+            let enemyId = Act1EnemyPool.randomWeak(rng: &rng)
+            encounter = EnemyEncounter(enemyIds: [enemyId])
+        } else {
+            encounter = Act1EncounterPool.randomWeak(rng: &rng)
+        }
+        
+        let enemies: [Entity] = encounter.enemyIds.enumerated().map { index, enemyId in
+            context.createEnemy(enemyId, index, &rng)
+        }
         
         // 创建战斗引擎（使用冒险中的玩家状态和遗物）
         let engine = BattleEngine(
             player: runState.player,
-            enemy: enemy,
+            enemies: enemies,
             deck: TestMode.battleDeck(from: runState.deck),
             relicManager: runState.relicManager,
             seed: battleSeed
@@ -49,7 +65,8 @@ struct BattleRoomHandler: RoomHandling {
         
         // 如果胜利，完成节点
         if engine.state.playerWon == true {
-            context.logLine("\(Terminal.green)战斗胜利：击败 \(engine.state.enemy.name)\(Terminal.reset)")
+            let enemyNames = engine.state.enemies.map(\.name).joined(separator: "、")
+            context.logLine("\(Terminal.green)战斗胜利：击败 \(enemyNames)\(Terminal.reset)")
             // P1：战斗奖励（卡牌 3 选 1）
             let rewardContext = RewardContext(
                 seed: runState.seed,

@@ -28,7 +28,7 @@ final class RelicManagerAndRelicsTests: XCTestCase {
         print("🧪 测试：testRelicManager_onBattleTrigger_collectsEffects")
         let player = Entity(id: "player", name: "玩家", maxHP: 80)
         let enemy = Entity(id: "enemy", name: "敌人", maxHP: 40, enemyId: "jaw_worm")
-        let snapshot = BattleSnapshot(turn: 1, player: player, enemy: enemy, energy: 3)
+        let snapshot = BattleSnapshot(turn: 1, player: player, enemies: [enemy], energy: 3)
         
         let mgr = RelicManager(relics: ["burning_blood", "vajra", "lantern", "unknown_relic"])
         
@@ -48,7 +48,7 @@ final class RelicManagerAndRelicsTests: XCTestCase {
         print("🧪 测试：testBasicRelics_triggers")
         let player = Entity(id: "player", name: "玩家", maxHP: 80)
         let enemy = Entity(id: "enemy", name: "敌人", maxHP: 40, enemyId: "jaw_worm")
-        let snapshot = BattleSnapshot(turn: 1, player: player, enemy: enemy, energy: 3)
+        let snapshot = BattleSnapshot(turn: 1, player: player, enemies: [enemy], energy: 3)
         
         // Burning Blood：仅胜利战斗结束触发
         XCTAssertEqual(BurningBloodRelic.onBattleTrigger(.battleStart, snapshot: snapshot).count, 0)

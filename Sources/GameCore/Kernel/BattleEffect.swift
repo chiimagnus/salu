@@ -3,7 +3,8 @@
 /// 效果目标
 public enum EffectTarget: Sendable, Equatable {
     case player
-    case enemy
+    /// 多敌人场景下，用索引指向“战斗中的某个敌人实例”
+    case enemy(index: Int)
 }
 
 /// 战斗效果（统一效果枚举：卡牌/状态/遗物/敌人都用）
@@ -11,7 +12,7 @@ public enum EffectTarget: Sendable, Equatable {
 /// 只有 Engine（BattleEngine）能执行效果并发出事件
 public enum BattleEffect: Sendable, Equatable {
     /// 造成伤害（base 值，不含修正）
-    case dealDamage(target: EffectTarget, base: Int)
+    case dealDamage(source: EffectTarget, target: EffectTarget, base: Int)
     
     /// 获得格挡（base 值，不含修正）
     case gainBlock(target: EffectTarget, base: Int)

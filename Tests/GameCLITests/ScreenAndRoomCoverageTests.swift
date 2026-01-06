@@ -34,9 +34,9 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
             playerName: "玩家",
             playerMaxHP: 80,
             playerFinalHP: won ? 50 : 0,
-            enemyName: "敌人",
-            enemyMaxHP: 40,
-            enemyFinalHP: won ? 0 : 10,
+            enemies: [
+                EnemyBattleRecord(entityId: "enemy#0", enemyId: "jaw_worm", name: "敌人", maxHP: 40, finalHP: won ? 0 : 10)
+            ],
             cardsPlayed: 3,
             strikesPlayed: 2,
             defendsPlayed: 1,
@@ -113,7 +113,7 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
         player.currentHP = 55
         
         let enemy = Entity(id: "enemy", name: "敌人", maxHP: 40, enemyId: "jaw_worm")
-        var state = BattleState(player: player, enemy: enemy)
+        var state = BattleState(player: player, enemies: [enemy])
         state.turn = 3
         state.playerWon = true
         
@@ -151,10 +151,10 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
             logLine: { _ in },
             battleLoop: { engine, _ in
                 // 让战斗在测试里“稳定且快速”结束：打一张 Strike（敌人 HP=1）
-                _ = engine.handleAction(.playCard(handIndex: 0))
+                _ = engine.handleAction(.playCard(handIndex: 0, targetEnemyIndex: 0))
             },
-            createEnemy: { enemyId, _ in
-                Entity(id: enemyId.rawValue, name: "Boss", maxHP: 1, enemyId: enemyId)
+            createEnemy: { enemyId, instanceIndex, _ in
+                Entity(id: "\(enemyId.rawValue)#\(instanceIndex)", name: "Boss", maxHP: 1, enemyId: enemyId)
             },
             historyService: historyService
         )

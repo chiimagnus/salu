@@ -80,7 +80,7 @@ final class ShopRoomHandlerTests: XCTestCase {
             logBattleEvents: { _ in },
             logLine: { _ in },
             battleLoop: { _, _ in },
-            createEnemy: { _, _ in Entity(id: "enemy", name: "敌人", maxHP: 1, enemyId: "jaw_worm") },
+            createEnemy: { _, _, _ in Entity(id: "enemy#0", name: "敌人", maxHP: 1, enemyId: "jaw_worm") },
             historyService: historyService
         )
         
