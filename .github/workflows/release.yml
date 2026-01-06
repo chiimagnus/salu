@@ -29,17 +29,13 @@ jobs:
       - name: Run all Swift tests (XCTest)
         run: swift test
 
-      - name: Prepare artifact
+      - name: Create release artifact
         run: |
           mkdir -p artifact
           cp .build/release/GameCLI artifact/salu-macos
           chmod +x artifact/salu-macos
-
-      - name: Create tarball
-        run: |
           cd artifact
           tar -czf salu-macos.tar.gz salu-macos
-          cd ..
 
       - name: Upload artifact
         if: success()
