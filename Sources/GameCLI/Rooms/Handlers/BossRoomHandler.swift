@@ -6,16 +6,27 @@ struct BossRoomHandler: RoomHandling {
     
     func run(node: MapNode, runState: inout RunState, context: RoomContext) -> RoomRunResult {
         let won = handleBossFight(node: node, runState: &runState, context: context)
-        return .runEnded(won: won)
+        if won {
+            // Boss 胜利：完成节点（可能推进到下一幕，也可能直接通关）
+            runState.completeCurrentNode()
+            
+            if runState.isOver {
+                return .runEnded(won: true)
+            }
+            return .completedNode
+        }
+        
+        return .runEnded(won: false)
     }
     
     private func handleBossFight(node: MapNode, runState: inout RunState, context: RoomContext) -> Bool {
         // Boss 战斗使用特殊种子
-        let bossSeed = runState.seed &+ 99999
+        let bossSeed = runState.seed &+ UInt64(runState.floor) &* 1_000_000 &+ 99999
         
         // 创建 Boss 敌人（P7：Act1 真 Boss）
         var rng = SeededRNG(seed: bossSeed)
-        let enemy = context.createEnemy("toxic_colossus", 0, &rng)
+        let bossId: EnemyID = (runState.floor == 1) ? "toxic_colossus" : "chrono_watcher"
+        let enemy = context.createEnemy(bossId, 0, &rng)
         
         // 创建战斗引擎（使用冒险中的玩家状态和遗物）
         let engine = BattleEngine(
@@ -65,6 +76,11 @@ struct BossRoomHandler: RoomHandling {
                 } else {
                     context.logLine("\(Terminal.dim)遗物奖励：跳过（\(relicDef.icon)\(relicDef.name)）\(Terminal.reset)")
                 }
+            }
+            
+            // 若不是最终幕，提示进入下一幕
+            if runState.floor < runState.maxFloor {
+                context.logLine("\(Terminal.cyan)进入第 \(runState.floor + 1) 层冒险…\(Terminal.reset)")
             }
         } else {
             let enemyName = engine.state.enemies.first?.name ?? "敌人"

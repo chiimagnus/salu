@@ -47,6 +47,7 @@ final class SaveService {
             version: RunSaveVersion.current,
             seed: runState.seed,
             floor: runState.floor,
+            maxFloor: runState.maxFloor,
             gold: runState.gold,
             mapNodes: mapNodes,
             currentNodeId: runState.currentNodeId,
@@ -120,7 +121,8 @@ final class SaveService {
             relicManager: relicManager,
             map: mapNodes,
             seed: snapshot.seed,
-            floor: snapshot.floor
+            floor: snapshot.floor,
+            maxFloor: snapshot.maxFloor
         )
         
         runState.currentNodeId = snapshot.currentNodeId

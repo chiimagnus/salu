@@ -213,7 +213,9 @@ enum TestMode {
             gold: gold,
             relicManager: relicManager,
             map: map,
-            seed: seed
+            seed: seed,
+            floor: 1,
+            maxFloor: 1
         )
     }
     

@@ -152,13 +152,25 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
             player: createDefaultPlayer(),
             deck: [Card(id: "strike_1", cardId: "strike")],
             relicManager: RelicManager(),
-            map: [],
+            map: [
+                MapNode(
+                    id: "14_0",
+                    row: 14,
+                    column: 0,
+                    roomType: .boss,
+                    connections: [],
+                    isCompleted: false,
+                    isAccessible: true
+                )
+            ],
             seed: 1,
-            floor: 1
+            floor: 1,
+            maxFloor: 1
         )
         
         let handler = BossRoomHandler()
         let bossNode = MapNode(id: "14_0", row: 14, column: 0, roomType: .boss)
+        run.currentNodeId = bossNode.id
         
         let context = RoomContext(
             logBattleEvents: { _ in },

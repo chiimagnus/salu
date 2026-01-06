@@ -26,7 +26,11 @@ public struct RunState: Sendable {
     public let seed: UInt64
     
     /// 当前楼层（Act）
-    public let floor: Int
+    public var floor: Int
+    
+    /// 最大楼层（Act 数）
+    /// - Note: 用于支持多幕（例如 Act1→Act2）。
+    public let maxFloor: Int
     
     /// 冒险是否结束
     public var isOver: Bool
@@ -43,7 +47,8 @@ public struct RunState: Sendable {
         relicManager: RelicManager = RelicManager(),
         map: [MapNode],
         seed: UInt64,
-        floor: Int = 1
+        floor: Int = 1,
+        maxFloor: Int = 2
     ) {
         self.player = player
         self.deck = deck
@@ -53,6 +58,7 @@ public struct RunState: Sendable {
         self.currentNodeId = nil
         self.seed = seed
         self.floor = floor
+        self.maxFloor = maxFloor
         self.isOver = false
         self.won = false
     }
@@ -73,7 +79,9 @@ public struct RunState: Sendable {
             gold: RunState.startingGold,
             relicManager: relicManager,
             map: map,
-            seed: seed
+            seed: seed,
+            floor: 1,
+            maxFloor: 2
         )
     }
     
@@ -143,9 +151,22 @@ public struct RunState: Sendable {
         
         // 检查是否通关（当前节点是 Boss 且已完成）
         if map[nodeIndex].roomType == .boss {
-            isOver = true
-            won = true
+            if floor >= maxFloor {
+                isOver = true
+                won = true
+            } else {
+                // 进入下一幕：提升 floor，并生成新地图（保持可复现）
+                floor += 1
+                map = MapGenerator.generateBranching(seed: seedForFloor(floor))
+            }
         }
+    }
+
+    // MARK: - Multi-Act Helpers
+    
+    private func seedForFloor(_ floor: Int) -> UInt64 {
+        // 使用 floor 派生新地图种子，避免 Act1 与 Act2 地图完全一致
+        seed &+ UInt64(floor) &* 1_000_000_000
     }
     
     // MARK: - 玩家状态操作

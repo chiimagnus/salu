@@ -35,7 +35,10 @@ enum ResourceScreen {
         
         // MARK: - Enemies & Encounters
         lines.append("")
-        lines.append("\(Terminal.bold)👹 敌人（Act1 池子）\(Terminal.reset)")
+        lines.append("\(Terminal.bold)👹 敌人池/遭遇池（Act1/Act2）\(Terminal.reset)")
+        lines.append("")
+        
+        lines.append("\(Terminal.bold)Act1 敌人池\(Terminal.reset)")
         lines.append("  普通敌人（weak）数量：\(Terminal.yellow)\(Act1EnemyPool.weak.count)\(Terminal.reset)")
         lines.append("  精英敌人（medium）数量：\(Terminal.yellow)\(Act1EnemyPool.medium.count)\(Terminal.reset)")
         lines.append("")
@@ -63,6 +66,40 @@ enum ResourceScreen {
         lines.append("")
         
         for (i, enc) in encounters.enumerated() {
+            let names = enc.enemyIds.map { id in EnemyRegistry.require(id).name }.joined(separator: " + ")
+            lines.append("    [\(i + 1)] \(names)")
+        }
+        
+        // Act2
+        lines.append("")
+        lines.append("\(Terminal.bold)Act2 敌人池\(Terminal.reset)")
+        lines.append("  普通敌人（weak）数量：\(Terminal.yellow)\(Act2EnemyPool.weak.count)\(Terminal.reset)")
+        lines.append("  精英敌人（medium）数量：\(Terminal.yellow)\(Act2EnemyPool.medium.count)\(Terminal.reset)")
+        lines.append("")
+        
+        lines.append("  \(Terminal.bold)普通敌人（weak）\(Terminal.reset)")
+        for id in Act2EnemyPool.weak.sorted(by: { $0.rawValue < $1.rawValue }) {
+            let def = EnemyRegistry.require(id)
+            lines.append("    - \(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
+        }
+        lines.append("")
+        
+        lines.append("  \(Terminal.bold)精英敌人（medium）\(Terminal.reset)")
+        for id in Act2EnemyPool.medium.sorted(by: { $0.rawValue < $1.rawValue }) {
+            let def = EnemyRegistry.require(id)
+            lines.append("    - \(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
+        }
+        
+        lines.append("")
+        lines.append("\(Terminal.bold)🧩 遭遇池（Act2EncounterPool.weak）\(Terminal.reset)")
+        let act2Encounters = Act2EncounterPool.weak
+        let act2MultiCount = act2Encounters.filter { $0.enemyIds.count > 1 }.count
+        let act2TotalCount = max(1, act2Encounters.count)
+        let act2MultiPercent = (act2MultiCount * 100) / act2TotalCount
+        lines.append("  总遭遇数：\(Terminal.yellow)\(act2Encounters.count)\(Terminal.reset)  |  双敌人遭遇：\(Terminal.yellow)\(act2MultiCount)\(Terminal.reset)（约 \(act2MultiPercent)%）")
+        lines.append("")
+        
+        for (i, enc) in act2Encounters.enumerated() {
             let names = enc.enemyIds.map { id in EnemyRegistry.require(id).name }.joined(separator: " + ")
             lines.append("    [\(i + 1)] \(names)")
         }

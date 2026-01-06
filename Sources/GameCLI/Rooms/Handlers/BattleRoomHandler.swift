@@ -17,7 +17,7 @@ struct BattleRoomHandler: RoomHandling {
     
     private func handleBattle(node: MapNode, runState: inout RunState, context: RoomContext) -> Bool {
         // 使用当前 RNG 状态创建新的种子
-        let battleSeed = runState.seed &+ UInt64(runState.currentRow) &* 1000
+        let battleSeed = runState.seed &+ UInt64(runState.floor) &* 1_000_000 &+ UInt64(runState.currentRow) &* 1000
         
         // 选择敌人（普通战斗：弱遭遇池；P6：可能为多敌人）
         var rng = SeededRNG(seed: battleSeed)
@@ -26,13 +26,17 @@ struct BattleRoomHandler: RoomHandling {
         let forceMultiEnemy = ProcessInfo.processInfo.environment["SALU_FORCE_MULTI_ENEMY"] == "1"
         if forceMultiEnemy {
             // 用于本地调试/验收：强制进入双敌人遭遇（便于验证目标选择）
-            encounter = EnemyEncounter(enemyIds: ["louse_green", "louse_red"])
+            if runState.floor == 1 {
+                encounter = EnemyEncounter(enemyIds: ["louse_green", "louse_red"])
+            } else {
+                encounter = EnemyEncounter(enemyIds: ["shadow_stalker", "clockwork_sentinel"])
+            }
         } else if TestMode.isEnabled {
             // 测试模式下保持单敌人，避免 UI 测试因多敌人导致战斗无法快速结束
-            let enemyId = Act1EnemyPool.randomWeak(rng: &rng)
+            let enemyId = (runState.floor == 1) ? Act1EnemyPool.randomWeak(rng: &rng) : Act2EnemyPool.randomWeak(rng: &rng)
             encounter = EnemyEncounter(enemyIds: [enemyId])
         } else {
-            encounter = Act1EncounterPool.randomWeak(rng: &rng)
+            encounter = (runState.floor == 1) ? Act1EncounterPool.randomWeak(rng: &rng) : Act2EncounterPool.randomWeak(rng: &rng)
         }
         
         let enemies: [Entity] = encounter.enemyIds.enumerated().map { index, enemyId in

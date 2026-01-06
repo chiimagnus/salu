@@ -17,6 +17,14 @@ public enum EnemyRegistry {
         
         // Act 1 Bosses
         ToxicColossus.id: ToxicColossus.self,
+        
+        // Act 2 Enemies
+        ShadowStalker.id: ShadowStalker.self,
+        ClockworkSentinel.id: ClockworkSentinel.self,
+        RuneGuardian.id: RuneGuardian.self,
+        
+        // Act 2 Bosses
+        ChronoWatcher.id: ChronoWatcher.self,
     ]
     
     /// 获取敌人定义

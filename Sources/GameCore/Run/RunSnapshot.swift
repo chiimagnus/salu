@@ -10,6 +10,9 @@ public struct RunSnapshot: Codable, Sendable {
     /// 当前楼层
     public let floor: Int
     
+    /// 最大楼层（Act 数）
+    public let maxFloor: Int
+    
     /// 当前金币
     public let gold: Int
     
@@ -101,6 +104,7 @@ public struct RunSnapshot: Codable, Sendable {
         version: Int,
         seed: UInt64,
         floor: Int,
+        maxFloor: Int,
         gold: Int,
         mapNodes: [NodeData],
         currentNodeId: String?,
@@ -113,6 +117,7 @@ public struct RunSnapshot: Codable, Sendable {
         self.version = version
         self.seed = seed
         self.floor = floor
+        self.maxFloor = maxFloor
         self.gold = gold
         self.mapNodes = mapNodes
         self.currentNodeId = currentNodeId
@@ -131,6 +136,7 @@ extension RunSnapshot {
         case version
         case seed
         case floor
+        case maxFloor
         case gold
         case mapNodes
         case currentNodeId
@@ -146,6 +152,7 @@ extension RunSnapshot {
         version = try container.decode(Int.self, forKey: .version)
         seed = try container.decode(UInt64.self, forKey: .seed)
         floor = try container.decode(Int.self, forKey: .floor)
+        maxFloor = try container.decode(Int.self, forKey: .maxFloor)
         gold = try container.decodeIfPresent(Int.self, forKey: .gold) ?? RunState.startingGold
         mapNodes = try container.decode([NodeData].self, forKey: .mapNodes)
         currentNodeId = try container.decodeIfPresent(String.self, forKey: .currentNodeId)
@@ -161,6 +168,7 @@ extension RunSnapshot {
         try container.encode(version, forKey: .version)
         try container.encode(seed, forKey: .seed)
         try container.encode(floor, forKey: .floor)
+        try container.encode(maxFloor, forKey: .maxFloor)
         try container.encode(gold, forKey: .gold)
         try container.encode(mapNodes, forKey: .mapNodes)
         try container.encode(currentNodeId, forKey: .currentNodeId)
