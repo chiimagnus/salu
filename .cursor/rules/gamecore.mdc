@@ -197,6 +197,7 @@ let shuffled = deck.shuffled()  // 不可复现！
 ### 添加新卡牌
 
 1. 创建新的 `CardDefinition` 类型（建议放在 `Cards/Definitions/` 子目录）。
+   - 内容文件建议按类别拆分以便维护：卡牌按 **攻击/技能/能力**；敌人按 **普通/精英/Boss**；遗物按 **稀有度**。
 2. 在 `CardRegistry` 中注册 `CardID -> Definition`。
 3. 如需加入起始牌组，更新 `createStarterDeck()`；其余场景通过发牌/奖励直接使用 `CardID`。
 4. 不要在 `BattleEngine` 添加 switch，效果由 `CardDefinition.play` 返回的 `BattleEffect` 统一执行。

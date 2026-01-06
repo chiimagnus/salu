@@ -13,7 +13,7 @@ GameCLI 是**表现层**，负责终端界面渲染、用户输入处理。
 ```
 Sources/GameCLI/  ← 本规范适用范围
 │
-├── Screens/                    # ✅ 界面系统（主菜单/地图/战斗/历史/统计等）
+├── Screens/                    # ✅ 界面系统（主菜单/地图/战斗/历史/统计/资源管理等）
 ├── Components/                 # ✅ UI 组件（事件格式化等）
 ├── Flow/                       # ✅ RoomHandling 协议与注册表
 ├── Rooms/Handlers/             # ✅ 房间行为（Start/Battle/Elite/Rest/Boss）
