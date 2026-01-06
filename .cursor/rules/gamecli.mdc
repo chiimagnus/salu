@@ -153,6 +153,8 @@ GameCore → GameCLI  ❌ 禁止
   - `SALU_TEST_MAP=1` 或 `mini`：起点 → 精英 → Boss
   - `SALU_TEST_MAP=battle`：起点 → 普通战斗 → Boss（用于多敌人/目标选择 UI 测试）
   - `SALU_TEST_MAP=shop/rest/event`：起点 → 对应房间 → Boss
+- CLI 测试模式支持 `SALU_TEST_MAX_FLOOR` 覆盖最大楼层（Act 数），默认 `1`：
+  - `SALU_TEST_MAX_FLOOR=2`：用于验证“击败 Act1 Boss → 进入 Act2”链路与存档持久化
 - （调试/验收）`SALU_FORCE_MULTI_ENEMY=1`：强制普通战斗进入双敌人遭遇（便于验证目标选择）
 
 ---
