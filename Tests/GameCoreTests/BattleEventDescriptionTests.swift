@@ -1,0 +1,40 @@
+import XCTest
+@testable import GameCore
+
+final class BattleEventDescriptionTests: XCTestCase {
+    func testBattleEvent_description_coversAllCases() {
+        print("🧪 测试：testBattleEvent_description_coversAllCases")
+        
+        let events: [(BattleEvent, String)] = [
+            (.battleStarted, "战斗开始"),
+            (.turnStarted(turn: 1), "第 1 回合"),
+            (.energyReset(amount: 3), "能量"),
+            (.blockCleared(target: "玩家", amount: 5), "玩家"),
+            (.drew(cardId: "strike"), "抽到"),
+            (.shuffled(count: 5), "洗牌"),
+            (.played(cardId: "strike", cost: 1), "打出"),
+            (.damageDealt(source: "玩家", target: "敌人", amount: 6, blocked: 0), "造成"),
+            (.damageDealt(source: "玩家", target: "敌人", amount: 6, blocked: 3), "被格挡"),
+            (.blockGained(target: "玩家", amount: 5), "格挡"),
+            (.handDiscarded(count: 3), "弃置"),
+            (.enemyIntent(enemyId: "e", action: "攻击", damage: 10), "敌人意图"),
+            (.enemyAction(enemyId: "e", action: "攻击"), "执行"),
+            (.turnEnded(turn: 1), "回合结束"),
+            (.entityDied(entityId: "e", name: "敌人"), "死亡"),
+            (.battleWon, "胜利"),
+            (.battleLost, "失败"),
+            (.notEnoughEnergy(required: 2, available: 1), "能量不足"),
+            (.invalidAction(reason: "测试"), "无效操作"),
+            (.statusApplied(target: "玩家", effect: "易伤", stacks: 2), "获得"),
+            (.statusExpired(target: "玩家", effect: "易伤"), "消退"),
+        ]
+        
+        for (event, expected) in events {
+            let desc = event.description
+            XCTAssertFalse(desc.isEmpty)
+            XCTAssertTrue(desc.contains(expected), "期望描述包含关键字：\(expected)（实际：\(desc)）")
+        }
+    }
+}
+
+

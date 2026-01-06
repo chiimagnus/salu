@@ -182,6 +182,58 @@ final class EnemyPoolAndBasicEnemiesTests: XCTestCase {
         }
     }
     
+    func testAct1EliteAndBoss_chooseMove_coversBranchesAndCycles() {
+        print("🧪 测试：testAct1EliteAndBoss_chooseMove_coversBranchesAndCycles")
+        let player = Entity(id: "player", name: "玩家", maxHP: 80)
+        let enemy = Entity(id: "enemy", name: "敌人", maxHP: 40, enemyId: "stone_sentinel")
+        
+        // StoneSentinel turn 1: always block
+        do {
+            var rng = SeededRNG(seed: 1)
+            let snap1 = BattleSnapshot(turn: 1, player: player, enemies: [enemy], energy: 3)
+            XCTAssertTrue(StoneSentinel.chooseMove(selfIndex: 0, snapshot: snap1, rng: &rng).intent.text.contains("格挡"))
+        }
+        
+        // StoneSentinel later: three branches
+        XCTAssertTrue(findSeed { rollSeed in
+            var rng = SeededRNG(seed: rollSeed)
+            let snap = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
+            return StoneSentinel.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng).intent.text.contains("重击")
+        } != nil)
+        XCTAssertTrue(findSeed { rollSeed in
+            var rng = SeededRNG(seed: rollSeed)
+            let snap = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
+            return StoneSentinel.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng).intent.text.contains("连斩")
+        } != nil)
+        XCTAssertTrue(findSeed { rollSeed in
+            var rng = SeededRNG(seed: rollSeed)
+            let snap = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
+            return StoneSentinel.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng).intent.text.contains("固守")
+        } != nil)
+        
+        // ToxicColossus: deterministic 4-turn loop
+        do {
+            var rng = SeededRNG(seed: 1)
+            let eBoss = Entity(id: "boss", name: "Boss", maxHP: 100, enemyId: "toxic_colossus")
+            
+            let t1 = BattleSnapshot(turn: 1, player: player, enemies: [eBoss], energy: 3)
+            let m1 = ToxicColossus.chooseMove(selfIndex: 0, snapshot: t1, rng: &rng)
+            XCTAssertTrue(m1.intent.text.contains("毒雾"))
+            
+            let t2 = BattleSnapshot(turn: 2, player: player, enemies: [eBoss], energy: 3)
+            let m2 = ToxicColossus.chooseMove(selfIndex: 0, snapshot: t2, rng: &rng)
+            XCTAssertTrue(m2.intent.text.contains("践踏"))
+            
+            let t3 = BattleSnapshot(turn: 3, player: player, enemies: [eBoss], energy: 3)
+            let m3 = ToxicColossus.chooseMove(selfIndex: 0, snapshot: t3, rng: &rng)
+            XCTAssertTrue(m3.intent.text.contains("腐蚀打击"))
+            
+            let t4 = BattleSnapshot(turn: 4, player: player, enemies: [eBoss], energy: 3)
+            let m4 = ToxicColossus.chooseMove(selfIndex: 0, snapshot: t4, rng: &rng)
+            XCTAssertTrue(m4.intent.text.contains("连击"))
+        }
+    }
+    
     private func findSeed(_ predicate: (UInt64) -> Bool, max: UInt64 = 5000) -> UInt64? {
         for seed in 0..<max {
             if predicate(seed) { return seed }
