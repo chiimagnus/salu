@@ -23,9 +23,6 @@ jobs:
         with:
           swift-version: '6.2'
 
-      - name: Swift version
-        run: swift --version
-
       - name: Build release binary
         run: swift build -c release
       
