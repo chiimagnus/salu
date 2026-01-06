@@ -33,13 +33,13 @@ enum MainMenuScreen {
             ║                                                       ║
             ╠═══════════════════════════════════════════════════════╣
             ║                                                       ║
-            ║  \(Terminal.reset)\(Terminal.green)[1]\(Terminal.cyan) 🔄 继续上次冒险                            ║
-            ║  \(Terminal.reset)\(Terminal.green)[2]\(Terminal.cyan) 🗺️  开始新冒险                              ║
-            ║  \(Terminal.reset)\(Terminal.green)[3]\(Terminal.cyan) ⚙️  设置                              ║
-            ║  \(Terminal.reset)\(Terminal.red)[4]\(Terminal.cyan) 🚪 退出游戏                                ║
+            ║  \(Terminal.reset)\(Terminal.green)[1]\(Terminal.cyan) 🔄 继续上次冒险                                  ║
+            ║  \(Terminal.reset)\(Terminal.green)[2]\(Terminal.cyan) 🗺️  开始新冒险                                    ║
+            ║  \(Terminal.reset)\(Terminal.green)[3]\(Terminal.cyan) ⚙️  设置                                          ║
+            ║  \(Terminal.reset)\(Terminal.red)[4]\(Terminal.cyan) 🚪 退出游戏                                      ║
             ║                                                       ║
             ╠═══════════════════════════════════════════════════════╣
-            ║  \(Terminal.reset)\(Terminal.dim)\(statsLine)\(Terminal.bold)\(Terminal.cyan)\(String(repeating: " ", count: max(0, 40 - statsLine.count)))║
+            ║  \(Terminal.reset)\(Terminal.dim)\(statsLine)\(Terminal.bold)\(Terminal.cyan)\(String(repeating: " ", count: max(0, 40 - statsLine.count)))        ║
             ╚═══════════════════════════════════════════════════════╝
             \(Terminal.reset)
             """)
@@ -59,12 +59,12 @@ enum MainMenuScreen {
             ║                                                       ║
             ╠═══════════════════════════════════════════════════════╣
             ║                                                       ║
-            ║  \(Terminal.reset)\(Terminal.green)[1]\(Terminal.cyan) 🗺️  开始冒险                                  ║
-            ║  \(Terminal.reset)\(Terminal.green)[2]\(Terminal.cyan) ⚙️  设置                              ║
-            ║  \(Terminal.reset)\(Terminal.red)[3]\(Terminal.cyan) 🚪 退出游戏                                ║
+            ║  \(Terminal.reset)\(Terminal.green)[1]\(Terminal.cyan) 🗺️  开始冒险                                      ║
+            ║  \(Terminal.reset)\(Terminal.green)[2]\(Terminal.cyan) ⚙️  设置                                          ║
+            ║  \(Terminal.reset)\(Terminal.red)[3]\(Terminal.cyan) 🚪 退出游戏                                      ║
             ║                                                       ║
             ╠═══════════════════════════════════════════════════════╣
-            ║  \(Terminal.reset)\(Terminal.dim)\(statsLine)\(Terminal.bold)\(Terminal.cyan)\(String(repeating: " ", count: max(0, 40 - statsLine.count)))║
+            ║  \(Terminal.reset)\(Terminal.dim)\(statsLine)\(Terminal.bold)\(Terminal.cyan)\(String(repeating: " ", count: max(0, 40 - statsLine.count)))        ║
             ╚═══════════════════════════════════════════════════════╝
             \(Terminal.reset)
             """)
