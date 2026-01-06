@@ -5,12 +5,13 @@
 public enum Act1EnemyPool {
     /// 弱敌人（前几场战斗）
     public static let weak: [EnemyID] = [
-        "jaw_worm", "cultist", "louse_green", "louse_red"
+        "jaw_worm", "cultist", "louse_green", "louse_red",
+        "spore_beast", "slime_small_acid"
     ]
     
     /// 中等敌人（中期战斗）
     public static let medium: [EnemyID] = [
-        "slime_medium_acid"
+        "slime_medium_acid", "stone_sentinel"
     ]
     
     /// 所有敌人

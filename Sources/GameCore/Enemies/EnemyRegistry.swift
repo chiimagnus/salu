@@ -10,7 +10,10 @@ public enum EnemyRegistry {
         Cultist.id: Cultist.self,
         LouseGreen.id: LouseGreen.self,
         LouseRed.id: LouseRed.self,
+        SporeBeast.id: SporeBeast.self,
+        SlimeSmallAcid.id: SlimeSmallAcid.self,
         SlimeMediumAcid.id: SlimeMediumAcid.self,
+        StoneSentinel.id: StoneSentinel.self,
         
         // Act 1 Bosses
         ToxicColossus.id: ToxicColossus.self,
