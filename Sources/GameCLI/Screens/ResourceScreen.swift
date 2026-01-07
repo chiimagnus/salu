@@ -26,6 +26,8 @@ enum ResourceScreen {
     private static func showInteractive() {
         var selectedIndex = 0
         let tabs = ["卡牌", "敌人/遭遇", "遗物"]
+        var offset = 0
+        let pageSize = 24
 
         var keyReader = TerminalKeyReader()
 
@@ -56,9 +58,15 @@ enum ResourceScreen {
                 lines.append(contentsOf: buildHeaderLines())
                 lines.append(TabBar.render(tabs: tabs, selectedIndex: selectedIndex, hint: "（Tab 切换）"))
                 lines.append("")
-                lines.append(contentsOf: contentLines(for: selectedIndex))
+                let allContent = contentLines(for: selectedIndex)
+                let clampedOffset = max(0, min(offset, max(0, allContent.count - 1)))
+                offset = clampedOffset
+                let end = min(allContent.count, clampedOffset + pageSize)
+                if clampedOffset < end {
+                    lines.append(contentsOf: allContent[clampedOffset..<end])
+                }
                 lines.append("")
-                lines.append("\(Terminal.dim)Tab 切换分栏  q/ESC 返回\(Terminal.reset)")
+                lines.append("\(Terminal.dim)↑↓ 滚动  Tab 切换分栏  q/ESC 返回\(Terminal.reset)")
 
                 for line in lines {
                     print(line)
@@ -73,11 +81,21 @@ enum ResourceScreen {
                 switch key {
                 case .tab:
                     selectedIndex = (selectedIndex + 1) % max(1, tabs.count)
+                    offset = 0
                     redraw()
 
                 case .shiftTab:
                     let count = max(1, tabs.count)
                     selectedIndex = (selectedIndex - 1 + count) % count
+                    offset = 0
+                    redraw()
+
+                case .arrowUp:
+                    offset = max(0, offset - 1)
+                    redraw()
+
+                case .arrowDown:
+                    offset += 1
                     redraw()
 
                 case .escape:
