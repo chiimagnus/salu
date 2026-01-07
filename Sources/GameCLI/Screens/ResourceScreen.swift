@@ -8,54 +8,175 @@ import GameCore
 /// - 提供基础统计洞察（数量、分组、双敌人占比等）
 enum ResourceScreen {
     static func show() {
+        if TerminalKeyReader.isInteractiveTTY() {
+            showInteractive()
+        } else {
+            showNonInteractive()
+        }
+    }
+
+    private static func showNonInteractive() {
+        // 保持旧行为：一次性输出全量内容（用于测试/日志/管道场景）。
         Terminal.clear()
-        
+        for line in buildAllLines() {
+            print(line)
+        }
+    }
+
+    private static func showInteractive() {
+        var selectedIndex = 0
+        let tabs = ["卡牌", "敌人/遭遇", "遗物"]
+        var offset = 0
+        let pageSize = 24
+
+        var keyReader = TerminalKeyReader()
+
+        TerminalKeyReader.withRawMode {
+            print(Terminal.hideCursor, terminator: "")
+            defer {
+                print(Terminal.showCursor, terminator: "")
+                Terminal.flush()
+            }
+
+            func contentLines(for index: Int) -> [String] {
+                switch index {
+                case 0:
+                    return buildCardsSectionLines()
+                case 1:
+                    return buildEnemiesAndEncountersSectionLines()
+                case 2:
+                    return buildRelicsSectionLines()
+                default:
+                    return []
+                }
+            }
+
+            func redraw() {
+                Terminal.clear()
+
+                var lines: [String] = []
+                lines.append(contentsOf: buildHeaderLines())
+                lines.append(TabBar.render(tabs: tabs, selectedIndex: selectedIndex, hint: "（Tab 切换）"))
+                lines.append("")
+                let allContent = contentLines(for: selectedIndex)
+                let clampedOffset = max(0, min(offset, max(0, allContent.count - 1)))
+                offset = clampedOffset
+                let end = min(allContent.count, clampedOffset + pageSize)
+                if clampedOffset < end {
+                    lines.append(contentsOf: allContent[clampedOffset..<end])
+                }
+                lines.append("")
+                lines.append("\(Terminal.dim)↑↓ 滚动  Tab 切换分栏  q/ESC 返回\(Terminal.reset)")
+
+                for line in lines {
+                    print(line)
+                }
+                Terminal.flush()
+            }
+
+            redraw()
+
+            while true {
+                let key = keyReader.readKey()
+                switch key {
+                case .tab:
+                    selectedIndex = (selectedIndex + 1) % max(1, tabs.count)
+                    offset = 0
+                    redraw()
+
+                case .shiftTab:
+                    let count = max(1, tabs.count)
+                    selectedIndex = (selectedIndex - 1 + count) % count
+                    offset = 0
+                    redraw()
+
+                case .arrowUp:
+                    offset = max(0, offset - 1)
+                    redraw()
+
+                case .arrowDown:
+                    offset += 1
+                    redraw()
+
+                case .escape:
+                    return
+
+                case .printable(let c):
+                    if c == "q" || c == "Q" { return }
+
+                default:
+                    break
+                }
+            }
+        }
+    }
+
+    private static func buildHeaderLines() -> [String] {
+        [
+            "\(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)",
+            "\(Terminal.bold)\(Terminal.cyan)  📦 资源管理（内容与池子一览）\(Terminal.reset)",
+            "\(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)",
+            ""
+        ]
+    }
+
+    private static func buildAllLines() -> [String] {
         var lines: [String] = []
-        
-        lines.append("\(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)")
-        lines.append("\(Terminal.bold)\(Terminal.cyan)  📦 资源管理（内容与池子一览）\(Terminal.reset)")
-        lines.append("\(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)")
-        lines.append("")
-        
+        lines.append(contentsOf: buildHeaderLines())
+        lines.append(contentsOf: buildCardsSectionLines())
+        lines.append(contentsOf: buildEnemiesAndEncountersSectionLines())
+        lines.append(contentsOf: buildRelicsSectionLines())
+        return lines
+    }
+
+    private static func buildCardsSectionLines() -> [String] {
+        var lines: [String] = []
+
         // MARK: - Cards
         let cardIds = CardRegistry.allCardIds
         let cardDefs = cardIds.map { id in (id, CardRegistry.require(id)) }
-        
+
         let attacks = cardDefs.filter { $0.1.type == .attack }
         let skills = cardDefs.filter { $0.1.type == .skill }
         let powers = cardDefs.filter { $0.1.type == .power }
-        
+
         lines.append("\(Terminal.bold)🃏 卡牌（Registry）\(Terminal.reset)")
         lines.append("  总数：\(Terminal.yellow)\(cardIds.count)\(Terminal.reset)  |  攻击：\(Terminal.yellow)\(attacks.count)\(Terminal.reset)  技能：\(Terminal.yellow)\(skills.count)\(Terminal.reset)  能力：\(Terminal.yellow)\(powers.count)\(Terminal.reset)")
         lines.append("")
-        
+
         lines.append(contentsOf: formatCardGroup(title: "⚔️ 攻击牌", cards: attacks))
         lines.append(contentsOf: formatCardGroup(title: "🛡️ 技能牌", cards: skills))
         lines.append(contentsOf: formatCardGroup(title: "✨ 能力牌", cards: powers))
-        
+
+        return lines
+    }
+
+    private static func buildEnemiesAndEncountersSectionLines() -> [String] {
+        var lines: [String] = []
+
         // MARK: - Enemies & Encounters
         lines.append("")
         lines.append("\(Terminal.bold)👹 敌人池/遭遇池（Act1/Act2）\(Terminal.reset)")
         lines.append("")
-        
+
         lines.append("\(Terminal.bold)Act1 敌人池\(Terminal.reset)")
         lines.append("  普通敌人（weak）数量：\(Terminal.yellow)\(Act1EnemyPool.weak.count)\(Terminal.reset)")
         lines.append("  精英敌人（medium）数量：\(Terminal.yellow)\(Act1EnemyPool.medium.count)\(Terminal.reset)")
         lines.append("")
-        
+
         lines.append("  \(Terminal.bold)普通敌人（weak）\(Terminal.reset)")
         for id in Act1EnemyPool.weak.sorted(by: { $0.rawValue < $1.rawValue }) {
             let def = EnemyRegistry.require(id)
             lines.append("    - \(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
         }
         lines.append("")
-        
+
         lines.append("  \(Terminal.bold)精英敌人（medium）\(Terminal.reset)")
         for id in Act1EnemyPool.medium.sorted(by: { $0.rawValue < $1.rawValue }) {
             let def = EnemyRegistry.require(id)
             lines.append("    - \(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
         }
-        
+
         lines.append("")
         lines.append("\(Terminal.bold)🧩 遭遇池（Act1EncounterPool.weak）\(Terminal.reset)")
         let encounters = Act1EncounterPool.weak
@@ -64,32 +185,32 @@ enum ResourceScreen {
         let multiPercent = (multiCount * 100) / totalCount
         lines.append("  总遭遇数：\(Terminal.yellow)\(encounters.count)\(Terminal.reset)  |  双敌人遭遇：\(Terminal.yellow)\(multiCount)\(Terminal.reset)（约 \(multiPercent)%）")
         lines.append("")
-        
+
         for (i, enc) in encounters.enumerated() {
             let names = enc.enemyIds.map { id in EnemyRegistry.require(id).name }.joined(separator: " + ")
             lines.append("    [\(i + 1)] \(names)")
         }
-        
+
         // Act2
         lines.append("")
         lines.append("\(Terminal.bold)Act2 敌人池\(Terminal.reset)")
         lines.append("  普通敌人（weak）数量：\(Terminal.yellow)\(Act2EnemyPool.weak.count)\(Terminal.reset)")
         lines.append("  精英敌人（medium）数量：\(Terminal.yellow)\(Act2EnemyPool.medium.count)\(Terminal.reset)")
         lines.append("")
-        
+
         lines.append("  \(Terminal.bold)普通敌人（weak）\(Terminal.reset)")
         for id in Act2EnemyPool.weak.sorted(by: { $0.rawValue < $1.rawValue }) {
             let def = EnemyRegistry.require(id)
             lines.append("    - \(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
         }
         lines.append("")
-        
+
         lines.append("  \(Terminal.bold)精英敌人（medium）\(Terminal.reset)")
         for id in Act2EnemyPool.medium.sorted(by: { $0.rawValue < $1.rawValue }) {
             let def = EnemyRegistry.require(id)
             lines.append("    - \(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
         }
-        
+
         lines.append("")
         lines.append("\(Terminal.bold)🧩 遭遇池（Act2EncounterPool.weak）\(Terminal.reset)")
         let act2Encounters = Act2EncounterPool.weak
@@ -98,22 +219,28 @@ enum ResourceScreen {
         let act2MultiPercent = (act2MultiCount * 100) / act2TotalCount
         lines.append("  总遭遇数：\(Terminal.yellow)\(act2Encounters.count)\(Terminal.reset)  |  双敌人遭遇：\(Terminal.yellow)\(act2MultiCount)\(Terminal.reset)（约 \(act2MultiPercent)%）")
         lines.append("")
-        
+
         for (i, enc) in act2Encounters.enumerated() {
             let names = enc.enemyIds.map { id in EnemyRegistry.require(id).name }.joined(separator: " + ")
             lines.append("    [\(i + 1)] \(names)")
         }
-        
+
+        return lines
+    }
+
+    private static func buildRelicsSectionLines() -> [String] {
+        var lines: [String] = []
+
         // MARK: - Relics
         lines.append("")
         lines.append("\(Terminal.bold)🏺 遗物（Registry）\(Terminal.reset)")
-        
+
         let droppable = RelicPool.availableRelicIds(excluding: [])
         let allRelicIds = RelicRegistry.allRelicIds
-        
+
         lines.append("  已注册：\(Terminal.yellow)\(allRelicIds.count)\(Terminal.reset)  |  可掉落（排除起始）：\(Terminal.yellow)\(droppable.count)\(Terminal.reset)")
         lines.append("")
-        
+
         let groupedByRarity: [(RelicRarity, [RelicID])] = [
             (.starter, allRelicIds.filter { RelicRegistry.require($0).rarity == .starter }),
             (.common, allRelicIds.filter { RelicRegistry.require($0).rarity == .common }),
@@ -122,7 +249,7 @@ enum ResourceScreen {
             (.boss, allRelicIds.filter { RelicRegistry.require($0).rarity == .boss }),
             (.event, allRelicIds.filter { RelicRegistry.require($0).rarity == .event }),
         ]
-        
+
         for (rarity, ids) in groupedByRarity where !ids.isEmpty {
             lines.append("  \(Terminal.bold)\(rarity.rawValue)（\(ids.count)）\(Terminal.reset)")
             for id in ids.sorted(by: { $0.rawValue < $1.rawValue }) {
@@ -131,11 +258,8 @@ enum ResourceScreen {
             }
             lines.append("")
         }
-        
-        // Print
-        for line in lines {
-            print(line)
-        }
+
+        return lines
     }
     
     private static func formatCardGroup(
