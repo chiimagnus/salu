@@ -17,7 +17,7 @@ struct ShopRoomHandler: RoomHandling {
         while true {
             Screens.showShop(inventory: inventory, runState: runState, message: message)
             
-            guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
+            guard let input = InputReader.readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
                 break
             }
             
@@ -69,7 +69,7 @@ struct ShopRoomHandler: RoomHandling {
         var removeMessage: String? = nil
         while true {
             Screens.showShopRemoveCard(runState: runState, price: inventory.removeCardPrice, message: removeMessage)
-            guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
+            guard let input = InputReader.readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
                 break
             }
             

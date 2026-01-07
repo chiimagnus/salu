@@ -3,12 +3,6 @@ import XCTest
 @testable import GameCLI
 import GameCore
 
-#if canImport(Darwin)
-import Darwin
-#else
-import Glibc
-#endif
-
 final class ShopRoomHandlerTests: XCTestCase {
     private final class InMemoryRunSaveStore: RunSaveStore, @unchecked Sendable {
         private var snapshot: RunSnapshot?
@@ -24,32 +18,19 @@ final class ShopRoomHandlerTests: XCTestCase {
         func clear() throws {}
     }
     
-    private func withStdin(_ input: String, _ work: () -> Void) {
-        var fds: [Int32] = [0, 0]
-        XCTAssertEqual(pipe(&fds), 0)
-        
-        let readFD = fds[0]
-        let writeFD = fds[1]
-        
-        let savedStdin = dup(STDIN_FILENO)
-        XCTAssertNotEqual(savedStdin, -1)
-        
-        XCTAssertEqual(dup2(readFD, STDIN_FILENO), STDIN_FILENO)
-        clearerr(stdin)
-        close(readFD)
-        
-        let data = input.data(using: .utf8) ?? Data()
-        data.withUnsafeBytes { ptr in
-            guard let base = ptr.baseAddress else { return }
-            write(writeFD, base, data.count)
+    private func withInput(_ inputs: [String], _ work: () -> Void) {
+        var queue = inputs
+        let previous = InputReader.readLine
+        InputReader.readLine = {
+            guard !queue.isEmpty else {
+                return nil
+            }
+            return queue.removeFirst()
         }
-        close(writeFD)
-        
+        defer {
+            InputReader.readLine = previous
+        }
         work()
-        
-        XCTAssertEqual(dup2(savedStdin, STDIN_FILENO), STDIN_FILENO)
-        clearerr(stdin)
-        close(savedStdin)
     }
     
     func testShopRoomHandler_buyAndRemove_updatesRunStateAndPersists() throws {
@@ -84,7 +65,7 @@ final class ShopRoomHandlerTests: XCTestCase {
             historyService: historyService
         )
         
-        withStdin("1\nd\n1\n0\n") {
+        withInput(["1", "d", "1", "0"]) {
             _ = handler.run(node: node, runState: &runState, context: context)
         }
         

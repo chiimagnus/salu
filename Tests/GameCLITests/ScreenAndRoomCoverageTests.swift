@@ -4,9 +4,9 @@ import XCTest
 import GameCore
 
 #if canImport(Darwin)
-import Darwin
+@preconcurrency import Darwin
 #else
-import Glibc
+@preconcurrency import Glibc
 #endif
 
 /// GameCLI 屏幕渲染 + RoomHandler 覆盖测试（白盒）
@@ -60,7 +60,7 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
         close(writeFD)
         
         work()
-        fflush(stdout)
+        fflush(nil)
         
         XCTAssertEqual(dup2(savedStdout, STDOUT_FILENO), STDOUT_FILENO)
         close(savedStdout)
@@ -109,16 +109,24 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
     func testResourceScreen_rendersRegistriesAndPools() {
     
         print("🧪 测试：testResourceScreen_rendersRegistriesAndPools")
-        let output = captureStdout {
-            ResourceScreen.show()
+        let cardsOutput = captureStdout {
+            ResourceScreen.show(tab: .cards)
         }.strippingANSICodes()
         
-        XCTAssertTrue(output.contains("资源管理"))
-        XCTAssertTrue(output.contains("卡牌（Registry）"))
-        XCTAssertTrue(output.contains("遗物（Registry）"))
-        XCTAssertTrue(output.contains("遭遇池"))
-        XCTAssertTrue(output.contains("Act1EncounterPool.weak"))
-        XCTAssertTrue(output.contains("Act2"), "期望资源管理页包含 Act2 内容")
+        let enemiesOutput = captureStdout {
+            ResourceScreen.show(tab: .enemies)
+        }.strippingANSICodes()
+        
+        let relicsOutput = captureStdout {
+            ResourceScreen.show(tab: .relics)
+        }.strippingANSICodes()
+        
+        XCTAssertTrue(cardsOutput.contains("资源管理"))
+        XCTAssertTrue(cardsOutput.contains("卡牌（Registry）"))
+        XCTAssertTrue(enemiesOutput.contains("遭遇池"))
+        XCTAssertTrue(enemiesOutput.contains("Act1EncounterPool.weak"))
+        XCTAssertTrue(enemiesOutput.contains("Act2"), "期望资源管理页包含 Act2 内容")
+        XCTAssertTrue(relicsOutput.contains("遗物（Registry）"))
     }
     
     func testResultScreen_showFinal_withRecord_rendersVictoryAndStatsPanel() {
@@ -208,5 +216,3 @@ private extension String {
         )
     }
 }
-
-
