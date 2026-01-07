@@ -14,12 +14,13 @@ GameCLI 是**表现层**，负责终端界面渲染、用户输入处理。
 Sources/GameCLI/  ← 本规范适用范围
 │
 ├── Screens/                    # ✅ 界面系统（主菜单/地图/战斗/历史/统计/资源管理等）
-├── Components/                 # ✅ UI 组件（事件格式化等）
+├── Components/                 # ✅ UI 组件（事件格式化、TabBar 等）
 ├── Flow/                       # ✅ RoomHandling 协议与注册表
 ├── Rooms/Handlers/             # ✅ 房间行为（Start/Battle/Elite/Rest/Boss）
 ├── Persistence/                # ✅ 存储实现与服务（历史/存档）
 ├── GameCLI.swift               # ✅ 主入口、游戏循环
 ├── Terminal.swift              # ✅ ANSI 控制码、终端工具
+├── TerminalKey.swift           # ✅ 终端按键读取（Tab/方向键/ESC 等）
 └── Screens.swift               # ✅ 界面统一入口
 ```
 
@@ -69,7 +70,8 @@ GameCLI.swift
 └──────────────────────────┴──────────────────────────┘
     ↓ 调用
 ┌────────────────────────────────────────────────────┐
-│ Terminal.swift │ Components/EventFormatter.swift   │
+│ Terminal.swift │ TerminalKey.swift                 │
+│ Components/* (EventFormatter/TabBar 等)            │
 │ Persistence/* (History/Save 服务与实现)             │
 └────────────────────────────────────────────────────┘
     ↓ 导入
@@ -122,6 +124,8 @@ GameCore → GameCLI  ❌ 禁止
 | `Persistence/FileBattleHistoryStore.swift` | 战绩文件实现 | append(), clear() |
 | `Persistence/SaveService.swift` | Run 存档业务（快照/恢复） | createSnapshot(), restoreRunState() |
 | `Persistence/FileRunSaveStore.swift` | Run 存档文件实现 | load(), save(), hasSave() |
+| `TerminalKey.swift` | 终端按键读取（Raw Mode） | TerminalKey, TerminalKeyReader |
+| `Components/TabBar.swift` | Tab 分栏渲染组件 | render(tabs:selectedIndex:hint:) |
 
 ---
 
