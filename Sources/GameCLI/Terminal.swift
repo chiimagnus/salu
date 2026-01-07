@@ -15,6 +15,7 @@ enum Terminal {
     static let cyan = "\u{001B}[36m"
     static let bold = "\u{001B}[1m"
     static let dim = "\u{001B}[2m"
+    static let inverse = "\u{001B}[7m"
     
     // MARK: - 屏幕控制码
     

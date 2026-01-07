@@ -18,7 +18,19 @@
 
 ## P1（必须）：在资源管理页落地 Tab 分栏（且不破坏测试）
 
+（已实现 ✅）
+
 ### P1.1 输入层：增加“可选的单键读取”（只在 TTY 启用）
+
+（已实现 ✅）
+
+实现位置：
+- Sources/GameCLI/TerminalKey.swift
+
+实现要点：
+- 仅在 `isatty(STDIN_FILENO)==true` 且非 XCTest 环境时启用（XCTest 下强制退化，避免 `swift test` 在交互终端里挂起）。
+- macOS/Linux 使用 termios 进入 raw-ish 模式读取按键，并解析 `Tab` / `Shift+Tab` / `ESC` / 方向键。
+- Windows 先退化为非交互（保持可编译），后续可在 P3 再补 Console API。
 
 新增一个轻量输入抽象（建议新增文件，避免污染现有 `GameCLI.swift` 逻辑）：
 
@@ -39,6 +51,12 @@
 
 ### P1.2 UI 组件：新增 TabBar 渲染工具（可复用）
 
+（已实现 ✅）
+
+实现位置：
+- Sources/GameCLI/Components/TabBar.swift
+- Sources/GameCLI/Terminal.swift（新增 `Terminal.inverse`）
+
 新增一个非常小的 UI 组件（不做复杂布局系统）：
 
 - `Sources/GameCLI/Components/TabBar.swift`
@@ -51,6 +69,15 @@
 - 所有文案中文，例如：`（Tab 切换）`、`（Shift+Tab 反向）`（如果实现）。
 
 ### P1.3 ResourceScreen：提供“分栏视图 + Tab 循环切换”
+
+（已实现 ✅）
+
+实现位置：
+- Sources/GameCLI/Screens/ResourceScreen.swift
+
+实现要点：
+- 非交互（非 TTY / XCTest / 管道）保持原来的“一次性输出全量内容”行为（用于稳定单测与日志）。
+- 交互（TTY）模式：顶部 tabs + `Tab` 循环切换；`q` / `ESC` 返回；每次按键后 `Terminal.clear()` 重绘。
 
 把 `ResourceScreen.show()` 拆成两条路径：
 
@@ -80,6 +107,8 @@
   - 按 `q` 或 `ESC` 能退出该页面回到设置菜单。
 
 ### P1.4 测试与验证（P1 完成后必须做）
+
+（已完成 ✅）已运行 `swift test` 全绿。
 
 - 运行：`swift test`
 - 确认：
