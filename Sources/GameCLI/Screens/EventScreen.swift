@@ -28,7 +28,7 @@ enum EventScreen {
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
         
         while true {
-            print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+            print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
             Terminal.flush()
             
             // EOF：默认不选择，避免测试/脚本卡死
@@ -92,7 +92,7 @@ enum EventScreen {
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
         
         while true {
-            print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+            print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
             Terminal.flush()
             
             guard let raw = readLine() else {

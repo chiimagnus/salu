@@ -14,7 +14,7 @@ enum NavigationBar {
     /// 渲染导航栏并打印
     /// - Parameters:
     ///   - items: 导航项列表
-    ///   - showPrompt: 是否显示输入提示符 `>>>`
+    ///   - showPrompt: 是否显示输入提示符 `请选择 > `
     static func render(items: [Item], showPrompt: Bool = true) {
         var parts: [String] = []
         
@@ -38,7 +38,7 @@ enum NavigationBar {
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
         
         if showPrompt {
-            print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+            print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
         }
         
         Terminal.flush()

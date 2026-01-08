@@ -47,7 +47,7 @@ enum MapScreen {
         for line in lines {
             print(line)
         }
-        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+        print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
         Terminal.flush()
     }
     
@@ -237,7 +237,7 @@ enum MapScreen {
             print(message)
             print("")
         }
-        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+        print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
         Terminal.flush()
     }
     
@@ -275,7 +275,7 @@ enum MapScreen {
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
         print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(max(1, upgradeableIndices.count))]\(Terminal.reset) 选择卡牌  \(Terminal.cyan)[q]\(Terminal.reset) 返回")
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+        print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
         Terminal.flush()
     }
 

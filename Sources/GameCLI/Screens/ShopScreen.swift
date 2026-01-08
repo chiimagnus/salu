@@ -45,7 +45,7 @@ enum ShopScreen {
         \(Terminal.yellow)⌨️\(Terminal.reset) \(buyHint)  \(Terminal.cyan)[D]\(Terminal.reset) 删牌  \(Terminal.cyan)[0]\(Terminal.reset) 离开
         \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)
         """)
-        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+        print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
         Terminal.flush()
     }
     
@@ -89,7 +89,7 @@ enum ShopScreen {
         \(Terminal.yellow)⌨️\(Terminal.reset) \(removeHint)  \(Terminal.cyan)[0]\(Terminal.reset) 返回
         \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)
         """)
-        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+        print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
         Terminal.flush()
     }
 }

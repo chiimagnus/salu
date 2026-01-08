@@ -64,7 +64,7 @@ enum ResourceScreen {
             for line in lines {
                 print(line)
             }
-            print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+            print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
             Terminal.flush()
         }
 
