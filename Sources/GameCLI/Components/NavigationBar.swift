@@ -64,7 +64,12 @@ enum NavigationBar {
                 return true
             }
             
-            // 忽略其他输入，继续等待
+            // 无效输入：向上移动光标、清除该行、重新打印提示符
+            // \u{1B}[A = 光标上移一行
+            // \r = 回到行首
+            // \u{1B}[K = 清除从光标到行尾
+            print("\u{1B}[A\r\u{1B}[K\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
+            Terminal.flush()
         }
     }
 }
