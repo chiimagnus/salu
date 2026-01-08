@@ -126,14 +126,10 @@ struct GameCLI {
             case "1":
                 // 查看历史记录
                 Screens.showHistory(historyService: historyService)
-                print("\(Terminal.dim)按 Enter 返回...\(Terminal.reset)")
-                _ = readLine()
                 
             case "2":
                 // 查看统计数据
                 Screens.showStatistics(historyService: historyService)
-                print("\(Terminal.dim)按 Enter 返回...\(Terminal.reset)")
-                _ = readLine()
                 
             case "3":
                 // 清除历史记录

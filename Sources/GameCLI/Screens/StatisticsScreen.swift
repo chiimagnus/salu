@@ -46,6 +46,14 @@ enum StatisticsScreen {
         }
         
         print()
+        print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[0]\(Terminal.reset) 返回")
+        print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+        Terminal.flush()
+        
+        // 等待用户输入返回
+        _ = readLine()
     }
 }
 
