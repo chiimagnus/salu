@@ -29,11 +29,14 @@ enum HelpScreen {
         ║  \(Terminal.reset)• 伤害会先被格挡吸收\(Terminal.cyan)                              ║
         ║  \(Terminal.reset)• 将敌人 HP 降为 0 即可获胜\(Terminal.cyan)                       ║
         ║                                                       ║
-        ╠═══════════════════════════════════════════════════════╣
-        ║           按 Enter 返回游戏...                        ║
         ╚═══════════════════════════════════════════════════════╝
         \(Terminal.reset)
         """)
+        print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[0]\(Terminal.reset) 返回游戏")
+        print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+        Terminal.flush()
     }
 }
 

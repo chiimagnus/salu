@@ -63,7 +63,10 @@ enum EventScreen {
         }
         
         print("")
-        print("\(Terminal.dim)按 Enter 继续...\(Terminal.reset)")
+        print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[0]\(Terminal.reset) 继续")
+        print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
         Terminal.flush()
     }
 

@@ -172,7 +172,11 @@ struct GameCLI {
             historyService.clearHistory()
             Terminal.clear()
             print("\n        \(Terminal.green)✓ 历史记录已清除\(Terminal.reset)\n")
-            print("\(Terminal.dim)按 Enter 返回...\(Terminal.reset)")
+            print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+            print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[0]\(Terminal.reset) 返回")
+            print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+            print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+            Terminal.flush()
             _ = readLine()
         }
     }
@@ -206,7 +210,11 @@ struct GameCLI {
             // 尝试加载存档
             guard let runState = try saveService.loadRun() else {
                 print("\(Terminal.red)没有找到存档！\(Terminal.reset)")
-                print("按 Enter 返回...")
+                print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+                print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[0]\(Terminal.reset) 返回")
+                print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+                print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+                Terminal.flush()
                 _ = readLine()
                 return
             }
@@ -227,11 +235,19 @@ struct GameCLI {
             print("\(Terminal.red)存档版本不兼容！\(Terminal.reset)")
             print("\(Terminal.dim)存档版本: \(saved), 当前版本: \(current)\(Terminal.reset)")
             print("\(Terminal.yellow)请开始新的冒险。\(Terminal.reset)")
-            print("按 Enter 返回...")
+            print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+            print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[0]\(Terminal.reset) 返回")
+            print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+            print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+            Terminal.flush()
             _ = readLine()
         } catch {
             print("\(Terminal.red)加载存档失败: \(error)\(Terminal.reset)")
-            print("按 Enter 返回...")
+            print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+            print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[0]\(Terminal.reset) 返回")
+            print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+            print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+            Terminal.flush()
             _ = readLine()
         }
     }
@@ -377,7 +393,12 @@ struct GameCLI {
             """)
         }
         
-        print("\n\(Terminal.dim)按 Enter 返回主菜单...\(Terminal.reset)")
+        print("")
+        print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[0]\(Terminal.reset) 返回主菜单")
+        print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+        Terminal.flush()
         _ = readLine()
     }
     
@@ -408,7 +429,12 @@ struct GameCLI {
         
         Screens.showFinal(state: engine.state, record: record)
         
-        print("\n\(Terminal.dim)按 Enter 返回主菜单...\(Terminal.reset)")
+        print("")
+        print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[0]\(Terminal.reset) 返回主菜单")
+        print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+        Terminal.flush()
         _ = readLine()
     }
     

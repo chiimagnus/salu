@@ -158,7 +158,9 @@ enum MapScreen {
                     lines.append("\(Terminal.bold)\(Terminal.red)💀 冒险结束\(Terminal.reset)")
                 }
                 lines.append("")
-                lines.append("\(Terminal.dim)按 Enter 返回主菜单...\(Terminal.reset)")
+                lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+                lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[0]\(Terminal.reset) 返回主菜单")
+                lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
             } else {
                 lines.append("\(Terminal.dim)没有可选择的节点\(Terminal.reset)")
             }
@@ -288,8 +290,11 @@ enum MapScreen {
         
           \(Terminal.green)已升级：\(Terminal.reset)\(Terminal.bold)\(originalName)\(Terminal.reset) → \(Terminal.bold)\(upgradedName)\(Terminal.reset)
           
-        \(Terminal.dim)按 Enter 继续...\(Terminal.reset)
+        \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)
+        \(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[0]\(Terminal.reset) 继续
+        \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)
         """)
+        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
         Terminal.flush()
     }
 
@@ -306,8 +311,11 @@ enum MapScreen {
           
           当前 HP: \(Terminal.yellow)\(newHP)/\(maxHP)\(Terminal.reset)
           
-        \(Terminal.dim)按 Enter 继续...\(Terminal.reset)
+        \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)
+        \(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[0]\(Terminal.reset) 继续
+        \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)
         """)
+        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
         Terminal.flush()
     }
 }
