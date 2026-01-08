@@ -26,6 +26,9 @@ struct GameCLI {
     /// Run 日志服务（调试用落盘）
     private nonisolated(unsafe) static var runLogService: RunLogService!
     
+    /// 设置存储
+    private nonisolated(unsafe) static var settingsStore: SettingsStore!
+    
     // MARK: - Main Entry
     
     static func main() {
@@ -39,6 +42,11 @@ struct GameCLI {
 
         // 初始化 Run 日志服务（依赖注入）
         runLogService = RunLogService(store: FileRunLogStore())
+        
+        // 初始化设置存储并加载设置
+        settingsStore = SettingsStore()
+        let settings = settingsStore.load()
+        showLog = settings.showLog
         
         // 检查命令行快捷参数
         if CommandLine.arguments.contains("--history") || CommandLine.arguments.contains("-H") {
@@ -115,7 +123,7 @@ struct GameCLI {
     
     static func settingsMenuLoop() {
         while true {
-            Screens.showSettingsMenu(historyService: historyService)
+            Screens.showSettingsMenu(historyService: historyService, showLog: showLog)
             
             guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
                 // EOF 或输入关闭，退出设置菜单
@@ -126,14 +134,10 @@ struct GameCLI {
             case "1":
                 // 查看历史记录
                 Screens.showHistory(historyService: historyService)
-                print("\(Terminal.dim)按 Enter 返回...\(Terminal.reset)")
-                _ = readLine()
                 
             case "2":
                 // 查看统计数据
                 Screens.showStatistics(historyService: historyService)
-                print("\(Terminal.dim)按 Enter 返回...\(Terminal.reset)")
-                _ = readLine()
                 
             case "3":
                 // 清除历史记录
@@ -142,10 +146,20 @@ struct GameCLI {
             case "4":
                 // 资源管理（开发者工具）
                 Screens.showResources()
-                print("\(Terminal.dim)按 Enter 返回...\(Terminal.reset)")
-                _ = readLine()
                 
-            case "0":
+            case "5":
+                // 游戏帮助
+                Screens.showHelp()
+                NavigationBar.waitForBack()
+                
+            case "6":
+                // 切换日志显示并保存设置
+                showLog.toggle()
+                var settings = settingsStore.load()
+                settings.showLog = showLog
+                settingsStore.save(settings)
+                
+            case "q":
                 // 返回主菜单
                 return
                 
@@ -178,8 +192,8 @@ struct GameCLI {
             historyService.clearHistory()
             Terminal.clear()
             print("\n        \(Terminal.green)✓ 历史记录已清除\(Terminal.reset)\n")
-            print("\(Terminal.dim)按 Enter 返回...\(Terminal.reset)")
-            _ = readLine()
+            NavigationBar.render(items: [.back])
+            NavigationBar.waitForBack()
         }
     }
     
@@ -193,7 +207,6 @@ struct GameCLI {
 
         // 新冒险：清空内存日志，并在文件日志写入分隔线
         recentLogs.removeAll()
-        showLog = false
         runLogService.appendSystem("开始新冒险（seed=\(seed)）")
         
         // 创建新冒险
@@ -212,15 +225,14 @@ struct GameCLI {
             // 尝试加载存档
             guard let runState = try saveService.loadRun() else {
                 print("\(Terminal.red)没有找到存档！\(Terminal.reset)")
-                print("按 Enter 返回...")
-                _ = readLine()
+                NavigationBar.render(items: [.back])
+                NavigationBar.waitForBack()
                 return
             }
             
             // 恢复冒险
             currentRunState = runState
             recentLogs.removeAll()
-            showLog = false
             runLogService.appendSystem("继续冒险（seed=\(runState.seed)）")
             print("\(Terminal.green)存档加载成功！\(Terminal.reset)")
             print("\(Terminal.dim)正在继续冒险...\(Terminal.reset)")
@@ -233,12 +245,12 @@ struct GameCLI {
             print("\(Terminal.red)存档版本不兼容！\(Terminal.reset)")
             print("\(Terminal.dim)存档版本: \(saved), 当前版本: \(current)\(Terminal.reset)")
             print("\(Terminal.yellow)请开始新的冒险。\(Terminal.reset)")
-            print("按 Enter 返回...")
-            _ = readLine()
+            NavigationBar.render(items: [.back])
+            NavigationBar.waitForBack()
         } catch {
             print("\(Terminal.red)加载存档失败: \(error)\(Terminal.reset)")
-            print("按 Enter 返回...")
-            _ = readLine()
+            NavigationBar.render(items: [.back])
+            NavigationBar.waitForBack()
         }
     }
     
@@ -257,7 +269,7 @@ struct GameCLI {
                 appendLogLine(line)
             },
             battleLoop: { engine, seed in
-                battleLoop(engine: engine, seed: seed)
+                return battleLoop(engine: engine, seed: seed)
             },
             createEnemy: { enemyId, instanceIndex, rng in
                 TestMode.createEnemy(enemyId: enemyId, instanceIndex: instanceIndex, rng: &rng)
@@ -276,15 +288,23 @@ struct GameCLI {
             
             // 处理输入
             if input == "q" {
-                // 返回主菜单
-                currentRunState = nil
+                // 返回主菜单（保留存档）
+                saveService.saveRun(runState)
+                currentRunState = runState
                 return
             }
-
-            if input == "l" {
-                // 切换日志显示
-                showLog.toggle()
-                continue
+            
+            if input == "abandon" {
+                // 放弃冒险（需要确认）
+                if MapScreen.showAbandonConfirmation() {
+                    // 确认放弃：标记为失败并结束
+                    runState.isOver = true
+                    runState.won = false
+                    break
+                } else {
+                    // 取消放弃：继续显示地图
+                    continue
+                }
             }
             
             // 获取可选节点
@@ -325,12 +345,18 @@ struct GameCLI {
                 // 节点完成，继续冒险
                 // 自动保存进度
                 saveService.saveRun(runState)
-                break
                 
             case .runEnded(let won):
-                // 冒险结束
+                // 冒险结束（胜利或失败）
                 runState.isOver = true
                 runState.won = won
+                
+            case .aborted:
+                // 用户中途退出（返回主菜单，保留存档）
+                // 保存当前进度（玩家可能在战斗中退出，需要保留之前的状态）
+                saveService.saveRun(runState)
+                currentRunState = runState
+                return
             }
             
             // 更新全局状态
@@ -383,8 +409,9 @@ struct GameCLI {
             """)
         }
         
-        print("\n\(Terminal.dim)按 Enter 返回主菜单...\(Terminal.reset)")
-        _ = readLine()
+        print("")
+        NavigationBar.render(items: [.backToMenu])
+        NavigationBar.waitForBack()
     }
     
     // MARK: - Battle (快速战斗模式)
@@ -398,7 +425,6 @@ struct GameCLI {
         
         // 清空之前的日志
         recentLogs.removeAll()
-        showLog = false
         currentMessage = nil
         
         // 收集初始事件
@@ -414,14 +440,17 @@ struct GameCLI {
         
         Screens.showFinal(state: engine.state, record: record)
         
-        print("\n\(Terminal.dim)按 Enter 返回主菜单...\(Terminal.reset)")
-        _ = readLine()
+        print("")
+        NavigationBar.render(items: [.backToMenu])
+        NavigationBar.waitForBack()
     }
     
     // MARK: - Battle Loop
     
     /// 战斗主循环（用于冒险模式和快速战斗模式）
-    static func battleLoop(engine: BattleEngine, seed: UInt64) {
+    /// 返回战斗循环结果，区分正常结束和用户中途退出
+    @discardableResult
+    static func battleLoop(engine: BattleEngine, seed: UInt64) -> BattleLoopResult {
         while !engine.state.isOver {
             // 刷新整个屏幕
             BattleScreen.renderBattleScreen(
@@ -435,8 +464,8 @@ struct GameCLI {
             // 读取玩家输入
             // 注意：当管道输入用完时，readLine() 返回 nil，需要退出循环
             guard let input = readLine()?.trimmingCharacters(in: .whitespaces) else {
-                // EOF 或输入关闭，退出游戏
-                return
+                // EOF 或输入关闭，视为用户退出
+                return .aborted
             }
             
             // 清除之前的消息
@@ -445,18 +474,8 @@ struct GameCLI {
             // 处理输入
             switch input.lowercased() {
             case "q":
-                // 返回主菜单而不是退出
-                return
-                
-            case "h", "help":
-                Screens.showHelp()
-                _ = readLine()
-                continue
-                
-            case "l", "log":
-                // 切换日志显示
-                showLog.toggle()
-                continue
+                // 返回主菜单（用户中途退出，保留存档）
+                return .aborted
                 
             default:
                 break
@@ -464,7 +483,7 @@ struct GameCLI {
             
             let parts = input.split { $0 == " " || $0 == "\t" }
             guard !parts.isEmpty else {
-                currentMessage = "\(Terminal.red)⚠️ 请输入有效指令，输入 h 查看帮助\(Terminal.reset)"
+                currentMessage = "\(Terminal.red)⚠️ 请输入有效指令\(Terminal.reset)"
                 continue
             }
             
@@ -522,6 +541,9 @@ struct GameCLI {
             appendBattleEvents(engine.events)
             engine.clearEvents()
         }
+        
+        // 战斗正常结束（胜利或失败）
+        return .finished
     }
     
     // MARK: - Log (Unified)

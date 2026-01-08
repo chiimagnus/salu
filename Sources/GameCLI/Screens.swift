@@ -52,8 +52,8 @@ enum Screens {
     
     // MARK: - 设置菜单
     
-    static func showSettingsMenu(historyService: HistoryService) {
-        SettingsScreen.show(historyService: historyService)
+    static func showSettingsMenu(historyService: HistoryService, showLog: Bool) {
+        SettingsScreen.show(historyService: historyService, showLog: showLog)
     }
 
     // MARK: - 资源管理（开发者工具）
@@ -64,8 +64,8 @@ enum Screens {
     
     // MARK: - 帮助屏幕
     
-    static func showHelp() {
-        HelpScreen.show()
+    static func showHelp(fromBattle: Bool = false) {
+        HelpScreen.show(fromBattle: fromBattle)
     }
     
     // MARK: - 退出屏幕

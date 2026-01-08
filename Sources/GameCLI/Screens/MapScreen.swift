@@ -40,14 +40,14 @@ enum MapScreen {
         }
         
         // 可选节点提示
-        lines.append(contentsOf: buildNodeSelection(runState: runState))
+        lines.append(contentsOf: buildNodeSelection(runState: runState, showLog: showLog))
         
         // 清屏并打印
         Terminal.clear()
         for line in lines {
             print(line)
         }
-        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+        print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
         Terminal.flush()
     }
     
@@ -145,7 +145,7 @@ enum MapScreen {
         }
     }
     
-    private static func buildNodeSelection(runState: RunState) -> [String] {
+    private static func buildNodeSelection(runState: RunState, showLog: Bool) -> [String] {
         var lines: [String] = []
         
         let accessibleNodes = runState.accessibleNodes
@@ -158,7 +158,9 @@ enum MapScreen {
                     lines.append("\(Terminal.bold)\(Terminal.red)💀 冒险结束\(Terminal.reset)")
                 }
                 lines.append("")
-                lines.append("\(Terminal.dim)按 Enter 返回主菜单...\(Terminal.reset)")
+                lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+                lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[q]\(Terminal.reset) 返回主菜单")
+                lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
             } else {
                 lines.append("\(Terminal.dim)没有可选择的节点\(Terminal.reset)")
             }
@@ -174,7 +176,7 @@ enum MapScreen {
             
             lines.append("")
             lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-            lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(accessibleNodes.count)]\(Terminal.reset) 选择节点  \(Terminal.cyan)[l]\(Terminal.reset) 日志  \(Terminal.cyan)[q]\(Terminal.reset) 返回主菜单")
+            lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(accessibleNodes.count)]\(Terminal.reset) 选择节点  \(Terminal.cyan)[q]\(Terminal.reset) 返回  \(Terminal.red)[abandon]\(Terminal.reset) 放弃冒险")
             lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
         }
         
@@ -230,7 +232,7 @@ enum MapScreen {
             print(message)
             print("")
         }
-        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+        print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
         Terminal.flush()
     }
     
@@ -268,7 +270,7 @@ enum MapScreen {
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
         print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(max(1, upgradeableIndices.count))]\(Terminal.reset) 选择卡牌  \(Terminal.cyan)[q]\(Terminal.reset) 返回")
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+        print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
         Terminal.flush()
     }
 
@@ -283,9 +285,8 @@ enum MapScreen {
         
           \(Terminal.green)已升级：\(Terminal.reset)\(Terminal.bold)\(originalName)\(Terminal.reset) → \(Terminal.bold)\(upgradedName)\(Terminal.reset)
           
-        \(Terminal.dim)按 Enter 继续...\(Terminal.reset)
         """)
-        Terminal.flush()
+        NavigationBar.render(items: [.continueNext])
     }
 
     /// 显示休息结果
@@ -301,8 +302,48 @@ enum MapScreen {
           
           当前 HP: \(Terminal.yellow)\(newHP)/\(maxHP)\(Terminal.reset)
           
-        \(Terminal.dim)按 Enter 继续...\(Terminal.reset)
         """)
+        NavigationBar.render(items: [.continueNext])
+    }
+    
+    // MARK: - 放弃冒险确认
+    
+    /// 显示放弃冒险确认界面
+    /// - Returns: true 表示确认放弃，false 表示取消
+    static func showAbandonConfirmation() -> Bool {
+        Terminal.clear()
+        
+        print("""
+        \(Terminal.bold)\(Terminal.red)═══════════════════════════════════════════════\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.red)  ⚠️ 放弃冒险确认\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.red)═══════════════════════════════════════════════\(Terminal.reset)
+        
+          \(Terminal.yellow)你确定要放弃当前冒险吗？\(Terminal.reset)
+          
+          \(Terminal.dim)放弃后存档将被清除，无法恢复。\(Terminal.reset)
+          
+        \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)
+        \(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.red)[y]\(Terminal.reset) 确认放弃  \(Terminal.cyan)[n]\(Terminal.reset) 取消
+        \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)
+        """)
+        print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
         Terminal.flush()
+        
+        while true {
+            guard let input = readLine()?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() else {
+                return false
+            }
+            
+            switch input {
+            case "y", "yes":
+                return true
+            case "n", "no", "q":
+                return false
+            default:
+                print("\(Terminal.red)请输入 y 或 n\(Terminal.reset)")
+                print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
+                Terminal.flush()
+            }
+        }
     }
 }

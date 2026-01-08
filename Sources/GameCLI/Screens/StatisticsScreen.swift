@@ -46,6 +46,8 @@ enum StatisticsScreen {
         }
         
         print()
+        NavigationBar.render(items: [.back])
+        NavigationBar.waitForBack()
     }
 }
 

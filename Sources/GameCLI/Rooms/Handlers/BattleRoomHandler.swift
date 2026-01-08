@@ -6,16 +6,19 @@ struct BattleRoomHandler: RoomHandling {
     var roomType: RoomType { .battle }
     
     func run(node: MapNode, runState: inout RunState, context: RoomContext) -> RoomRunResult {
-        let won = handleBattle(node: node, runState: &runState, context: context)
+        let result = handleBattle(node: node, runState: &runState, context: context)
         
-        if won {
+        switch result {
+        case .won:
             return .completedNode
-        } else {
+        case .lost:
             return .runEnded(won: false)
+        case .aborted:
+            return .aborted
         }
     }
     
-    private func handleBattle(node: MapNode, runState: inout RunState, context: RoomContext) -> Bool {
+    private func handleBattle(node: MapNode, runState: inout RunState, context: RoomContext) -> BattleHandleResult {
         // 使用当前 RNG 状态创建新的种子
         let battleSeed = runState.seed &+ UInt64(runState.floor) &* 1_000_000 &+ UInt64(runState.currentRow) &* 1000
         
@@ -58,9 +61,14 @@ struct BattleRoomHandler: RoomHandling {
         engine.clearEvents()
         
         // 战斗循环
-        context.battleLoop(engine, battleSeed)
+        let loopResult = context.battleLoop(engine, battleSeed)
         
-        // 保存战斗记录
+        // 用户中途退出：不保存战斗记录，不更新玩家状态，直接返回
+        if loopResult == .aborted {
+            return .aborted
+        }
+        
+        // 保存战斗记录（仅在战斗正常结束时）
         let record = BattleRecordBuilder.build(from: engine, seed: battleSeed)
         context.historyService.addRecord(record)
         
@@ -93,9 +101,10 @@ struct BattleRoomHandler: RoomHandling {
             }
             
             runState.completeCurrentNode()
-            return true
+            return .won
         }
         
-        return false
+        // 战斗失败（玩家 HP 归零）
+        return .lost
     }
 }

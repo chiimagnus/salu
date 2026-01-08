@@ -29,84 +29,73 @@ enum ResourceScreen {
         var offset = 0
         let pageSize = 24
 
-        var keyReader = TerminalKeyReader()
-
-        TerminalKeyReader.withRawMode {
-            print(Terminal.hideCursor, terminator: "")
-            defer {
-                print(Terminal.showCursor, terminator: "")
-                Terminal.flush()
+        func contentLines(for index: Int) -> [String] {
+            switch index {
+            case 0:
+                return buildCardsSectionLines()
+            case 1:
+                return buildEnemiesAndEncountersSectionLines()
+            case 2:
+                return buildRelicsSectionLines()
+            default:
+                return []
             }
+        }
 
-            func contentLines(for index: Int) -> [String] {
-                switch index {
-                case 0:
-                    return buildCardsSectionLines()
-                case 1:
-                    return buildEnemiesAndEncountersSectionLines()
-                case 2:
-                    return buildRelicsSectionLines()
-                default:
-                    return []
-                }
+        func redraw() {
+            Terminal.clear()
+
+            var lines: [String] = []
+            lines.append(contentsOf: buildHeaderLines())
+            lines.append(TabBar.render(tabs: tabs, selectedIndex: selectedIndex, hint: ""))
+            lines.append("")
+            let allContent = contentLines(for: selectedIndex)
+            let clampedOffset = max(0, min(offset, max(0, allContent.count - 1)))
+            offset = clampedOffset
+            let end = min(allContent.count, clampedOffset + pageSize)
+            if clampedOffset < end {
+                lines.append(contentsOf: allContent[clampedOffset..<end])
             }
+            lines.append("")
+            lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+            lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-3]\(Terminal.reset) 切换分栏  \(Terminal.cyan)[+/-]\(Terminal.reset) 翻页  \(Terminal.cyan)[q]\(Terminal.reset) 返回")
+            lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
 
-            func redraw() {
-                Terminal.clear()
-
-                var lines: [String] = []
-                lines.append(contentsOf: buildHeaderLines())
-                lines.append(TabBar.render(tabs: tabs, selectedIndex: selectedIndex, hint: "（Tab 切换）"))
-                lines.append("")
-                let allContent = contentLines(for: selectedIndex)
-                let clampedOffset = max(0, min(offset, max(0, allContent.count - 1)))
-                offset = clampedOffset
-                let end = min(allContent.count, clampedOffset + pageSize)
-                if clampedOffset < end {
-                    lines.append(contentsOf: allContent[clampedOffset..<end])
-                }
-                lines.append("")
-                lines.append("\(Terminal.dim)↑↓ 滚动  Tab 切换分栏  q/ESC 返回\(Terminal.reset)")
-
-                for line in lines {
-                    print(line)
-                }
-                Terminal.flush()
+            for line in lines {
+                print(line)
             }
+            print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
+            Terminal.flush()
+        }
 
+        // 主循环（使用 readLine）
+        while true {
             redraw()
-
-            while true {
-                let key = keyReader.readKey()
-                switch key {
-                case .tab:
-                    selectedIndex = (selectedIndex + 1) % max(1, tabs.count)
-                    offset = 0
-                    redraw()
-
-                case .shiftTab:
-                    let count = max(1, tabs.count)
-                    selectedIndex = (selectedIndex - 1 + count) % count
-                    offset = 0
-                    redraw()
-
-                case .arrowUp:
-                    offset = max(0, offset - 1)
-                    redraw()
-
-                case .arrowDown:
-                    offset += 1
-                    redraw()
-
-                case .escape:
-                    return
-
-                case .printable(let c):
-                    if c == "q" || c == "Q" { return }
-
-                default:
-                    break
-                }
+            
+            guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
+                break
+            }
+            
+            // 退出
+            if input == "q" {
+                break
+            }
+            
+            // 切换分栏
+            if let tabIndex = Int(input), tabIndex >= 1, tabIndex <= tabs.count {
+                selectedIndex = tabIndex - 1
+                offset = 0
+                continue
+            }
+            
+            // 翻页
+            if input == "+" || input == "=" {
+                offset += pageSize
+                continue
+            }
+            if input == "-" {
+                offset = max(0, offset - pageSize)
+                continue
             }
         }
     }

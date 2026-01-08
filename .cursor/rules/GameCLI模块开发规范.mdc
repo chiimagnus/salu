@@ -17,7 +17,7 @@ Sources/GameCLI/  ← 本规范适用范围
 ├── Components/                 # ✅ UI 组件（事件格式化、TabBar 等）
 ├── Flow/                       # ✅ RoomHandling 协议与注册表
 ├── Rooms/Handlers/             # ✅ 房间行为（Start/Battle/Elite/Rest/Boss）
-├── Persistence/                # ✅ 存储实现与服务（历史/存档）
+├── Persistence/                # ✅ 存储实现与服务（历史/存档/设置/日志）
 ├── GameCLI.swift               # ✅ 主入口、游戏循环
 ├── Terminal.swift              # ✅ ANSI 控制码、终端工具
 ├── TerminalKey.swift           # ✅ 终端按键读取（Tab/方向键/ESC 等）
@@ -42,6 +42,8 @@ Sources/GameCLI/  ← 本规范适用范围
 | `Screens.swift` | 屏幕统一入口（聚合调用） | 游戏循环、状态管理 |
 | `Persistence/HistoryService.swift` | 战绩读写协调（依赖注入） | UI 渲染、文件路径策略 |
 | `Persistence/SaveService.swift` | Run 存档业务（快照/恢复） | UI 渲染、文件 I/O 细节 |
+| `Persistence/SettingsStore.swift` | 用户设置持久化（日志显示等） | UI 渲染、业务逻辑 |
+| `Persistence/RunLogService.swift` | 冒险日志落盘（调试用） | UI 渲染 |
 | `GameCLI.swift` | 流程控制 | 具体渲染实现 |
 
 ### 组件化原则
@@ -71,8 +73,8 @@ GameCLI.swift
     ↓ 调用
 ┌────────────────────────────────────────────────────┐
 │ Terminal.swift │ TerminalKey.swift                 │
-│ Components/* (EventFormatter/TabBar 等)            │
-│ Persistence/* (History/Save 服务与实现)             │
+│ Components/* (EventFormatter/TabBar/NavigationBar) │
+│ Persistence/* (History/Save/Settings/RunLog)       │
 └────────────────────────────────────────────────────┘
     ↓ 导入
 ┌──────────────────────────────────────────┐
@@ -124,8 +126,12 @@ GameCore → GameCLI  ❌ 禁止
 | `Persistence/FileBattleHistoryStore.swift` | 战绩文件实现 | append(), clear() |
 | `Persistence/SaveService.swift` | Run 存档业务（快照/恢复） | createSnapshot(), restoreRunState() |
 | `Persistence/FileRunSaveStore.swift` | Run 存档文件实现 | load(), save(), hasSave() |
+| `Persistence/SettingsStore.swift` | 用户设置存储 | load(), save(), Settings |
+| `Persistence/RunLogService.swift` | 冒险日志服务 | append(), clear() |
+| `Persistence/FileRunLogStore.swift` | 冒险日志文件实现 | append(), clear() |
 | `TerminalKey.swift` | 终端按键读取（Raw Mode） | TerminalKey, TerminalKeyReader |
 | `Components/TabBar.swift` | Tab 分栏渲染组件 | render(tabs:selectedIndex:hint:) |
+| `Components/NavigationBar.swift` | 导航栏与返回提示 | show(), waitForBack() |
 
 ---
 
@@ -152,7 +158,7 @@ GameCore → GameCLI  ❌ 禁止
 - 冒险模式会在**节点完成后自动保存**（`GameCLI.runLoop` 调用 `SaveService.saveRun`）。
 - 主菜单会根据 `SaveService.hasSave()` 决定是否显示“继续上次冒险”入口。
 - `FileRunSaveStore` 支持通过环境变量 `SALU_DATA_DIR` 覆盖存档目录（用于测试/调试；默认仍写入系统 Application Support/LOCALAPPDATA/~/.salu）。
-- `FileRunSaveStore` / `FileBattleHistoryStore` 支持通过环境变量 `SALU_DATA_DIR` 覆盖数据目录（用于测试/调试；默认仍写入系统 Application Support/LOCALAPPDATA/~/.salu）。
+- `FileRunSaveStore` / `FileBattleHistoryStore` / `SettingsStore` / `FileRunLogStore` 支持通过环境变量 `SALU_DATA_DIR` 覆盖数据目录（用于测试/调试；默认仍写入系统 Application Support/LOCALAPPDATA/~/.salu）。
 - CLI 测试模式支持 `SALU_TEST_MAP` 使用极小地图以加速 UI 测试流程：
   - `SALU_TEST_MAP=1` 或 `mini`：起点 → 精英 → Boss
   - `SALU_TEST_MAP=battle`：起点 → 普通战斗 → Boss（用于多敌人/目标选择 UI 测试）
@@ -160,6 +166,12 @@ GameCore → GameCLI  ❌ 禁止
 - CLI 测试模式支持 `SALU_TEST_MAX_FLOOR` 覆盖最大楼层（Act 数），默认 `1`：
   - `SALU_TEST_MAX_FLOOR=2`：用于验证“击败 Act1 Boss → 进入 Act2”链路与存档持久化
 - （调试/验收）`SALU_FORCE_MULTI_ENEMY=1`：强制普通战斗进入双敌人遭遇（便于验证目标选择）
+
+### 用户设置持久化
+
+- 用户设置（如日志显示开关）通过 `SettingsStore` 持久化到 `settings.json`。
+- 游戏启动时自动加载设置，设置菜单中修改后立即保存。
+- 设置文件位于游戏数据目录（与存档/战绩同目录）。
 
 ---
 

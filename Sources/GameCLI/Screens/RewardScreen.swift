@@ -43,7 +43,7 @@ enum RewardScreen {
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
         
         while true {
-            print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+            print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
             Terminal.flush()
             
             // EOF（管道输入结束）默认跳过，避免测试/脚本卡死

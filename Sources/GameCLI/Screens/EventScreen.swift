@@ -28,7 +28,7 @@ enum EventScreen {
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
         
         while true {
-            print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+            print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
             Terminal.flush()
             
             // EOF：默认不选择，避免测试/脚本卡死
@@ -63,8 +63,7 @@ enum EventScreen {
         }
         
         print("")
-        print("\(Terminal.dim)按 Enter 继续...\(Terminal.reset)")
-        Terminal.flush()
+        NavigationBar.render(items: [.continueNext])
     }
 
     /// 事件二次选择：选择要升级的卡牌（返回牌组索引）
@@ -93,7 +92,7 @@ enum EventScreen {
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
         
         while true {
-            print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
+            print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
             Terminal.flush()
             
             guard let raw = readLine() else {

@@ -41,6 +41,8 @@ enum HistoryScreen {
         }
         
         print()
+        NavigationBar.render(items: [.back])
+        NavigationBar.waitForBack()
     }
 }
 
