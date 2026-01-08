@@ -115,7 +115,7 @@ struct GameCLI {
     
     static func settingsMenuLoop() {
         while true {
-            Screens.showSettingsMenu(historyService: historyService)
+            Screens.showSettingsMenu(historyService: historyService, showLog: showLog)
             
             guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
                 // EOF 或输入关闭，退出设置菜单
@@ -143,6 +143,10 @@ struct GameCLI {
                 // 游戏帮助
                 Screens.showHelp()
                 NavigationBar.waitForBack()
+                
+            case "6":
+                // 切换日志显示
+                showLog.toggle()
                 
             case "q":
                 // 返回主菜单
@@ -192,7 +196,6 @@ struct GameCLI {
 
         // 新冒险：清空内存日志，并在文件日志写入分隔线
         recentLogs.removeAll()
-        showLog = false
         runLogService.appendSystem("开始新冒险（seed=\(seed)）")
         
         // 创建新冒险
@@ -219,7 +222,6 @@ struct GameCLI {
             // 恢复冒险
             currentRunState = runState
             recentLogs.removeAll()
-            showLog = false
             runLogService.appendSystem("继续冒险（seed=\(runState.seed)）")
             print("\(Terminal.green)存档加载成功！\(Terminal.reset)")
             print("\(Terminal.dim)正在继续冒险...\(Terminal.reset)")
@@ -279,12 +281,6 @@ struct GameCLI {
                 saveService.saveRun(runState)
                 currentRunState = runState
                 return
-            }
-
-            if input == "l" {
-                // 切换日志显示
-                showLog.toggle()
-                continue
             }
             
             if input == "abandon" {
@@ -418,7 +414,6 @@ struct GameCLI {
         
         // 清空之前的日志
         recentLogs.removeAll()
-        showLog = false
         currentMessage = nil
         
         // 收集初始事件
@@ -471,18 +466,13 @@ struct GameCLI {
                 // 返回主菜单（用户中途退出，保留存档）
                 return .aborted
                 
-            case "l", "log":
-                // 切换日志显示
-                showLog.toggle()
-                continue
-                
             default:
                 break
             }
             
             let parts = input.split { $0 == " " || $0 == "\t" }
             guard !parts.isEmpty else {
-                currentMessage = "\(Terminal.red)⚠️ 请输入有效指令，输入 h 查看帮助\(Terminal.reset)"
+                currentMessage = "\(Terminal.red)⚠️ 请输入有效指令\(Terminal.reset)"
                 continue
             }
             

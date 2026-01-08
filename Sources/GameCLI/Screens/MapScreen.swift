@@ -174,14 +174,9 @@ enum MapScreen {
                 lines.append("  \(Terminal.cyan)[\(index + 1)]\(Terminal.reset) \(icon) \(name)")
             }
             
-            // 日志切换提示（与战斗界面统一）
-            let logHint = showLog
-                ? "\(Terminal.dim)[l] 隐藏日志\(Terminal.reset)"
-                : "\(Terminal.cyan)[l]\(Terminal.reset) 日志"
-            
             lines.append("")
             lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-            lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(accessibleNodes.count)]\(Terminal.reset) 选择节点  \(logHint)  \(Terminal.cyan)[q]\(Terminal.reset) 返回  \(Terminal.red)[abandon]\(Terminal.reset) 放弃冒险")
+            lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(accessibleNodes.count)]\(Terminal.reset) 选择节点  \(Terminal.cyan)[q]\(Terminal.reset) 返回  \(Terminal.red)[abandon]\(Terminal.reset) 放弃冒险")
             lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
         }
         

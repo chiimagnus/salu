@@ -208,15 +208,12 @@ enum BattleScreen {
     }
     
     private static func buildInputPrompt(handCount: Int, enemyCount: Int, showLog: Bool = false) -> [String] {
-        let logHint = showLog 
-            ? "\(Terminal.dim)[l] 隐藏日志\(Terminal.reset)" 
-            : "\(Terminal.cyan)[l]\(Terminal.reset) 日志"
         let targetHint = enemyCount > 1
             ? "  \(Terminal.cyan)输入「卡牌 目标」\(Terminal.reset) 选择目标（目标 1-\(enemyCount)）"
             : "  \(Terminal.dim)（单敌人：可直接输入卡牌序号）\(Terminal.reset)"
         return [
             "\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)",
-            "\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(handCount)]\(Terminal.reset) 出牌  \(Terminal.cyan)[0]\(Terminal.reset) 结束  \(logHint)  \(Terminal.cyan)[q]\(Terminal.reset) 返回主菜单\(targetHint)",
+            "\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(handCount)]\(Terminal.reset) 出牌  \(Terminal.cyan)[0]\(Terminal.reset) 结束  \(Terminal.cyan)[q]\(Terminal.reset) 返回主菜单\(targetHint)",
             "\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)"
         ]
     }

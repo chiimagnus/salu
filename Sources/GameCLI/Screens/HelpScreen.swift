@@ -19,7 +19,6 @@ enum HelpScreen {
         ║  \(Terminal.reset)N\(Terminal.cyan)      打出第 N 张手牌（不需目标/单敌人）        ║
         ║  \(Terminal.reset)N M\(Terminal.cyan)    打出第 N 张手牌，目标为第 M 个敌人         ║
         ║  \(Terminal.reset)0\(Terminal.cyan)      结束当前回合                              ║
-        ║  \(Terminal.reset)l\(Terminal.cyan)      展开/折叠事件日志                         ║
         ║  \(Terminal.reset)q\(Terminal.cyan)      返回主菜单（保留存档）                    ║
         ║                                                       ║
         ║  \(Terminal.yellow)地图操作\(Terminal.cyan)                                          ║
@@ -34,6 +33,7 @@ enum HelpScreen {
         ║  \(Terminal.reset)• 格挡在每回合开始时清零\(Terminal.cyan)                          ║
         ║  \(Terminal.reset)• 伤害会先被格挡吸收\(Terminal.cyan)                              ║
         ║  \(Terminal.reset)• 将敌人 HP 降为 0 即可获胜\(Terminal.cyan)                       ║
+        ║  \(Terminal.reset)• 日志显示可在设置菜单中开关\(Terminal.cyan)                      ║
         ║                                                       ║
         ╚═══════════════════════════════════════════════════════╝
         \(Terminal.reset)
