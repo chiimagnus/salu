@@ -139,7 +139,7 @@ struct GameCLI {
                 // 资源管理（开发者工具）
                 Screens.showResources()
                 
-            case "0":
+            case "q":
                 // 返回主菜单
                 return
                 

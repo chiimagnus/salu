@@ -216,7 +216,7 @@ enum BattleScreen {
             : "  \(Terminal.dim)（单敌人：可直接输入卡牌序号）\(Terminal.reset)"
         return [
             "\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)",
-            "\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(handCount)]\(Terminal.reset) 出牌  \(Terminal.cyan)[0]\(Terminal.reset) 结束  \(Terminal.cyan)[h]\(Terminal.reset) 帮助  \(logHint)  \(Terminal.cyan)[q]\(Terminal.reset) 退出\(targetHint)",
+            "\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(handCount)]\(Terminal.reset) 出牌  \(Terminal.cyan)[0]\(Terminal.reset) 结束  \(Terminal.cyan)[h]\(Terminal.reset) 帮助  \(logHint)  \(Terminal.cyan)[q]\(Terminal.reset) 返回主菜单\(targetHint)",
             "\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)"
         ]
     }

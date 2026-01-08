@@ -102,11 +102,11 @@ final class GameCLIIntegrationUITests: XCTestCase {
         // 3 - 清除历史
         // yes - 确认清除
         // q - 返回设置菜单
-        // 0 - 返回主菜单
+        // q - 返回主菜单
         // 3 - 退出游戏
         let result = try CLIRunner.runGameCLI(
             arguments: ["--seed", "1"],
-            stdin: "2\n2\nq\n3\nyes\nq\n0\n3\n",
+            stdin: "2\n2\nq\n3\nyes\nq\nq\n3\n",
             environment: [
                 "SALU_DATA_DIR": tmp.url.path,
                 "SALU_TEST_MODE": "1"
