@@ -139,6 +139,11 @@ struct GameCLI {
                 // 资源管理（开发者工具）
                 Screens.showResources()
                 
+            case "5":
+                // 游戏帮助
+                Screens.showHelp()
+                NavigationBar.waitForBack()
+                
             case "q":
                 // 返回主菜单
                 return
@@ -467,7 +472,7 @@ struct GameCLI {
                 return .aborted
                 
             case "h", "help":
-                Screens.showHelp()
+                Screens.showHelp(fromBattle: true)
                 _ = readLine()
                 continue
                 

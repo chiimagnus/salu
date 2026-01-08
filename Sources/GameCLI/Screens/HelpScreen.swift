@@ -4,7 +4,9 @@ import GameCore
 /// 帮助界面
 enum HelpScreen {
     
-    static func show() {
+    /// 显示帮助界面
+    /// - Parameter fromBattle: 是否从战斗界面调用（影响导航栏显示）
+    static func show(fromBattle: Bool = false) {
         Terminal.clear()
         print("""
         \(Terminal.bold)\(Terminal.cyan)
@@ -32,7 +34,7 @@ enum HelpScreen {
         ╚═══════════════════════════════════════════════════════╝
         \(Terminal.reset)
         """)
-        NavigationBar.render(items: [.backToGame])
+        NavigationBar.render(items: [fromBattle ? .backToGame : .back])
     }
 }
 

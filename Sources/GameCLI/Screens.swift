@@ -64,8 +64,8 @@ enum Screens {
     
     // MARK: - 帮助屏幕
     
-    static func showHelp() {
-        HelpScreen.show()
+    static func showHelp(fromBattle: Bool = false) {
+        HelpScreen.show(fromBattle: fromBattle)
     }
     
     // MARK: - 退出屏幕
