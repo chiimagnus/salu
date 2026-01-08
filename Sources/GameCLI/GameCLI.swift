@@ -270,8 +270,9 @@ struct GameCLI {
             
             // 处理输入
             if input == "q" {
-                // 返回主菜单
-                currentRunState = nil
+                // 返回主菜单（保留存档）
+                saveService.saveRun(runState)
+                currentRunState = runState
                 return
             }
 
@@ -279,6 +280,19 @@ struct GameCLI {
                 // 切换日志显示
                 showLog.toggle()
                 continue
+            }
+            
+            if input == "abandon" {
+                // 放弃冒险（需要确认）
+                if MapScreen.showAbandonConfirmation() {
+                    // 确认放弃：标记为失败并结束
+                    runState.isOver = true
+                    runState.won = false
+                    break
+                } else {
+                    // 取消放弃：继续显示地图
+                    continue
+                }
             }
             
             // 获取可选节点

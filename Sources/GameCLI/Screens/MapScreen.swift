@@ -181,7 +181,7 @@ enum MapScreen {
             
             lines.append("")
             lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-            lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(accessibleNodes.count)]\(Terminal.reset) 选择节点  \(logHint)  \(Terminal.cyan)[q]\(Terminal.reset) 返回主菜单")
+            lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(accessibleNodes.count)]\(Terminal.reset) 选择节点  \(logHint)  \(Terminal.cyan)[q]\(Terminal.reset) 返回  \(Terminal.red)[abandon]\(Terminal.reset) 放弃冒险")
             lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
         }
         
@@ -309,5 +309,46 @@ enum MapScreen {
           
         """)
         NavigationBar.render(items: [.continueNext])
+    }
+    
+    // MARK: - 放弃冒险确认
+    
+    /// 显示放弃冒险确认界面
+    /// - Returns: true 表示确认放弃，false 表示取消
+    static func showAbandonConfirmation() -> Bool {
+        Terminal.clear()
+        
+        print("""
+        \(Terminal.bold)\(Terminal.red)═══════════════════════════════════════════════\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.red)  ⚠️ 放弃冒险确认\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.red)═══════════════════════════════════════════════\(Terminal.reset)
+        
+          \(Terminal.yellow)你确定要放弃当前冒险吗？\(Terminal.reset)
+          
+          \(Terminal.dim)放弃后存档将被清除，无法恢复。\(Terminal.reset)
+          
+        \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)
+        \(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.red)[y]\(Terminal.reset) 确认放弃  \(Terminal.cyan)[n]\(Terminal.reset) 取消
+        \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)
+        """)
+        print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
+        Terminal.flush()
+        
+        while true {
+            guard let input = readLine()?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() else {
+                return false
+            }
+            
+            switch input {
+            case "y", "yes":
+                return true
+            case "n", "no", "q":
+                return false
+            default:
+                print("\(Terminal.red)请输入 y 或 n\(Terminal.reset)")
+                print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
+                Terminal.flush()
+            }
+        }
     }
 }
