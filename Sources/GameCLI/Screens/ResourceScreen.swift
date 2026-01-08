@@ -28,9 +28,6 @@ enum ResourceScreen {
         let tabs = ["卡牌", "敌人/遭遇", "遗物"]
         var offset = 0
         let pageSize = 24
-        var shouldExit = false
-
-        var keyReader = TerminalKeyReader()
 
         func contentLines(for index: Int) -> [String] {
             switch index {
@@ -50,7 +47,7 @@ enum ResourceScreen {
 
             var lines: [String] = []
             lines.append(contentsOf: buildHeaderLines())
-            lines.append(TabBar.render(tabs: tabs, selectedIndex: selectedIndex, hint: "（Tab 切换）"))
+            lines.append(TabBar.render(tabs: tabs, selectedIndex: selectedIndex, hint: ""))
             lines.append("")
             let allContent = contentLines(for: selectedIndex)
             let clampedOffset = max(0, min(offset, max(0, allContent.count - 1)))
@@ -60,61 +57,45 @@ enum ResourceScreen {
                 lines.append(contentsOf: allContent[clampedOffset..<end])
             }
             lines.append("")
-            lines.append("\(Terminal.dim)↑↓ 滚动  Tab 切换分栏  输入 0 返回\(Terminal.reset)")
-            lines.append("")
-            lines.append("\(Terminal.green)>>>\(Terminal.reset) ")
+            lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+            lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-3]\(Terminal.reset) 切换分栏  \(Terminal.cyan)[+/-]\(Terminal.reset) 翻页  \(Terminal.cyan)[0]\(Terminal.reset) 返回")
+            lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
 
             for line in lines {
-                print(line, terminator: line == lines.last ? "" : "\n")
+                print(line)
             }
+            print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
             Terminal.flush()
         }
 
-        // 初次绘制
-        redraw()
-
-        // 即时模式循环（Tab/方向键即时响应）
-        TerminalKeyReader.withRawMode {
-            print(Terminal.hideCursor, terminator: "")
-            defer {
-                print(Terminal.showCursor, terminator: "")
-                Terminal.flush()
+        // 主循环（使用 readLine）
+        while true {
+            redraw()
+            
+            guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
+                break
             }
-
-            while !shouldExit {
-                let key = keyReader.readKey()
-                switch key {
-                case .tab:
-                    selectedIndex = (selectedIndex + 1) % max(1, tabs.count)
-                    offset = 0
-                    redraw()
-
-                case .shiftTab:
-                    let count = max(1, tabs.count)
-                    selectedIndex = (selectedIndex - 1 + count) % count
-                    offset = 0
-                    redraw()
-
-                case .arrowUp:
-                    offset = max(0, offset - 1)
-                    redraw()
-
-                case .arrowDown:
-                    offset += 1
-                    redraw()
-
-                case .printable(let c):
-                    // 输入 0 或 q 退出，并回显字符
-                    if c == "0" || c == "q" || c == "Q" {
-                        // 回显输入的字符
-                        print(c)
-                        Terminal.flush()
-                        shouldExit = true
-                    }
-
-                default:
-                    break
-                }
+            
+            // 退出
+            if input == "0" || input == "q" {
+                break
+            }
+            
+            // 切换分栏
+            if let tabIndex = Int(input), tabIndex >= 1, tabIndex <= tabs.count {
+                selectedIndex = tabIndex - 1
+                offset = 0
+                continue
+            }
+            
+            // 翻页
+            if input == "+" || input == "=" {
+                offset += pageSize
+                continue
+            }
+            if input == "-" {
+                offset = max(0, offset - pageSize)
+                continue
             }
         }
     }
