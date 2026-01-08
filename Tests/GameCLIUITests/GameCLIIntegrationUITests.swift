@@ -62,17 +62,16 @@ final class GameCLIIntegrationUITests: XCTestCase {
     
     // MARK: - 帮助界面测试
     
-    /// 进入战斗后按 `h` 打开帮助，再返回并退出，stdout 应包含"游戏帮助"。
-    /// 原文件: GameCLIHelpUITests.swift
-    func testBattleHelp_canOpenAndReturn() throws {
-        print("🧪 测试：testBattleHelp_canOpenAndReturn")
+    /// 从设置菜单打开帮助，再返回并退出，stdout 应包含"游戏帮助"。
+    func testSettingsHelp_canOpenAndReturn() throws {
+        print("🧪 测试：testSettingsHelp_canOpenAndReturn")
         let tmp = try TemporaryDirectory()
         defer { tmp.cleanup() }
         
         let result = try CLIRunner.runGameCLI(
             arguments: ["--seed", "1"],
-            // 新冒险 → 起点 → 第一战斗 → h 帮助 → q 返回游戏 → q 退出战斗 → 冒险结果 q 返回 → 主菜单退出
-            stdin: "1\n1\n1\nh\nq\nq\nq\n3\n",
+            // 设置菜单 → 游戏帮助 → 返回 → 返回主菜单 → 退出
+            stdin: "2\n5\nq\nq\n3\n",
             environment: [
                 "SALU_DATA_DIR": tmp.url.path,
                 "SALU_TEST_MODE": "1"
