@@ -471,11 +471,6 @@ struct GameCLI {
                 // 返回主菜单（用户中途退出，保留存档）
                 return .aborted
                 
-            case "h", "help":
-                Screens.showHelp(fromBattle: true)
-                _ = readLine()
-                continue
-                
             case "l", "log":
                 // 切换日志显示
                 showLog.toggle()
