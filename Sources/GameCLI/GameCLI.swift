@@ -251,7 +251,7 @@ struct GameCLI {
                 appendLogLine(line)
             },
             battleLoop: { engine, seed in
-                battleLoop(engine: engine, seed: seed)
+                return battleLoop(engine: engine, seed: seed)
             },
             createEnemy: { enemyId, instanceIndex, rng in
                 TestMode.createEnemy(enemyId: enemyId, instanceIndex: instanceIndex, rng: &rng)
@@ -319,12 +319,18 @@ struct GameCLI {
                 // 节点完成，继续冒险
                 // 自动保存进度
                 saveService.saveRun(runState)
-                break
                 
             case .runEnded(let won):
-                // 冒险结束
+                // 冒险结束（胜利或失败）
                 runState.isOver = true
                 runState.won = won
+                
+            case .aborted:
+                // 用户中途退出（返回主菜单，保留存档）
+                // 保存当前进度（玩家可能在战斗中退出，需要保留之前的状态）
+                saveService.saveRun(runState)
+                currentRunState = runState
+                return
             }
             
             // 更新全局状态
@@ -417,7 +423,9 @@ struct GameCLI {
     // MARK: - Battle Loop
     
     /// 战斗主循环（用于冒险模式和快速战斗模式）
-    static func battleLoop(engine: BattleEngine, seed: UInt64) {
+    /// 返回战斗循环结果，区分正常结束和用户中途退出
+    @discardableResult
+    static func battleLoop(engine: BattleEngine, seed: UInt64) -> BattleLoopResult {
         while !engine.state.isOver {
             // 刷新整个屏幕
             BattleScreen.renderBattleScreen(
@@ -431,8 +439,8 @@ struct GameCLI {
             // 读取玩家输入
             // 注意：当管道输入用完时，readLine() 返回 nil，需要退出循环
             guard let input = readLine()?.trimmingCharacters(in: .whitespaces) else {
-                // EOF 或输入关闭，退出游戏
-                return
+                // EOF 或输入关闭，视为用户退出
+                return .aborted
             }
             
             // 清除之前的消息
@@ -441,8 +449,8 @@ struct GameCLI {
             // 处理输入
             switch input.lowercased() {
             case "q":
-                // 返回主菜单而不是退出
-                return
+                // 返回主菜单（用户中途退出，保留存档）
+                return .aborted
                 
             case "h", "help":
                 Screens.showHelp()
@@ -518,6 +526,9 @@ struct GameCLI {
             appendBattleEvents(engine.events)
             engine.clearEvents()
         }
+        
+        // 战斗正常结束（胜利或失败）
+        return .finished
     }
     
     // MARK: - Log (Unified)

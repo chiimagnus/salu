@@ -2,8 +2,24 @@ import GameCore
 
 /// 房间处理结果
 enum RoomRunResult {
-    case completedNode      // 正常完成节点
+    case completedNode       // 正常完成节点
     case runEnded(won: Bool) // 冒险结束（胜利或失败）
+    case aborted             // 用户中途退出（返回主菜单，保留存档）
+}
+
+/// 战斗循环结果
+/// 用于区分战斗是正常结束还是用户中途退出
+enum BattleLoopResult {
+    case finished   // 战斗正常结束（胜利或失败）
+    case aborted    // 用户中途退出（按 q 返回主菜单）
+}
+
+/// 战斗房间处理结果
+/// 用于战斗类房间（普通/精英/Boss）的内部处理结果
+enum BattleHandleResult {
+    case won        // 战斗胜利
+    case lost       // 战斗失败（玩家 HP 归零）
+    case aborted    // 用户中途退出（按 q 返回主菜单）
 }
 
 /// 房间处理器协议
@@ -30,7 +46,8 @@ struct RoomContext {
     let logLine: (String) -> Void
     
     /// 战斗循环（复用现有逻辑）
-    let battleLoop: (BattleEngine, UInt64) -> Void
+    /// 返回战斗循环结果，区分正常结束和用户中途退出
+    let battleLoop: (BattleEngine, UInt64) -> BattleLoopResult
     
     /// 创建敌人（复用现有逻辑）
     let createEnemy: (EnemyID, Int, inout SeededRNG) -> Entity

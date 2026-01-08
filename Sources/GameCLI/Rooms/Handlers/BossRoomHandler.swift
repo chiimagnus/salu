@@ -5,8 +5,10 @@ struct BossRoomHandler: RoomHandling {
     var roomType: RoomType { .boss }
     
     func run(node: MapNode, runState: inout RunState, context: RoomContext) -> RoomRunResult {
-        let won = handleBossFight(node: node, runState: &runState, context: context)
-        if won {
+        let result = handleBossFight(node: node, runState: &runState, context: context)
+        
+        switch result {
+        case .won:
             // Boss 胜利：完成节点（可能推进到下一幕，也可能直接通关）
             runState.completeCurrentNode()
             
@@ -14,12 +16,16 @@ struct BossRoomHandler: RoomHandling {
                 return .runEnded(won: true)
             }
             return .completedNode
+            
+        case .lost:
+            return .runEnded(won: false)
+            
+        case .aborted:
+            return .aborted
         }
-        
-        return .runEnded(won: false)
     }
     
-    private func handleBossFight(node: MapNode, runState: inout RunState, context: RoomContext) -> Bool {
+    private func handleBossFight(node: MapNode, runState: inout RunState, context: RoomContext) -> BattleHandleResult {
         // Boss 战斗使用特殊种子
         let bossSeed = runState.seed &+ UInt64(runState.floor) &* 1_000_000 &+ 99999
         
@@ -43,9 +49,14 @@ struct BossRoomHandler: RoomHandling {
         engine.clearEvents()
         
         // 战斗循环
-        context.battleLoop(engine, bossSeed)
+        let loopResult = context.battleLoop(engine, bossSeed)
         
-        // 保存战斗记录
+        // 用户中途退出：不保存战斗记录，不更新玩家状态，直接返回
+        if loopResult == .aborted {
+            return .aborted
+        }
+        
+        // 保存战斗记录（仅在战斗正常结束时）
         let record = BattleRecordBuilder.build(from: engine, seed: bossSeed)
         context.historyService.addRecord(record)
         
@@ -82,11 +93,13 @@ struct BossRoomHandler: RoomHandling {
             if runState.floor < runState.maxFloor {
                 context.logLine("\(Terminal.cyan)进入第 \(runState.floor + 1) 层冒险…\(Terminal.reset)")
             }
-        } else {
-            let enemyName = engine.state.enemies.first?.name ?? "敌人"
-            context.logLine("\(Terminal.red)Boss 失败：倒在 \(enemyName) 面前\(Terminal.reset)")
+            
+            return .won
         }
         
-        return engine.state.playerWon == true
+        // 战斗失败（玩家 HP 归零）
+        let enemyName = engine.state.enemies.first?.name ?? "敌人"
+        context.logLine("\(Terminal.red)Boss 失败：倒在 \(enemyName) 面前\(Terminal.reset)")
+        return .lost
     }
 }
