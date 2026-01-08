@@ -23,8 +23,8 @@ final class GameCLITrainingEventUpgradeUITests: XCTestCase {
         
         let result = try CLIRunner.runGameCLI(
             arguments: ["--seed", "\(seed)"],
-            // 新冒险 → 起点 → 事件（训练） → 选项 1（专注训练）→ 选择第 1 张可升级卡 → Enter 继续 → 回地图 q → 退出
-            stdin: "1\n1\n1\n1\n1\n\nq\n4\n",
+            // 新冒险 → 起点 → 事件（训练） → 选项 1（专注训练）→ 选择第 1 张可升级卡 → q 继续 → 回地图 q → 退出
+            stdin: "1\n1\n1\n1\n1\nq\nq\n4\n",
             environment: env,
             timeout: 12
         )

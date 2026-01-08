@@ -45,8 +45,8 @@ final class GameCLIIntegrationUITests: XCTestCase {
         
         let result = try CLIRunner.runGameCLI(
             arguments: ["--seed", "1"],
-            // 新冒险 → 起点 → 第一战斗节点 → 战斗界面 q 退出 → 冒险结果 Enter → 主菜单退出
-            stdin: "1\n1\n1\nq\n\n3\n",
+            // 新冒险 → 起点 → 第一战斗节点 → 战斗界面 q 退出 → 冒险结果 q 返回 → 主菜单退出
+            stdin: "1\n1\n1\nq\nq\n3\n",
             environment: [
                 "SALU_DATA_DIR": tmp.url.path,
                 "SALU_TEST_MODE": "1"
@@ -71,8 +71,8 @@ final class GameCLIIntegrationUITests: XCTestCase {
         
         let result = try CLIRunner.runGameCLI(
             arguments: ["--seed", "1"],
-            // 新冒险 → 起点 → 第一战斗 → h 帮助 → Enter 返回 → q 退出战斗 → 冒险结果 Enter → 主菜单退出
-            stdin: "1\n1\n1\nh\n\nq\n\n3\n",
+            // 新冒险 → 起点 → 第一战斗 → h 帮助 → q 返回游戏 → q 退出战斗 → 冒险结果 q 返回 → 主菜单退出
+            stdin: "1\n1\n1\nh\nq\nq\nq\n3\n",
             environment: [
                 "SALU_DATA_DIR": tmp.url.path,
                 "SALU_TEST_MODE": "1"
@@ -95,9 +95,18 @@ final class GameCLIIntegrationUITests: XCTestCase {
         let tmp = try TemporaryDirectory()
         defer { tmp.cleanup() }
         
+        // 输入序列：
+        // 2 - 进入设置菜单
+        // 2 - 查看统计
+        // q - 返回设置菜单
+        // 3 - 清除历史
+        // yes - 确认清除
+        // q - 返回设置菜单
+        // 0 - 返回主菜单
+        // 3 - 退出游戏
         let result = try CLIRunner.runGameCLI(
             arguments: ["--seed", "1"],
-            stdin: "2\n2\n\n3\nyes\n\n0\n3\n",
+            stdin: "2\n2\nq\n3\nyes\nq\n0\n3\n",
             environment: [
                 "SALU_DATA_DIR": tmp.url.path,
                 "SALU_TEST_MODE": "1"
@@ -125,7 +134,7 @@ final class GameCLIIntegrationUITests: XCTestCase {
         
         let result = try CLIRunner.runGameCLI(
             arguments: ["--seed", "1"],
-            stdin: "1\n1\n1\nq\n\n3\n",
+            stdin: "1\n1\n1\nq\nq\n3\n",
             environment: [
                 "SALU_DATA_DIR": tmp.url.path
             ],

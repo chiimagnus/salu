@@ -41,8 +41,8 @@ final class GameCLIRelicRewardUITests: XCTestCase {
         
         let secondRun = try CLIRunner.runGameCLI(
             arguments: ["--seed", "123"],
-            // 继续冒险 → 进入 Boss → 出牌 1 → 跳过遗物 → 回主菜单 → 退出
-            stdin: "1\n1\n1\n0\n\n4\n",
+            // 继续冒险 → 进入 Boss → 出牌 1 → 跳过遗物 → q 返回主菜单 → 退出
+            stdin: "1\n1\n1\n0\nq\n4\n",
             environment: env,
             timeout: 12
         )

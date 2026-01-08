@@ -58,7 +58,7 @@ enum ResourceScreen {
             }
             lines.append("")
             lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-            lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-3]\(Terminal.reset) 切换分栏  \(Terminal.cyan)[+/-]\(Terminal.reset) 翻页  \(Terminal.cyan)[0]\(Terminal.reset) 返回")
+            lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-3]\(Terminal.reset) 切换分栏  \(Terminal.cyan)[+/-]\(Terminal.reset) 翻页  \(Terminal.cyan)[q]\(Terminal.reset) 返回")
             lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
 
             for line in lines {
@@ -77,7 +77,7 @@ enum ResourceScreen {
             }
             
             // 退出
-            if input == "0" || input == "q" {
+            if input == "q" {
                 break
             }
             

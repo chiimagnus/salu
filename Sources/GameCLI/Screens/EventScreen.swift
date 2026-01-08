@@ -63,11 +63,7 @@ enum EventScreen {
         }
         
         print("")
-        print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[0]\(Terminal.reset) 继续")
-        print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
-        Terminal.flush()
+        NavigationBar.render(items: [.continueNext])
     }
 
     /// 事件二次选择：选择要升级的卡牌（返回牌组索引）

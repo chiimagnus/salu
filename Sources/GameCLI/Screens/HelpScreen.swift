@@ -32,11 +32,7 @@ enum HelpScreen {
         ╚═══════════════════════════════════════════════════════╝
         \(Terminal.reset)
         """)
-        print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[0]\(Terminal.reset) 返回游戏")
-        print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-        print("\(Terminal.green)>>>\(Terminal.reset) ", terminator: "")
-        Terminal.flush()
+        NavigationBar.render(items: [.backToGame])
     }
 }
 

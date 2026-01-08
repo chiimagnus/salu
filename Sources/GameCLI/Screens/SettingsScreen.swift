@@ -21,7 +21,7 @@ enum SettingsScreen {
         ║  \(Terminal.reset)\(Terminal.cyan)[4]\(Terminal.bold)\(Terminal.yellow) 📦 资源管理（池子/注册表）                  ║
         ║                                                       ║
         ╠═══════════════════════════════════════════════════════╣
-        ║  \(Terminal.reset)\(Terminal.dim)[0] 返回主菜单\(Terminal.bold)\(Terminal.yellow)                                 ║
+        ║  \(Terminal.reset)\(Terminal.dim)[q] 返回主菜单\(Terminal.bold)\(Terminal.yellow)                                 ║
         ╚═══════════════════════════════════════════════════════╝
         \(Terminal.reset)
         """)
