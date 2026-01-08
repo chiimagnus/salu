@@ -26,6 +26,9 @@ struct GameCLI {
     /// Run 日志服务（调试用落盘）
     private nonisolated(unsafe) static var runLogService: RunLogService!
     
+    /// 设置存储
+    private nonisolated(unsafe) static var settingsStore: SettingsStore!
+    
     // MARK: - Main Entry
     
     static func main() {
@@ -39,6 +42,11 @@ struct GameCLI {
 
         // 初始化 Run 日志服务（依赖注入）
         runLogService = RunLogService(store: FileRunLogStore())
+        
+        // 初始化设置存储并加载设置
+        settingsStore = SettingsStore()
+        let settings = settingsStore.load()
+        showLog = settings.showLog
         
         // 检查命令行快捷参数
         if CommandLine.arguments.contains("--history") || CommandLine.arguments.contains("-H") {
@@ -145,8 +153,11 @@ struct GameCLI {
                 NavigationBar.waitForBack()
                 
             case "6":
-                // 切换日志显示
+                // 切换日志显示并保存设置
                 showLog.toggle()
+                var settings = settingsStore.load()
+                settings.showLog = showLog
+                settingsStore.save(settings)
                 
             case "q":
                 // 返回主菜单
