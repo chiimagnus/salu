@@ -40,7 +40,7 @@ enum MapScreen {
         }
         
         // 可选节点提示
-        lines.append(contentsOf: buildNodeSelection(runState: runState))
+        lines.append(contentsOf: buildNodeSelection(runState: runState, showLog: showLog))
         
         // 清屏并打印
         Terminal.clear()
@@ -145,7 +145,7 @@ enum MapScreen {
         }
     }
     
-    private static func buildNodeSelection(runState: RunState) -> [String] {
+    private static func buildNodeSelection(runState: RunState, showLog: Bool) -> [String] {
         var lines: [String] = []
         
         let accessibleNodes = runState.accessibleNodes
@@ -172,9 +172,14 @@ enum MapScreen {
                 lines.append("  \(Terminal.cyan)[\(index + 1)]\(Terminal.reset) \(icon) \(name)")
             }
             
+            // 日志切换提示（与战斗界面统一）
+            let logHint = showLog
+                ? "\(Terminal.dim)[l] 隐藏日志\(Terminal.reset)"
+                : "\(Terminal.cyan)[l]\(Terminal.reset) 日志"
+            
             lines.append("")
             lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-            lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(accessibleNodes.count)]\(Terminal.reset) 选择节点  \(Terminal.cyan)[l]\(Terminal.reset) 日志  \(Terminal.cyan)[q]\(Terminal.reset) 返回主菜单")
+            lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(accessibleNodes.count)]\(Terminal.reset) 选择节点  \(logHint)  \(Terminal.cyan)[q]\(Terminal.reset) 返回主菜单")
             lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
         }
         

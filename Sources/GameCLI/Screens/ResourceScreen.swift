@@ -28,9 +28,52 @@ enum ResourceScreen {
         let tabs = ["卡牌", "敌人/遭遇", "遗物"]
         var offset = 0
         let pageSize = 24
+        var shouldExit = false
 
         var keyReader = TerminalKeyReader()
 
+        func contentLines(for index: Int) -> [String] {
+            switch index {
+            case 0:
+                return buildCardsSectionLines()
+            case 1:
+                return buildEnemiesAndEncountersSectionLines()
+            case 2:
+                return buildRelicsSectionLines()
+            default:
+                return []
+            }
+        }
+
+        func redraw() {
+            Terminal.clear()
+
+            var lines: [String] = []
+            lines.append(contentsOf: buildHeaderLines())
+            lines.append(TabBar.render(tabs: tabs, selectedIndex: selectedIndex, hint: "（Tab 切换）"))
+            lines.append("")
+            let allContent = contentLines(for: selectedIndex)
+            let clampedOffset = max(0, min(offset, max(0, allContent.count - 1)))
+            offset = clampedOffset
+            let end = min(allContent.count, clampedOffset + pageSize)
+            if clampedOffset < end {
+                lines.append(contentsOf: allContent[clampedOffset..<end])
+            }
+            lines.append("")
+            lines.append("\(Terminal.dim)↑↓ 滚动  Tab 切换分栏  输入 0 返回\(Terminal.reset)")
+            lines.append("")
+            lines.append("\(Terminal.green)>>>\(Terminal.reset) ")
+
+            for line in lines {
+                print(line, terminator: line == lines.last ? "" : "\n")
+            }
+            Terminal.flush()
+        }
+
+        // 初次绘制
+        redraw()
+
+        // 即时模式循环（Tab/方向键即时响应）
         TerminalKeyReader.withRawMode {
             print(Terminal.hideCursor, terminator: "")
             defer {
@@ -38,45 +81,7 @@ enum ResourceScreen {
                 Terminal.flush()
             }
 
-            func contentLines(for index: Int) -> [String] {
-                switch index {
-                case 0:
-                    return buildCardsSectionLines()
-                case 1:
-                    return buildEnemiesAndEncountersSectionLines()
-                case 2:
-                    return buildRelicsSectionLines()
-                default:
-                    return []
-                }
-            }
-
-            func redraw() {
-                Terminal.clear()
-
-                var lines: [String] = []
-                lines.append(contentsOf: buildHeaderLines())
-                lines.append(TabBar.render(tabs: tabs, selectedIndex: selectedIndex, hint: "（Tab 切换）"))
-                lines.append("")
-                let allContent = contentLines(for: selectedIndex)
-                let clampedOffset = max(0, min(offset, max(0, allContent.count - 1)))
-                offset = clampedOffset
-                let end = min(allContent.count, clampedOffset + pageSize)
-                if clampedOffset < end {
-                    lines.append(contentsOf: allContent[clampedOffset..<end])
-                }
-                lines.append("")
-                lines.append("\(Terminal.dim)↑↓ 滚动  Tab 切换分栏  q/ESC 返回\(Terminal.reset)")
-
-                for line in lines {
-                    print(line)
-                }
-                Terminal.flush()
-            }
-
-            redraw()
-
-            while true {
+            while !shouldExit {
                 let key = keyReader.readKey()
                 switch key {
                 case .tab:
@@ -98,11 +103,14 @@ enum ResourceScreen {
                     offset += 1
                     redraw()
 
-                case .escape:
-                    return
-
                 case .printable(let c):
-                    if c == "q" || c == "Q" { return }
+                    // 输入 0 或 q 退出，并回显字符
+                    if c == "0" || c == "q" || c == "Q" {
+                        // 回显输入的字符
+                        print(c)
+                        Terminal.flush()
+                        shouldExit = true
+                    }
 
                 default:
                     break
