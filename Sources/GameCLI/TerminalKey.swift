@@ -22,7 +22,11 @@ enum TerminalKey: Equatable {
     case unknown
 }
 #else
+#if canImport(Darwin)
 import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
 
 enum TerminalKey: Equatable {
     case tab
