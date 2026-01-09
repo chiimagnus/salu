@@ -121,18 +121,31 @@ jobs:
       # 设置 MSVC 开发环境（链接阶段需要 VS/SDK）
       - name: Set up MSVC dev environment
         uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
 
       # 使用 winget 安装 Swift（官方推荐方式）
       - name: Install Swift 6.2.3 (WinGet)
         shell: pwsh
         run: |
-          winget install --id Swift.Toolchain -e --version 6.2.3 `
+          winget source update
+          winget install --id Swift.Toolchain -e --version 6.2.3 --scope user `
             --accept-source-agreements --accept-package-agreements --disable-interactivity
 
-          # 显式写入 GITHUB_PATH，确保后续 steps 都能找到 swift
-          $swiftRoot = Join-Path $env:LOCALAPPDATA "Programs\Swift"
-          "$swiftRoot\bin"     | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          "$swiftRoot\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          $defaultRoot = Join-Path $env:LOCALAPPDATA "Programs\Swift"
+          $swiftExe = Join-Path $defaultRoot "bin\swift.exe"
+
+          if (-not (Test-Path $swiftExe)) {
+            # 兜底：找一下 swift.exe 实际落点
+            $found = Get-ChildItem -Path $env:LOCALAPPDATA -Recurse -Filter swift.exe -ErrorAction SilentlyContinue |
+              Select-Object -First 1 -ExpandProperty FullName
+            if (-not $found) { throw "swift.exe not found after installation" }
+            $swiftBin = Split-Path $found -Parent
+          } else {
+            $swiftBin = Split-Path $swiftExe -Parent
+          }
+
+          $swiftBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Verify Swift installation
         shell: pwsh
