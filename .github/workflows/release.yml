@@ -106,7 +106,7 @@ jobs:
   # ============================================================
   # Windows 构建（x86_64）- 允许失败
   # 参考: https://www.swift.org/install/windows/
-  # 注意: swift-actions/setup-swift 不支持 Windows，必须用 winget
+  # 使用 SwiftyLab/setup-swift（支持 Windows/macOS/Linux）
   # ============================================================
   build-windows:
     name: Build Windows
@@ -133,49 +133,15 @@ jobs:
         with:
           arch: x64
 
-      # 使用 winget 安装 Swift（官方推荐方式）
-      - name: Install Swift 6.2.3 (WinGet)
-        shell: pwsh
-        run: |
-          winget source update
-          winget install --id Swift.Toolchain -e --version 6.2.3 --scope user --accept-source-agreements --accept-package-agreements --disable-interactivity
-
-          $defaultRoot = Join-Path $env:LOCALAPPDATA "Programs\Swift"
-          $swiftExe = Join-Path $defaultRoot "bin\swift.exe"
-
-          if (-not (Test-Path $swiftExe)) {
-            # 兜底：先在 Programs 下搜索，再扩展到 Program Files
-            $searchRoots = @(
-              (Join-Path $env:LOCALAPPDATA "Programs"),
-              $env:ProgramFiles,
-              ${env:ProgramFiles(x86)}
-            ) | Where-Object { $_ -and (Test-Path $_) }
-
-            $found = $null
-            foreach ($root in $searchRoots) {
-              $found = Get-ChildItem -Path $root -Recurse -Filter swift.exe -ErrorAction SilentlyContinue |
-                Select-Object -First 1 -ExpandProperty FullName
-              if ($found) { break }
-            }
-            if (-not $found) { throw "swift.exe not found after installation" }
-            $swiftBin = Split-Path $found -Parent
-          } else {
-            $swiftBin = Split-Path $swiftExe -Parent
-          }
-
-          # 同时加入 bin 和 usr\bin 到 PATH（usr\bin 可能包含编译工具链）
-          # 从真实 swiftBin 推导 root，避免固定 $defaultRoot
-          $swiftRoot = Split-Path $swiftBin -Parent
-          $swiftBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          $usrBin = Join-Path $swiftRoot "usr\bin"
-          if (Test-Path $usrBin) {
-            $usrBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          }
+      # 安装 Swift（跨平台，Windows 不依赖 winget）
+      - name: Setup Swift 6.2.3
+        uses: SwiftyLab/setup-swift@v1
+        with:
+          swift-version: '6.2.3'
 
       - name: Verify Swift installation
         shell: pwsh
         run: |
-          Get-Command swift
           where.exe swift
           swift --version
 
