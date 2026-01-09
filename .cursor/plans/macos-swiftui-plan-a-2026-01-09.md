@@ -29,53 +29,64 @@
 
 ---
 
-## 2. 推荐工程落地方式（避免破坏现有 SwiftPM/跨平台构建）
+## 2. 推荐工程落地方式（你选择：先试方案 B）
 
-### 方案 A（推荐）：新建 Xcode macOS App，依赖本仓库 SwiftPM Package
+你现在的选择是：**先试方案 B**，把 SwiftUI macOS app 直接作为 SwiftPM target 加到 `Package.swift` 里。
 
-- 保持当前 `Package.swift` 继续管理 `GameCore`（以及现有 CLI）。
-- 新增一个 `SaluMacApp/` 的 Xcode 工程（`.xcodeproj` 或 `.xcworkspace`），将当前仓库作为 SwiftPM 依赖（本地路径依赖）。
-- 好处：
-  - 不会让 Linux/Windows 的 `swift build` 因 `SwiftUI` 导入失败
-  - macOS app 的调试、签名、资源、打包更自然
+### 方案 B：在 `Package.swift` 新增 `SaluMacApp`（SwiftUI）executable target
 
-#### 方案 A 怎么把 Xcode 和 SwiftPM “结合起来”（你关心的点）
+- 好处：只用 SwiftPM（`swift build`/`swift run` 即可）
+- 关键注意点（你提到的“非 macOS 过滤”）：
+  - SwiftPM 没有“macOS-only target 不参与其他平台构建”的开关
+  - 因此需要用 **条件编译**让该 target 在非 macOS 上也能编译（产出一个 stub main），从而保证非 macOS 上 `swift build` 仍能过
 
-最简单、最稳的一种方式是：**App 用 Xcode 工程；核心逻辑仍然是本仓库 Swift Package**。
+#### 非 macOS 如何“过滤”才不会挂（推荐做法：双 main 文件 + 条件编译）
 
-- **开发时你怎么打开**
-  - 方式 1：直接打开 `SaluMacApp/SaluMacApp.xcodeproj`（推荐）
-  - 方式 2：建一个 workspace，把 `SaluMacApp.xcodeproj` 和本仓库 `Package.swift` 都加进去（可选）
+在 `Sources/SaluMacApp/` 下放两个入口文件：
 
-- **如何让 App 依赖本仓库代码（本地 Package）**
-  - 在 Xcode 的 App 工程里：
-    - `File` → `Add Packages...`
-    - 选择 `Add Local...`
-    - 指向本仓库根目录（包含 `Package.swift` 的那个目录）
-    - 勾选要用的 products（先选 `GameCore`；后续再加 `SaluApp`/`SaluPersistence`）
+- `SaluMacAppMain.swift`（仅在可导入 SwiftUI 时编译）
+- `SaluMacAppStubMain.swift`（仅在不可导入 SwiftUI 时编译）
 
-- **怎么验证“两个都能 build”**
-  - SwiftPM（领域层/逻辑层）：在仓库根目录执行：
-    - `swift build`
-    - `swift test`
-  - Xcode（macOS app）：用 Xcode “Run” 或用命令行（CI 也用这个）：
+原则：任何平台最终只能编译出 **一个** `@main`。
 
-```bash
-xcodebuild \
-  -project SaluMacApp/SaluMacApp.xcodeproj \
-  -scheme SaluMacApp \
-  -destination "platform=macOS" \
-  build
+伪代码示意：
+
+```swift
+// SaluMacAppMain.swift
+#if canImport(SwiftUI)
+import SwiftUI
+import GameCore
+
+@main
+struct SaluMacApp: App {
+    var body: some Scene { WindowGroup { Text("Salu") } }
+}
+#endif
 ```
 
-> 要点：**SwiftUI app 的构建/运行由 Xcode/xcodebuild 负责；GameCore/SaluApp 仍然可以继续用 swift build/test 来保证纯逻辑层稳定。**
+```swift
+// SaluMacAppStubMain.swift
+#if !canImport(SwiftUI)
+@main
+struct SaluMacAppStub {
+    static func main() {
+        // 非 macOS 环境下的占位，确保 swift build 仍然能过
+        print("SaluMacApp 仅支持 macOS（SwiftUI）")
+    }
+}
+#endif
+```
 
-### 方案 B：直接在 `Package.swift` 新增一个 `SaluMacApp` SwiftUI executable target
+> 这样：macOS 上会编译真正的 SwiftUI App；Linux/Windows 上会编译 stub，不会因为 `import SwiftUI` 失败导致全局构建失败。
 
-- 好处：只用 SwiftPM
-- 风险：若 CI/他人环境在非 macOS 上跑 `swift build`，会因为 `SwiftUI` 不可用而失败（需要额外处理/拆 CI）
+#### 方案 B 的验证方式（每个 P 都做）
 
-本 Plan A 默认按 **方案 A** 来写（更稳、更符合 SwiftUI 开发习惯）。
+- macOS：`swift build` + `swift run SaluMacApp`
+- 非 macOS（CI）：`swift build`（会构建 stub）
+
+### 方案 A（备选）：Xcode app + 本仓库 package
+
+如果后续发现 SwiftPM 的 SwiftUI App（方案 B）在打包/资源/签名/调试体验上卡住，再切换回方案 A（Xcode app）即可。
 
 ---
 
