@@ -1,10 +1,36 @@
 # 🗡️ Salu - 杀戮尖塔 CLI 版
 
-一个跨平台（macOS/Linux/Windows）的纯 CLI 回合制卡牌战斗游戏，灵感来自《杀戮尖塔》（Slay the Spire）。
+一个跨平台（macOS/Linux）的纯 CLI 回合制卡牌战斗游戏，灵感来自《杀戮尖塔》（Slay the Spire）。
 
-## 🚀 快速开始
+## 📥 下载安装
 
-### 运行游戏
+### 方式一：直接下载（推荐）
+
+前往 [Releases](https://github.com/chiimagnus/salu/releases) 页面下载最新版本：
+
+| 平台 | 下载文件 | 说明 |
+|------|----------|------|
+| **macOS** | `Salu-macos-*.zip` | 📦 双击即可运行的 .app 应用 |
+| macOS | `salu-macos.tar.gz` | 命令行二进制，需在终端运行 |
+| **Linux** | `salu-linux-x86_64.tar.gz` | Ubuntu 22.04+ 命令行二进制 |
+
+#### macOS 使用方法
+
+1. 下载 `Salu-macos-*.zip`
+2. 解压后双击 `Salu.app` 即可开始游戏
+3. 首次运行可能需要在"系统设置 → 隐私与安全性"中允许运行
+
+#### Linux 使用方法
+
+```bash
+# 解压
+tar -xzf salu-linux-x86_64.tar.gz
+
+# 运行
+./salu-linux-x86_64
+```
+
+### 方式二：从源码构建
 
 ```bash
 # 克隆仓库
@@ -14,6 +40,8 @@ cd salu
 # 运行游戏（随机种子）
 swift run
 ```
+
+> 需要 Swift 6.2+，可从 [swift.org](https://swift.org/download/) 下载
 
 ## 🤝 参与贡献
 
