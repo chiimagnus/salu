@@ -402,7 +402,58 @@ alwaysApply: true
 
 ---
 
-## 14. 后续扩展方向（当前未接入）
+## 14. Roadmap / 后续扩展方向（1.0 / 2.0）
 
-- 内容扩展（更多卡牌/敌人/精英/Boss、Act2）
+> 本节用于把“玩法/业务规则说明”与“版本里程碑”对齐；具体执行细节以 `.cursor/plans/*.md` 为准。
+
+### 14.1 版本里程碑（最新确认）
+
+- **1.0（长期运营版）**：以 `GameCore + GameCLI` 为核心交付，内容足够、难度阶梯、多角色/多模式/成就/本地存档齐备，可持续扩展。
+- **2.0（Apps）**：在 1.0 稳定后，再做 **macOS App + visionOS App**（原生 UI、i18n、签名/上架链路）。
+
+### 14.2 权威计划（优先看这些）
+
+- `./.cursor/plans/gamecore-cli-1.0-to-longterm-plan-a-2026-01-09.md`：**1.0 路线**（P1~P6：通关主线→内容扩充→Ascension→多角色→多模式→成就/本地存档）
+- `./.cursor/plans/macos-swiftui-plan-a-2026-01-09.md`：**2.0 路线（macOS SwiftUI）**
+- `./.cursor/plans/macos-xcode-project-guide-2026-01-09.md`：Xcode 工程创建与 Local Package 复用 GameCore 的手把手指南
+
+### 14.3 1.0 Backlog（按优先级聚类）
+
+#### 14.3.1 玩法主线与稳定性（P1）
+
+- 3 Act 可通关（或先 2 Act，但必须保留扩到 3 Act 的接口）
+- 存档/继续/清档稳定，快照迁移策略可持续维护
+- CLI 测试模式强化（固定 seed、多敌人/目标选择、Act 跳转冒烟）
+
+#### 14.3.2 内容扩充与数值平衡（P2）
+
+- 卡牌/敌人/精英/Boss/事件/遗物规模扩充到“能玩出 Build”
+- EncounterPool 多样化，避免重复遭遇
+- 事件分支更丰富（含 follow-up）
+
+#### 14.3.3 难度阶梯（P3）
+
+- Ascension/挑战修正：敌人、奖励、商店、地图策略随难度变化
+
+#### 14.3.4 多角色（P4）
+
+- 角色选择、独立起始牌组/卡池/（可选）专属内容
+
+#### 14.3.5 多模式（P5）
+
+- Daily seed / Challenge modifiers /（可选）无尽
+
+#### 14.3.6 成就 + 本地存档（P6）
+
+- 成就定义（规则）+ 解锁记录（持久化）+ CLI 展示
+
+### 14.4 2.0 Backlog（Apps）
+
+- macOS App（Xcode + SwiftUI）：UI/UX、i18n、签名/上架
+- visionOS App：输入范式适配、空间 UI 设计、性能与交互
+
+### 14.5 可选研究项（不进 1.0 主线）
+
+- AI 集成（玩家助手/自动对战/文本生成）
+  - 先做可替换 `AIProvider` + Mock，再考虑外部/本地模型
 
