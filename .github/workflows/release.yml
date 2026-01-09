@@ -104,12 +104,13 @@ jobs:
           retention-days: 90
 
   # ============================================================
-  # Windows 构建（x86_64）
+  # Windows 构建（x86_64）- 允许失败
   # ============================================================
   build-windows:
     name: Build Windows
     runs-on: windows-latest
     needs: test
+    continue-on-error: true  # 允许失败，不阻塞其他 job
 
     steps:
       - name: Checkout code
@@ -140,35 +141,41 @@ jobs:
           retention-days: 90
 
   # ============================================================
-  # 创建 GitHub Release
+  # 创建 GitHub Release（macOS 必须成功，其他平台允许失败）
   # ============================================================
   create-release:
     name: Create Release
     needs: [build-macos, build-linux, build-windows]
+    if: always() && startsWith(github.ref, 'refs/tags/') && needs.build-macos.result == 'success'
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
 
     steps:
       - name: Download macOS artifact
+        if: needs.build-macos.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: salu-macos
           path: release-artifacts
+        continue-on-error: true
 
       - name: Download Linux artifact
+        if: needs.build-linux.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: salu-linux-x86_64
           path: release-artifacts
+        continue-on-error: true
 
       - name: Download Windows artifact
+        if: needs.build-windows.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: salu-windows-x86_64
           path: release-artifacts
+        continue-on-error: true
 
       - name: List artifacts
-        run: ls -la release-artifacts/
+        run: ls -la release-artifacts/ || echo "No artifacts found"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -180,5 +187,6 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
+          fail_on_unmatched_files: false  # 允许部分文件缺失
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
