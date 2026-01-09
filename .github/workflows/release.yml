@@ -110,73 +110,47 @@ jobs:
   # ============================================================
   build-windows:
     name: Build Windows
-    runs-on: windows-2022  # 固定版本，避免 windows-latest 漂移
+    runs-on: windows-2022
     needs: test
-    continue-on-error: true  # 允许失败，不阻塞其他 job
+    # 建议先保留；但请看后面“问题C”的建议
+    continue-on-error: true
+
     env:
-      WINDOWS_EXE: GameCLI.exe  # 可执行文件名，避免硬编码
+      WINDOWS_EXE: GameCLI.exe
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # Git 配置优化（处理长路径和 NTFS 兼容性）
-      - name: Git tweaks for Windows (optional)
-        shell: pwsh
-        run: |
-          git config --global core.longpaths true
-          git config --global core.protectNTFS false
-
-      # 设置 MSVC 开发环境（链接阶段需要 VS/SDK）
-      - name: Set up MSVC dev environment
-        uses: ilammy/msvc-dev-cmd@v1
+      - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
 
-      # 安装 Swift（跨平台，Windows 不依赖 winget）
-      - name: Setup Swift 6.2.3
-        uses: SwiftyLab/setup-swift@v1
+      # 关键：用 latest，不要用 v1
+      - name: Setup Swift (Windows)
+        uses: SwiftyLab/setup-swift@latest
         with:
-          swift-version: '6.2.3'
+          swift-version: '6.2'   # 或者你强锁：'6.2.3'
 
-      - name: Verify Swift installation
+      - name: Verify + Build + Package
         shell: pwsh
         run: |
-          where.exe swift
           swift --version
-
-      - name: Build release binary
-        id: build
-        shell: pwsh
-        run: |
-          # 执行构建，然后获取产物目录路径
           swift build -c release
           $binPath = (swift build -c release --show-bin-path).Trim()
-          "bin_path=$binPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
-      - name: Create release artifact
-        shell: pwsh
-        run: |
           New-Item -ItemType Directory -Force -Path artifact | Out-Null
-
-          # 使用之前保存的 bin path 和环境变量中的 exe 名称
-          $binPath = "${{ steps.build.outputs.bin_path }}"
           $exePath = Join-Path $binPath "${{ env.WINDOWS_EXE }}"
 
-          if (Test-Path $exePath) {
-            Copy-Item $exePath artifact\salu-windows-x86_64.exe
-            Compress-Archive -Path artifact\salu-windows-x86_64.exe -DestinationPath artifact\salu-windows-x86_64.zip -Force
-            Remove-Item artifact\salu-windows-x86_64.exe
-            Get-ChildItem artifact
-          } else {
-            Write-Host "ERROR: GameCLI.exe not found at $exePath"
-            Write-Host "Bin path was: $binPath"
+          if (!(Test-Path $exePath)) {
+            Write-Host "ERROR: exe not found: $exePath"
             Get-ChildItem -Recurse .build -ErrorAction SilentlyContinue | Select-Object FullName
             exit 1
           }
 
-      - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
+          Copy-Item $exePath artifact\salu-windows-x86_64.exe
+          Compress-Archive artifact\salu-windows-x86_64.exe artifact\salu-windows-x86_64.zip -Force
+
+      - uses: actions/upload-artifact@v4
         with:
           name: salu-windows-x86_64
           path: artifact/salu-windows-x86_64.zip
