@@ -105,6 +105,7 @@ jobs:
 
   # ============================================================
   # Windows 构建（x86_64）- 允许失败
+  # 参考: https://www.swift.org/install/windows/
   # ============================================================
   build-windows:
     name: Build Windows
@@ -116,22 +117,61 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Swift
+      # 方式一：尝试使用 swift-actions/setup-swift
+      - name: Setup Swift (via swift-actions)
+        id: setup-swift-action
         uses: swift-actions/setup-swift@v2
         with:
           swift-version: '6.2'
+        continue-on-error: true
+
+      # 方式二：如果 swift-actions 失败，使用 winget 手动安装
+      - name: Setup Swift (via winget fallback)
+        if: steps.setup-swift-action.outcome == 'failure'
+        shell: pwsh
+        run: |
+          Write-Host "swift-actions failed, trying winget installation..."
+          
+          # 安装 Swift 工具链
+          winget install --id Swift.Toolchain -e --accept-source-agreements --accept-package-agreements
+          
+          # 刷新环境变量
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          
+          # 验证安装
+          swift --version
+
+      - name: Verify Swift installation
+        shell: pwsh
+        run: |
+          Write-Host "Swift version:"
+          swift --version
 
       - name: Build release binary
-        run: swift build -c release
+        shell: pwsh
+        run: |
+          Write-Host "Building release binary..."
+          swift build -c release
 
       - name: Create release artifact
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path artifact
-          Copy-Item .build\release\GameCLI.exe artifact\salu-windows-x86_64.exe
-          Compress-Archive -Path artifact\salu-windows-x86_64.exe -DestinationPath artifact\salu-windows-x86_64.zip
-          Remove-Item artifact\salu-windows-x86_64.exe
-          Get-ChildItem artifact
+          
+          # 查找生成的可执行文件
+          $exePath = ".build\release\GameCLI.exe"
+          if (Test-Path $exePath) {
+            Copy-Item $exePath artifact\salu-windows-x86_64.exe
+            Compress-Archive -Path artifact\salu-windows-x86_64.exe -DestinationPath artifact\salu-windows-x86_64.zip
+            Remove-Item artifact\salu-windows-x86_64.exe
+            Write-Host "Artifact created:"
+            Get-ChildItem artifact
+          } else {
+            Write-Host "ERROR: GameCLI.exe not found at $exePath"
+            Write-Host "Contents of .build directory:"
+            Get-ChildItem -Recurse .build -ErrorAction SilentlyContinue | Select-Object FullName
+            exit 1
+          }
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
