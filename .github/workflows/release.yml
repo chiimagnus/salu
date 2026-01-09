@@ -198,11 +198,49 @@ jobs:
           retention-days: 90
 
   # ============================================================
+  # Windows 构建（x86_64）
+  # ============================================================
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    needs: test  # 依赖测试通过
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.2'
+
+      - name: Build release binary
+        run: swift build -c release
+
+      - name: Create release artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifact
+          Copy-Item .build\release\GameCLI.exe artifact\salu-windows-x86_64.exe
+          Compress-Archive -Path artifact\salu-windows-x86_64.exe -DestinationPath artifact\salu-windows-x86_64.zip
+          Remove-Item artifact\salu-windows-x86_64.exe
+          
+          Write-Host "📁 产物列表:"
+          Get-ChildItem artifact
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: salu-windows-x86_64
+          path: artifact/salu-windows-x86_64.zip
+          retention-days: 90
+
+  # ============================================================
   # 创建 GitHub Release（发布所有平台产物）
   # ============================================================
   create-release:
     name: Create Release
-    needs: [build-macos, build-linux]
+    needs: [build-macos, build-linux, build-windows]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
 
@@ -225,6 +263,12 @@ jobs:
           name: salu-linux-x86_64
           path: release-artifacts
 
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: salu-windows-x86_64
+          path: release-artifacts
+
       - name: List artifacts
         run: ls -la release-artifacts/
 
@@ -235,6 +279,7 @@ jobs:
             release-artifacts/salu-macos.tar.gz
             release-artifacts/Salu-macos-*.zip
             release-artifacts/salu-linux-x86_64.tar.gz
+            release-artifacts/salu-windows-x86_64.zip
           draft: false
           prerelease: false
           generate_release_notes: true
@@ -247,6 +292,9 @@ jobs:
             
             ### Linux (Ubuntu 22.04+)
             - `salu-linux-x86_64.tar.gz` - 解压后在终端运行 `./salu-linux-x86_64`
+            
+            ### Windows
+            - `salu-windows-x86_64.zip` - 解压后双击 `salu-windows-x86_64.exe` 或在命令提示符中运行
             
             ---
             
