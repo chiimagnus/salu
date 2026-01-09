@@ -46,14 +46,8 @@ jobs:
         with:
           swift-version: '6.2'
 
-      - name: Load VS dev environment and Build release binary
-        shell: cmd
-        run: |
-          call "%ProgramFiles(x86)%\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\VsDevCmd.bat" -arch=amd64
-          where cl || echo cl not found
-          where swift || echo swift not found
-          swift --version
-          swift build -c release
+      - name: Build release binary
+        run: swift build -c release
 
       - name: Create release artifact
         run: |
@@ -134,16 +128,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path artifact
-          $src1 = Join-Path $PWD '.build\release\GameCLI.exe'
-          $src2 = Join-Path $PWD '.build\x86_64-unknown-windows-msvc\release\GameCLI.exe'
-          if (Test-Path $src1) {
-            Copy-Item $src1 artifact\salu-windows-x86_64.exe
-          } elseif (Test-Path $src2) {
-            Copy-Item $src2 artifact\salu-windows-x86_64.exe
-          } else {
-            Write-Error "GameCLI.exe not found in expected release locations"
-            exit 1
-          }
+          Copy-Item .build\release\GameCLI.exe artifact\salu-windows-x86_64.exe
           Compress-Archive -Path artifact\salu-windows-x86_64.exe -DestinationPath artifact\salu-windows-x86_64.zip
           Remove-Item artifact\salu-windows-x86_64.exe
           Get-ChildItem artifact
