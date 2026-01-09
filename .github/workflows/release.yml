@@ -106,10 +106,11 @@ jobs:
   # ============================================================
   # Windows 构建（x86_64）- 允许失败
   # 参考: https://www.swift.org/install/windows/
+  # 注意: swift-actions/setup-swift 不支持 Windows，必须用 winget
   # ============================================================
   build-windows:
     name: Build Windows
-    runs-on: windows-latest
+    runs-on: windows-2022  # 固定版本，避免 windows-latest 漂移
     needs: test
     continue-on-error: true  # 允许失败，不阻塞其他 job
 
@@ -117,58 +118,48 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 方式一：尝试使用 swift-actions/setup-swift
-      - name: Setup Swift (via swift-actions)
-        id: setup-swift-action
-        uses: swift-actions/setup-swift@v2
-        with:
-          swift-version: '6.2'
-        continue-on-error: true
+      # 设置 MSVC 开发环境（链接阶段需要 VS/SDK）
+      - name: Set up MSVC dev environment
+        uses: ilammy/msvc-dev-cmd@v1
 
-      # 方式二：如果 swift-actions 失败，使用 winget 手动安装
-      - name: Setup Swift (via winget fallback)
-        if: steps.setup-swift-action.outcome == 'failure'
+      # 使用 winget 安装 Swift（官方推荐方式）
+      - name: Install Swift 6.2.3 (WinGet)
         shell: pwsh
         run: |
-          Write-Host "swift-actions failed, trying winget installation..."
-          
-          # 安装 Swift 工具链
-          winget install --id Swift.Toolchain -e --accept-source-agreements --accept-package-agreements
-          
-          # 刷新环境变量
-          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-          
-          # 验证安装
-          swift --version
+          winget install --id Swift.Toolchain -e --version 6.2.3 `
+            --accept-source-agreements --accept-package-agreements --disable-interactivity
+
+          # 显式写入 GITHUB_PATH，确保后续 steps 都能找到 swift
+          $swiftRoot = Join-Path $env:LOCALAPPDATA "Programs\Swift"
+          "$swiftRoot\bin"     | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "$swiftRoot\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Verify Swift installation
         shell: pwsh
         run: |
-          Write-Host "Swift version:"
+          Get-Command swift
           swift --version
 
       - name: Build release binary
         shell: pwsh
         run: |
-          Write-Host "Building release binary..."
           swift build -c release
 
       - name: Create release artifact
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path artifact
-          
-          # 查找生成的可执行文件
-          $exePath = ".build\release\GameCLI.exe"
+          New-Item -ItemType Directory -Force -Path artifact | Out-Null
+          $binPath = (swift build -c release --show-bin-path).Trim()
+          $exePath = Join-Path $binPath "GameCLI.exe"
+
           if (Test-Path $exePath) {
             Copy-Item $exePath artifact\salu-windows-x86_64.exe
-            Compress-Archive -Path artifact\salu-windows-x86_64.exe -DestinationPath artifact\salu-windows-x86_64.zip
+            Compress-Archive -Path artifact\salu-windows-x86_64.exe -DestinationPath artifact\salu-windows-x86_64.zip -Force
             Remove-Item artifact\salu-windows-x86_64.exe
-            Write-Host "Artifact created:"
             Get-ChildItem artifact
           } else {
             Write-Host "ERROR: GameCLI.exe not found at $exePath"
-            Write-Host "Contents of .build directory:"
+            Write-Host "Bin path was: $binPath"
             Get-ChildItem -Recurse .build -ErrorAction SilentlyContinue | Select-Object FullName
             exit 1
           }
