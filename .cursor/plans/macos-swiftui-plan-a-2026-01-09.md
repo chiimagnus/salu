@@ -29,64 +29,43 @@
 
 ---
 
-## 2. 推荐工程落地方式（你选择：先试方案 B）
+## 2. 推荐工程落地方式（确定：Xcode macOS App + 本仓库 SwiftPM Package）
 
-你现在的选择是：**先试方案 B**，把 SwiftUI macOS app 直接作为 SwiftPM target 加到 `Package.swift` 里。
+你已明确：更习惯 **Xcode** 来做 macOS app（更方便 i18n、签名、App Store 上架、资源管理）。
 
-### 方案 B：在 `Package.swift` 新增 `SaluMacApp`（SwiftUI）executable target
+因此本计划采用：
 
-- 好处：只用 SwiftPM（`swift build`/`swift run` 即可）
-- 关键注意点（你提到的“非 macOS 过滤”）：
-  - SwiftPM 没有“macOS-only target 不参与其他平台构建”的开关
-  - 因此需要用 **条件编译**让该 target 在非 macOS 上也能编译（产出一个 stub main），从而保证非 macOS 上 `swift build` 仍能过
+### 方案 A（推荐且作为默认）：Xcode macOS App 工程 + 依赖本仓库 SwiftPM Package
 
-#### 非 macOS 如何“过滤”才不会挂（推荐做法：双 main 文件 + 条件编译）
+- 保持当前仓库继续作为 **Swift Package**（至少包含 `GameCore`；后续再加 `SaluApp`/`SaluPersistence`）。
+- 新增一个 `SaluMacApp/` 的 Xcode 工程（例如 `SaluMacApp.xcodeproj`）。
+- 在 Xcode 工程中添加本仓库为 **Local Package Dependency**（Add Local Package）。
 
-在 `Sources/SaluMacApp/` 下放两个入口文件：
+#### 2.1 为什么方案 A 更适合“上架 App Store + i18n”
 
-- `SaluMacAppMain.swift`（仅在可导入 SwiftUI 时编译）
-- `SaluMacAppStubMain.swift`（仅在不可导入 SwiftUI 时编译）
+- **签名/证书/Provisioning**：Xcode UI 最顺（Signing & Capabilities）
+- **Archive / Upload**：App Store 流程就是 Xcode（或 `xcodebuild archive`)
+- **i18n**：`Localizable.strings` / `.stringsdict` / asset catalog 管理都更成熟
+- **资源与 Info.plist**：Xcode 管理更直观
 
-原则：任何平台最终只能编译出 **一个** `@main`。
+#### 2.2 “Xcode + SwiftPM”怎么结合（落地步骤）
 
-伪代码示意：
+- 在 Xcode 新建：`File` → `New` → `Project...` → `App` → 选择 macOS + SwiftUI
+- `File` → `Add Packages...` → `Add Local...` → 选择本仓库根目录（含 `Package.swift`）
+- 在 “Add to Target” 中勾选要用的模块（至少 `GameCore`；后续再加 `SaluApp`/`SaluPersistence`）
 
-```swift
-// SaluMacAppMain.swift
-#if canImport(SwiftUI)
-import SwiftUI
-import GameCore
+#### 2.3 验证方式（每个 P 都做）
 
-@main
-struct SaluMacApp: App {
-    var body: some Scene { WindowGroup { Text("Salu") } }
-}
-#endif
-```
+- SwiftPM（领域/应用层）：在仓库根目录跑：
+  - `swift build`
+  - `swift test`
+- Xcode（macOS app）：
+  - 本地：Xcode 直接 Run
+  - CI/脚本：`xcodebuild build`（后续 P1 会补命令）
 
-```swift
-// SaluMacAppStubMain.swift
-#if !canImport(SwiftUI)
-@main
-struct SaluMacAppStub {
-    static func main() {
-        // 非 macOS 环境下的占位，确保 swift build 仍然能过
-        print("SaluMacApp 仅支持 macOS（SwiftUI）")
-    }
-}
-#endif
-```
+### 方案 B（备选）：把 SwiftUI App 直接做成 SwiftPM executable target
 
-> 这样：macOS 上会编译真正的 SwiftUI App；Linux/Windows 上会编译 stub，不会因为 `import SwiftUI` 失败导致全局构建失败。
-
-#### 方案 B 的验证方式（每个 P 都做）
-
-- macOS：`swift build` + `swift run SaluMacApp`
-- 非 macOS（CI）：`swift build`（会构建 stub）
-
-### 方案 A（备选）：Xcode app + 本仓库 package
-
-如果后续发现 SwiftPM 的 SwiftUI App（方案 B）在打包/资源/签名/调试体验上卡住，再切换回方案 A（Xcode app）即可。
+仍可作为开发/实验路径，但**不作为上架主路径**（`.app` 打包、签名、资源管理都会绕路）。
 
 ---
 
@@ -113,10 +92,11 @@ ViewModel 设计口径：
 
 ## 4. Plan A（P1 / P2 / P3 / P4）
 
-每个 P 都要求：
+每个 P 都要求（因为目标是可上架的 macOS app）：
 
-- **macOS 上可编译运行**（Xcode 或 xcodebuild）
+- **macOS 上可编译运行**（Xcode 或 `xcodebuild build`）
 - `GameCore` 的 `swift build` 仍然能过（不引入 UI 依赖到 GameCore）
+- 关键里程碑开始（P3/P4）补齐 **签名与发布链路说明**
 
 ---
 
@@ -199,6 +179,40 @@ ViewModel 设计口径：
 - macOS app 可保存/继续冒险
 - 不破坏 `GameCore` 纯逻辑约束
 - `swift build` /（建议）`swift test` 成功
+
+---
+
+## 6. 签名 / 上架（App Store）与 i18n（SwiftUI）
+
+> 这部分不属于“写代码”，但属于上架必经环节；建议在 P1 就把约束想清楚，避免后期返工。
+
+### 6.1 App Store 上架的最低要求（macOS）
+
+- 需要加入 Apple Developer Program
+- 需要 App Store Connect 创建应用记录（Bundle ID / SKU / 版本信息）
+- App 一般需要开启 **App Sandbox**（Xcode 的 Signing & Capabilities）
+
+### 6.2 Xcode 中如何签名（推荐路径）
+
+- 在 `SaluMacApp.xcodeproj`：
+  - `Signing & Capabilities`：
+    - 勾选 `Automatically manage signing`
+    - 选择 Team
+    - 填 Bundle Identifier（例如 `com.yourcompany.salu`）
+  - `Product` → `Archive`
+  - `Distribute App` → `App Store Connect`
+
+> 你后续如果要做 CI，可以把 Archive/Upload 迁移到 `xcodebuild archive` + `xcodebuild -exportArchive` + `altool/notarytool`（按是否走 App Store/外部分发而定）。
+
+### 6.3 i18n（为什么 Xcode 更顺）
+
+建议在 `SaluMacApp` 工程里做 i18n：
+
+- SwiftUI 文案尽量使用 `Text("key")` + `Localizable.strings`
+- 复杂文案用 `.stringsdict`（复数/格式化）
+- 游戏内的“内容文本”（卡牌/敌人/事件描述）目前在 `GameCore` 里是中文常量：
+  - 若未来要多语言，建议把**可本地化文本**从纯逻辑层抽到“内容资源层”（例如 JSON 或 strings 表），由 `SaluApp`/App 注入当前语言的文案表。
+  - 第一阶段可以只保证 UI 文案可本地化，游戏内容先保持中文。
 
 ---
 
