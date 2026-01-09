@@ -113,10 +113,19 @@ jobs:
     runs-on: windows-2022  # 固定版本，避免 windows-latest 漂移
     needs: test
     continue-on-error: true  # 允许失败，不阻塞其他 job
+    env:
+      WINDOWS_EXE: GameCLI.exe  # 可执行文件名，避免硬编码
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      # Git 配置优化（处理长路径和 NTFS 兼容性）
+      - name: Git tweaks for Windows (optional)
+        shell: pwsh
+        run: |
+          git config --global core.longpaths true
+          git config --global core.protectNTFS false
 
       # 设置 MSVC 开发环境（链接阶段需要 VS/SDK）
       - name: Set up MSVC dev environment
@@ -129,41 +138,64 @@ jobs:
         shell: pwsh
         run: |
           winget source update
-          winget install --id Swift.Toolchain -e --version 6.2.3 --scope user `
-            --accept-source-agreements --accept-package-agreements --disable-interactivity
+          winget install --id Swift.Toolchain -e --version 6.2.3 --scope user --accept-source-agreements --accept-package-agreements --disable-interactivity
 
           $defaultRoot = Join-Path $env:LOCALAPPDATA "Programs\Swift"
           $swiftExe = Join-Path $defaultRoot "bin\swift.exe"
 
           if (-not (Test-Path $swiftExe)) {
-            # 兜底：找一下 swift.exe 实际落点
-            $found = Get-ChildItem -Path $env:LOCALAPPDATA -Recurse -Filter swift.exe -ErrorAction SilentlyContinue |
-              Select-Object -First 1 -ExpandProperty FullName
+            # 兜底：先在 Programs 下搜索，再扩展到 Program Files
+            $searchRoots = @(
+              (Join-Path $env:LOCALAPPDATA "Programs"),
+              $env:ProgramFiles,
+              ${env:ProgramFiles(x86)}
+            ) | Where-Object { $_ -and (Test-Path $_) }
+
+            $found = $null
+            foreach ($root in $searchRoots) {
+              $found = Get-ChildItem -Path $root -Recurse -Filter swift.exe -ErrorAction SilentlyContinue |
+                Select-Object -First 1 -ExpandProperty FullName
+              if ($found) { break }
+            }
             if (-not $found) { throw "swift.exe not found after installation" }
             $swiftBin = Split-Path $found -Parent
           } else {
             $swiftBin = Split-Path $swiftExe -Parent
           }
 
+          # 同时加入 bin 和 usr\bin 到 PATH（usr\bin 可能包含编译工具链）
+          # 从真实 swiftBin 推导 root，避免固定 $defaultRoot
+          $swiftRoot = Split-Path $swiftBin -Parent
           $swiftBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          $usrBin = Join-Path $swiftRoot "usr\bin"
+          if (Test-Path $usrBin) {
+            $usrBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          }
 
       - name: Verify Swift installation
         shell: pwsh
         run: |
           Get-Command swift
+          where.exe swift
           swift --version
 
       - name: Build release binary
+        id: build
         shell: pwsh
         run: |
+          # 执行构建，然后获取产物目录路径
           swift build -c release
+          $binPath = (swift build -c release --show-bin-path).Trim()
+          "bin_path=$binPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Create release artifact
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path artifact | Out-Null
-          $binPath = (swift build -c release --show-bin-path).Trim()
-          $exePath = Join-Path $binPath "GameCLI.exe"
+
+          # 使用之前保存的 bin path 和环境变量中的 exe 名称
+          $binPath = "${{ steps.build.outputs.bin_path }}"
+          $exePath = Join-Path $binPath "${{ env.WINDOWS_EXE }}"
 
           if (Test-Path $exePath) {
             Copy-Item $exePath artifact\salu-windows-x86_64.exe
