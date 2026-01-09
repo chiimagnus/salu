@@ -19,16 +19,22 @@ enum Terminal {
     
     // MARK: - 屏幕控制码
     
-    static let clearScreen = "\u{001B}[2J"      // 清屏
-    static let cursorHome = "\u{001B}[H"        // 光标移到左上角
-    static let hideCursor = "\u{001B}[?25l"     // 隐藏光标
-    static let showCursor = "\u{001B}[?25h"     // 显示光标
+    static let clearScreen = "\u{001B}[2J"              // 清屏（仅可见区域）
+    static let clearScrollback = "\u{001B}[3J"          // 清除滚动缓冲区
+    static let cursorHome = "\u{001B}[H"                // 光标移到左上角
+    static let hideCursor = "\u{001B}[?25l"             // 隐藏光标
+    static let showCursor = "\u{001B}[?25h"             // 显示光标
     
     // MARK: - 便捷方法
     
-    /// 清屏并将光标移到左上角
+    /// 清屏并将光标移到左上角（保留滚动缓冲区）
     static func clear() {
         print(clearScreen + cursorHome, terminator: "")
+    }
+    
+    /// 彻底清屏（包括滚动缓冲区）
+    static func clearAll() {
+        print(clearScrollback + clearScreen + cursorHome, terminator: "")
     }
     
     /// 刷新输出缓冲区

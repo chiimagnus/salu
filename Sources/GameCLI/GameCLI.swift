@@ -147,6 +147,7 @@ struct GameCLI {
                 // 资源管理（开发者工具）
                 Screens.showResources()
                 NavigationBar.waitForBack()
+                Terminal.clearAll()  // 清除长列表的滚动缓冲区
                 
             case "5":
                 // 游戏帮助
