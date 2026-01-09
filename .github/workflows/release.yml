@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   # ============================================================
-  # 运行测试（复用 test.yml 的逻辑）
+  # 运行测试
   # ============================================================
   test:
     name: Run Tests
@@ -30,18 +30,16 @@ jobs:
         run: swift test
 
   # ============================================================
-  # macOS 构建（命令行 + .app 捆绑包）
+  # macOS 构建
   # ============================================================
   build-macos:
     name: Build macOS
     runs-on: macos-latest
-    needs: test  # 依赖测试通过
+    needs: test
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # 获取完整历史以支持 git describe
 
       - name: Setup Swift
         uses: swift-actions/setup-swift@v2
@@ -51,111 +49,21 @@ jobs:
       - name: Build release binary
         run: swift build -c release
 
-      - name: Create release artifacts
+      - name: Create release artifact
         run: |
           mkdir -p artifact
-          
-          # 获取版本号
-          VERSION="${GITHUB_REF_NAME:-$(git describe --tags --abbrev=0 2>/dev/null || echo "1.0.0")}"
-          VERSION="${VERSION#v}"
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
-          
-          # 1. 命令行二进制 (tar.gz)
           cp .build/release/GameCLI artifact/salu-macos
           chmod +x artifact/salu-macos
           cd artifact
           tar -czf salu-macos.tar.gz salu-macos
           rm salu-macos
-          cd ..
-          
-          # 2. 创建 macOS .app 捆绑包
-          APP_NAME="Salu"
-          BUNDLE_ID="com.salu.game"
-          APP_BUNDLE="artifact/${APP_NAME}.app"
-          
-          mkdir -p "${APP_BUNDLE}/Contents/MacOS"
-          mkdir -p "${APP_BUNDLE}/Contents/Resources"
-          
-          # 复制二进制文件
-          cp .build/release/GameCLI "${APP_BUNDLE}/Contents/MacOS/salu-bin"
-          chmod +x "${APP_BUNDLE}/Contents/MacOS/salu-bin"
-          
-          # 创建启动脚本
-          cat > "${APP_BUNDLE}/Contents/MacOS/${APP_NAME}" << 'LAUNCHER_EOF'
-          #!/bin/bash
-          SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-          BINARY="$SCRIPT_DIR/salu-bin"
-          if [ -t 0 ] && [ -t 1 ]; then
-              exec "$BINARY" "$@"
-          else
-              osascript <<EOF
-          tell application "Terminal"
-              activate
-              do script "clear && '$BINARY' ; echo '' ; echo '按任意键关闭窗口...' ; read -n 1 ; exit"
-          end tell
-          EOF
-          fi
-          LAUNCHER_EOF
-          chmod +x "${APP_BUNDLE}/Contents/MacOS/${APP_NAME}"
-          
-          # 创建 Info.plist
-          cat > "${APP_BUNDLE}/Contents/Info.plist" << PLIST_EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>CFBundleExecutable</key>
-              <string>${APP_NAME}</string>
-              <key>CFBundleIdentifier</key>
-              <string>${BUNDLE_ID}</string>
-              <key>CFBundleName</key>
-              <string>${APP_NAME}</string>
-              <key>CFBundleDisplayName</key>
-              <string>Salu - 终端冒险游戏</string>
-              <key>CFBundleVersion</key>
-              <string>${VERSION}</string>
-              <key>CFBundleShortVersionString</key>
-              <string>${VERSION}</string>
-              <key>CFBundlePackageType</key>
-              <string>APPL</string>
-              <key>CFBundleSignature</key>
-              <string>????</string>
-              <key>LSMinimumSystemVersion</key>
-              <string>14.0</string>
-              <key>NSHumanReadableCopyright</key>
-              <string>Copyright © 2026 Salu Team. All rights reserved.</string>
-              <key>LSApplicationCategoryType</key>
-              <string>public.app-category.games</string>
-              <key>NSHighResolutionCapable</key>
-              <true/>
-          </dict>
-          </plist>
-          PLIST_EOF
-          
-          # 创建 PkgInfo
-          echo -n "APPL????" > "${APP_BUNDLE}/Contents/PkgInfo"
-          
-          # 创建 zip 压缩包
-          cd artifact
-          ditto -c -k --keepParent "${APP_NAME}.app" "Salu-macos-${VERSION}.zip"
-          rm -rf "${APP_NAME}.app"
-          cd ..
-          
-          echo "📁 产物列表:"
-          ls -lh artifact/
+          ls -lh .
 
-      - name: Upload macOS CLI artifact
+      - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
-          name: salu-macos-cli
+          name: salu-macos
           path: artifact/salu-macos.tar.gz
-          retention-days: 90
-
-      - name: Upload macOS App artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: salu-macos-app
-          path: artifact/Salu-macos-*.zip
           retention-days: 90
 
   # ============================================================
@@ -164,7 +72,7 @@ jobs:
   build-linux:
     name: Build Linux
     runs-on: ubuntu-22.04
-    needs: test  # 依赖测试通过
+    needs: test
 
     steps:
       - name: Checkout code
@@ -186,8 +94,6 @@ jobs:
           cd artifact
           tar -czf salu-linux-x86_64.tar.gz salu-linux-x86_64
           rm salu-linux-x86_64
-          
-          echo "📁 产物列表:"
           ls -lh .
 
       - name: Upload Linux artifact
@@ -203,7 +109,7 @@ jobs:
   build-windows:
     name: Build Windows
     runs-on: windows-latest
-    needs: test  # 依赖测试通过
+    needs: test
 
     steps:
       - name: Checkout code
@@ -224,8 +130,6 @@ jobs:
           Copy-Item .build\release\GameCLI.exe artifact\salu-windows-x86_64.exe
           Compress-Archive -Path artifact\salu-windows-x86_64.exe -DestinationPath artifact\salu-windows-x86_64.zip
           Remove-Item artifact\salu-windows-x86_64.exe
-          
-          Write-Host "📁 产物列表:"
           Get-ChildItem artifact
 
       - name: Upload Windows artifact
@@ -236,7 +140,7 @@ jobs:
           retention-days: 90
 
   # ============================================================
-  # 创建 GitHub Release（发布所有平台产物）
+  # 创建 GitHub Release
   # ============================================================
   create-release:
     name: Create Release
@@ -245,16 +149,10 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
 
     steps:
-      - name: Download macOS CLI artifact
+      - name: Download macOS artifact
         uses: actions/download-artifact@v4
         with:
-          name: salu-macos-cli
-          path: release-artifacts
-
-      - name: Download macOS App artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: salu-macos-app
+          name: salu-macos
           path: release-artifacts
 
       - name: Download Linux artifact
@@ -277,26 +175,10 @@ jobs:
         with:
           files: |
             release-artifacts/salu-macos.tar.gz
-            release-artifacts/Salu-macos-*.zip
             release-artifacts/salu-linux-x86_64.tar.gz
             release-artifacts/salu-windows-x86_64.zip
           draft: false
           prerelease: false
           generate_release_notes: true
-          body: |
-            ## 下载指南
-            
-            ### macOS
-            - **推荐**: `Salu-macos-*.zip` - 双击即可运行的 .app 应用
-            - 命令行: `salu-macos.tar.gz` - 解压后在终端运行 `./salu-macos`
-            
-            ### Linux (Ubuntu 22.04+)
-            - `salu-linux-x86_64.tar.gz` - 解压后在终端运行 `./salu-linux-x86_64`
-            
-            ### Windows
-            - `salu-windows-x86_64.zip` - 解压后双击 `salu-windows-x86_64.exe` 或在命令提示符中运行
-            
-            ---
-            
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -8,34 +8,26 @@
 
 前往 [Releases](https://github.com/chiimagnus/salu/releases) 页面下载最新版本：
 
-| 平台 | 下载文件 | 说明 |
-|------|----------|------|
-| **macOS** | `Salu-macos-*.zip` | 📦 双击即可运行的 .app 应用 |
-| macOS | `salu-macos.tar.gz` | 命令行二进制，需在终端运行 |
-| **Linux** | `salu-linux-x86_64.tar.gz` | Ubuntu 22.04+ 命令行二进制 |
-| **Windows** | `salu-windows-x86_64.zip` | Windows 10+ 可执行文件 |
+| 平台 | 下载文件 |
+|------|----------|
+| **macOS** | `salu-macos.tar.gz` |
+| **Linux** | `salu-linux-x86_64.tar.gz` |
+| **Windows** | `salu-windows-x86_64.zip` |
 
-#### macOS 使用方法
-
-1. 下载 `Salu-macos-*.zip`
-2. 解压后双击 `Salu.app` 即可开始游戏
-3. 首次运行可能需要在"系统设置 → 隐私与安全性"中允许运行
-
-#### Linux 使用方法
+#### macOS / Linux 使用方法
 
 ```bash
-# 解压
-tar -xzf salu-linux-x86_64.tar.gz
+# 解压（以 macOS 为例）
+tar -xzf salu-macos.tar.gz
 
 # 运行
-./salu-linux-x86_64
+./salu-macos
 ```
 
 #### Windows 使用方法
 
-1. 下载 `salu-windows-x86_64.zip`
-2. 解压后双击 `salu-windows-x86_64.exe` 即可开始游戏
-3. 或在命令提示符/PowerShell 中运行
+1. 解压 `salu-windows-x86_64.zip`
+2. 双击 `salu-windows-x86_64.exe` 或在命令提示符中运行
 
 ### 方式二：从源码构建
 

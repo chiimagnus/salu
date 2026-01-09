@@ -14,7 +14,7 @@ GameCLI 是**表现层**，负责终端界面渲染、用户输入处理。
 Sources/GameCLI/  ← 本规范适用范围
 │
 ├── Screens/                    # ✅ 界面系统（主菜单/地图/战斗/历史/统计/资源管理等）
-├── Components/                 # ✅ UI 组件（事件格式化、TabBar 等）
+├── Components/                 # ✅ UI 组件（事件格式化、导航栏等）
 ├── Flow/                       # ✅ RoomHandling 协议与注册表
 ├── Rooms/Handlers/             # ✅ 房间行为（Start/Battle/Elite/Rest/Boss）
 ├── Persistence/                # ✅ 存储实现与服务（历史/存档/设置/日志）
@@ -72,7 +72,7 @@ GameCLI.swift
     ↓ 调用
 ┌────────────────────────────────────────────────────┐
 │ Terminal.swift                                     │
-│ Components/* (EventFormatter/TabBar/NavigationBar) │
+│ Components/* (EventFormatter/NavigationBar)        │
 │ Persistence/* (History/Save/Settings/RunLog)       │
 └────────────────────────────────────────────────────┘
     ↓ 导入
@@ -128,7 +128,6 @@ GameCore → GameCLI  ❌ 禁止
 | `Persistence/SettingsStore.swift` | 用户设置存储 | load(), save(), Settings |
 | `Persistence/RunLogService.swift` | 冒险日志服务 | append(), clear() |
 | `Persistence/FileRunLogStore.swift` | 冒险日志文件实现 | append(), clear() |
-| `Components/TabBar.swift` | Tab 分栏渲染组件 | render(tabs:selectedIndex:hint:) |
 | `Components/NavigationBar.swift` | 导航栏与返回提示 | show(), waitForBack() |
 
 ---

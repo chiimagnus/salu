@@ -1,11 +1,5 @@
 import GameCore
 
-#if canImport(Darwin)
-import Darwin
-#elseif canImport(Glibc)
-import Glibc
-#endif
-
 /// 资源管理页面（开发者工具）
 ///
 /// 用途：
@@ -13,100 +7,7 @@ import Glibc
 /// - 查看关键"池子"内容（如 Act1 遭遇池）
 /// - 提供基础统计洞察（数量、分组、双敌人占比等）
 enum ResourceScreen {
-    /// 检测是否是交互式终端（标准输入是 TTY）
-    private static var isInteractiveTTY: Bool {
-        #if os(Windows)
-        return false  // Windows 暂不支持交互模式
-        #else
-        return isatty(STDIN_FILENO) == 1
-        #endif
-    }
-    
     static func show() {
-        // 非交互环境（测试/管道/重定向）下一次性输出全量内容
-        if !isInteractiveTTY {
-            showNonInteractive()
-            return
-        }
-        
-        var selectedIndex = 0
-        let tabs = ["卡牌", "敌人/遭遇", "遗物"]
-        var offset = 0
-        let pageSize = 24
-
-        func contentLines(for index: Int) -> [String] {
-            switch index {
-            case 0:
-                return buildCardsSectionLines()
-            case 1:
-                return buildEnemiesAndEncountersSectionLines()
-            case 2:
-                return buildRelicsSectionLines()
-            default:
-                return []
-            }
-        }
-
-        func redraw() {
-            Terminal.clear()
-
-            var lines: [String] = []
-            lines.append(contentsOf: buildHeaderLines())
-            lines.append(TabBar.render(tabs: tabs, selectedIndex: selectedIndex, hint: ""))
-            lines.append("")
-            let allContent = contentLines(for: selectedIndex)
-            let clampedOffset = max(0, min(offset, max(0, allContent.count - 1)))
-            offset = clampedOffset
-            let end = min(allContent.count, clampedOffset + pageSize)
-            if clampedOffset < end {
-                lines.append(contentsOf: allContent[clampedOffset..<end])
-            }
-            lines.append("")
-            lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-            lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-3]\(Terminal.reset) 切换分栏  \(Terminal.cyan)[+/-]\(Terminal.reset) 翻页  \(Terminal.cyan)[q]\(Terminal.reset) 返回")
-            lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-
-            for line in lines {
-                print(line)
-            }
-            print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
-            Terminal.flush()
-        }
-
-        // 主循环（使用 readLine）
-        while true {
-            redraw()
-            
-            guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
-                break
-            }
-            
-            // 退出
-            if input == "q" {
-                break
-            }
-            
-            // 切换分栏
-            if let tabIndex = Int(input), tabIndex >= 1, tabIndex <= tabs.count {
-                selectedIndex = tabIndex - 1
-                offset = 0
-                continue
-            }
-            
-            // 翻页
-            if input == "+" || input == "=" {
-                offset += pageSize
-                continue
-            }
-            if input == "-" {
-                offset = max(0, offset - pageSize)
-                continue
-            }
-        }
-    }
-    
-    /// 非交互模式：一次性输出全量内容（用于测试/日志/管道场景）
-    private static func showNonInteractive() {
         Terminal.clear()
         var lines: [String] = []
         lines.append(contentsOf: buildHeaderLines())
@@ -275,5 +176,3 @@ enum ResourceScreen {
         return lines
     }
 }
-
-
