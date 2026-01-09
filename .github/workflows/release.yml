@@ -11,11 +11,31 @@ permissions:
 
 jobs:
   # ============================================================
+  # 运行测试（复用 test.yml 的逻辑）
+  # ============================================================
+  test:
+    name: Run Tests
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.2'
+
+      - name: Run Swift tests
+        run: swift test
+
+  # ============================================================
   # macOS 构建（命令行 + .app 捆绑包）
   # ============================================================
   build-macos:
     name: Build macOS
     runs-on: macos-latest
+    needs: test  # 依赖测试通过
 
     steps:
       - name: Checkout code
@@ -30,9 +50,6 @@ jobs:
 
       - name: Build release binary
         run: swift build -c release
-
-      - name: Run all Swift tests
-        run: swift test
 
       - name: Create release artifacts
         run: |
@@ -147,6 +164,7 @@ jobs:
   build-linux:
     name: Build Linux
     runs-on: ubuntu-22.04
+    needs: test  # 依赖测试通过
 
     steps:
       - name: Checkout code
@@ -159,9 +177,6 @@ jobs:
 
       - name: Build release binary
         run: swift build -c release
-
-      - name: Run all Swift tests
-        run: swift test
 
       - name: Create release artifact
         run: |
