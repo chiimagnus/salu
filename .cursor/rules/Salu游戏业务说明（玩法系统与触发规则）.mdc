@@ -413,9 +413,9 @@ alwaysApply: true
 
 ### 14.2 权威计划（优先看这些）
 
-- `./.cursor/plans/gamecore-cli-1.0-to-longterm-plan-a-2026-01-09.md`：**1.0 路线**（P1~P6：通关主线→内容扩充→Ascension→多角色→多模式→成就/本地存档）
-- `./.cursor/plans/macos-swiftui-plan-a-2026-01-09.md`：**2.0 路线（macOS SwiftUI）**
-- `./.cursor/plans/macos-xcode-project-guide-2026-01-09.md`：Xcode 工程创建与 Local Package 复用 GameCore 的手把手指南
+- `./.cursor/plans/plan-a-1.0-gamecore-cli.md`：**1.0 路线**（P1~P6：通关主线→内容扩充→Ascension→多角色→多模式→成就/本地存档）
+- `./.cursor/plans/plan-a-2.0-macos-swiftui.md`：**2.0 路线（macOS SwiftUI）**
+- `./.cursor/plans/guide-2.0-macos-xcode-project.md`：Xcode 工程创建与 Local Package 复用 GameCore 的手把手指南
 
 ### 14.3 1.0 Backlog（按优先级聚类）
 
