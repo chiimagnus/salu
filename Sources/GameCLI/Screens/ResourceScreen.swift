@@ -17,6 +17,8 @@ enum ResourceScreen {
         for line in lines {
             print(line)
         }
+        // 渲染导航栏
+        NavigationBar.render(items: [.back])
     }
 
     private static func buildHeaderLines() -> [String] {

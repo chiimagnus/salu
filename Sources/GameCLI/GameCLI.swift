@@ -146,6 +146,7 @@ struct GameCLI {
             case "4":
                 // 资源管理（开发者工具）
                 Screens.showResources()
+                NavigationBar.waitForBack()
                 
             case "5":
                 // 游戏帮助

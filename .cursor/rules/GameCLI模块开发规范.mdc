@@ -128,7 +128,40 @@ GameCore → GameCLI  ❌ 禁止
 | `Persistence/SettingsStore.swift` | 用户设置存储 | load(), save(), Settings |
 | `Persistence/RunLogService.swift` | 冒险日志服务 | append(), clear() |
 | `Persistence/FileRunLogStore.swift` | 冒险日志文件实现 | append(), clear() |
-| `Components/NavigationBar.swift` | 导航栏与返回提示 | show(), waitForBack() |
+| `Components/NavigationBar.swift` | 导航栏与返回提示 | render(), waitForBack() |
+
+---
+
+## 导航栏组件（NavigationBar）
+
+统一的底部导航栏，用于在界面底部显示操作提示：
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⌨️ [q] 返回
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+请选择 > 
+```
+
+### 使用方式
+
+```swift
+// 渲染导航栏
+NavigationBar.render(items: [.back])
+
+// 等待用户输入 q 返回
+NavigationBar.waitForBack()
+```
+
+### 可用导航项
+
+| Item | 显示 |
+|------|------|
+| `.back` | `[q] 返回` |
+| `.continueNext` | `[q] 继续` |
+| `.backToMenu` | `[q] 返回主菜单` |
+| `.backToGame` | `[q] 返回游戏` |
+| `.custom(key:label:)` | 自定义 |
 
 ---
 
