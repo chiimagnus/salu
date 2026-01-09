@@ -1,29 +1,34 @@
 import GameCore
 
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
+
 /// 资源管理页面（开发者工具）
 ///
 /// 用途：
 /// - 查看当前注册的卡牌/敌人/遗物
-/// - 查看关键“池子”内容（如 Act1 遭遇池）
+/// - 查看关键"池子"内容（如 Act1 遭遇池）
 /// - 提供基础统计洞察（数量、分组、双敌人占比等）
 enum ResourceScreen {
+    /// 检测是否是交互式终端（标准输入是 TTY）
+    private static var isInteractiveTTY: Bool {
+        #if os(Windows)
+        return false  // Windows 暂不支持交互模式
+        #else
+        return isatty(STDIN_FILENO) == 1
+        #endif
+    }
+    
     static func show() {
-        if TerminalKeyReader.isInteractiveTTY() {
-            showInteractive()
-        } else {
+        // 非交互环境（测试/管道/重定向）下一次性输出全量内容
+        if !isInteractiveTTY {
             showNonInteractive()
+            return
         }
-    }
-
-    private static func showNonInteractive() {
-        // 保持旧行为：一次性输出全量内容（用于测试/日志/管道场景）。
-        Terminal.clear()
-        for line in buildAllLines() {
-            print(line)
-        }
-    }
-
-    private static func showInteractive() {
+        
         var selectedIndex = 0
         let tabs = ["卡牌", "敌人/遭遇", "遗物"]
         var offset = 0
@@ -99,6 +104,19 @@ enum ResourceScreen {
             }
         }
     }
+    
+    /// 非交互模式：一次性输出全量内容（用于测试/日志/管道场景）
+    private static func showNonInteractive() {
+        Terminal.clear()
+        var lines: [String] = []
+        lines.append(contentsOf: buildHeaderLines())
+        lines.append(contentsOf: buildCardsSectionLines())
+        lines.append(contentsOf: buildEnemiesAndEncountersSectionLines())
+        lines.append(contentsOf: buildRelicsSectionLines())
+        for line in lines {
+            print(line)
+        }
+    }
 
     private static func buildHeaderLines() -> [String] {
         [
@@ -107,15 +125,6 @@ enum ResourceScreen {
             "\(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)",
             ""
         ]
-    }
-
-    private static func buildAllLines() -> [String] {
-        var lines: [String] = []
-        lines.append(contentsOf: buildHeaderLines())
-        lines.append(contentsOf: buildCardsSectionLines())
-        lines.append(contentsOf: buildEnemiesAndEncountersSectionLines())
-        lines.append(contentsOf: buildRelicsSectionLines())
-        return lines
     }
 
     private static func buildCardsSectionLines() -> [String] {

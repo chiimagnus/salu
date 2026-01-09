@@ -20,7 +20,6 @@ Sources/GameCLI/  ← 本规范适用范围
 ├── Persistence/                # ✅ 存储实现与服务（历史/存档/设置/日志）
 ├── GameCLI.swift               # ✅ 主入口、游戏循环
 ├── Terminal.swift              # ✅ ANSI 控制码、终端工具
-├── TerminalKey.swift           # ✅ 终端交互检测（isInteractiveTTY）
 └── Screens.swift               # ✅ 界面统一入口
 ```
 
@@ -72,7 +71,7 @@ GameCLI.swift
 └──────────────────────────┴──────────────────────────┘
     ↓ 调用
 ┌────────────────────────────────────────────────────┐
-│ Terminal.swift │ TerminalKey.swift                 │
+│ Terminal.swift                                     │
 │ Components/* (EventFormatter/TabBar/NavigationBar) │
 │ Persistence/* (History/Save/Settings/RunLog)       │
 └────────────────────────────────────────────────────┘
@@ -129,7 +128,6 @@ GameCore → GameCLI  ❌ 禁止
 | `Persistence/SettingsStore.swift` | 用户设置存储 | load(), save(), Settings |
 | `Persistence/RunLogService.swift` | 冒险日志服务 | append(), clear() |
 | `Persistence/FileRunLogStore.swift` | 冒险日志文件实现 | append(), clear() |
-| `TerminalKey.swift` | 终端交互检测（跨平台） | TerminalKeyReader.isInteractiveTTY() |
 | `Components/TabBar.swift` | Tab 分栏渲染组件 | render(tabs:selectedIndex:hint:) |
 | `Components/NavigationBar.swift` | 导航栏与返回提示 | show(), waitForBack() |
 
