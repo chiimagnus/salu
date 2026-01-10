@@ -7,7 +7,7 @@ alwaysApply: true
 # GameCLI 模块开发规范
 
 > **设定与剧情**请参阅：`.cursor/rules/Salu游戏设定与剧情（v0.1）.mdc`
-> **卡牌/敌人/遗物命名映射**见设定文档的"克苏鲁风格重命名"章节。
+> **卡牌/敌人/遗物命名映射**见业务说明文档的"克苏鲁风格重命名"章节。
 
 ## 模块定位
 
@@ -119,7 +119,7 @@ GameCore → GameCLI  ❌ 禁止
 | `GameCLI.swift` | 入口、菜单、游戏循环、依赖注入 | main(), runLoop() |
 | `Terminal.swift` | ANSI 颜色码、光标控制 | clear(), flush(), 颜色常量 |
 | `Components/EventFormatter.swift` | BattleEvent → 彩色字符串 | format() |
-| `Screens/*.swift` | 单个界面渲染与输入处理 | showMainMenu(), renderBattleScreen(), renderMap() |
+| `Screens/*.swift` | 单个界面渲染与输入处理 | showMainMenu(), renderBattleScreen(), renderMap(), PrologueScreen, ChapterEndScreen |
 | `Screens.swift` | 全屏界面统一入口 | showMainMenu(), showHelp() |
 | `Flow/RoomHandling.swift` | 房间处理协议/上下文 | RoomHandling, RoomContext, RoomRunResult |
 | `Flow/RoomHandlerRegistry.swift` | RoomType → handler 注册表 | register()/resolve() |
