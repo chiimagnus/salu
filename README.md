@@ -4,6 +4,8 @@
 
 ## 📥 下载安装
 
+> 注意，下列方式都需要先 Swift 6.2+，可从 swift.org 下载
+
 ### 方式一：直接下载（推荐）
 
 前往 [Releases](https://github.com/chiimagnus/salu/releases) 页面下载最新版本：
@@ -39,8 +41,6 @@ cd salu
 # 运行游戏（随机种子）
 swift run
 ```
-
-> 需要 Swift 6.2+，可从 [swift.org](https://swift.org/download/) 下载
 
 ## 🤝 参与贡献
 
