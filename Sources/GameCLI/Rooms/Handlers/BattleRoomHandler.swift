@@ -29,17 +29,35 @@ struct BattleRoomHandler: RoomHandling {
         let forceMultiEnemy = ProcessInfo.processInfo.environment["SALU_FORCE_MULTI_ENEMY"] == "1"
         if forceMultiEnemy {
             // 用于本地调试/验收：强制进入双敌人遭遇（便于验证目标选择）
-            if runState.floor == 1 {
+            switch runState.floor {
+            case 1:
                 encounter = EnemyEncounter(enemyIds: ["louse_green", "louse_red"])
-            } else {
+            case 2:
                 encounter = EnemyEncounter(enemyIds: ["shadow_stalker", "clockwork_sentinel"])
+            default:
+                encounter = EnemyEncounter(enemyIds: ["void_walker", "dream_parasite"])
             }
         } else if TestMode.isEnabled {
             // 测试模式下保持单敌人，避免 UI 测试因多敌人导致战斗无法快速结束
-            let enemyId = (runState.floor == 1) ? Act1EnemyPool.randomWeak(rng: &rng) : Act2EnemyPool.randomWeak(rng: &rng)
+            let enemyId: EnemyID
+            switch runState.floor {
+            case 1:
+                enemyId = Act1EnemyPool.randomWeak(rng: &rng)
+            case 2:
+                enemyId = Act2EnemyPool.randomWeak(rng: &rng)
+            default:
+                enemyId = Act3EnemyPool.randomWeak(rng: &rng)
+            }
             encounter = EnemyEncounter(enemyIds: [enemyId])
         } else {
-            encounter = (runState.floor == 1) ? Act1EncounterPool.randomWeak(rng: &rng) : Act2EncounterPool.randomWeak(rng: &rng)
+            switch runState.floor {
+            case 1:
+                encounter = Act1EncounterPool.randomWeak(rng: &rng)
+            case 2:
+                encounter = Act2EncounterPool.randomWeak(rng: &rng)
+            default:
+                encounter = Act3EncounterPool.randomWeak(rng: &rng)
+            }
         }
         
         let enemies: [Entity] = encounter.enemyIds.enumerated().map { index, enemyId in

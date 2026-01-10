@@ -25,6 +25,14 @@ public enum EnemyRegistry {
         
         // Act 2 Bosses
         ChronoWatcher.id: ChronoWatcher.self,
+        
+        // Act 3 Enemies
+        VoidWalker.id: VoidWalker.self,
+        DreamParasite.id: DreamParasite.self,
+        CycleGuardian.id: CycleGuardian.self,
+        
+        // Act 3 Bosses
+        SequenceProgenitor.id: SequenceProgenitor.self,
     ]
     
     /// 获取敌人定义

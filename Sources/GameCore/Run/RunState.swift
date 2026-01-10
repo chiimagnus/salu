@@ -48,7 +48,7 @@ public struct RunState: Sendable {
         map: [MapNode],
         seed: UInt64,
         floor: Int = 1,
-        maxFloor: Int = 2
+        maxFloor: Int = 3
     ) {
         self.player = player
         self.deck = deck
@@ -81,7 +81,7 @@ public struct RunState: Sendable {
             map: map,
             seed: seed,
             floor: 1,
-            maxFloor: 2
+            maxFloor: 3
         )
     }
     

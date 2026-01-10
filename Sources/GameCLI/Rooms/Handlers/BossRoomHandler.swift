@@ -29,9 +29,17 @@ struct BossRoomHandler: RoomHandling {
         // Boss 战斗使用特殊种子
         let bossSeed = runState.seed &+ UInt64(runState.floor) &* 1_000_000 &+ 99999
         
-        // 创建 Boss 敌人（P7：Act1 真 Boss）
+        // 创建 Boss 敌人
         var rng = SeededRNG(seed: bossSeed)
-        let bossId: EnemyID = (runState.floor == 1) ? "toxic_colossus" : "chrono_watcher"
+        let bossId: EnemyID
+        switch runState.floor {
+        case 1:
+            bossId = "toxic_colossus"  // 瘴气之主
+        case 2:
+            bossId = "chrono_watcher"  // 窥视者
+        default:
+            bossId = "sequence_progenitor"  // 序列始祖（最终 Boss）
+        }
         let enemy = context.createEnemy(bossId, 0, &rng)
         
         // 创建战斗引擎（使用冒险中的玩家状态和遗物）

@@ -23,7 +23,15 @@ struct EliteRoomHandler: RoomHandling {
         
         // 选择敌人（精英战斗：中等敌人池）
         var rng = SeededRNG(seed: battleSeed)
-        let enemyId = (runState.floor == 1) ? Act1EnemyPool.randomMedium(rng: &rng) : Act2EnemyPool.randomMedium(rng: &rng)
+        let enemyId: EnemyID
+        switch runState.floor {
+        case 1:
+            enemyId = Act1EnemyPool.randomMedium(rng: &rng)
+        case 2:
+            enemyId = Act2EnemyPool.randomMedium(rng: &rng)
+        default:
+            enemyId = Act3EnemyPool.randomMedium(rng: &rng)
+        }
         let enemy = context.createEnemy(enemyId, 0, &rng)
         
         // 创建战斗引擎（使用冒险中的玩家状态和遗物）
