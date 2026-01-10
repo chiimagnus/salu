@@ -4,7 +4,7 @@
 
 ## 📥 下载安装
 
-> 注意，下列方式都需要先 Swift 6.2+，可从 swift.org 下载
+> 注意，下列方式都需要先 Swift 6.2+，可从 [swift.org](https://www.swift.org/install/) 下载
 
 ### 方式一：直接下载（推荐）
 
