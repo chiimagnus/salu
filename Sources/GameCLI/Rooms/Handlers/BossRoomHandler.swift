@@ -89,6 +89,10 @@ struct BossRoomHandler: RoomHandling {
                 }
             }
             
+            // 显示章节收束/结局文本
+            let isVictory = runState.floor >= runState.maxFloor
+            ChapterEndScreen.show(floor: runState.floor, maxFloor: runState.maxFloor, isVictory: isVictory)
+            
             // 若不是最终幕，提示进入下一幕
             if runState.floor < runState.maxFloor {
                 context.logLine("\(Terminal.cyan)进入第 \(runState.floor + 1) 层冒险…\(Terminal.reset)")
