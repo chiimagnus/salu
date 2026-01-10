@@ -135,40 +135,55 @@ SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=2 swift run GameCLI --se
 
 ---
 
-## P4：Act 3 扩展（完整主线）⏳ 待开始
+## P4：Act 3 扩展（完整主线）✅ 已完成
 
 ### P4.1 目标
 
 从 2 Act 扩展到 3 Act，实现完整的"觉醒 → 真相 → 终结"主线。
 
-### P4.2 改动范围
+### P4.2 实际改动
 
-#### GameCore 改动
+#### GameCore 改动 ✅
 
 | 文件 | 改动 |
 |------|------|
 | `Sources/GameCore/Run/RunState.swift` | `maxFloor` 默认值从 `2` 改为 `3` |
-| `Sources/GameCore/Enemies/Definitions/Act3/`（新建目录） | 新增 Act 3 敌人定义 |
+| `Sources/GameCore/Enemies/Definitions/Act3/Act3NormalEnemies.swift`（新建） | 虚无行者、梦境寄生者 |
+| `Sources/GameCore/Enemies/Definitions/Act3/Act3EliteEnemies.swift`（新建） | 循环守卫 |
+| `Sources/GameCore/Enemies/Definitions/Act3/Act3BossEnemies.swift`（新建） | 序列始祖（最终 Boss） |
 | `Sources/GameCore/Enemies/Act3EnemyPool.swift`（新建） | Act 3 敌人池 |
-| `Sources/GameCore/Enemies/Act3EncounterPool.swift`（新建） | Act 3 遭遇池 |
-| `Sources/GameCore/Enemies/EnemyRegistry.swift` | 注册 Act 3 敌人 |
+| `Sources/GameCore/Enemies/Act3EncounterPool.swift`（新建） | Act 3 遭遇池（5 种遭遇） |
+| `Sources/GameCore/Enemies/EnemyRegistry.swift` | 注册 4 个 Act 3 敌人 |
 
-#### Act 3 敌人设计（初版）
+#### GameCLI 改动 ✅
 
-| 类型 | 名称（v0.1） | 描述 |
-|------|-------------|------|
-| 普通 | **虚无行者** | 来自虚无之心的生物 |
-| 普通 | **梦境寄生者** | 寄生在梦境中的怪物 |
-| 精英 | **循环守卫** | 守护序列始祖的存在 |
-| Boss | **序列始祖** | 最终 Boss，循环的根源 |
+| 文件 | 改动 |
+|------|------|
+| `Sources/GameCLI/Rooms/Handlers/BattleRoomHandler.swift` | 支持 Act 3 敌人池/遭遇池 |
+| `Sources/GameCLI/Rooms/Handlers/EliteRoomHandler.swift` | 支持 Act 3 精英敌人池 |
+| `Sources/GameCLI/Rooms/Handlers/BossRoomHandler.swift` | 支持 Act 3 Boss（序列始祖） |
 
-### P4.3 验收
+#### Act 3 敌人设计 ✅
+
+| 类型 | 名称（v0.1） | HP | 特点 |
+|------|-------------|-----|------|
+| 普通 | **虚无行者** | 42~48 | 攻击附带易伤，有格挡 |
+| 普通 | **梦境寄生者** | 28~34 | 多状态效果（虚弱/脆弱/中毒），可回复 |
+| 精英 | **循环守卫** | 85~95 | 3 回合循环，力量成长 |
+| Boss | **序列始祖** | 150~170 | 4 回合循环，多段攻击，自愈，最终 Boss |
+
+#### 遭遇池 ✅
+
+- 单敌人：虚无行者 / 梦境寄生者
+- 多敌人：虚无行者 + 梦境寄生者 / 梦境寄生者 × 2 / 虚无行者 × 2
+
+### P4.3 验收 ✅
 
 ```bash
-swift build
-swift test
+swift build  # ✅ 编译成功
+swift test   # ✅ 118 tests passed
 SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=3 swift run GameCLI --seed 1
-# 确认能够完整通关 3 Act
+# 确认能够完整通关 3 Act，最终 Boss 为序列始祖
 ```
 
 ---
@@ -231,13 +246,13 @@ flowchart TD
     P1[P1: 展示名更新 ✅] --> P2[P2: 事件剧情化 ✅]
     P1 --> P3[P3: Boss章节文本 ✅]
     P2 --> P5[P5: 休息点NPC]
-    P3 --> P4[P4: Act3扩展]
+    P3 --> P4[P4: Act3扩展 ✅]
     P4 --> P6[P6: rulesText风味化]
 ```
 
 - **P1 是基础**：✅ 已完成展示名更新
 - **P2/P3 可并行**：✅ 已完成事件剧情化和 Boss 章节文本
-- **P4 依赖 P3**：⏳ 待开始，Act 3 需要先有章节文本的框架
+- **P4 依赖 P3**：✅ 已完成 Act 3 扩展
 - **P5 依赖 P2**：⏳ 待开始，休息点 NPC 对话复用事件系统的对话框架
 - **P6 最后**：⏳ 待开始，风味化是锦上添花
 
@@ -250,7 +265,7 @@ flowchart TD
 | P1 | 展示名更新（卡牌/敌人/遗物）+ 玩家名改为安德 | ✅ 完成 | 2026-01-10 |
 | P2 | 事件剧情化（NPC 对话 + 世界观碎片）| ✅ 完成 | 2026-01-10 |
 | P3 | Boss 战后章节文本 + 起点剧情 | ✅ 完成 | 2026-01-10 |
-| P4 | Act 3 扩展 | ⏳ 待开始 | - |
+| P4 | Act 3 扩展（虚无行者/梦境寄生者/循环守卫/序列始祖）| ✅ 完成 | 2026-01-10 |
 | P5 | 休息点 NPC 对话 | ⏳ 待开始 | - |
 | P6 | rulesText 风味化 | ⏳ 待开始 | - |
 
