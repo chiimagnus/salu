@@ -42,18 +42,14 @@ tar -xzf salu-macos.tar.gz
 1. 解压 `salu-windows-x86_64.zip`
 2. 双击 `salu-windows-x86_64.exe` 或在命令提示符中运行
 
+## 🤝 参与贡献
 <details>
-<summary><strong>🤝 参与贡献（点此展开）</strong></summary>
+<summary><strong>（点此展开）</strong></summary>
 
 欢迎贡献！本项目按架构分为两层：
 
-- `GameCore`：纯逻辑层（规则/状态/战斗/卡牌/敌人/地图/存档快照模型）
-- `GameCLI`：CLI/TUI 表现层（终端渲染/输入/房间流程/持久化落盘实现）
-
-贡献前建议先阅读对应规范：
-
-- `GameCore`：`.cursor/rules/GameCore模块开发规范.mdc`
-- `GameCLI`：`.cursor/rules/GameCLI模块开发规范.mdc`
+- `GameCore`：纯逻辑层（规则/状态/战斗/卡牌/敌人/地图/存档快照模型），[这是开发规范](.cursor/rules/GameCore模块开发规范.mdc)
+- `GameCLI`：CLI/TUI 表现层（终端渲染/输入/房间流程/持久化落盘实现），[这是开发规范](.cursor/rules/GameCLI模块开发规范.mdc)
 
 ### GameCore（纯逻辑层）如何贡献
 
