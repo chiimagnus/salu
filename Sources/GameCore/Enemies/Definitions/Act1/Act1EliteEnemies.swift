@@ -4,11 +4,11 @@
 // Slime Medium Acid (酸液史莱姆)
 // ============================================================
 
-/// 酸液史莱姆
+/// 深渊黏体
 /// 行为模式：攻击 + 涂抹（施加虚弱）
 public struct SlimeMediumAcid: EnemyDefinition {
     public static let id: EnemyID = "slime_medium_acid"
-    public static let name = "酸液史莱姆"
+    public static let name = "深渊黏体"
     public static let hpRange: ClosedRange<Int> = 28...32
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {
@@ -35,12 +35,12 @@ public struct SlimeMediumAcid: EnemyDefinition {
 // Stone Sentinel (岩石守卫)
 // ============================================================
 
-/// 岩石守卫（精英）
+/// 沉默守墓人（精英）
 ///
 /// 特点：开局先叠甲，随后在高伤与多段之间切换，压迫感更强。
 public struct StoneSentinel: EnemyDefinition {
     public static let id: EnemyID = "stone_sentinel"
-    public static let name = "岩石守卫"
+    public static let name = "沉默守墓人"
     public static let hpRange: ClosedRange<Int> = 60...66
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {

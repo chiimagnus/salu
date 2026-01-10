@@ -4,7 +4,7 @@
 // Toxic Colossus (毒雾巨像) - Act 1 Boss
 // ============================================================
 
-/// 毒雾巨像（Act 1 Boss）
+/// 瘴气之主（Act 1 Boss）
 ///
 /// 设计目标：
 /// - 具备可理解的固定循环（4 回合一轮）
@@ -12,7 +12,7 @@
 /// - 每轮开始会获得力量，形成渐进压迫感
 public struct ToxicColossus: EnemyDefinition {
     public static let id: EnemyID = "toxic_colossus"
-    public static let name = "毒雾巨像"
+    public static let name = "瘴气之主"
     public static let hpRange: ClosedRange<Int> = 95...105
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {

@@ -4,7 +4,7 @@
 // Chrono Watcher (时空观测者) - Act 2 Boss
 // ============================================================
 
-/// 时空观测者（Act2 Boss）
+/// 窥视者（Act2 Boss）
 ///
 /// 设计目标：
 /// - 明确的 3 回合循环，读招成本低
@@ -12,7 +12,7 @@
 /// - 每轮提升力量，形成递增压迫
 public struct ChronoWatcher: EnemyDefinition {
     public static let id: EnemyID = "chrono_watcher"
-    public static let name = "时空观测者"
+    public static let name = "窥视者"
     public static let hpRange: ClosedRange<Int> = 110...120
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {

@@ -4,14 +4,14 @@
 // Shadow Stalker (幽影刺客)
 // ============================================================
 
-/// 幽影刺客（Act2 普通敌人）
+/// 虚影猎手（Act2 普通敌人）
 ///
 /// 节奏：
 /// - 开局更倾向施加虚弱
 /// - 后续在高伤单击与叠甲之间切换
 public struct ShadowStalker: EnemyDefinition {
     public static let id: EnemyID = "shadow_stalker"
-    public static let name = "幽影刺客"
+    public static let name = "虚影猎手"
     public static let hpRange: ClosedRange<Int> = 32...36
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {
@@ -47,14 +47,14 @@ public struct ShadowStalker: EnemyDefinition {
 // Clockwork Sentinel (机械哨兵)
 // ============================================================
 
-/// 机械哨兵（Act2 普通敌人）
+/// 铭文傀儡（Act2 普通敌人）
 ///
 /// 特点：
 /// - 多段伤害更克制低格挡
 /// - 偶尔自我强化（力量+1）
 public struct ClockworkSentinel: EnemyDefinition {
     public static let id: EnemyID = "clockwork_sentinel"
-    public static let name = "机械哨兵"
+    public static let name = "铭文傀儡"
     public static let hpRange: ClosedRange<Int> = 36...40
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {

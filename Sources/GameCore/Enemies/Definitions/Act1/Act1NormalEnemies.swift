@@ -4,11 +4,11 @@
 // Jaw Worm (下颚虫)
 // ============================================================
 
-/// 下颚虫
+/// 咀嚼者
 /// 行为模式：咬（11伤害）、嚎叫（+3力量）、猛扑（7伤害）
 public struct JawWorm: EnemyDefinition {
     public static let id: EnemyID = "jaw_worm"
-    public static let name = "下颚虫"
+    public static let name = "咀嚼者"
     public static let hpRange: ClosedRange<Int> = 40...44
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {
@@ -53,11 +53,11 @@ public struct JawWorm: EnemyDefinition {
 // Cultist (信徒)
 // ============================================================
 
-/// 信徒
+/// 虔信者
 /// 行为模式：第一回合念咒（+3力量），后续攻击
 public struct Cultist: EnemyDefinition {
     public static let id: EnemyID = "cultist"
-    public static let name = "信徒"
+    public static let name = "虔信者"
     public static let hpRange: ClosedRange<Int> = 48...54
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {
@@ -80,11 +80,11 @@ public struct Cultist: EnemyDefinition {
 // Louse Green (绿虱子)
 // ============================================================
 
-/// 绿虱子
+/// 翠鳞虫
 /// 行为模式：攻击为主，偶尔卷曲（+3力量）
 public struct LouseGreen: EnemyDefinition {
     public static let id: EnemyID = "louse_green"
-    public static let name = "绿虱子"
+    public static let name = "翠鳞虫"
     public static let hpRange: ClosedRange<Int> = 11...17
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {
@@ -108,11 +108,11 @@ public struct LouseGreen: EnemyDefinition {
 // Louse Red (红虱子)
 // ============================================================
 
-/// 红虱子（与绿虱子行为相同，但HP略低）
+/// 血眼虫（与翠鳞虫行为相同，但HP略低）
 /// 行为模式：攻击为主，偶尔卷曲（+3力量）
 public struct LouseRed: EnemyDefinition {
     public static let id: EnemyID = "louse_red"
-    public static let name = "红虱子"
+    public static let name = "血眼虫"
     public static let hpRange: ClosedRange<Int> = 10...15
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {
@@ -136,12 +136,12 @@ public struct LouseRed: EnemyDefinition {
 // Spore Beast (孢子兽)
 // ============================================================
 
-/// 孢子兽（普通敌人）
+/// 腐菌体（普通敌人）
 ///
 /// 特点：带有轻度控制（脆弱/中毒），但伤害不高。
 public struct SporeBeast: EnemyDefinition {
     public static let id: EnemyID = "spore_beast"
-    public static let name = "孢子兽"
+    public static let name = "腐菌体"
     public static let hpRange: ClosedRange<Int> = 24...28
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {
@@ -180,12 +180,12 @@ public struct SporeBeast: EnemyDefinition {
 // Acid Slime Small (酸液幼体)
 // ============================================================
 
-/// 酸液幼体（普通敌人）
+/// 溶蚀幼崽（普通敌人）
 ///
-/// 特点：较低生命值，攻击与“涂抹”两种动作。
+/// 特点：较低生命值，攻击与"涂抹"两种动作。
 public struct SlimeSmallAcid: EnemyDefinition {
     public static let id: EnemyID = "slime_small_acid"
-    public static let name = "酸液幼体"
+    public static let name = "溶蚀幼崽"
     public static let hpRange: ClosedRange<Int> = 20...24
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {
