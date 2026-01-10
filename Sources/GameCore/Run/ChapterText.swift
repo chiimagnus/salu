@@ -1,8 +1,8 @@
 // MARK: - Chapter Text (P3)
 //
-// v0.1 叙事：章节收束文本和结局文本
+// v1.0 叙事：章节收束文本和结局文本
 // 每章 Boss 战胜利后显示对应的章节文本
-// 对照 .cursor/rules/Salu游戏设定与剧情（v0.1）.mdc
+// 对照 .cursor/rules/Salu游戏设定与剧情（v1.0）.mdc
 
 /// 章节文本：定义各章节的收束文本和最终结局文本
 public enum ChapterText {

@@ -64,8 +64,6 @@ public struct PrologueScreen {
         }
     }
     
-    // MARK: - 各章节开场剧情（对照 .cursor/rules/Salu游戏设定与剧情（v0.1）.mdc）
-    
     /// 第一章开场：雨夜觉醒
     private static let chapter1Prologue = """
     ——第一章：觉醒——
