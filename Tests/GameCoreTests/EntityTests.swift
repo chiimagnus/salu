@@ -61,7 +61,7 @@ final class EntityTests: XCTestCase {
         print("🧪 测试：testCreateDefaultPlayer")
         let p = createDefaultPlayer()
         XCTAssertEqual(p.id, "player")
-        XCTAssertEqual(p.name, "铁甲战士")
+        XCTAssertEqual(p.name, "安德")
         XCTAssertEqual(p.maxHP, 80)
         XCTAssertEqual(p.currentHP, 80)
     }

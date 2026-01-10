@@ -4,7 +4,7 @@
 // Burning Blood (燃烧之血) - Ironclad Starter
 // ============================================================
 
-/// 永燃心脏（铁甲战士起始遗物）
+/// 永燃心脏（安德起始遗物）
 /// 效果：不死者的馈赠。战斗胜利后恢复 6 点生命值
 public struct BurningBloodRelic: RelicDefinition {
     public static let id: RelicID = "burning_blood"

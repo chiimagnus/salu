@@ -77,6 +77,6 @@ public struct Entity: Sendable {
 
 /// 创建默认玩家
 public func createDefaultPlayer() -> Entity {
-    Entity(id: "player", name: "铁甲战士", maxHP: 80)
+    Entity(id: "player", name: "安德", maxHP: 80)
 }
 

@@ -1,5 +1,5 @@
 /// 创建初始牌组
-/// 铁甲战士的起始牌组配置
+/// 安德的起始牌组配置
 public func createStarterDeck() -> [Card] {
     var cards: [Card] = []
     

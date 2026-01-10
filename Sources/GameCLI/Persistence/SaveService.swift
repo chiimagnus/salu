@@ -86,7 +86,7 @@ final class SaveService {
         }
         
         // 重建玩家实体
-        var player = Entity(id: "player", name: "铁甲战士", maxHP: snapshot.player.maxHP)
+        var player = Entity(id: "player", name: "安德", maxHP: snapshot.player.maxHP)
         player.currentHP = snapshot.player.currentHP
         
         // 恢复状态效果
