@@ -30,7 +30,7 @@ final class GameCLIIntegrationUITests: XCTestCase {
         XCTAssertEqual(result.exitCode, 0)
         
         let output = result.stdout.strippingANSICodes()
-        XCTAssertTrue(output.contains("杀戮尖塔"), "期望出现游戏标题/主菜单（stdout）")
+        XCTAssertTrue(output.contains("SALU"), "期望出现游戏标题/主菜单（stdout）")
         XCTAssertTrue(output.contains("开始冒险"), "期望出现无存档时的菜单项（stdout）")
     }
     

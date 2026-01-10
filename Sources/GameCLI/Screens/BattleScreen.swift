@@ -62,7 +62,7 @@ enum BattleScreen {
         let testModeTag = TestMode.isEnabled ? "  🧪测试模式" : ""
         return [
             "\(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)",
-            "\(Terminal.bold)\(Terminal.cyan)  ⚔️ SALU - 杀戮尖塔 CLI   \(Terminal.dim)第 \(turn) 回合  🎲 \(seed)\(testModeTag)\(Terminal.reset)",
+            "\(Terminal.bold)\(Terminal.cyan)  🔥 Salu the Fire   \(Terminal.dim)第 \(turn) 回合  🎲 \(seed)\(testModeTag)\(Terminal.reset)",
             "\(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)"
         ]
     }

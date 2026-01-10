@@ -1,4 +1,4 @@
-# 🗡️ Salu
+# 🔥  Salu the Fire
 
 一个跨平台（macOS/Linux/Windows）的回合制卡牌战斗游戏，灵感来自《杀戮尖塔》、《诡秘之主》和《安德的游戏三部曲》。
 
