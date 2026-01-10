@@ -42,7 +42,8 @@ tar -xzf salu-macos.tar.gz
 1. 解压 `salu-windows-x86_64.zip`
 2. 双击 `salu-windows-x86_64.exe` 或在命令提示符中运行
 
-## 🤝 参与贡献
+<details>
+<summary><strong>🤝 参与贡献（点此展开）</strong></summary>
 
 欢迎贡献！本项目按架构分为两层：
 
@@ -95,3 +96,5 @@ git push origin feat/your-feature
 ```
 
 然后在 GitHub 创建 Pull Request，并在描述里写清楚：做了什么 / 为什么 / 如何验证（附上运行过的命令）。
+
+</details>
