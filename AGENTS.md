@@ -39,11 +39,48 @@
 - 运行测试: `swift test` (所有目标), `swift test --enable-code-coverage`
 - 有用的环境变量:
   - `SALU_DATA_DIR=/tmp/salu`: 覆盖 save/history 目录 (测试/调试用)。
-  - `SALU_TEST_MODE=1`: CLI UI 测试的稳定快速模式。
+  - `SALU_TEST_MODE=1`: CLI UI 测试的稳定快速模式（跳过开场剧情等待）。
   - `SALU_TEST_MAP=1|mini|battle|shop|rest|event`: 测试模式下使用极小地图（加速 UI 测试）。
   - `SALU_TEST_MAX_FLOOR=2`: （测试模式）覆盖最大楼层（Act 数，默认 1），用于验证 Act1→Act2 推进与存档。
   - `SALU_FORCE_MULTI_ENEMY=1`: 强制普通战斗进入双敌人遭遇（便于验收目标选择）。
   - `SALU_CLI_BINARY_PATH=...`: 指向特定的已构建 `GameCLI` 二进制文件。
+
+### 快速验收测试命令
+
+```bash
+# === 正常模式（完整体验，含剧情等待）===
+swift run GameCLI --seed 1
+
+# === 测试模式（跳过剧情等待，快速验收）===
+
+# 最小地图：起点 → 精英 → Act1 Boss（瘴气之主）
+SALU_TEST_MODE=1 SALU_TEST_MAP=mini swift run GameCLI --seed 1
+
+# 普通战斗测试：起点 → 普通战斗 → Boss
+SALU_TEST_MODE=1 SALU_TEST_MAP=battle swift run GameCLI --seed 1
+
+# 事件测试：起点 → 事件（流浪者/祭坛/尼古拉）→ Boss
+SALU_TEST_MODE=1 SALU_TEST_MAP=event swift run GameCLI --seed 1
+
+# 休息点测试：起点 → 休息点 → Boss
+SALU_TEST_MODE=1 SALU_TEST_MAP=rest swift run GameCLI --seed 1
+
+# 商店测试：起点 → 商店 → Boss
+SALU_TEST_MODE=1 SALU_TEST_MAP=shop swift run GameCLI --seed 1
+
+# === 多 Act 测试 ===
+
+# Act1 → Act2（打两层 Boss，可以看到两章收束文本）
+SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=2 swift run GameCLI --seed 1
+
+# 完整三章（需要先实现 Act3 敌人）
+SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=3 swift run GameCLI --seed 1
+
+# === 特殊场景 ===
+
+# 双敌人战斗测试
+SALU_TEST_MODE=1 SALU_TEST_MAP=battle SALU_FORCE_MULTI_ENEMY=1 swift run GameCLI --seed 1
+```
 
 ## 编码风格与命名规范
 
