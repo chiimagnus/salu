@@ -68,13 +68,19 @@ SALU_TEST_MODE=1 SALU_TEST_MAP=rest swift run GameCLI --seed 1
 # 商店测试：起点 → 商店 → Boss
 SALU_TEST_MODE=1 SALU_TEST_MAP=shop swift run GameCLI --seed 1
 
-# === 多 Act 测试 ===
+# === 各章节 Boss 测试 ===
 
-# Act1 → Act2（打两层 Boss，可以看到两章收束文本）
+# Act1 Boss（瘴气之主）+ 第一章收束文本
 SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=2 swift run GameCLI --seed 1
+# 打完 Act1 Boss 后会显示第一章收束文本，然后进入 Act2
 
-# 完整三章（需要先实现 Act3 敌人）
+# Act2 Boss（窥视者）+ 第二章收束文本
 SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=3 swift run GameCLI --seed 1
+# 打完 Act2 Boss 后会显示第二章收束文本，然后进入 Act3
+
+# 完整三章通关 + 最终结局文本
+SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=3 swift run GameCLI --seed 1
+# 打完 Act3 Boss 后会显示最终结局（需要先实现 Act3 敌人，目前复用 Act2 敌人）
 
 # === 特殊场景 ===
 

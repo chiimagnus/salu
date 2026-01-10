@@ -93,21 +93,22 @@ public enum ChapterText {
     /// 根据当前楼层（Act）获取章节收束文本
     /// - Parameter floor: 当前楼层（1=Act1, 2=Act2, 3=Act3）
     /// - Parameter maxFloor: 最大楼层数
-    /// - Returns: 章节文本；若不是最终章则返回收束文本，若是最终章则返回结局文本
+    /// - Returns: 章节文本；若是真正的最终章（floor >= 3 且 floor >= maxFloor）则返回结局文本，否则返回收束文本
     public static func getChapterEnding(floor: Int, maxFloor: Int) -> String {
-        // 如果是最后一层，返回最终结局
-        if floor >= maxFloor {
+        // 只有在真正的最终章（第 3 章及以上且已达到 maxFloor）才显示最终结局
+        // 这样即使测试模式下 maxFloor=1，也会显示对应章节的收束文本
+        if floor >= 3 && floor >= maxFloor {
             return finalEnding
         }
         
-        // 否则返回对应章节的收束文本
+        // 返回对应章节的收束文本
         switch floor {
         case 1:
             return chapter1Ending
         case 2:
             return chapter2Ending
         default:
-            // 未定义的章节，返回通用文本
+            // 未定义的章节（3+ 但还没到 maxFloor），返回通用文本
             return """
             又一个污染源被净化了。
             

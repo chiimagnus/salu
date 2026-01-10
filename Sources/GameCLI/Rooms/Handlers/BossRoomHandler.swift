@@ -90,7 +90,8 @@ struct BossRoomHandler: RoomHandling {
             }
             
             // 显示章节收束/结局文本
-            let isVictory = runState.floor >= runState.maxFloor
+            // 只有在真正的最终章（第 3 章及以上且已达到 maxFloor）才算通关
+            let isVictory = runState.floor >= 3 && runState.floor >= runState.maxFloor
             ChapterEndScreen.show(floor: runState.floor, maxFloor: runState.maxFloor, isVictory: isVictory)
             
             // 若不是最终幕，提示进入下一幕
