@@ -1,0 +1,128 @@
+---
+description: Salu 本地存储数据说明
+alwaysApply: false
+---
+
+# Salu 本地存储数据
+
+## 存储位置
+
+| 平台 | 默认路径 |
+|------|----------|
+| **macOS** | `~/Library/Application Support/Salu/` |
+| **Linux** | `~/.salu/` |
+| **Windows** | `%LOCALAPPDATA%\Salu\` |
+
+可通过环境变量 `SALU_DATA_DIR` 覆盖：
+
+```bash
+SALU_DATA_DIR=/tmp/salu swift run GameCLI --seed 1
+```
+
+---
+
+## 存储文件
+
+| 文件名 | 格式 | 内容 | 实现 |
+|--------|------|------|------|
+| `run_save.json` | JSON | 冒险存档 | `FileRunSaveStore.swift` |
+| `battle_history.json` | JSON | 战斗记录 | `FileBattleHistoryStore.swift` |
+| `settings.json` | JSON | 用户设置 | `SettingsStore.swift` |
+| `run_log.txt` | 纯文本 | 调试日志 | `FileRunLogStore.swift` |
+
+---
+
+## 文件详情
+
+### 1. run_save.json（冒险存档）
+
+保存当前冒险的完整状态：
+
+- 玩家实体（HP、名称）
+- 牌组（所有卡牌实例）
+- 金币
+- 遗物列表
+- 地图状态（所有节点、当前节点、已完成节点）
+- 当前楼层（Act）
+- 随机种子
+
+**生命周期**：
+- **写入**：每个节点完成后自动保存
+- **读取**：主菜单选择"继续上次冒险"时
+- **删除**：冒险结束（胜利/失败/放弃）时清除
+
+### 2. battle_history.json（战斗记录）
+
+保存所有战斗的统计数据（累积）：
+
+```json
+[
+  {
+    "id": "uuid",
+    "seed": 12345,
+    "date": "2026-01-10T12:00:00Z",
+    "won": true,
+    "turns": 5,
+    "damageDealt": 42,
+    "damageBlocked": 20,
+    "cardsPlayed": 15
+  }
+]
+```
+
+**生命周期**：
+- **写入**：每场战斗结束后追加
+- **读取**：设置菜单查看历史记录/统计
+- **删除**：用户在设置菜单手动选择"清除历史记录"
+
+### 3. settings.json（用户设置）
+
+保存用户偏好：
+
+```json
+{
+  "showLog": true
+}
+```
+
+当前支持的设置项：
+- `showLog`：是否在地图界面显示日志
+
+**生命周期**：
+- **写入**：用户修改设置时
+- **读取**：游戏启动时自动加载
+- **删除**：永久保存，不会自动删除
+
+### 4. run_log.txt（调试日志）
+
+纯文本格式的冒险日志，记录：
+- 战斗事件（伤害、格挡、状态效果等）
+- 节点完成信息
+- 卡牌奖励/遗物获取
+- NPC 对话
+
+**生命周期**：
+- **写入**：冒险过程中实时追加
+- **读取**：用户手动查看或调试时使用
+- **删除**：用户手动删除
+
+---
+
+## 数据安全
+
+- 所有文件均为本地存储，不涉及网络传输
+- 文件格式为人类可读的 JSON/文本，可手动编辑（不推荐）
+- 存档文件包含完整游戏状态，可用于调试或分享
+
+---
+
+## 测试模式
+
+在测试/调试时，建议使用独立的数据目录避免影响正式存档：
+
+```bash
+# 使用临时目录
+SALU_DATA_DIR=/tmp/salu-test swift run GameCLI --seed 1
+
+# 或在测试代码中使用 TemporaryDirectory
+```
