@@ -1,11 +1,13 @@
 import GameCore
 
-/// 休息房间处理器
+/// 休息房间处理器（据点化：可与艾拉对话）
 struct RestRoomHandler: RoomHandling {
     var roomType: RoomType { .rest }
     
     func run(node: MapNode, runState: inout RunState, context: RoomContext) -> RoomRunResult {
         var message: String? = nil
+        var hasSpokenToAira = false  // 记录是否已与艾拉对话
+        
         while true {
             Screens.showRestOptions(runState: runState, message: message)
             
@@ -46,7 +48,26 @@ struct RestRoomHandler: RoomHandling {
                 continue
             }
             
-            message = "\(Terminal.red)⚠️ 请输入有效的选项（1 或 2）\(Terminal.reset)"
+            if input == "3" {
+                // 与艾拉对话（可多次对话，但内容相同）
+                let dialogue = RestPointDialogues.getAiraDialogue(floor: runState.floor)
+                Screens.showAiraDialogue(
+                    title: dialogue.title,
+                    content: dialogue.content,
+                    effect: dialogue.effect
+                )
+                _ = readLine()
+                
+                if !hasSpokenToAira {
+                    context.logLine("\(Terminal.magenta)与艾拉进行了一次对话\(Terminal.reset)")
+                    hasSpokenToAira = true
+                }
+                
+                // 对话后返回选项界面，玩家可以继续选择休息或升级
+                continue
+            }
+            
+            message = "\(Terminal.red)⚠️ 请输入有效的选项（1、2 或 3）\(Terminal.reset)"
         }
         
         // 完成节点

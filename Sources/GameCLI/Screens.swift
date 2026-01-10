@@ -40,6 +40,10 @@ enum Screens {
         MapScreen.showRestResult(healedAmount: healedAmount, newHP: newHP, maxHP: maxHP)
     }
 
+    static func showAiraDialogue(title: String, content: String, effect: String?) {
+        MapScreen.showAiraDialogue(title: title, content: content, effect: effect)
+    }
+
     // MARK: - 商店
 
     static func showShop(inventory: ShopInventory, runState: RunState, message: String? = nil) {

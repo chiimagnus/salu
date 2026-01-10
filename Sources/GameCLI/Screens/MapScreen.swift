@@ -205,7 +205,7 @@ enum MapScreen {
     
     // MARK: - 休息界面
     
-    /// 显示休息选项界面
+    /// 显示休息选项界面（据点化：新增与艾拉对话选项）
     static func showRestOptions(runState: RunState, message: String? = nil) {
         Terminal.clear()
         
@@ -216,16 +216,19 @@ enum MapScreen {
         
         print("""
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
-        \(Terminal.bold)\(Terminal.cyan)  💤 休息点\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.cyan)  🏠 灰烬营地\(Terminal.reset)
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
         
+          \(Terminal.dim)艾拉在营地中等待着你的归来。\(Terminal.reset)
+          
           当前 HP: \(Terminal.yellow)\(player.currentHP)/\(player.maxHP)\(Terminal.reset)
           
           \(Terminal.green)[1] 休息\(Terminal.reset) - 恢复 \(healAmount) HP (→ \(newHP) HP)
           \(upgradeableCount > 0 ? "\(Terminal.blue)[2] 升级卡牌\(Terminal.reset) - 可升级 \(upgradeableCount) 张" : "\(Terminal.dim)[2] 升级卡牌 - 当前无可升级卡牌\(Terminal.reset)")
+          \(Terminal.magenta)[3] 与艾拉对话\(Terminal.reset) - 听听她想说的话
           
         \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)
-        \(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1]\(Terminal.reset) 休息  \(Terminal.cyan)[2]\(Terminal.reset) 升级卡牌
+        \(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1]\(Terminal.reset) 休息  \(Terminal.cyan)[2]\(Terminal.reset) 升级  \(Terminal.cyan)[3]\(Terminal.reset) 对话
         \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)
         """)
         if let message {
@@ -303,6 +306,32 @@ enum MapScreen {
           当前 HP: \(Terminal.yellow)\(newHP)/\(maxHP)\(Terminal.reset)
           
         """)
+        NavigationBar.render(items: [.continueNext])
+    }
+
+    /// 显示与艾拉对话界面
+    static func showAiraDialogue(title: String, content: String, effect: String?) {
+        Terminal.clear()
+        
+        print("""
+        \(Terminal.bold)\(Terminal.magenta)═══════════════════════════════════════════════\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.magenta)  💜 \(title)\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.magenta)═══════════════════════════════════════════════\(Terminal.reset)
+        
+        """)
+        
+        // 打印对话内容，每行缩进
+        for line in content.split(separator: "\n", omittingEmptySubsequences: false) {
+            print("  \(Terminal.dim)\(line)\(Terminal.reset)")
+        }
+        
+        print("")
+        
+        if let effect {
+            print("  \(Terminal.green)\(effect)\(Terminal.reset)")
+            print("")
+        }
+        
         NavigationBar.render(items: [.continueNext])
     }
     
