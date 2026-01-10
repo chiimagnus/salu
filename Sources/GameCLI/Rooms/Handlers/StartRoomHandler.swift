@@ -5,7 +5,16 @@ struct StartRoomHandler: RoomHandling {
     var roomType: RoomType { .start }
     
     func run(node: MapNode, runState: inout RunState, context: RoomContext) -> RoomRunResult {
-        // 起点直接完成，无需交互
+        // 显示开场剧情（每层的起点都显示对应章节的剧情）
+        // 测试模式下跳过等待
+        if !TestMode.isEnabled {
+            PrologueScreen.show(floor: runState.floor)
+        } else {
+            // 测试模式下只打印简短信息
+            context.logLine("\(Terminal.dim)【测试模式】跳过第 \(runState.floor) 章开场剧情\(Terminal.reset)")
+        }
+        
+        // 起点完成
         runState.completeCurrentNode()
         return .completedNode
     }
