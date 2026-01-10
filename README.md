@@ -6,7 +6,18 @@
 
 > 注意，下列方式都需要先 Swift 6.2+，可从 [swift.org](https://www.swift.org/install/) 下载
 
-### 方式一：直接下载（推荐）
+### 方式一：从源码构建（推荐）
+
+```bash
+# 克隆仓库
+git clone https://github.com/chiimagnus/salu.git
+cd salu
+
+# 运行游戏（随机种子）
+swift run
+```
+
+### 方式二：直接下载
 
 前往 [Releases](https://github.com/chiimagnus/salu/releases) 页面下载最新版本：
 
@@ -30,17 +41,6 @@ tar -xzf salu-macos.tar.gz
 
 1. 解压 `salu-windows-x86_64.zip`
 2. 双击 `salu-windows-x86_64.exe` 或在命令提示符中运行
-
-### 方式二：从源码构建
-
-```bash
-# 克隆仓库
-git clone https://github.com/chiimagnus/salu.git
-cd salu
-
-# 运行游戏（随机种子）
-swift run
-```
 
 ## 🤝 参与贡献
 
