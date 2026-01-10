@@ -188,27 +188,43 @@ SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=3 swift run GameCLI --se
 
 ---
 
-## P5：休息点 NPC 对话（据点化）⏳ 待开始
+## P5：休息点 NPC 对话（据点化）✅ 已完成
 
 ### P5.1 目标
 
-将休息点改造为「据点」，可与固定 NPC（艾拉）对话，获取剧情碎片。
+将休息点改造为「灰烬营地」，可与固定 NPC（艾拉）对话，获取剧情碎片。
 
-### P5.2 改动范围
+### P5.2 实际改动
+
+#### GameCore 新增 ✅
+
+| 文件 | 内容 |
+|------|------|
+| `Sources/GameCore/Events/Definitions/RestPointDialogues.swift`（新建） | 艾拉对话内容（按章节区分） |
+
+#### GameCLI 改动 ✅
 
 | 文件 | 改动 |
 |------|------|
-| `Sources/GameCore/Events/Definitions/RestPointDialogues.swift`（新建） | 休息点对话内容 |
-| `Sources/GameCLI/Rooms/Handlers/RestRoomHandler.swift` | 新增"与艾拉对话"选项 |
-| `Sources/GameCLI/Screens/DialogueScreen.swift`（新建） | NPC 对话界面 |
+| `Sources/GameCLI/Screens/MapScreen.swift` | 休息点标题改为"灰烬营地"，新增"与艾拉对话"选项 |
+| `Sources/GameCLI/Screens.swift` | 添加 `showAiraDialogue` 入口 |
+| `Sources/GameCLI/Rooms/Handlers/RestRoomHandler.swift` | 处理选项 3（对话） |
 
-### P5.3 验收
+#### 对话内容 ✅
+
+| 章节 | 对话主题 |
+|------|----------|
+| Act 1 | 童年回忆、艾拉的担忧与等待 |
+| Act 2 | 真相揭示后的安慰、"答应我活下去" |
+| Act 3 | 告别场景、怀表定情信物、最后的吻 |
+
+### P5.3 验收 ✅
 
 ```bash
-swift build
-swift test
+swift build  # ✅ 编译成功
+swift test   # ✅ 118 tests passed
 SALU_TEST_MODE=1 SALU_TEST_MAP=rest swift run GameCLI --seed 1
-# 确认休息点显示 NPC 对话选项
+# 休息点显示"灰烬营地"，可选择 [1] 休息 [2] 升级 [3] 与艾拉对话
 ```
 
 ---
@@ -248,12 +264,13 @@ flowchart TD
     P2 --> P5[P5: 休息点NPC]
     P3 --> P4[P4: Act3扩展 ✅]
     P4 --> P6[P6: rulesText风味化]
+    P2 --> P5[P5: 休息点NPC ✅]
 ```
 
 - **P1 是基础**：✅ 已完成展示名更新
 - **P2/P3 可并行**：✅ 已完成事件剧情化和 Boss 章节文本
 - **P4 依赖 P3**：✅ 已完成 Act 3 扩展
-- **P5 依赖 P2**：⏳ 待开始，休息点 NPC 对话复用事件系统的对话框架
+- **P5 依赖 P2**：✅ 已完成休息点据点化
 - **P6 最后**：⏳ 待开始，风味化是锦上添花
 
 ---
@@ -266,7 +283,7 @@ flowchart TD
 | P2 | 事件剧情化（NPC 对话 + 世界观碎片）| ✅ 完成 | 2026-01-10 |
 | P3 | Boss 战后章节文本 + 起点剧情 | ✅ 完成 | 2026-01-10 |
 | P4 | Act 3 扩展（虚无行者/梦境寄生者/循环守卫/序列始祖）| ✅ 完成 | 2026-01-10 |
-| P5 | 休息点 NPC 对话 | ⏳ 待开始 | - |
+| P5 | 休息点 NPC 对话（灰烬营地 + 艾拉对话）| ✅ 完成 | 2026-01-10 |
 | P6 | rulesText 风味化 | ⏳ 待开始 | - |
 
 ---
