@@ -4,12 +4,12 @@
 // Feather Cloak (羽披风) - Uncommon
 // ============================================================
 
-/// 羽披风
-/// 效果：战斗开始时获得 1 点敏捷
+/// 夜鸦羽翼
+/// 效果：来自无名之鸟。战斗开始时获得 1 点敏捷
 public struct FeatherCloakRelic: RelicDefinition {
     public static let id: RelicID = "feather_cloak"
-    public static let name = "羽披风"
-    public static let description = "战斗开始时获得 1 点敏捷"
+    public static let name = "夜鸦羽翼"
+    public static let description = "来自无名之鸟。战斗开始时获得 1 点敏捷。"
     public static let rarity: RelicRarity = .uncommon
     public static let icon = "🪶"
     
