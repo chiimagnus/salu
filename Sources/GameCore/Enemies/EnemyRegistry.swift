@@ -23,8 +23,13 @@ public enum EnemyRegistry {
         ClockworkSentinel.id: ClockworkSentinel.self,
         RuneGuardian.id: RuneGuardian.self,
         
+        // Act 2 Elites (P2 占卜家序列新增)
+        MadProphet.id: MadProphet.self,
+        TimeGuardian.id: TimeGuardian.self,
+        
         // Act 2 Bosses
-        ChronoWatcher.id: ChronoWatcher.self,
+        Cipher.id: Cipher.self,          // P2 新增：赛弗
+        ChronoWatcher.id: ChronoWatcher.self,  // 保留用于旧存档兼容
         
         // Act 3 Enemies
         VoidWalker.id: VoidWalker.self,
