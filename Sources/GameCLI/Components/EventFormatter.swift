@@ -68,6 +68,19 @@ enum EventFormatter {
             
         case .statusExpired(let target, let effect):
             return "\(Terminal.dim)💨 \(target) 的 \(effect) 已消退\(Terminal.reset)"
+            
+        // MARK: - 疯狂系统事件（占卜家序列）
+            
+        case .madnessReduced(let from, let to):
+            return "\(Terminal.dim)🌀 疯狂消减: \(from) → \(to)\(Terminal.reset)"
+            
+        case .madnessThreshold(let level, let effect):
+            let color = level >= 3 ? Terminal.red : (level >= 2 ? Terminal.yellow : Terminal.magenta)
+            return "\(color)🌀 疯狂阈值 \(level) 触发: \(effect)\(Terminal.reset)"
+            
+        case .madnessDiscard(let cardId):
+            let def = CardRegistry.require(cardId)
+            return "\(Terminal.red)🌀 疯狂弃牌: \(def.name)\(Terminal.reset)"
         }
     }
     

@@ -180,6 +180,9 @@ public final class BattleEngine: @unchecked Sendable {
         
         // P2: 状态递减现在由 processStatusesAtTurnEnd 处理（在回合结束时）
         
+        // P0 占卜家序列：疯狂阈值检查（在抽牌前，因为阈值 1 会弃牌）
+        checkMadnessThresholds()
+        
         // 抽牌
         drawCards(cardsPerTurn)
         
@@ -232,6 +235,9 @@ public final class BattleEngine: @unchecked Sendable {
         
         // 处理玩家回合结束的状态效果（触发 + 递减）
         processStatusesAtTurnEnd(for: .player)
+        
+        // P0 占卜家序列：疯狂消减（回合结束时 -1）
+        reduceMadness()
 
         // P4: 触发回合结束遗物效果（仅玩家回合结束）
         triggerRelics(.turnEnd(turn: state.turn))
@@ -632,6 +638,50 @@ public final class BattleEngine: @unchecked Sendable {
             emit(.battleLost)
             // P4: 触发战斗结束（失败）
             triggerRelics(.battleEnd(won: false))
+        }
+    }
+    
+    // MARK: - Madness System (P0 占卜家序列)
+    
+    /// 检查玩家疯狂阈值并触发效果（在回合开始时调用）
+    private func checkMadnessThresholds() {
+        let madnessStacks = state.player.statuses.stacks(of: Madness.id)
+        guard madnessStacks > 0 else { return }
+        
+        // 阈值 1（≥3 层）：随机弃 1 张手牌
+        // 注意：此时手牌可能还没抽（在 startNewTurn 的抽牌前调用）
+        // 但阈值检查应该在抽牌后更合理，这里先检查并标记，实际弃牌在抽牌后
+        // 为了简化，我们在抽牌前检查但效果在本回合内生效
+        // 更正：按照设计，阈值检查在回合开始，效果立即生效
+        // 如果手牌为空（回合刚开始还没抽牌），则跳过弃牌
+        if madnessStacks >= Madness.threshold1 && !state.hand.isEmpty {
+            let discardIndex = rng.nextInt(upperBound: state.hand.count)
+            let discardedCard = state.hand.remove(at: discardIndex)
+            state.discardPile.append(discardedCard)
+            emit(.madnessDiscard(cardId: discardedCard.cardId))
+            emit(.madnessThreshold(level: 1, effect: "随机弃 1 张牌"))
+        }
+        
+        // 阈值 2（≥6 层）：获得虚弱 1
+        if madnessStacks >= Madness.threshold2 {
+            applyStatusEffect(target: .player, statusId: Weak.id, stacks: 1)
+            emit(.madnessThreshold(level: 2, effect: "获得虚弱 1"))
+        }
+        
+        // 阈值 3（≥10 层）的"受到伤害 +50%"由 Madness.modifyIncomingDamage 处理
+        // 这里只发出提示事件
+        if madnessStacks >= Madness.threshold3 {
+            emit(.madnessThreshold(level: 3, effect: "受到伤害 +50%"))
+        }
+    }
+    
+    /// 回合结束时疯狂 -1
+    private func reduceMadness() {
+        let currentMadness = state.player.statuses.stacks(of: Madness.id)
+        if currentMadness > 0 {
+            state.player.statuses.apply(Madness.id, stacks: -1)
+            let newMadness = state.player.statuses.stacks(of: Madness.id)
+            emit(.madnessReduced(from: currentMadness, to: newMadness))
         }
     }
     

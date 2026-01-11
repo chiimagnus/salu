@@ -228,7 +228,14 @@ enum BattleScreen {
         for (statusId, stacks) in entity.statuses.all {
             guard let def = StatusRegistry.get(statusId) else { continue }
             
-            let color = def.isPositive ? Terminal.green : Terminal.red
+            // P0 占卜家序列：疯狂状态根据阈值显示不同颜色
+            let color: String
+            if statusId == Madness.id {
+                color = madnessColor(stacks: stacks)
+            } else {
+                color = def.isPositive ? Terminal.green : Terminal.red
+            }
+            
             let stackDisplay: String
             
             // 对于永久状态（不递减），显示带符号
@@ -242,5 +249,18 @@ enum BattleScreen {
         }
         
         return parts.joined(separator: " ")
+    }
+    
+    /// 根据疯狂层数返回颜色（阈值越高越危险）
+    private static func madnessColor(stacks: Int) -> String {
+        if stacks >= Madness.threshold3 {
+            return Terminal.red + Terminal.bold  // ≥10：红色加粗（最危险）
+        } else if stacks >= Madness.threshold2 {
+            return Terminal.red  // ≥6：红色
+        } else if stacks >= Madness.threshold1 {
+            return Terminal.yellow  // ≥3：黄色（警告）
+        } else {
+            return Terminal.dim  // <3：暗淡（安全）
+        }
     }
 }

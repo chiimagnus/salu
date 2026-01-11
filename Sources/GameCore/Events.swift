@@ -60,6 +60,17 @@ public enum BattleEvent: Sendable, Equatable {
     
     /// 状态效果过期
     case statusExpired(target: String, effect: String)
+    
+    // MARK: - 疯狂系统事件（占卜家序列）
+    
+    /// 疯狂消减（回合结束时）
+    case madnessReduced(from: Int, to: Int)
+    
+    /// 疯狂阈值触发
+    case madnessThreshold(level: Int, effect: String)
+    
+    /// 疯狂导致弃牌
+    case madnessDiscard(cardId: CardID)
 }
 
 /// 事件描述（用于 CLI 显示）
@@ -131,6 +142,18 @@ extension BattleEvent {
             
         case .statusExpired(let target, let effect):
             return "💨 \(target) 的 \(effect) 已消退"
+            
+        // MARK: - 疯狂系统事件
+            
+        case .madnessReduced(let from, let to):
+            return "🌀 疯狂消减：\(from) → \(to)"
+            
+        case .madnessThreshold(let level, let effect):
+            return "🌀 疯狂阈值 \(level) 触发：\(effect)"
+            
+        case .madnessDiscard(let cardId):
+            let def = CardRegistry.require(cardId)
+            return "🌀 疯狂导致弃牌：\(def.name)"
         }
     }
 }
