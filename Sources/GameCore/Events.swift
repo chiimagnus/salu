@@ -60,6 +60,31 @@ public enum BattleEvent: Sendable, Equatable {
     
     /// 状态效果过期
     case statusExpired(target: String, effect: String)
+    
+    // MARK: - 疯狂系统事件（占卜家序列）
+    
+    /// 疯狂消减（回合结束时）
+    case madnessReduced(from: Int, to: Int)
+    
+    /// 疯狂阈值触发
+    case madnessThreshold(level: Int, effect: String)
+    
+    /// 疯狂导致弃牌
+    case madnessDiscard(cardId: CardID)
+    
+    /// 疯狂被清除
+    case madnessCleared(amount: Int)
+    
+    // MARK: - 占卜家机制事件 (P1)
+    
+    /// 预知选择
+    case foresightChosen(cardId: CardID, fromCount: Int)
+    
+    /// 回溯卡牌
+    case rewindCard(cardId: CardID)
+    
+    /// 意图被改写
+    case intentRewritten(enemyName: String, oldIntent: String, newIntent: String)
 }
 
 /// 事件描述（用于 CLI 显示）
@@ -131,6 +156,38 @@ extension BattleEvent {
             
         case .statusExpired(let target, let effect):
             return "💨 \(target) 的 \(effect) 已消退"
+            
+        // MARK: - 疯狂系统事件
+            
+        case .madnessReduced(let from, let to):
+            return "🌀 疯狂消减：\(from) → \(to)"
+            
+        case .madnessThreshold(let level, let effect):
+            return "🌀 疯狂阈值 \(level) 触发：\(effect)"
+            
+        case .madnessDiscard(let cardId):
+            let def = CardRegistry.require(cardId)
+            return "🌀 疯狂导致弃牌：\(def.name)"
+            
+        case .madnessCleared(let amount):
+            if amount == 0 {
+                return "🌀 疯狂完全消除"
+            } else {
+                return "🌀 疯狂消除 \(amount) 层"
+            }
+            
+        // MARK: - 占卜家机制事件
+            
+        case .foresightChosen(let cardId, let fromCount):
+            let def = CardRegistry.require(cardId)
+            return "👁️ 预知 \(fromCount) 张，选择 \(def.name) 入手"
+            
+        case .rewindCard(let cardId):
+            let def = CardRegistry.require(cardId)
+            return "⏪ 回溯 \(def.name) 回到手牌"
+            
+        case .intentRewritten(let enemyName, let oldIntent, let newIntent):
+            return "✍️ 改写 \(enemyName) 的意图：\(oldIntent) → \(newIntent)"
         }
     }
 }

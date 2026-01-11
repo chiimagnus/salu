@@ -68,6 +68,35 @@ enum EventFormatter {
             
         case .statusExpired(let target, let effect):
             return "\(Terminal.dim)💨 \(target) 的 \(effect) 已消退\(Terminal.reset)"
+            
+        // MARK: - 疯狂系统事件（占卜家序列）
+            
+        case .madnessReduced(let from, let to):
+            return "\(Terminal.dim)🌀 疯狂消减: \(from) → \(to)\(Terminal.reset)"
+            
+        case .madnessThreshold(let level, let effect):
+            let color = level >= 3 ? Terminal.red : (level >= 2 ? Terminal.yellow : Terminal.magenta)
+            return "\(color)🌀 疯狂阈值 \(level) 触发: \(effect)\(Terminal.reset)"
+            
+        case .madnessDiscard(let cardId):
+            let def = CardRegistry.require(cardId)
+            return "\(Terminal.red)🌀 疯狂弃牌: \(def.name)\(Terminal.reset)"
+            
+        case .madnessCleared(let amount):
+            return "\(Terminal.green)🌀 疯狂清除 \(amount) 层\(Terminal.reset)"
+            
+        // MARK: - 占卜家机制事件 (P1)
+            
+        case .foresightChosen(let cardId, let fromCount):
+            let def = CardRegistry.require(cardId)
+            return "\(Terminal.magenta)👁️ 预知 \(fromCount) 张，选择 \(def.name) 入手\(Terminal.reset)"
+            
+        case .rewindCard(let cardId):
+            let def = CardRegistry.require(cardId)
+            return "\(Terminal.cyan)⏪ 回溯 \(def.name) 回到手牌\(Terminal.reset)"
+            
+        case .intentRewritten(let enemyName, let oldIntent, let newIntent):
+            return "\(Terminal.yellow)✍️ 改写 \(enemyName)：\(oldIntent) → \(newIntent)\(Terminal.reset)"
         }
     }
     

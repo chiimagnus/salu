@@ -10,6 +10,7 @@ public enum StatusRegistry {
         Weak.id: Weak.self,
         Frail.id: Frail.self,
         Poison.id: Poison.self,
+        Madness.id: Madness.self,  // 占卜家序列核心状态
         
         // Buffs
         Strength.id: Strength.self,

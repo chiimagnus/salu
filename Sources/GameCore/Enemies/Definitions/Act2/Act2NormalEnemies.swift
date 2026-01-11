@@ -8,7 +8,8 @@
 ///
 /// 节奏：
 /// - 开局更倾向施加虚弱
-/// - 后续在高伤单击与叠甲之间切换
+/// - 后续在高伤单击、叠甲、精神冲击之间切换
+/// - P2 新增：20% 概率使用精神冲击（伤害 + 疯狂）
 public struct ShadowStalker: EnemyDefinition {
     public static let id: EnemyID = "shadow_stalker"
     public static let name = "虚影猎手"
@@ -25,14 +26,25 @@ public struct ShadowStalker: EnemyDefinition {
         }
         
         let roll = rng.nextInt(upperBound: 100)
-        if roll < 55 {
+        if roll < 45 {
+            // 普通攻击
             return EnemyMove(
                 intent: EnemyIntentDisplay(icon: "⚔️", text: "刺杀 10", previewDamage: 10),
                 effects: [
                     .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 10)
                 ]
             )
+        } else if roll < 65 {
+            // P2 新增：精神冲击 - 伤害 + 给予疯狂
+            return EnemyMove(
+                intent: EnemyIntentDisplay(icon: "👁️", text: "精神冲击 8", previewDamage: 8),
+                effects: [
+                    .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 8),
+                    .applyStatus(target: .player, statusId: Madness.id, stacks: 2)
+                ]
+            )
         } else {
+            // 防御
             return EnemyMove(
                 intent: EnemyIntentDisplay(icon: "🛡️", text: "潜行：格挡 12"),
                 effects: [

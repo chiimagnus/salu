@@ -36,7 +36,7 @@ struct BossRoomHandler: RoomHandling {
         case 1:
             bossId = "toxic_colossus"  // 瘴气之主
         case 2:
-            bossId = "chrono_watcher"  // 窥视者
+            bossId = "cipher"  // 赛弗（P2 占卜家序列：替换窥视者）
         default:
             bossId = "sequence_progenitor"  // 序列始祖（最终 Boss）
         }

@@ -24,6 +24,26 @@ public enum CardRegistry {
         Intimidate.id: Intimidate.self,
         AgileStance.id: AgileStance.self,
         PoisonedStrike.id: PoisonedStrike.self,
+        
+        // Seer Sequence Cards - Common (P1 占卜家序列普通卡)
+        SpiritSight.id: SpiritSight.self,
+        SpiritSightPlus.id: SpiritSightPlus.self,
+        TruthWhisper.id: TruthWhisper.self,
+        TruthWhisperPlus.id: TruthWhisperPlus.self,
+        Meditation.id: Meditation.self,
+        MeditationPlus.id: MeditationPlus.self,
+        SanityBurn.id: SanityBurn.self,
+        SanityBurnPlus.id: SanityBurnPlus.self,
+        
+        // Seer Sequence Cards - Uncommon (P1 占卜家序列罕见卡)
+        FateRewrite.id: FateRewrite.self,
+        FateRewritePlus.id: FateRewritePlus.self,
+        TimeShard.id: TimeShard.self,
+        TimeShardPlus.id: TimeShardPlus.self,
+        
+        // Seer Sequence Cards - Rare (P5 占卜家序列稀有卡)
+        AbyssalGaze.id: AbyssalGaze.self,
+        AbyssalGazePlus.id: AbyssalGazePlus.self,
     ]
     
     /// 获取卡牌定义

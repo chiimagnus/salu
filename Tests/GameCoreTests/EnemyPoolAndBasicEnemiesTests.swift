@@ -170,15 +170,17 @@ final class EnemyPoolAndBasicEnemiesTests: XCTestCase {
             XCTAssertTrue(RuneGuardian.chooseMove(selfIndex: 0, snapshot: snap3, rng: &rng).intent.text.contains("护盾") || RuneGuardian.chooseMove(selfIndex: 0, snapshot: snap3, rng: &rng).intent.text.contains("格挡"))
         }
         
-        // ChronoWatcher: deterministic 3-turn loop
+        // Cipher（赛弗）: 3 阶段 Boss（P2 替换 ChronoWatcher）
+        // 阶段由 HP 百分比决定，测试阶段 1（HP > 60%）的循环
         do {
             var rng = SeededRNG(seed: 1)
-            let s1 = BattleSnapshot(turn: 1, player: player, enemies: [enemy], energy: 3)
-            XCTAssertTrue(ChronoWatcher.chooseMove(selfIndex: 0, snapshot: s1, rng: &rng).intent.text.contains("时序标记"))
-            let s2 = BattleSnapshot(turn: 2, player: player, enemies: [enemy], energy: 3)
-            XCTAssertTrue(ChronoWatcher.chooseMove(selfIndex: 0, snapshot: s2, rng: &rng).intent.text.contains("时间崩解"))
-            let s3 = BattleSnapshot(turn: 3, player: player, enemies: [enemy], energy: 3)
-            XCTAssertTrue(ChronoWatcher.chooseMove(selfIndex: 0, snapshot: s3, rng: &rng).intent.text.contains("回溯连击"))
+            let cipherEnemy = Entity(id: "cipher", name: "赛弗", maxHP: 100, enemyId: "cipher")
+            let s1 = BattleSnapshot(turn: 1, player: player, enemies: [cipherEnemy], energy: 3)
+            XCTAssertTrue(Cipher.chooseMove(selfIndex: 0, snapshot: s1, rng: &rng).intent.text.contains("试探"))
+            let s2 = BattleSnapshot(turn: 2, player: player, enemies: [cipherEnemy], energy: 3)
+            XCTAssertTrue(Cipher.chooseMove(selfIndex: 0, snapshot: s2, rng: &rng).intent.text.contains("预判"))
+            let s3 = BattleSnapshot(turn: 3, player: player, enemies: [cipherEnemy], energy: 3)
+            XCTAssertTrue(Cipher.chooseMove(selfIndex: 0, snapshot: s3, rng: &rng).intent.text.contains("预知反制"))
         }
     }
     

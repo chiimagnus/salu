@@ -1,30 +1,39 @@
-/// 商店卡牌报价
-public struct ShopCardOffer: Sendable, Equatable {
-    public let cardId: CardID
-    public let price: Int
-    
-    public init(cardId: CardID, price: Int) {
-        self.cardId = cardId
-        self.price = price
-    }
-}
+// MARK: - Shop Inventory
 
-/// 商店库存
+/// 商店库存（P4 扩展：支持卡牌、遗物、消耗品）
 public struct ShopInventory: Sendable, Equatable {
+    /// 卡牌报价（5 张）
     public let cardOffers: [ShopCardOffer]
+    /// 遗物报价（3 个）
+    public let relicOffers: [ShopRelicOffer]
+    /// 消耗品报价（3 个）
+    public let consumableOffers: [ShopConsumableOffer]
+    /// 删牌服务价格
     public let removeCardPrice: Int
     
-    public init(cardOffers: [ShopCardOffer], removeCardPrice: Int = ShopPricing.removeCardPrice) {
+    public init(
+        cardOffers: [ShopCardOffer],
+        relicOffers: [ShopRelicOffer] = [],
+        consumableOffers: [ShopConsumableOffer] = [],
+        removeCardPrice: Int = ShopPricing.removeCardPrice
+    ) {
         self.cardOffers = cardOffers
+        self.relicOffers = relicOffers
+        self.consumableOffers = consumableOffers
         self.removeCardPrice = removeCardPrice
     }
     
-    /// 统一条目列表（卡牌 + 删牌服务）
+    /// 统一条目列表（卡牌 + 遗物 + 消耗品 + 删牌服务）
     public var items: [ShopItem] {
-        var result = cardOffers.map { ShopItem(kind: .card($0)) }
+        var result: [ShopItem] = []
+        result.append(contentsOf: cardOffers.map { ShopItem(kind: .card($0)) })
+        result.append(contentsOf: relicOffers.map { ShopItem(kind: .relic($0)) })
+        result.append(contentsOf: consumableOffers.map { ShopItem(kind: .consumable($0)) })
         result.append(ShopItem(kind: .removeCard(price: removeCardPrice)))
         return result
     }
+    
+    // MARK: - Generation
     
     /// 生成商店库存（可复现）
     public static func generate(context: ShopContext) -> ShopInventory {
@@ -34,16 +43,39 @@ public struct ShopInventory: Sendable, Equatable {
     
     /// 生成商店库存（使用外部 RNG）
     public static func generate(context: ShopContext, rng: inout SeededRNG) -> ShopInventory {
-        let pool = CardPool.rewardableCardIds()
-        let offerCount = min(ShopInventory.defaultCardOfferCount, pool.count)
-        
-        let choices = Array(rng.shuffled(pool).prefix(offerCount))
-        let offers = choices.map { cardId in
+        // 卡牌：5 张
+        let cardPool = CardPool.rewardableCardIds()
+        let cardOfferCount = min(defaultCardOfferCount, cardPool.count)
+        let cardChoices = Array(rng.shuffled(cardPool).prefix(cardOfferCount))
+        let cardOffers = cardChoices.map { cardId in
             ShopCardOffer(cardId: cardId, price: ShopPricing.cardPrice(for: cardId))
         }
         
-        return ShopInventory(cardOffers: offers, removeCardPrice: ShopPricing.removeCardPrice)
+        // 遗物：3 个（排除已拥有的遗物）
+        let relicPool = RelicPool.availableRelicIds(excluding: context.ownedRelicIds)
+        let relicOfferCount = min(defaultRelicOfferCount, relicPool.count)
+        let relicChoices = Array(rng.shuffled(relicPool).prefix(relicOfferCount))
+        let relicOffers = relicChoices.map { relicId in
+            ShopRelicOffer(relicId: relicId, price: ShopPricing.relicPrice(for: relicId))
+        }
+        
+        // 消耗品：3 个
+        let consumablePool = ConsumableRegistry.shopConsumableIds
+        let consumableOfferCount = min(defaultConsumableOfferCount, consumablePool.count)
+        let consumableChoices = Array(rng.shuffled(consumablePool).prefix(consumableOfferCount))
+        let consumableOffers = consumableChoices.map { consumableId in
+            ShopConsumableOffer(consumableId: consumableId, price: ShopPricing.consumablePrice(for: consumableId))
+        }
+        
+        return ShopInventory(
+            cardOffers: cardOffers,
+            relicOffers: relicOffers,
+            consumableOffers: consumableOffers,
+            removeCardPrice: ShopPricing.removeCardPrice
+        )
     }
+    
+    // MARK: - Private Helpers
     
     private static func deriveShopSeed(context: ShopContext) -> UInt64 {
         var s = context.seed
@@ -64,5 +96,9 @@ public struct ShopInventory: Sendable, Equatable {
         return hash
     }
     
-    private static let defaultCardOfferCount = 3
+    // MARK: - Constants
+    
+    private static let defaultCardOfferCount = 5        // 原来是 3，扩展为 5
+    private static let defaultRelicOfferCount = 3       // P4 新增
+    private static let defaultConsumableOfferCount = 3  // P4 新增
 }

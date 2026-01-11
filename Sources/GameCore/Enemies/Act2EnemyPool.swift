@@ -1,4 +1,4 @@
-// MARK: - Act 2 Enemy Pool (P7)
+// MARK: - Act 2 Enemy Pool (P7 + P2 占卜家序列扩展)
 
 /// 第二章敌人池（Act2）
 /// 管理不同难度的敌人遭遇
@@ -10,9 +10,15 @@ public enum Act2EnemyPool {
     ]
     
     /// 中等敌人（精英战斗）
+    /// P2 新增：疯狂预言者、时间守卫
     public static let medium: [EnemyID] = [
         "rune_guardian",
+        "mad_prophet",      // P2 占卜家序列
+        "time_guardian",    // P2 占卜家序列
     ]
+    
+    /// Boss（P2：赛弗替换窥视者）
+    public static let boss: EnemyID = "cipher"
     
     /// 所有敌人
     public static let all: [EnemyID] = weak + medium

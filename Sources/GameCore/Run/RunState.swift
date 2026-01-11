@@ -15,6 +15,10 @@ public struct RunState: Sendable {
     
     /// 遗物管理器（P4 新增）
     public var relicManager: RelicManager
+
+    /// 消耗品列表（P4 新增）
+    /// - Note: 1.0 版本默认最多 3 个槽位
+    public private(set) var consumables: [ConsumableID]
     
     /// 地图节点
     public var map: [MapNode]
@@ -45,6 +49,7 @@ public struct RunState: Sendable {
         deck: [Card],
         gold: Int = RunState.startingGold,
         relicManager: RelicManager = RelicManager(),
+        consumables: [ConsumableID] = [],
         map: [MapNode],
         seed: UInt64,
         floor: Int = 1,
@@ -54,6 +59,7 @@ public struct RunState: Sendable {
         self.deck = deck
         self.gold = gold
         self.relicManager = relicManager
+        self.consumables = Array(consumables.prefix(RunState.maxConsumableSlots))
         self.map = map
         self.currentNodeId = nil
         self.seed = seed
@@ -78,6 +84,7 @@ public struct RunState: Sendable {
             deck: deck,
             gold: RunState.startingGold,
             relicManager: relicManager,
+            consumables: [],
             map: map,
             seed: seed,
             floor: 1,
@@ -211,6 +218,25 @@ public struct RunState: Sendable {
         deck.remove(at: index)
     }
 
+    // MARK: - Consumables (P4)
+
+    /// 消耗品槽位上限
+    public static let maxConsumableSlots = 3
+
+    /// 添加一个消耗品（若槽位已满则失败）
+    @discardableResult
+    public mutating func addConsumable(_ id: ConsumableID) -> Bool {
+        guard consumables.count < RunState.maxConsumableSlots else { return false }
+        consumables.append(id)
+        return true
+    }
+
+    /// 移除指定索引的消耗品
+    public mutating func removeConsumable(at index: Int) {
+        guard index >= 0 && index < consumables.count else { return }
+        consumables.remove(at: index)
+    }
+
     // MARK: - RunEffect（P5：事件系统）
     
     /// 应用一个 RunEffect 到当前冒险状态
@@ -248,6 +274,18 @@ public struct RunState: Sendable {
         case .addRelic(let relicId):
             relicManager.add(relicId)
             return true
+
+        case .applyStatus(let statusId, let stacks):
+            guard stacks != 0 else { return true }
+            player.statuses.apply(statusId, stacks: stacks)
+            return true
+
+        case .setStatus(let statusId, let stacks):
+            player.statuses.set(statusId, stacks: stacks)
+            return true
+
+        case .addConsumable(let consumableId):
+            return addConsumable(consumableId)
             
         case .upgradeCard(let deckIndex):
             return upgradeCard(at: deckIndex)

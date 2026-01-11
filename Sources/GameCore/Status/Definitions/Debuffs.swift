@@ -80,3 +80,53 @@ public struct Poison: StatusDefinition {
         return [.dealDamage(source: owner, target: owner, base: stacks)]
     }
 }
+
+// ============================================================
+// Madness (疯狂) - 占卜家序列核心状态
+// ============================================================
+
+/// 疯狂：占卜家使用强力能力的代价
+///
+/// **阈值效果**（在回合开始时检查）：
+/// - 阈值 1（≥3 层）：随机弃 1 张手牌
+/// - 阈值 2（≥6 层）：获得虚弱 1
+/// - 阈值 3（≥10 层）：受到伤害 +50%（类似易伤）
+///
+/// **消减规则**：
+/// - 回合结束时 -1（由 BattleEngine 专门处理，不使用 decay）
+///
+/// **设计说明**：
+/// 疯狂不使用 `StatusDecay.turnEnd` 是因为消减发生在回合结束，
+/// 而阈值检查发生在回合开始；如果用 decay，递减会在回合结束时
+/// 与状态触发同时发生，时机不对。
+public struct Madness: StatusDefinition {
+    public static let id: StatusID = "madness"
+    public static let name = "疯狂"
+    public static let icon = "🌀"
+    public static let isPositive = false
+    public static let decay: StatusDecay = .none  // 由 BattleEngine 在回合结束时手动 -1
+    
+    // MARK: - 阈值常量
+    
+    /// 阈值 1：随机弃牌
+    public static let threshold1 = 3
+    /// 阈值 2：获得虚弱
+    public static let threshold2 = 6
+    /// 阈值 3：受到伤害增加
+    public static let threshold3 = 10
+    
+    // MARK: - 阈值 3 的伤害修正
+    
+    /// 阈值 3（≥10 层）时参与伤害修正
+    public static let incomingDamagePhase: ModifierPhase? = .multiply
+    /// 在易伤之后应用（易伤 priority = 100）
+    public static let priority = 200
+    
+    public static func modifyIncomingDamage(_ value: Int, stacks: Int) -> Int {
+        // 阈值 3（≥10 层）：受到伤害 +50%
+        if stacks >= threshold3 {
+            return Int(Double(value) * 1.5)
+        }
+        return value
+    }
+}

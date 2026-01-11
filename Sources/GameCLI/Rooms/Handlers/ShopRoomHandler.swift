@@ -1,6 +1,6 @@
 import GameCore
 
-/// 商店房间处理器
+/// 商店房间处理器（P4 扩展：支持遗物和消耗品）
 struct ShopRoomHandler: RoomHandling {
     var roomType: RoomType { .shop }
     
@@ -9,7 +9,8 @@ struct ShopRoomHandler: RoomHandling {
             seed: runState.seed,
             floor: runState.floor,
             currentRow: runState.currentRow,
-            nodeId: node.id
+            nodeId: node.id,
+            ownedRelicIds: runState.relicManager.all  // P4: 传入已拥有的遗物
         )
         var inventory = ShopInventory.generate(context: shopContext)
         var message: String? = nil
@@ -27,38 +28,164 @@ struct ShopRoomHandler: RoomHandling {
                 break
             }
             
+            // 删牌服务
             if input == "d" {
                 handleRemoveCard(runState: &runState, inventory: inventory, context: context, message: &message)
                 continue
             }
             
+            // P4: 购买遗物 (R1, R2, R3...)
+            if input.hasPrefix("r"), let indexStr = input.dropFirst().first, let index = Int(String(indexStr)) {
+                inventory = handleBuyRelic(
+                    index: index,
+                    runState: &runState,
+                    inventory: inventory,
+                    context: context,
+                    message: &message
+                )
+                continue
+            }
+            
+            // P4: 购买消耗品 (C1, C2, C3...)
+            if input.hasPrefix("c"), let indexStr = input.dropFirst().first, let index = Int(String(indexStr)) {
+                inventory = handleBuyConsumable(
+                    index: index,
+                    runState: &runState,
+                    inventory: inventory,
+                    context: context,
+                    message: &message
+                )
+                continue
+            }
+            
+            // 购买卡牌 (1, 2, 3...)
             guard let choice = Int(input), choice >= 1, choice <= inventory.cardOffers.count else {
                 message = "\(Terminal.red)⚠️ 无效选择，请输入对应编号\(Terminal.reset)"
                 continue
             }
             
-            let offer = inventory.cardOffers[choice - 1]
-            if runState.gold < offer.price {
-                message = "\(Terminal.red)金币不足，无法购买该卡牌\(Terminal.reset)"
-                continue
-            }
-            
-            runState.gold -= offer.price
-            runState.addCardToDeck(cardId: offer.cardId)
-            let boughtName = CardRegistry.require(offer.cardId).name
-            context.logLine("\(Terminal.yellow)商店购买：\(boughtName)（-\(offer.price) 金币）\(Terminal.reset)")
-            inventory = ShopInventory(
-                cardOffers: inventory.cardOffers.enumerated().compactMap { index, cardOffer in
-                    index == choice - 1 ? nil : cardOffer
-                },
-                removeCardPrice: inventory.removeCardPrice
+            inventory = handleBuyCard(
+                choice: choice,
+                runState: &runState,
+                inventory: inventory,
+                context: context,
+                message: &message
             )
-            message = "\(Terminal.green)购买成功，已加入牌组\(Terminal.reset)"
         }
         
         runState.completeCurrentNode()
         return .completedNode
     }
+    
+    // MARK: - Buy Card
+    
+    private func handleBuyCard(
+        choice: Int,
+        runState: inout RunState,
+        inventory: ShopInventory,
+        context: RoomContext,
+        message: inout String?
+    ) -> ShopInventory {
+        let offer = inventory.cardOffers[choice - 1]
+        if runState.gold < offer.price {
+            message = "\(Terminal.red)金币不足，无法购买该卡牌\(Terminal.reset)"
+            return inventory
+        }
+        
+        runState.gold -= offer.price
+        runState.addCardToDeck(cardId: offer.cardId)
+        let boughtName = CardRegistry.require(offer.cardId).name
+        context.logLine("\(Terminal.yellow)商店购买：\(boughtName)（-\(offer.price) 金币）\(Terminal.reset)")
+        
+        // 从库存移除已购买的卡牌
+        let newCardOffers = inventory.cardOffers.enumerated().compactMap { index, cardOffer in
+            index == choice - 1 ? nil : cardOffer
+        }
+        message = "\(Terminal.green)购买成功，已加入牌组\(Terminal.reset)"
+        
+        return ShopInventory(
+            cardOffers: newCardOffers,
+            relicOffers: inventory.relicOffers,
+            consumableOffers: inventory.consumableOffers,
+            removeCardPrice: inventory.removeCardPrice
+        )
+    }
+    
+    // MARK: - Buy Relic (P4)
+    
+    private func handleBuyRelic(
+        index: Int,
+        runState: inout RunState,
+        inventory: ShopInventory,
+        context: RoomContext,
+        message: inout String?
+    ) -> ShopInventory {
+        guard index >= 1, index <= inventory.relicOffers.count else {
+            message = "\(Terminal.red)⚠️ 无效的遗物编号\(Terminal.reset)"
+            return inventory
+        }
+        
+        let offer = inventory.relicOffers[index - 1]
+        if runState.gold < offer.price {
+            message = "\(Terminal.red)金币不足，无法购买该遗物\(Terminal.reset)"
+            return inventory
+        }
+        
+        runState.gold -= offer.price
+        runState.relicManager.add(offer.relicId)
+        let def = RelicRegistry.require(offer.relicId)
+        context.logLine("\(Terminal.yellow)商店购买：\(def.icon) \(def.name)（-\(offer.price) 金币）\(Terminal.reset)")
+        
+        // 从库存移除已购买的遗物
+        let newRelicOffers = inventory.relicOffers.enumerated().compactMap { idx, relicOffer in
+            idx == index - 1 ? nil : relicOffer
+        }
+        message = "\(Terminal.green)购买成功，获得遗物【\(def.name)】\(Terminal.reset)"
+        
+        return ShopInventory(
+            cardOffers: inventory.cardOffers,
+            relicOffers: newRelicOffers,
+            consumableOffers: inventory.consumableOffers,
+            removeCardPrice: inventory.removeCardPrice
+        )
+    }
+    
+    // MARK: - Buy Consumable (P4)
+    
+    private func handleBuyConsumable(
+        index: Int,
+        runState: inout RunState,
+        inventory: ShopInventory,
+        context: RoomContext,
+        message: inout String?
+    ) -> ShopInventory {
+        guard index >= 1, index <= inventory.consumableOffers.count else {
+            message = "\(Terminal.red)⚠️ 无效的消耗品编号\(Terminal.reset)"
+            return inventory
+        }
+        
+        let offer = inventory.consumableOffers[index - 1]
+        if runState.gold < offer.price {
+            message = "\(Terminal.red)金币不足，无法购买该消耗品\(Terminal.reset)"
+            return inventory
+        }
+        
+        guard runState.addConsumable(offer.consumableId) else {
+            message = "\(Terminal.red)消耗品槽位已满（最多 \(RunState.maxConsumableSlots) 个），无法购买\(Terminal.reset)"
+            return inventory
+        }
+        
+        runState.gold -= offer.price
+        let def = ConsumableRegistry.require(offer.consumableId)
+        context.logLine("\(Terminal.yellow)商店购买：\(def.icon) \(def.name)（-\(offer.price) 金币）\(Terminal.reset)")
+        
+        // 消耗品可重复购买，不从库存移除
+        message = "\(Terminal.green)购买成功，获得消耗品【\(def.name)】\(Terminal.reset)"
+        
+        return inventory
+    }
+    
+    // MARK: - Remove Card
     
     private func handleRemoveCard(runState: inout RunState, inventory: ShopInventory, context: RoomContext, message: inout String?) {
         if runState.gold < inventory.removeCardPrice {

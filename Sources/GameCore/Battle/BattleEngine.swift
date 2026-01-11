@@ -16,6 +16,14 @@ public final class BattleEngine: @unchecked Sendable {
     // P4: 遗物管理器（从 RunState 传入）
     private let relicManager: RelicManager
     
+    // P3: 占卜家遗物追踪
+    /// 本回合是否已使用预知（用于破碎怀表遗物）
+    private var foresightUsedThisTurn: Bool = false
+    /// 本场战斗是否已使用改写（用于预言者手札遗物）
+    private var rewriteUsedThisBattle: Bool = false
+    /// 是否应该跳过下一次疯狂添加（用于预言者手札遗物）
+    private var shouldSkipNextMadnessFromRewrite: Bool = false
+    
     /// 当前战斗携带的遗物（用于 UI 展示）
     public var relicIds: [RelicID] {
         relicManager.all
@@ -115,8 +123,21 @@ public final class BattleEngine: @unchecked Sendable {
     // MARK: Damage Calculation
     
     /// 计算最终伤害（通过 DamageCalculator 按 phase+priority 应用状态修正）
-    private func calculateDamage(baseDamage: Int, attacker: Entity, defender: Entity) -> Int {
-        DamageCalculator.calculate(baseDamage: baseDamage, attacker: attacker, defender: defender)
+    ///
+    /// P3 遗物支持：
+    /// - 疯狂面具（madness_mask）：当玩家疯狂 ≥6 时，玩家攻击伤害 +50%
+    private func calculateDamage(baseDamage: Int, attacker: Entity, defender: Entity, attackerIsPlayer: Bool = false) -> Int {
+        var damage = DamageCalculator.calculate(baseDamage: baseDamage, attacker: attacker, defender: defender)
+        
+        // P3: 疯狂面具遗物 - 玩家攻击且疯狂 ≥6 时，攻击伤害 +50%
+        if attackerIsPlayer && relicManager.has(MadnessMaskRelic.id) {
+            let madnessStacks = state.player.statuses.stacks(of: Madness.id)
+            if madnessStacks >= MadnessMaskRelic.madnessThreshold {
+                damage = Int(Double(damage) * MadnessMaskRelic.damageMultiplier)
+            }
+        }
+        
+        return damage
     }
 
     // MARK: Target Resolution (P6)
@@ -157,6 +178,9 @@ public final class BattleEngine: @unchecked Sendable {
         state.turn += 1
         state.isPlayerTurn = true
         
+        // P3: 重置本回合预知追踪（用于破碎怀表遗物）
+        foresightUsedThisTurn = false
+        
         emit(.turnStarted(turn: state.turn))
 
         // 重置能量
@@ -179,6 +203,9 @@ public final class BattleEngine: @unchecked Sendable {
         }
         
         // P2: 状态递减现在由 processStatusesAtTurnEnd 处理（在回合结束时）
+        
+        // P0 占卜家序列：疯狂阈值检查（在抽牌前，因为阈值 1 会弃牌）
+        checkMadnessThresholds()
         
         // 抽牌
         drawCards(cardsPerTurn)
@@ -232,6 +259,9 @@ public final class BattleEngine: @unchecked Sendable {
         
         // 处理玩家回合结束的状态效果（触发 + 递减）
         processStatusesAtTurnEnd(for: .player)
+        
+        // P0 占卜家序列：疯狂消减（回合结束时 -1）
+        reduceMadness()
 
         // P4: 触发回合结束遗物效果（仅玩家回合结束）
         triggerRelics(.turnEnd(turn: state.turn))
@@ -410,6 +440,20 @@ public final class BattleEngine: @unchecked Sendable {
             
         case .heal(let target, let amount):
             applyHeal(target: target, amount: amount)
+            
+        // MARK: - 占卜家序列效果 (P1)
+            
+        case .foresight(let count):
+            applyForesight(count: count)
+            
+        case .rewind(let count):
+            applyRewind(count: count)
+            
+        case .clearMadness(let amount):
+            applyClearMadness(amount: amount)
+            
+        case .rewriteIntent(let enemyIndex, let newIntent):
+            applyRewriteIntent(enemyIndex: enemyIndex, newIntent: newIntent)
         }
     }
     
@@ -418,7 +462,9 @@ public final class BattleEngine: @unchecked Sendable {
         let attacker: Entity = resolveEntity(for: source)
         let defenderBefore: Entity = resolveEntity(for: target)
         
-        let finalDamage = calculateDamage(baseDamage: base, attacker: attacker, defender: defenderBefore)
+        // P3: 疯狂面具遗物需要知道攻击者是否为玩家
+        let attackerIsPlayer = (source == .player)
+        let finalDamage = calculateDamage(baseDamage: base, attacker: attacker, defender: defenderBefore, attackerIsPlayer: attackerIsPlayer)
         
         let damageResult: (dealt: Int, blocked: Int)
         switch target {
@@ -482,10 +528,20 @@ public final class BattleEngine: @unchecked Sendable {
     }
     
     /// 应用状态效果
+    ///
+    /// P3 遗物支持：
+    /// - 预言者手札（prophet_notes）：首次改写时跳过疯狂添加
     private func applyStatusEffect(target: EffectTarget, statusId: StatusID, stacks: Int) {
         // P2: Now using StatusRegistry!
         guard let def = StatusRegistry.get(statusId) else {
             // Unknown status - skip silently
+            return
+        }
+        
+        // P3: 预言者手札遗物 - 首次改写后跳过疯狂添加
+        if statusId == Madness.id && target == .player && stacks > 0 && shouldSkipNextMadnessFromRewrite {
+            shouldSkipNextMadnessFromRewrite = false
+            emit(.statusApplied(target: state.player.name, effect: "（预言者手札抵消疯狂）", stacks: 0))
             return
         }
         
@@ -633,6 +689,187 @@ public final class BattleEngine: @unchecked Sendable {
             // P4: 触发战斗结束（失败）
             triggerRelics(.battleEnd(won: false))
         }
+    }
+    
+    // MARK: - Madness System (P0 占卜家序列)
+    
+    /// 检查玩家疯狂阈值并触发效果（在回合开始、抽牌前调用）
+    ///
+    /// 时机说明：
+    /// - 阈值 1（弃牌）在抽牌前检查，如果手牌为空则跳过（与杀戮尖塔"时钟"遗物行为一致）
+    /// - 阈值 2（虚弱）立即生效
+    /// - 阈值 3（增伤）由 Madness.modifyIncomingDamage 被动生效
+    ///
+    /// P3 遗物支持：
+    /// - 理智之锚（sanity_anchor）：所有阈值 +3
+    private func checkMadnessThresholds() {
+        let madnessStacks = state.player.statuses.stacks(of: Madness.id)
+        guard madnessStacks > 0 else { return }
+        
+        // P3: 理智之锚遗物使所有阈值 +3
+        let thresholdOffset = relicManager.has(SanityAnchorRelic.id) ? SanityAnchorRelic.thresholdOffset : 0
+        let effectiveThreshold1 = Madness.threshold1 + thresholdOffset
+        let effectiveThreshold2 = Madness.threshold2 + thresholdOffset
+        let effectiveThreshold3 = Madness.threshold3 + thresholdOffset
+        
+        // 阈值 1（≥3 层，或理智之锚时 ≥6 层）：随机弃 1 张手牌（如果有的话）
+        // 注意：当前版本没有"保留手牌"效果，所以回合开始时手牌通常为空
+        // 如果后续加入保留手牌效果，这里会生效
+        if madnessStacks >= effectiveThreshold1 && !state.hand.isEmpty {
+            let discardIndex = rng.nextInt(upperBound: state.hand.count)
+            let discardedCard = state.hand.remove(at: discardIndex)
+            state.discardPile.append(discardedCard)
+            emit(.madnessDiscard(cardId: discardedCard.cardId))
+            emit(.madnessThreshold(level: 1, effect: "随机弃 1 张牌"))
+        }
+        
+        // 阈值 2（≥6 层，或理智之锚时 ≥9 层）：获得虚弱 1
+        if madnessStacks >= effectiveThreshold2 {
+            applyStatusEffect(target: .player, statusId: Weak.id, stacks: 1)
+            emit(.madnessThreshold(level: 2, effect: "获得虚弱 1"))
+        }
+        
+        // 阈值 3（≥10 层，或理智之锚时 ≥13 层）的"受到伤害 +50%"由 Madness.modifyIncomingDamage 处理
+        // 这里只发出提示事件
+        if madnessStacks >= effectiveThreshold3 {
+            emit(.madnessThreshold(level: 3, effect: "受到伤害 +50%"))
+        }
+    }
+    
+    /// 回合结束时疯狂 -1
+    private func reduceMadness() {
+        let currentMadness = state.player.statuses.stacks(of: Madness.id)
+        if currentMadness > 0 {
+            state.player.statuses.apply(Madness.id, stacks: -1)
+            let newMadness = state.player.statuses.stacks(of: Madness.id)
+            emit(.madnessReduced(from: currentMadness, to: newMadness))
+        }
+    }
+    
+    // MARK: - Seer Sequence Mechanics (P1 占卜家序列机制)
+    
+    /// 应用预知效果（简化版：自动选择第一张攻击牌）
+    ///
+    /// 预知 N = 查看抽牌堆顶 N 张牌，选 1 张入手，其余按原顺序放回
+    /// 简化逻辑：自动选择第一张攻击牌；如果没有攻击牌则选择第一张
+    ///
+    /// P3 遗物支持：
+    /// - 破碎怀表（broken_watch）：每回合首次预知时，额外预知 1 张
+    private func applyForesight(count: Int) {
+        guard count > 0, !state.drawPile.isEmpty else { return }
+        
+        // P3: 破碎怀表遗物 - 每回合首次预知时，额外预知 1 张
+        var effectiveCount = count
+        if !foresightUsedThisTurn && relicManager.has(BrokenWatchRelic.id) {
+            effectiveCount += 1
+        }
+        foresightUsedThisTurn = true
+        
+        // 取出顶部 count 张（drawPile 是 LIFO，末尾是顶部）
+        let actualCount = min(effectiveCount, state.drawPile.count)
+        // 反转使第一张（顶部）在数组开头
+        let topCards = Array(state.drawPile.suffix(actualCount).reversed())
+        state.drawPile.removeLast(actualCount)
+        
+        // 选择第一张攻击牌（简化逻辑）
+        var chosenIndex = 0
+        for (index, card) in topCards.enumerated() {
+            let def = CardRegistry.require(card.cardId)
+            if def.type == .attack {
+                chosenIndex = index
+                break
+            }
+        }
+        
+        // 选中的牌入手
+        let chosenCard = topCards[chosenIndex]
+        state.hand.append(chosenCard)
+        emit(.foresightChosen(cardId: chosenCard.cardId, fromCount: actualCount))
+        
+        // 其余牌按原顺序放回（顶部放在 drawPile 末尾）
+        // 需要反向遍历以保持原顺序：原来的第一张应该回到顶部
+        for index in (0..<topCards.count).reversed() {
+            if index != chosenIndex {
+                state.drawPile.append(topCards[index])
+            }
+        }
+    }
+    
+    /// 应用回溯效果
+    ///
+    /// 回溯 N = 从弃牌堆选取最近 N 张牌返回手牌
+    private func applyRewind(count: Int) {
+        guard count > 0, !state.discardPile.isEmpty else { return }
+        
+        let actualCount = min(count, state.discardPile.count)
+        for _ in 0..<actualCount {
+            let card = state.discardPile.removeLast()
+            state.hand.append(card)
+            emit(.rewindCard(cardId: card.cardId))
+        }
+    }
+    
+    /// 应用清除疯狂效果
+    ///
+    /// - Parameter amount: 清除数量，0 表示清除所有
+    private func applyClearMadness(amount: Int) {
+        let currentMadness = state.player.statuses.stacks(of: Madness.id)
+        guard currentMadness > 0 else { return }
+        
+        if amount == 0 {
+            // 清除所有疯狂
+            state.player.statuses.set(Madness.id, stacks: 0)
+            emit(.madnessCleared(amount: currentMadness))
+        } else {
+            // 清除指定数量
+            let actualClear = min(amount, currentMadness)
+            state.player.statuses.apply(Madness.id, stacks: -actualClear)
+            emit(.madnessCleared(amount: actualClear))
+        }
+    }
+    
+    /// 应用改写敌人意图效果
+    ///
+    /// - Parameters:
+    ///   - enemyIndex: 目标敌人索引
+    ///   - newIntent: 新的意图类型
+    ///
+    /// P3 遗物支持：
+    /// - 预言者手札（prophet_notes）：每场战斗首次使用改写时，不获得疯狂
+    private func applyRewriteIntent(enemyIndex: Int, newIntent: RewrittenIntent) {
+        // 校验敌人索引有效性
+        guard enemyIndex >= 0, enemyIndex < state.enemies.count else { return }
+        guard state.enemies[enemyIndex].isAlive else { return }
+        guard let oldMove = state.enemies[enemyIndex].plannedMove else { return }
+        
+        // P3: 预言者手札遗物 - 首次改写时不获得疯狂
+        if !rewriteUsedThisBattle && relicManager.has(ProphetNotesRelic.id) {
+            shouldSkipNextMadnessFromRewrite = true
+        }
+        rewriteUsedThisBattle = true
+        
+        // 构建新的 EnemyMove
+        let newMove: EnemyMove
+        switch newIntent {
+        case .defend(let block):
+            newMove = EnemyMove(
+                intent: EnemyIntentDisplay(icon: "🛡️", text: "防御（被改写）"),
+                effects: [.gainBlock(target: .enemy(index: enemyIndex), base: block)]
+            )
+        case .skip:
+            newMove = EnemyMove(
+                intent: EnemyIntentDisplay(icon: "💫", text: "眩晕（被改写）"),
+                effects: []
+            )
+        }
+        
+        // 替换意图
+        state.enemies[enemyIndex].plannedMove = newMove
+        emit(.intentRewritten(
+            enemyName: state.enemies[enemyIndex].name,
+            oldIntent: oldMove.intent.text,
+            newIntent: newMove.intent.text
+        ))
     }
     
     // MARK: Relic System (P4)

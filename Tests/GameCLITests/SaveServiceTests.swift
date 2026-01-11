@@ -28,6 +28,7 @@ final class SaveServiceTests: XCTestCase {
         run.addCardToDeck(cardId: "inflame")
         run.relicManager.add("lantern")
         run.gold = 120
+        _ = run.addConsumable("purification_rune")
         
         service.saveRun(run)
         let loaded = try XCTUnwrap(try service.loadRun())
@@ -39,6 +40,7 @@ final class SaveServiceTests: XCTestCase {
         XCTAssertEqual(loaded.deck.map(\.cardId.rawValue), run.deck.map(\.cardId.rawValue))
         XCTAssertTrue(loaded.relicManager.all.contains("burning_blood"))
         XCTAssertTrue(loaded.relicManager.all.contains("lantern"))
+        XCTAssertEqual(loaded.consumables.map(\.rawValue), run.consumables.map(\.rawValue))
         XCTAssertEqual(loaded.map.count, run.map.count)
     }
     
@@ -60,6 +62,7 @@ final class SaveServiceTests: XCTestCase {
             player: snapshot.player,
             deck: snapshot.deck,
             relicIds: snapshot.relicIds,
+            consumableIds: snapshot.consumableIds,
             isOver: snapshot.isOver,
             won: snapshot.won
         )
@@ -91,6 +94,7 @@ final class SaveServiceTests: XCTestCase {
             player: snapshot.player,
             deck: [RunSnapshot.CardData(id: "bad_1", cardId: "unknown_card")],
             relicIds: snapshot.relicIds,
+            consumableIds: snapshot.consumableIds,
             isOver: snapshot.isOver,
             won: snapshot.won
         )
@@ -121,6 +125,7 @@ final class SaveServiceTests: XCTestCase {
             player: snapshot.player,
             deck: snapshot.deck,
             relicIds: ["unknown_relic"],
+            consumableIds: snapshot.consumableIds,
             isOver: snapshot.isOver,
             won: snapshot.won
         )

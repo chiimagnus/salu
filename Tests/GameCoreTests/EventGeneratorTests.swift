@@ -130,6 +130,8 @@ final class EventGeneratorTests: XCTestCase {
         case .chooseUpgradeableCard(let indices):
             // 起始牌组第 1 张 strike_1 可升级，应包含 index 0
             XCTAssertTrue(indices.contains(0))
+        case .startEliteBattle:
+            XCTFail("训练事件不应触发 startEliteBattle")
         }
     }
 }

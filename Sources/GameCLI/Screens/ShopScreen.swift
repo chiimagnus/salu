@@ -1,6 +1,6 @@
 import GameCore
 
-/// 商店界面
+/// 商店界面（P4 扩展：支持遗物和消耗品）
 enum ShopScreen {
     static func show(inventory: ShopInventory, runState: RunState, message: String? = nil) {
         Terminal.clear()
@@ -10,39 +10,82 @@ enum ShopScreen {
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
         
           当前金币: \(Terminal.yellow)\(runState.gold)\(Terminal.reset)
-          
-        \(Terminal.bold)可购买的卡牌：\(Terminal.reset)
         """)
         
+        // 卡牌区域
+        print("")
+        print("  \(Terminal.bold)🃏 卡牌：\(Terminal.reset)")
         if inventory.cardOffers.isEmpty {
             print("  \(Terminal.dim)（暂无卡牌上架）\(Terminal.reset)")
         } else {
             for (index, offer) in inventory.cardOffers.enumerated() {
                 let def = CardRegistry.require(offer.cardId)
                 let typeText = "\(def.type.rawValue)·\(def.rarity.rawValue)"
-                print("  \(Terminal.cyan)[\(index + 1)]\(Terminal.reset) \(def.name) \(Terminal.dim)(\(typeText))\(Terminal.reset) - \(Terminal.yellow)\(offer.price)金币\(Terminal.reset)")
+                let affordable = runState.gold >= offer.price
+                let priceColor = affordable ? Terminal.yellow : Terminal.dim
+                print("  \(Terminal.cyan)[\(index + 1)]\(Terminal.reset) \(def.name) \(Terminal.dim)(\(typeText))\(Terminal.reset) - \(priceColor)\(offer.price)金币\(Terminal.reset)")
             }
         }
         
+        // 遗物区域
         print("")
-        print("  \(Terminal.magenta)[D]\(Terminal.reset) 删牌 - \(Terminal.yellow)\(inventory.removeCardPrice)金币\(Terminal.reset)")
+        print("  \(Terminal.bold)💎 遗物：\(Terminal.reset)")
+        if inventory.relicOffers.isEmpty {
+            print("  \(Terminal.dim)（暂无遗物上架）\(Terminal.reset)")
+        } else {
+            for (index, offer) in inventory.relicOffers.enumerated() {
+                let def = RelicRegistry.require(offer.relicId)
+                let affordable = runState.gold >= offer.price
+                let priceColor = affordable ? Terminal.yellow : Terminal.dim
+                print("  \(Terminal.cyan)[R\(index + 1)]\(Terminal.reset) \(def.icon) \(def.name) - \(priceColor)\(offer.price)金币\(Terminal.reset)")
+                print("      \(Terminal.dim)\(def.description)\(Terminal.reset)")
+            }
+        }
+        
+        // 消耗品区域
+        print("")
+        print("  \(Terminal.bold)🧪 消耗品：\(Terminal.reset)")
+        if inventory.consumableOffers.isEmpty {
+            print("  \(Terminal.dim)（暂无消耗品上架）\(Terminal.reset)")
+        } else {
+            for (index, offer) in inventory.consumableOffers.enumerated() {
+                let def = ConsumableRegistry.require(offer.consumableId)
+                let affordable = runState.gold >= offer.price
+                let priceColor = affordable ? Terminal.yellow : Terminal.dim
+                print("  \(Terminal.cyan)[C\(index + 1)]\(Terminal.reset) \(def.icon) \(def.name) - \(priceColor)\(offer.price)金币\(Terminal.reset)")
+                print("      \(Terminal.dim)\(def.description)\(Terminal.reset)")
+            }
+        }
+        
+        // 删牌服务
+        print("")
+        let removeAffordable = runState.gold >= inventory.removeCardPrice
+        let removePriceColor = removeAffordable ? Terminal.yellow : Terminal.dim
+        print("  \(Terminal.magenta)[D]\(Terminal.reset) 删牌服务 - \(removePriceColor)\(inventory.removeCardPrice)金币\(Terminal.reset)")
         
         if let message {
             print("")
             print(message)
         }
         
-        let buyHint: String
-        if inventory.cardOffers.isEmpty {
-            buyHint = "\(Terminal.cyan)[无]\(Terminal.reset) 无卡牌可买"
-        } else {
-            buyHint = "\(Terminal.cyan)[1-\(inventory.cardOffers.count)]\(Terminal.reset) 购买卡牌"
+        // 输入提示
+        var hints: [String] = []
+        if !inventory.cardOffers.isEmpty {
+            hints.append("\(Terminal.cyan)[1-\(inventory.cardOffers.count)]\(Terminal.reset) 买卡")
         }
+        if !inventory.relicOffers.isEmpty {
+            hints.append("\(Terminal.cyan)[R1-R\(inventory.relicOffers.count)]\(Terminal.reset) 买遗物")
+        }
+        if !inventory.consumableOffers.isEmpty {
+            hints.append("\(Terminal.cyan)[C1-C\(inventory.consumableOffers.count)]\(Terminal.reset) 买消耗品")
+        }
+        hints.append("\(Terminal.cyan)[D]\(Terminal.reset) 删牌")
+        hints.append("\(Terminal.cyan)[0]\(Terminal.reset) 离开")
         
         print("""
         
         \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)
-        \(Terminal.yellow)⌨️\(Terminal.reset) \(buyHint)  \(Terminal.cyan)[D]\(Terminal.reset) 删牌  \(Terminal.cyan)[0]\(Terminal.reset) 离开
+        \(Terminal.yellow)⌨️\(Terminal.reset) \(hints.joined(separator: "  "))
         \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)
         """)
         print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")

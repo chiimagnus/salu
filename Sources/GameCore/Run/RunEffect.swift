@@ -26,6 +26,19 @@ public enum RunEffect: Sendable, Equatable {
     
     /// 获得一件遗物
     case addRelic(relicId: RelicID)
+
+    // MARK: - Status (P5: 事件可影响玩家状态)
+
+    /// 对玩家状态施加层数变化（可正可负）
+    case applyStatus(statusId: StatusID, stacks: Int)
+
+    /// 直接设置玩家状态层数（<=0 视为移除）
+    case setStatus(statusId: StatusID, stacks: Int)
+
+    // MARK: - Consumables (P5: 事件奖励消耗品)
+
+    /// 获得一个消耗品（若槽位已满则可能失败，见 RunState.apply 实现）
+    case addConsumable(consumableId: ConsumableID)
     
     // MARK: - Upgrade
     
