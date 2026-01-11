@@ -47,9 +47,15 @@
 
 ### 商店系统（Shop）
 - **位置**：`Sources/GameCore/Shop/`
-- **库存模型**：`ShopInventory`（目前只有 `cardOffers` + `removeCardPrice`）
-- **条目类型**：`ShopItem.Kind`（`.card` / `.removeCard`）
-- **定价**：`ShopPricing`
+- **库存模型**：`ShopInventory`（P4：`cardOffers` + `relicOffers` + `consumableOffers` + `removeCardPrice`）
+- **条目类型**：`ShopItem.Kind`（P4：`.card` / `.relic` / `.consumable` / `.removeCard`）
+- **定价**：`ShopPricing`（P4：新增遗物/消耗品定价）
+
+### 消耗品系统（Consumables）
+- **位置**：`Sources/GameCore/Consumables/`
+- **核心协议**：`ConsumableDefinition`
+- **注册表**：`ConsumableRegistry`
+- **Run 持有**：`RunState.consumables`（上限 3 个槽位）
 
 ### 事件系统（Events）
 - **位置**：`Sources/GameCore/Events/`
@@ -504,6 +510,150 @@ EnemyMove(
 
 ---
 
+## P4：商店扩展（12 格 + 消耗品系统）✅ 已完成
+
+> 完成日期：2026-01-11
+> 包含：5 张卡牌 + 3 个遗物 + 3 个消耗品 + 1 个删牌服务；新增消耗品系统并接入存档。
+
+### P4-1：新增消耗品系统（GameCore）
+
+**新增目录**：`Sources/GameCore/Consumables/`
+
+**新增文件**：
+- `ConsumableDefinition.swift`：定义 `ConsumableID` / `ConsumableRarity` / `ConsumableDefinition`
+- `ConsumableRegistry.swift`：注册表
+- `Definitions/CommonConsumables.swift`：通用消耗品（治疗/格挡/力量）
+- `Definitions/SeerConsumables.swift`：占卜家消耗品（净化符文：清除所有疯狂）
+
+### P4-2：扩展 RunState 持有消耗品 + 槽位限制
+
+**文件**：`Sources/GameCore/Run/RunState.swift`
+
+**新增**：
+- `consumables: [ConsumableID]`（最多 `maxConsumableSlots = 3`）
+- `addConsumable(_:) -> Bool` / `removeConsumable(at:)`
+
+### P4-3：扩展存档快照（破坏性变更）
+
+**文件**：
+- `Sources/GameCore/Run/RunSaveVersion.swift`：版本升到 `3`（不兼容旧版本）
+- `Sources/GameCore/Run/RunSnapshot.swift`：新增 `consumableIds`
+- `Sources/GameCLI/Persistence/SaveService.swift`：create/restore 读写 `consumableIds`
+
+**测试更新**：
+- `Tests/GameCoreTests/RunSnapshotCodableTests.swift`
+- `Tests/GameCLITests/SaveServiceTests.swift`
+
+### P4-4：扩展 Shop 模型（GameCore）
+
+**文件**：
+- `Sources/GameCore/Shop/ShopItem.swift`：新增 `.relic/.consumable` 报价类型与展示辅助
+- `Sources/GameCore/Shop/ShopInventory.swift`：生成 5/3/3 + 删牌
+- `Sources/GameCore/Shop/ShopContext.swift`：新增 `ownedRelicIds`（过滤已拥有遗物）
+- `Sources/GameCore/Shop/ShopPricing.swift`：新增遗物/消耗品定价
+
+**测试更新**：
+- `Tests/GameCoreTests/ShopInventoryTests.swift`
+
+### P4-5：更新 CLI 商店交互（GameCLI）
+
+**文件**：
+- `Sources/GameCLI/Screens/ShopScreen.swift`：显示卡牌/遗物/消耗品三栏 + 删牌
+- `Sources/GameCLI/Rooms/Handlers/ShopRoomHandler.swift`
+  - 新输入：`R1..R3` 买遗物，`C1..C3` 买消耗品
+  - 消耗品槽位满时阻止购买
+
+### P4 验收
+
+```bash
+swift build
+swift test
+SALU_TEST_MODE=1 SALU_TEST_MAP=shop swift run GameCLI --seed 1
+```
+
+---
+
+## P5：事件扩展（占卜家专属事件）⏳ 待实现（详细计划）
+
+### 目标
+- 把设计文档中的占卜家事件落地到 `GameCore/Events`，并接入 CLI 的事件房间流程。
+- 覆盖：新增卡牌/遗物/疯狂变化/升级卡牌（二次选择）。
+
+### 需要实现的事件（v1.0）
+- **序列密室**：获得卡牌“命运改写”并 +3 疯狂 / 清除 3 疯狂但失去 10 HP / 离开
+- **时间裂隙**：升级 1 张卡牌（follow-up 选择）并 +2 疯狂 / 获得遗物“破碎怀表”并 +2 疯狂 / 回复 10 HP
+- **疯狂预言者**（可选拓展）：听预言得稀有卡并 +4 疯狂 / 进入精英战 / 给钱回复并清除疯狂
+
+### 实现步骤（可执行）
+1. **新增 RunEffect 支持“获得消耗品/清除疯狂（战斗外）”**
+   - 文件：`Sources/GameCore/Run/RunEffect.swift`、`Sources/GameCore/Run/RunState.swift`
+2. **实现 EventDefinition**
+   - 文件：`Sources/GameCore/Events/Definitions/SeerEvents.swift`（新建）
+   - 产出：`EventOffer` + `EventOption`
+3. **注册事件**
+   - 文件：`Sources/GameCore/Events/EventRegistry.swift`
+4. **CLI 事件界面支持 follow-up 选择**
+   - 文件：`Sources/GameCLI/Screens/EventScreen.swift`、`Sources/GameCLI/Rooms/Handlers/EventRoomHandler.swift`
+5. **测试**
+   - `Tests/GameCoreTests/EventGeneratorTests.swift`：确保可生成
+   - 新增 `Tests/GameCoreTests/SeerEventDefinitionsTests.swift`
+   - `Tests/GameCLIUITests/*Event*`：覆盖选项分支（用 `SALU_TEST_MODE=1`）
+
+### P5 验收
+```bash
+swift build
+swift test
+SALU_TEST_MODE=1 SALU_TEST_MAP=event swift run GameCLI --seed 1
+```
+
+---
+
+## P6：赛弗 Boss 特殊机制 ⏳ 待实现（详细计划）
+
+### 目标
+实现设计文档中赛弗的“反制/剥夺/改写/回溯”特色机制，强化“改写”卡牌的战略价值。
+
+### 实现路径（建议）
+1. **新增敌方特殊效果（BattleEffect 扩展）**
+   - 例如：下一回合预知数量 -1；下一回合第一张牌费用 +1；随机弃 2 张手牌等
+   - 文件：`Sources/GameCore/Kernel/BattleEffect.swift`、`Sources/GameCore/Battle/BattleEngine.swift`、`Sources/GameCore/Events.swift`
+2. **在 Cipher AI 中产出这些效果**
+   - 文件：`Sources/GameCore/Enemies/Definitions/Act2/Act2BossEnemies.swift`
+3. **测试**
+   - 新增 `Tests/GameCoreTests/CipherBossMechanicsTests.swift`
+
+### P6 验收
+```bash
+swift build
+swift test
+SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=3 swift run GameCLI --seed 1
+```
+
+---
+
+## P7：卡牌池扩展（占卜家罕见/稀有卡 + 通用补充）⏳ 待实现（详细计划）
+
+### 目标
+补齐设计文档中占卜家卡牌：时间碎片、净化仪式、预言回响、深渊凝视、序列共鸣，并接入奖励/商店卡池。
+
+### 实现步骤（可执行）
+1. **补齐卡牌定义**
+   - 文件：`Sources/GameCore/Cards/Definitions/Seer/SeerCards.swift`
+2. **注册到 CardRegistry**
+   - 文件：`Sources/GameCore/Cards/CardRegistry.swift`
+3. **接入 CardPool / RewardGenerator / ShopInventory 的卡池策略**
+   - 文件：`Sources/GameCore/Rewards/*`、`Sources/GameCore/Shop/ShopInventory.swift`
+4. **测试**
+   - `Tests/GameCoreTests/CardDefinitionPlayTests.swift`：新增用例
+   - 新增 `Tests/GameCoreTests/SeerCardPoolTests.swift`
+
+### P7 验收
+```bash
+swift build
+swift test
+SALU_TEST_MODE=1 SALU_TEST_MAP=battle swift run GameCLI --seed 1
+```
+
 ## 验收流程
 
 每完成一个 P 级别后：
@@ -534,8 +684,7 @@ SALU_TEST_MODE=1 SALU_TEST_MAP=battle swift run GameCLI --seed 1
 
 ## 下一步
 
-P0~P3 已完成。可继续实现：
-- P4：商店扩展（遗物/消耗品货架）
+P0~P4 已完成。可继续实现：
 - P5：事件扩展（占卜家专属事件）
 - P6：赛弗 Boss 特殊机制
 - P7：卡牌池扩展（罕见/稀有卡牌）
