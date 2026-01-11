@@ -21,10 +21,11 @@ enum EventScreen {
             let preview = option.preview.map { " \(Terminal.dim)(\($0))\(Terminal.reset)" } ?? ""
             print("  \(Terminal.cyan)[\(index + 1)]\(Terminal.reset) \(option.title)\(preview)")
         }
+        print("  \(Terminal.cyan)[0]\(Terminal.reset) 离开")
         
         print("")
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(max(offer.options.count, 1))]\(Terminal.reset) 选择")
+        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(max(offer.options.count, 1))]\(Terminal.reset) 选择  \(Terminal.cyan)[0]\(Terminal.reset) 离开")
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
         
         while true {
@@ -39,6 +40,10 @@ enum EventScreen {
             let input = raw.trimmingCharacters(in: .whitespacesAndNewlines)
             if input.isEmpty {
                 continue
+            }
+            
+            if input == "0" {
+                return nil
             }
             
             if let n = Int(input), n >= 1, n <= offer.options.count {

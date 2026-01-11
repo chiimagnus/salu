@@ -5,6 +5,11 @@
 public enum EventRegistry {
     /// 注册的事件定义
     private static let defs: [EventID: any EventDefinition.Type] = [
+        // Seer Sequence
+        SeerSequenceChamberEvent.id: SeerSequenceChamberEvent.self,
+        SeerTimeRiftEvent.id: SeerTimeRiftEvent.self,
+        SeerMadProphetEvent.id: SeerMadProphetEvent.self,
+        
         ScavengerEvent.id: ScavengerEvent.self,
         AltarEvent.id: AltarEvent.self,
         TrainingEvent.id: TrainingEvent.self,

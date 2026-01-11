@@ -274,6 +274,18 @@ public struct RunState: Sendable {
         case .addRelic(let relicId):
             relicManager.add(relicId)
             return true
+
+        case .applyStatus(let statusId, let stacks):
+            guard stacks != 0 else { return true }
+            player.statuses.apply(statusId, stacks: stacks)
+            return true
+
+        case .setStatus(let statusId, let stacks):
+            player.statuses.set(statusId, stacks: stacks)
+            return true
+
+        case .addConsumable(let consumableId):
+            return addConsumable(consumableId)
             
         case .upgradeCard(let deckIndex):
             return upgradeCard(at: deckIndex)

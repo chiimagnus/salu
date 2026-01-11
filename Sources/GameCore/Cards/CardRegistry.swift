@@ -40,6 +40,10 @@ public enum CardRegistry {
         FateRewritePlus.id: FateRewritePlus.self,
         TimeShard.id: TimeShard.self,
         TimeShardPlus.id: TimeShardPlus.self,
+        
+        // Seer Sequence Cards - Rare (P5 占卜家序列稀有卡)
+        AbyssalGaze.id: AbyssalGaze.self,
+        AbyssalGazePlus.id: AbyssalGazePlus.self,
     ]
     
     /// 获取卡牌定义

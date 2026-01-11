@@ -273,3 +273,48 @@ public struct TimeShardPlus: CardDefinition {
     }
 }
 
+// ============================================================
+// MARK: - Rare Cards (稀有卡)
+// ============================================================
+
+// ------------------------------------------------------------
+// Abyssal Gaze (深渊凝视)
+// ------------------------------------------------------------
+
+/// 深渊凝视
+/// 攻击牌：对目标造成 18 点伤害
+public struct AbyssalGaze: CardDefinition {
+    public static let id: CardID = "abyssal_gaze"
+    public static let name = "深渊凝视"
+    public static let type: CardType = .attack
+    public static let rarity: CardRarity = .rare
+    public static let cost = 2
+    public static let rulesText = "「当你凝视深渊时，深渊也在凝视你。」对目标造成 18 点伤害。"
+    public static let upgradedId: CardID? = "abyssal_gaze+"
+    
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
+        let target = targetEnemyIndex ?? 0
+        return [
+            .dealDamage(source: .player, target: .enemy(index: target), base: 18)
+        ]
+    }
+}
+
+/// 深渊凝视+
+/// 攻击牌：对目标造成 24 点伤害
+public struct AbyssalGazePlus: CardDefinition {
+    public static let id: CardID = "abyssal_gaze+"
+    public static let name = "深渊凝视+"
+    public static let type: CardType = .attack
+    public static let rarity: CardRarity = .rare
+    public static let cost = 2
+    public static let rulesText = "「深渊的回望更为清晰。」对目标造成 24 点伤害。"
+    public static let upgradedId: CardID? = nil
+    
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
+        let target = targetEnemyIndex ?? 0
+        return [
+            .dealDamage(source: .player, target: .enemy(index: target), base: 24)
+        ]
+    }
+}
