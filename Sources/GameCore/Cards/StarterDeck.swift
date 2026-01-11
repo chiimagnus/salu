@@ -16,11 +16,11 @@ public func createStarterDeck() -> [Card] {
     // 1 张 Bash（起始牌）
     cards.append(Card(id: "bash_1", cardId: "bash"))
     
-    // 1 张 Pommel Strike
-    cards.append(Card(id: "pommelStrike_1", cardId: "pommel_strike"))
+    // P1: 起始牌组调整（+1 灵视，-1 触须鞭笞）
+    cards.append(Card(id: "spirit_sight_1", cardId: "spirit_sight"))
     
     // 1 张 Shrug It Off
-    cards.append(Card(id: "shrugItOff_1", cardId: "shrug_it_off"))
+    cards.append(Card(id: "shrug_it_off_1", cardId: "shrug_it_off"))
     
     // 1 张 Inflame
     cards.append(Card(id: "inflame_1", cardId: "inflame"))
