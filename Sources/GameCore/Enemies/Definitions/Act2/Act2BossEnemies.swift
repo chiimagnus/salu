@@ -25,12 +25,12 @@ public struct Cipher: EnemyDefinition {
     public static let hpRange: ClosedRange<Int> = 100...110
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {
-        // 计算当前血量百分比
-        guard let enemy = snapshot.enemies.first(where: { $0.name == name }) else {
+        // 计算当前血量百分比（使用 selfIndex 直接获取，避免多敌人场景下的问题）
+        guard selfIndex >= 0, selfIndex < snapshot.enemies.count else {
             // 回退到默认行为
             return phase1Move(selfIndex: selfIndex, turn: snapshot.turn, rng: &rng)
         }
-        
+        let enemy = snapshot.enemies[selfIndex]
         let hpPercent = Double(enemy.currentHP) / Double(enemy.maxHP)
         
         if hpPercent > 0.6 {
