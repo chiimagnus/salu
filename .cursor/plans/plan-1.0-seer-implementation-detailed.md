@@ -1,8 +1,7 @@
 # Salu 1.0 占卜家序列 —— 详细实现计划
 
 > 本文档基于对现有代码库的深入分析，为每个优先级提供具体的实现步骤。
-> 设计草案：`.cursor/plans/design-1.0-seer-build.md`
-> 总体规划：`.cursor/plans/plan-1.0-seer-implementation.md`
+> 设计草案：已整合到 `.cursor/rules/Salu游戏设定与剧情v1.0.mdc` 第 6 章"占卜家序列流派设计"
 
 ---
 
