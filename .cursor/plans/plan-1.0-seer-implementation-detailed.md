@@ -59,7 +59,10 @@
 
 ---
 
-## P0：疯狂状态系统
+## P0：疯狂状态系统 ✅ 已完成
+
+> 完成日期：2026-01-11
+> 包含：Madness 状态定义、阈值检查、回合结束消减、界面显示
 
 ### P0-1：新增 MadnessStatus 状态定义
 
@@ -227,7 +230,14 @@ SALU_TEST_MODE=1 SALU_TEST_MAP=battle swift run GameCLI --seed 1
 
 ---
 
-## P1：核心卡牌机制
+## P1：核心卡牌机制 ✅ 已完成
+
+> 完成日期：2026-01-11
+> 包含：
+> - BattleEffect: foresight / rewind / clearMadness
+> - BattleEvent: foresightChosen / rewindCard / madnessCleared
+> - 占卜家卡牌：灵视/灵视+、真相低语/真相低语+、冥想/冥想+、理智燃烧/理智燃烧+
+> - 文件：Sources/GameCore/Cards/Definitions/Seer/SeerCards.swift
 
 ### P1-1：实现"预知"关键词机制
 
