@@ -94,6 +94,9 @@ enum EventFormatter {
         case .rewindCard(let cardId):
             let def = CardRegistry.require(cardId)
             return "\(Terminal.cyan)⏪ 回溯 \(def.name) 回到手牌\(Terminal.reset)"
+            
+        case .intentRewritten(let enemyName, let oldIntent, let newIntent):
+            return "\(Terminal.yellow)✍️ 改写 \(enemyName)：\(oldIntent) → \(newIntent)\(Terminal.reset)"
         }
     }
     

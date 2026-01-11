@@ -82,6 +82,9 @@ public enum BattleEvent: Sendable, Equatable {
     
     /// 回溯卡牌
     case rewindCard(cardId: CardID)
+    
+    /// 意图被改写
+    case intentRewritten(enemyName: String, oldIntent: String, newIntent: String)
 }
 
 /// 事件描述（用于 CLI 显示）
@@ -182,6 +185,9 @@ extension BattleEvent {
         case .rewindCard(let cardId):
             let def = CardRegistry.require(cardId)
             return "⏪ 回溯 \(def.name) 回到手牌"
+            
+        case .intentRewritten(let enemyName, let oldIntent, let newIntent):
+            return "✍️ 改写 \(enemyName) 的意图：\(oldIntent) → \(newIntent)"
         }
     }
 }

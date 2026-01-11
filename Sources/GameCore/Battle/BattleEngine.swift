@@ -427,6 +427,9 @@ public final class BattleEngine: @unchecked Sendable {
             
         case .clearMadness(let amount):
             applyClearMadness(amount: amount)
+            
+        case .rewriteIntent(let enemyIndex, let newIntent):
+            applyRewriteIntent(enemyIndex: enemyIndex, newIntent: newIntent)
         }
     }
     
@@ -768,6 +771,41 @@ public final class BattleEngine: @unchecked Sendable {
             state.player.statuses.apply(Madness.id, stacks: -actualClear)
             emit(.madnessCleared(amount: actualClear))
         }
+    }
+    
+    /// 应用改写敌人意图效果
+    ///
+    /// - Parameters:
+    ///   - enemyIndex: 目标敌人索引
+    ///   - newIntent: 新的意图类型
+    private func applyRewriteIntent(enemyIndex: Int, newIntent: RewrittenIntent) {
+        // 校验敌人索引有效性
+        guard enemyIndex >= 0, enemyIndex < state.enemies.count else { return }
+        guard state.enemies[enemyIndex].isAlive else { return }
+        guard let oldMove = state.enemies[enemyIndex].plannedMove else { return }
+        
+        // 构建新的 EnemyMove
+        let newMove: EnemyMove
+        switch newIntent {
+        case .defend(let block):
+            newMove = EnemyMove(
+                intent: EnemyIntentDisplay(icon: "🛡️", text: "防御（被改写）"),
+                effects: [.gainBlock(target: .enemy(index: enemyIndex), base: block)]
+            )
+        case .skip:
+            newMove = EnemyMove(
+                intent: EnemyIntentDisplay(icon: "💫", text: "眩晕（被改写）"),
+                effects: []
+            )
+        }
+        
+        // 替换意图
+        state.enemies[enemyIndex].plannedMove = newMove
+        emit(.intentRewritten(
+            enemyName: state.enemies[enemyIndex].name,
+            oldIntent: oldMove.intent.text,
+            newIntent: newMove.intent.text
+        ))
     }
     
     // MARK: Relic System (P4)

@@ -176,3 +176,100 @@ public struct SanityBurnPlus: CardDefinition {
     }
 }
 
+// ============================================================
+// MARK: - Uncommon Cards (罕见卡)
+// ============================================================
+
+// ------------------------------------------------------------
+// Fate Rewrite (命运改写)
+// ------------------------------------------------------------
+
+/// 命运改写
+/// 技能牌：改写目标敌人意图变为"防御"，+2 疯狂
+public struct FateRewrite: CardDefinition {
+    public static let id: CardID = "fate_rewrite"
+    public static let name = "命运改写"
+    public static let type: CardType = .skill
+    public static let rarity: CardRarity = .uncommon
+    public static let cost = 1
+    public static let targeting: CardTargeting = .singleEnemy
+    public static let rulesText = "「命运的丝线在我指尖缠绕——我可以剪断，也可以重编。」改写：目标敌人意图变为「防御」。+2 疯狂。"
+    public static let upgradedId: CardID? = "fate_rewrite+"
+    
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
+        let target = targetEnemyIndex ?? 0
+        return [
+            .rewriteIntent(enemyIndex: target, newIntent: .defend(block: 10)),
+            .applyStatus(target: .player, statusId: Madness.id, stacks: 2)
+        ]
+    }
+}
+
+/// 命运改写+
+/// 技能牌：改写所有敌人意图变为"防御"，+2 疯狂
+public struct FateRewritePlus: CardDefinition {
+    public static let id: CardID = "fate_rewrite+"
+    public static let name = "命运改写+"
+    public static let type: CardType = .skill
+    public static let rarity: CardRarity = .uncommon
+    public static let cost = 1
+    public static let rulesText = "「命运在我手中重塑。」改写：所有敌人意图变为「防御」。+2 疯狂。"
+    public static let upgradedId: CardID? = nil
+    
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
+        // 改写所有存活敌人的意图
+        var effects: [BattleEffect] = []
+        for (index, enemy) in snapshot.enemies.enumerated() {
+            if enemy.isAlive {
+                effects.append(.rewriteIntent(enemyIndex: index, newIntent: .defend(block: 10)))
+            }
+        }
+        effects.append(.applyStatus(target: .player, statusId: Madness.id, stacks: 2))
+        return effects
+    }
+}
+
+// ------------------------------------------------------------
+// Time Shard (时间碎片)
+// ------------------------------------------------------------
+
+/// 时间碎片
+/// 技能牌：回溯 1，抽 1 张牌，+1 疯狂
+public struct TimeShard: CardDefinition {
+    public static let id: CardID = "time_shard"
+    public static let name = "时间碎片"
+    public static let type: CardType = .skill
+    public static let rarity: CardRarity = .uncommon
+    public static let cost = 1
+    public static let rulesText = "「过去并未消逝，只是被遗忘。」回溯 1，抽 1 张牌。+1 疯狂。"
+    public static let upgradedId: CardID? = "time_shard+"
+    
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
+        return [
+            .rewind(count: 1),
+            .drawCards(count: 1),
+            .applyStatus(target: .player, statusId: Madness.id, stacks: 1)
+        ]
+    }
+}
+
+/// 时间碎片+
+/// 技能牌：回溯 2，抽 1 张牌，+1 疯狂
+public struct TimeShardPlus: CardDefinition {
+    public static let id: CardID = "time_shard+"
+    public static let name = "时间碎片+"
+    public static let type: CardType = .skill
+    public static let rarity: CardRarity = .uncommon
+    public static let cost = 1
+    public static let rulesText = "「时间的碎片在指尖重组。」回溯 2，抽 1 张牌。+1 疯狂。"
+    public static let upgradedId: CardID? = nil
+    
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
+        return [
+            .rewind(count: 2),
+            .drawCards(count: 1),
+            .applyStatus(target: .player, statusId: Madness.id, stacks: 1)
+        ]
+    }
+}
+

@@ -45,4 +45,10 @@ public enum BattleEffect: Sendable, Equatable {
     /// - Parameters:
     ///   - amount: 清除数量（0 表示清除所有）
     case clearMadness(amount: Int)
+    
+    /// 改写敌人意图
+    /// - Parameters:
+    ///   - enemyIndex: 目标敌人索引
+    ///   - newIntent: 新的意图类型
+    case rewriteIntent(enemyIndex: Int, newIntent: RewrittenIntent)
 }
