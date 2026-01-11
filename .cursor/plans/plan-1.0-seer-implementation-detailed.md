@@ -457,6 +457,53 @@ EnemyMove(
 
 ---
 
+## P3：占卜家遗物扩展 ✅ 已完成
+
+> 完成日期：2026-01-11
+> 包含：6 个占卜家专属遗物
+
+### P3-1~2：战斗开始触发遗物
+
+**文件**：`Sources/GameCore/Relics/Definitions/SeerRelics.swift`（新建）
+
+实现以下遗物：
+- **第三只眼**：战斗开始时预知 2
+- **深渊之瞳**：战斗开始时预知 3，+1 疯狂
+
+### P3-3：理智之锚（阈值修改）
+
+**文件**：`Sources/GameCore/Battle/BattleEngine.swift`
+
+在 `checkMadnessThresholds()` 中检查玩家是否拥有理智之锚遗物，如果有则所有阈值 +3。
+
+### P3-4：疯狂面具（伤害修正）
+
+**文件**：`Sources/GameCore/Battle/BattleEngine.swift`
+
+在 `calculateDamage()` 中检查攻击者是否为玩家且拥有疯狂面具遗物，如果疯狂 ≥6 则攻击伤害 +50%。
+
+### P3-5：破碎怀表（预知增强）
+
+**文件**：`Sources/GameCore/Battle/BattleEngine.swift`
+
+添加 `foresightUsedThisTurn` 追踪变量，在 `applyForesight()` 中检查首次预知时是否拥有破碎怀表，如果有则额外预知 1 张。
+
+### P3-6：预言者手札（改写免疫）
+
+**文件**：`Sources/GameCore/Battle/BattleEngine.swift`
+
+添加 `rewriteUsedThisBattle` 和 `shouldSkipNextMadnessFromRewrite` 追踪变量：
+- 在 `applyRewriteIntent()` 中检查首次改写时是否拥有预言者手札
+- 在 `applyStatusEffect()` 中检查是否应跳过疯狂添加
+
+### P3-7：注册遗物
+
+**文件**：`Sources/GameCore/Relics/RelicRegistry.swift`
+
+注册 6 个新遗物到注册表。
+
+---
+
 ## 验收流程
 
 每完成一个 P 级别后：
@@ -487,5 +534,9 @@ SALU_TEST_MODE=1 SALU_TEST_MAP=battle swift run GameCLI --seed 1
 
 ## 下一步
 
-从 P0-1 开始实现：在 `Debuffs.swift` 中添加 `Madness` 状态定义。
+P0~P3 已完成。可继续实现：
+- P4：商店扩展（遗物/消耗品货架）
+- P5：事件扩展（占卜家专属事件）
+- P6：赛弗 Boss 特殊机制
+- P7：卡牌池扩展（罕见/稀有卡牌）
 
