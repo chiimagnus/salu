@@ -35,6 +35,7 @@ final class RunSnapshotCodableTests: XCTestCase {
                 .init(id: "inflame_1", cardId: "inflame"),
             ],
             relicIds: ["burning_blood", "lantern"],
+            consumableIds: ["purification_rune"],
             isOver: false,
             won: false
         )
@@ -50,12 +51,13 @@ final class RunSnapshotCodableTests: XCTestCase {
         XCTAssertEqual(decoded.player.statuses["strength"], 2)
         XCTAssertEqual(decoded.deck.count, 2)
         XCTAssertEqual(decoded.relicIds, ["burning_blood", "lantern"])
+        XCTAssertEqual(decoded.consumableIds, ["purification_rune"])
         XCTAssertEqual(decoded.mapNodes.first?.roomType, RoomType.start.rawValue)
     }
     
-    /// 旧存档缺少 gold 字段时应使用默认值。
-    func testRunSnapshot_jsonDecode_withMissingGold_defaultsToStartingGold() throws {
-        print("🧪 测试：testRunSnapshot_jsonDecode_withMissingGold_defaultsToStartingGold")
+    /// 破坏性变更策略：缺少必要字段时，应解码失败（不做向后兼容）。
+    func testRunSnapshot_jsonDecode_withMissingGold_throws() throws {
+        print("🧪 测试：testRunSnapshot_jsonDecode_withMissingGold_throws")
         let json: [String: Any] = [
             "version": RunSaveVersion.current,
             "seed": 321,
@@ -82,14 +84,13 @@ final class RunSnapshotCodableTests: XCTestCase {
                 ["id": "strike_1", "cardId": "strike"],
             ],
             "relicIds": ["burning_blood"],
+            "consumableIds": [],
             "isOver": false,
             "won": false,
         ]
         
         let data = try JSONSerialization.data(withJSONObject: json, options: [])
-        let decoded = try JSONDecoder().decode(RunSnapshot.self, from: data)
-        
-        XCTAssertEqual(decoded.gold, RunState.startingGold)
+        XCTAssertThrowsError(try JSONDecoder().decode(RunSnapshot.self, from: data))
     }
 }
 
