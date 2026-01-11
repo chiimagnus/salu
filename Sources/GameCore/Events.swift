@@ -71,6 +71,17 @@ public enum BattleEvent: Sendable, Equatable {
     
     /// 疯狂导致弃牌
     case madnessDiscard(cardId: CardID)
+    
+    /// 疯狂被清除
+    case madnessCleared(amount: Int)
+    
+    // MARK: - 占卜家机制事件 (P1)
+    
+    /// 预知选择
+    case foresightChosen(cardId: CardID, fromCount: Int)
+    
+    /// 回溯卡牌
+    case rewindCard(cardId: CardID)
 }
 
 /// 事件描述（用于 CLI 显示）
@@ -154,6 +165,23 @@ extension BattleEvent {
         case .madnessDiscard(let cardId):
             let def = CardRegistry.require(cardId)
             return "🌀 疯狂导致弃牌：\(def.name)"
+            
+        case .madnessCleared(let amount):
+            if amount == 0 {
+                return "🌀 疯狂完全消除"
+            } else {
+                return "🌀 疯狂消除 \(amount) 层"
+            }
+            
+        // MARK: - 占卜家机制事件
+            
+        case .foresightChosen(let cardId, let fromCount):
+            let def = CardRegistry.require(cardId)
+            return "👁️ 预知 \(fromCount) 张，选择 \(def.name) 入手"
+            
+        case .rewindCard(let cardId):
+            let def = CardRegistry.require(cardId)
+            return "⏪ 回溯 \(def.name) 回到手牌"
         }
     }
 }

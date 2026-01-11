@@ -28,4 +28,21 @@ public enum BattleEffect: Sendable, Equatable {
     
     /// 治疗（用于遗物等）
     case heal(target: EffectTarget, amount: Int)
+    
+    // MARK: - 占卜家序列效果 (P1)
+    
+    /// 预知：查看抽牌堆顶 N 张，选 1 张入手，其余原顺序放回
+    /// - Parameters:
+    ///   - count: 预知数量
+    case foresight(count: Int)
+    
+    /// 回溯：从弃牌堆选取最近 N 张牌返回手牌
+    /// - Parameters:
+    ///   - count: 回溯数量
+    case rewind(count: Int)
+    
+    /// 清除疯狂
+    /// - Parameters:
+    ///   - amount: 清除数量（0 表示清除所有）
+    case clearMadness(amount: Int)
 }

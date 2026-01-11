@@ -416,6 +416,17 @@ public final class BattleEngine: @unchecked Sendable {
             
         case .heal(let target, let amount):
             applyHeal(target: target, amount: amount)
+            
+        // MARK: - 占卜家序列效果 (P1)
+            
+        case .foresight(let count):
+            applyForesight(count: count)
+            
+        case .rewind(let count):
+            applyRewind(count: count)
+            
+        case .clearMadness(let amount):
+            applyClearMadness(amount: amount)
         }
     }
     
@@ -684,6 +695,78 @@ public final class BattleEngine: @unchecked Sendable {
             state.player.statuses.apply(Madness.id, stacks: -1)
             let newMadness = state.player.statuses.stacks(of: Madness.id)
             emit(.madnessReduced(from: currentMadness, to: newMadness))
+        }
+    }
+    
+    // MARK: - Seer Sequence Mechanics (P1 占卜家序列机制)
+    
+    /// 应用预知效果（简化版：自动选择第一张攻击牌）
+    ///
+    /// 预知 N = 查看抽牌堆顶 N 张牌，选 1 张入手，其余按原顺序放回
+    /// 简化逻辑：自动选择第一张攻击牌；如果没有攻击牌则选择第一张
+    private func applyForesight(count: Int) {
+        guard count > 0, !state.drawPile.isEmpty else { return }
+        
+        // 取出顶部 count 张（drawPile 是 LIFO，末尾是顶部）
+        let actualCount = min(count, state.drawPile.count)
+        // 反转使第一张（顶部）在数组开头
+        let topCards = Array(state.drawPile.suffix(actualCount).reversed())
+        state.drawPile.removeLast(actualCount)
+        
+        // 选择第一张攻击牌（简化逻辑）
+        var chosenIndex = 0
+        for (index, card) in topCards.enumerated() {
+            let def = CardRegistry.require(card.cardId)
+            if def.type == .attack {
+                chosenIndex = index
+                break
+            }
+        }
+        
+        // 选中的牌入手
+        let chosenCard = topCards[chosenIndex]
+        state.hand.append(chosenCard)
+        emit(.foresightChosen(cardId: chosenCard.cardId, fromCount: actualCount))
+        
+        // 其余牌按原顺序放回（顶部放在 drawPile 末尾）
+        // 需要反向遍历以保持原顺序：原来的第一张应该回到顶部
+        for index in (0..<topCards.count).reversed() {
+            if index != chosenIndex {
+                state.drawPile.append(topCards[index])
+            }
+        }
+    }
+    
+    /// 应用回溯效果
+    ///
+    /// 回溯 N = 从弃牌堆选取最近 N 张牌返回手牌
+    private func applyRewind(count: Int) {
+        guard count > 0, !state.discardPile.isEmpty else { return }
+        
+        let actualCount = min(count, state.discardPile.count)
+        for _ in 0..<actualCount {
+            let card = state.discardPile.removeLast()
+            state.hand.append(card)
+            emit(.rewindCard(cardId: card.cardId))
+        }
+    }
+    
+    /// 应用清除疯狂效果
+    ///
+    /// - Parameter amount: 清除数量，0 表示清除所有
+    private func applyClearMadness(amount: Int) {
+        let currentMadness = state.player.statuses.stacks(of: Madness.id)
+        guard currentMadness > 0 else { return }
+        
+        if amount == 0 {
+            // 清除所有疯狂
+            state.player.statuses.set(Madness.id, stacks: 0)
+            emit(.madnessCleared(amount: currentMadness))
+        } else {
+            // 清除指定数量
+            let actualClear = min(amount, currentMadness)
+            state.player.statuses.apply(Madness.id, stacks: -actualClear)
+            emit(.madnessCleared(amount: actualClear))
         }
     }
     

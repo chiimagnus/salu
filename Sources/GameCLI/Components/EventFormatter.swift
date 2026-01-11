@@ -81,6 +81,19 @@ enum EventFormatter {
         case .madnessDiscard(let cardId):
             let def = CardRegistry.require(cardId)
             return "\(Terminal.red)🌀 疯狂弃牌: \(def.name)\(Terminal.reset)"
+            
+        case .madnessCleared(let amount):
+            return "\(Terminal.green)🌀 疯狂清除 \(amount) 层\(Terminal.reset)"
+            
+        // MARK: - 占卜家机制事件 (P1)
+            
+        case .foresightChosen(let cardId, let fromCount):
+            let def = CardRegistry.require(cardId)
+            return "\(Terminal.magenta)👁️ 预知 \(fromCount) 张，选择 \(def.name) 入手\(Terminal.reset)"
+            
+        case .rewindCard(let cardId):
+            let def = CardRegistry.require(cardId)
+            return "\(Terminal.cyan)⏪ 回溯 \(def.name) 回到手牌\(Terminal.reset)"
         }
     }
     

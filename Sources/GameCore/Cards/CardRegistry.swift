@@ -24,6 +24,16 @@ public enum CardRegistry {
         Intimidate.id: Intimidate.self,
         AgileStance.id: AgileStance.self,
         PoisonedStrike.id: PoisonedStrike.self,
+        
+        // Seer Sequence Cards (P1 占卜家序列)
+        SpiritSight.id: SpiritSight.self,
+        SpiritSightPlus.id: SpiritSightPlus.self,
+        TruthWhisper.id: TruthWhisper.self,
+        TruthWhisperPlus.id: TruthWhisperPlus.self,
+        Meditation.id: Meditation.self,
+        MeditationPlus.id: MeditationPlus.self,
+        SanityBurn.id: SanityBurn.self,
+        SanityBurnPlus.id: SanityBurnPlus.self,
     ]
     
     /// 获取卡牌定义
