@@ -573,7 +573,7 @@ SALU_TEST_MODE=1 SALU_TEST_MAP=shop swift run GameCLI --seed 1
 
 ---
 
-## P5：事件扩展（占卜家专属事件）⏳ 待实现（详细计划）
+## P5：事件扩展（占卜家专属事件）✅ 已实现
 
 ### 目标
 - 把设计文档中的占卜家事件落地到 `GameCore/Events`，并接入 CLI 的事件房间流程。
@@ -586,7 +586,7 @@ SALU_TEST_MODE=1 SALU_TEST_MAP=shop swift run GameCLI --seed 1
 
 ### 实现步骤（可执行）
 #### P5-0 现状确认（已存在能力）
-- `EventFollowUp` 已支持：`chooseUpgradeableCard(indices:)`
+- `EventFollowUp` 已支持：`chooseUpgradeableCard(indices:)` + `startEliteBattle(enemyId:)`
 - `EventRoomHandler` 已支持二次选择流程（升级卡牌）
 
 #### P5-1 扩展 RunEffect（为“疯狂变化 / 获得消耗品”提供落点）
@@ -621,9 +621,9 @@ SALU_TEST_MODE=1 SALU_TEST_MAP=shop swift run GameCLI --seed 1
 - 选项 2：窥视未来 → `addRelic(broken_watch)` + `applyStatus(madness,+2)`
 - 选项 3：闭眼离开 → `heal(10)`
 
-**事件 C：疯狂预言者（seer_mad_prophet）**（P5 可选，若要先做两件事件也可）
+**事件 C：疯狂预言者（seer_mad_prophet）**
 - 选项 1：聆听预言 → `addCard(abyssal_gaze)` + `applyStatus(madness,+4)`
-- 选项 2：打断他 → （建议先不做“事件内进精英战”链路，放到 P5.9 / P6 后再补）  
+- 选项 2：打断他 → followUp：`startEliteBattle(enemyId: mad_prophet)`（事件内进入精英战链路）  
 - 选项 3：给予金币安抚 → `loseGold(30)` + `heal(15)` + `applyStatus(madness,-2)`
 
 > **确定性要求**：事件只用 `EventContext` + `rng` 决定“出现哪个事件/选项效果”，不要在 EventDefinition 里做 I/O。
