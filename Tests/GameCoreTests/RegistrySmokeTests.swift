@@ -39,8 +39,8 @@ final class RegistrySmokeTests: XCTestCase {
             XCTAssertNotNil(EnemyRegistry.get(id))
         }
         
-        // Boss 也必须可 resolve
-        XCTAssertNotNil(EnemyRegistry.get("chrono_watcher"))
+        // Boss 也必须可 resolve（P2 替换：chrono_watcher → cipher）
+        XCTAssertNotNil(EnemyRegistry.get("cipher"))
     }
     
     /// 基础遗物必须存在（用于 Run 起始遗物与遗物触发回归测试）。

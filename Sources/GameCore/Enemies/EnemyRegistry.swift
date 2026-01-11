@@ -28,8 +28,7 @@ public enum EnemyRegistry {
         TimeGuardian.id: TimeGuardian.self,
         
         // Act 2 Bosses
-        Cipher.id: Cipher.self,          // P2 新增：赛弗
-        ChronoWatcher.id: ChronoWatcher.self,  // 保留用于旧存档兼容
+        Cipher.id: Cipher.self,  // P2 赛弗
         
         // Act 3 Enemies
         VoidWalker.id: VoidWalker.self,
