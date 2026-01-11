@@ -643,17 +643,19 @@ public final class BattleEngine: @unchecked Sendable {
     
     // MARK: - Madness System (P0 占卜家序列)
     
-    /// 检查玩家疯狂阈值并触发效果（在回合开始时调用）
+    /// 检查玩家疯狂阈值并触发效果（在回合开始、抽牌前调用）
+    ///
+    /// 时机说明：
+    /// - 阈值 1（弃牌）在抽牌前检查，如果手牌为空则跳过（与杀戮尖塔"时钟"遗物行为一致）
+    /// - 阈值 2（虚弱）立即生效
+    /// - 阈值 3（增伤）由 Madness.modifyIncomingDamage 被动生效
     private func checkMadnessThresholds() {
         let madnessStacks = state.player.statuses.stacks(of: Madness.id)
         guard madnessStacks > 0 else { return }
         
-        // 阈值 1（≥3 层）：随机弃 1 张手牌
-        // 注意：此时手牌可能还没抽（在 startNewTurn 的抽牌前调用）
-        // 但阈值检查应该在抽牌后更合理，这里先检查并标记，实际弃牌在抽牌后
-        // 为了简化，我们在抽牌前检查但效果在本回合内生效
-        // 更正：按照设计，阈值检查在回合开始，效果立即生效
-        // 如果手牌为空（回合刚开始还没抽牌），则跳过弃牌
+        // 阈值 1（≥3 层）：随机弃 1 张手牌（如果有的话）
+        // 注意：当前版本没有"保留手牌"效果，所以回合开始时手牌通常为空
+        // 如果后续加入保留手牌效果，这里会生效
         if madnessStacks >= Madness.threshold1 && !state.hand.isEmpty {
             let discardIndex = rng.nextInt(upperBound: state.hand.count)
             let discardedCard = state.hand.remove(at: discardIndex)

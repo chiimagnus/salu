@@ -238,8 +238,9 @@ enum BattleScreen {
             
             let stackDisplay: String
             
-            // 对于永久状态（不递减），显示带符号
-            if case .none = def.decay {
+            // 对于永久正面状态（不递减的 buff），显示带符号
+            // 疯狂虽然不递减（由 BattleEngine 手动处理），但它是负面效果，不显示 + 号
+            if case .none = def.decay, def.isPositive {
                 stackDisplay = stacks >= 0 ? "+\(stacks)" : "\(stacks)"
             } else {
                 stackDisplay = "\(stacks)"
