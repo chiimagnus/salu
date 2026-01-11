@@ -585,19 +585,68 @@ SALU_TEST_MODE=1 SALU_TEST_MAP=shop swift run GameCLI --seed 1
 - **疯狂预言者**（可选拓展）：听预言得稀有卡并 +4 疯狂 / 进入精英战 / 给钱回复并清除疯狂
 
 ### 实现步骤（可执行）
-1. **新增 RunEffect 支持“获得消耗品/清除疯狂（战斗外）”**
-   - 文件：`Sources/GameCore/Run/RunEffect.swift`、`Sources/GameCore/Run/RunState.swift`
-2. **实现 EventDefinition**
-   - 文件：`Sources/GameCore/Events/Definitions/SeerEvents.swift`（新建）
-   - 产出：`EventOffer` + `EventOption`
-3. **注册事件**
-   - 文件：`Sources/GameCore/Events/EventRegistry.swift`
-4. **CLI 事件界面支持 follow-up 选择**
-   - 文件：`Sources/GameCLI/Screens/EventScreen.swift`、`Sources/GameCLI/Rooms/Handlers/EventRoomHandler.swift`
-5. **测试**
-   - `Tests/GameCoreTests/EventGeneratorTests.swift`：确保可生成
-   - 新增 `Tests/GameCoreTests/SeerEventDefinitionsTests.swift`
-   - `Tests/GameCLIUITests/*Event*`：覆盖选项分支（用 `SALU_TEST_MODE=1`）
+#### P5-0 现状确认（已存在能力）
+- `EventFollowUp` 已支持：`chooseUpgradeableCard(indices:)`
+- `EventRoomHandler` 已支持二次选择流程（升级卡牌）
+
+#### P5-1 扩展 RunEffect（为“疯狂变化 / 获得消耗品”提供落点）
+**目标**：让事件可以在**战斗外**对 RunState 的玩家状态做修改（例如 +3 疯狂、清除 3 疯狂），并允许事件奖励消耗品。
+
+**文件**：
+- `Sources/GameCore/Run/RunEffect.swift`
+- `Sources/GameCore/Run/RunState.swift`
+- `Sources/GameCLI/Rooms/Handlers/EventRoomHandler.swift`（result 文本摘要）
+
+**新增 RunEffect 建议**（全部为破坏性变更策略，不做向后兼容）：  
+- `case applyStatus(statusId: StatusID, stacks: Int)`（可正可负；用于 +疯狂 / 清除疯狂）  
+- `case setStatus(statusId: StatusID, stacks: Int)`（用于“清除所有疯狂”等）  
+- `case addConsumable(consumableId: ConsumableID)`（用于事件奖励消耗品）  
+
+**RunState.apply(effect:)** 需要新增分支：  
+- `applyStatus/setStatus`：直接对 `runState.player.statuses` 做 apply / set  
+- `addConsumable`：调用 `runState.addConsumable`，若满槽则返回 false（事件层可根据返回值决定展示文案）  
+
+**EventRoomHandler.buildResultLines** 需要补齐上述新 case 的文本摘要。
+
+#### P5-2 新增占卜家事件定义文件
+**新增文件**：`Sources/GameCore/Events/Definitions/SeerEvents.swift`
+
+**事件 A：序列密室（seer_sequence_chamber）**
+- 选项 1：阅读禁书 → `addCard(fate_rewrite)` + `applyStatus(madness,+3)`
+- 选项 2：焚毁书页 → `takeDamage(10)` + `applyStatus(madness,-3)`
+- 选项 3：离开 → 无效果
+
+**事件 B：时间裂隙（seer_time_rift）**
+- 选项 1：窥视过去 → `applyStatus(madness,+2)` + followUp：`chooseUpgradeableCard(indices: runState.upgradeableCardIndices)`
+- 选项 2：窥视未来 → `addRelic(broken_watch)` + `applyStatus(madness,+2)`
+- 选项 3：闭眼离开 → `heal(10)`
+
+**事件 C：疯狂预言者（seer_mad_prophet）**（P5 可选，若要先做两件事件也可）
+- 选项 1：聆听预言 → `addCard(abyssal_gaze)` + `applyStatus(madness,+4)`
+- 选项 2：打断他 → （建议先不做“事件内进精英战”链路，放到 P5.9 / P6 后再补）  
+- 选项 3：给予金币安抚 → `loseGold(30)` + `heal(15)` + `applyStatus(madness,-2)`
+
+> **确定性要求**：事件只用 `EventContext` + `rng` 决定“出现哪个事件/选项效果”，不要在 EventDefinition 里做 I/O。
+
+#### P5-3 注册事件
+**文件**：`Sources/GameCore/Events/EventRegistry.swift`  
+把新事件加入 `defs`。
+
+#### P5-4 CLI 事件 UI 与日志（已有能力，补齐文案即可）
+**文件**：`Sources/GameCLI/Screens/EventScreen.swift`、`Sources/GameCLI/Rooms/Handlers/EventRoomHandler.swift`
+- 事件展示/选项输入/升级 follow-up 已存在  
+- 只需要保证新增 RunEffect 的摘要文案可读、为中文
+
+#### P5-5 测试（必须新增）
+**新增测试文件**：`Tests/GameCoreTests/SeerEventDefinitionsTests.swift`
+- 验证每个事件 `generate` 的 options 数量、effects 内容、followUp 合法性（indices 在牌组范围内）
+
+**更新/补充现有测试**：
+- `Tests/GameCoreTests/EventGeneratorTests.swift`：确保 `EventRegistry` 扩容后仍 determinism
+
+**UI 验收测试**（黑盒，可后置但建议接入）：
+- 新增 `Tests/GameCLIUITests/GameCLISeerEventUITests.swift`（或扩展现有事件 UI 测试）
+- 使用 `SALU_TEST_MODE=1 SALU_TEST_MAP=event`
 
 ### P5 验收
 ```bash
@@ -614,13 +663,41 @@ SALU_TEST_MODE=1 SALU_TEST_MAP=event swift run GameCLI --seed 1
 实现设计文档中赛弗的“反制/剥夺/改写/回溯”特色机制，强化“改写”卡牌的战略价值。
 
 ### 实现路径（建议）
-1. **新增敌方特殊效果（BattleEffect 扩展）**
-   - 例如：下一回合预知数量 -1；下一回合第一张牌费用 +1；随机弃 2 张手牌等
-   - 文件：`Sources/GameCore/Kernel/BattleEffect.swift`、`Sources/GameCore/Battle/BattleEngine.swift`、`Sources/GameCore/Events.swift`
-2. **在 Cipher AI 中产出这些效果**
-   - 文件：`Sources/GameCore/Enemies/Definitions/Act2/Act2BossEnemies.swift`
-3. **测试**
-   - 新增 `Tests/GameCoreTests/CipherBossMechanicsTests.swift`
+#### P6-1 新增“赛弗专属效果”承载方式（推荐：BattleEffect + BattleEngine 临时状态）
+
+> 目标：不引入复杂的新系统（例如完整的“意图改写反制栈”），但能表达赛弗的 4 个核心机制。
+
+**建议新增 BattleEffect（最小集合）**：
+- `case applyForesightPenaltyNextTurn(amount: Int)`：下回合预知数量 -amount（最低 0）
+- `case applyFirstCardCostIncreaseNextTurn(amount: Int)`：下回合第一张牌费用 +amount
+- `case discardRandomHand(count: Int)`：随机弃置 count 张手牌（用于命运剥夺）
+- `case enemyHeal(enemyIndex: Int, amount: Int)`：敌人回复（用于时间回溯）
+
+**BattleEngine 需要新增临时状态**（仅影响玩家下一回合）：
+- `var foresightPenaltyNextTurn: Int`（回合开始时生效一次，然后归零）
+- `var firstCardCostIncreaseNextTurn: Int`（下一回合首张出牌生效，然后归零）
+- `var didApplyFirstCardCostIncreaseThisTurn: Bool`（确保只加一次）
+
+**修改点**：
+- `applyForesight(count:)`：应用 penalty（`max(0, count - penalty)`），并在回合开始把 penalty 归零
+- `playCard(...)`：在消耗能量/校验 cost 前，把首张牌 cost 临时 +N（并标记已使用）
+- 新增 `BattleEvent` 用于日志/测试（可选，但强烈建议）：例如 `cipherMechanicApplied(...)`
+
+#### P6-2 在 Cipher AI 中落地三阶段机制
+**文件**：`Sources/GameCore/Enemies/Definitions/Act2/Act2BossEnemies.swift`
+
+按设计文档映射到上面的 BattleEffect：
+- 阶段 1：预知反制 → `.applyForesightPenaltyNextTurn(amount: 1)`
+- 阶段 2：命运剥夺 → `.discardRandomHand(count: 2)` + `.applyStatus(.player, madness, +2)`
+- 阶段 3：命运改写（敌方版）→ `.applyFirstCardCostIncreaseNextTurn(amount: 1)`
+- 阶段 3：时间回溯 → `.enemyHeal(enemyIndex: selfIndex, amount: 15)`
+
+#### P6-3 测试（必须新增）
+**新增测试文件**：`Tests/GameCoreTests/CipherBossMechanicsTests.swift`
+- 构造战斗：单个 Cipher（selfIndex=0）+ 固定 seed
+- 断言：在不同 HP% 阶段，chooseMove 会产出对应效果
+- 断言：`applyForesightPenaltyNextTurn` 会让下一回合预知 fromCount 下降（最低 0）
+- 断言：`applyFirstCardCostIncreaseNextTurn` 会让下一回合第一张卡能量校验变严格
 
 ### P6 验收
 ```bash
@@ -637,15 +714,32 @@ SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=3 swift run GameCLI --se
 补齐设计文档中占卜家卡牌：时间碎片、净化仪式、预言回响、深渊凝视、序列共鸣，并接入奖励/商店卡池。
 
 ### 实现步骤（可执行）
-1. **补齐卡牌定义**
-   - 文件：`Sources/GameCore/Cards/Definitions/Seer/SeerCards.swift`
-2. **注册到 CardRegistry**
-   - 文件：`Sources/GameCore/Cards/CardRegistry.swift`
-3. **接入 CardPool / RewardGenerator / ShopInventory 的卡池策略**
-   - 文件：`Sources/GameCore/Rewards/*`、`Sources/GameCore/Shop/ShopInventory.swift`
-4. **测试**
-   - `Tests/GameCoreTests/CardDefinitionPlayTests.swift`：新增用例
-   - 新增 `Tests/GameCoreTests/SeerCardPoolTests.swift`
+#### P7-1 补齐占卜家卡牌定义（与现有引擎能力对齐）
+**文件**：`Sources/GameCore/Cards/Definitions/Seer/SeerCards.swift`
+
+需要补齐（至少）：
+- **时间碎片**：回溯 N + 抽牌 + 疯狂（需要已存在 `.rewind` + `.drawCards`）
+- **净化仪式**：清除所有疯狂 +（未升级时）弃 1 张手牌  
+  - 需要新增 `BattleEffect.discardRandomFromHand(count:)` 或 `BattleEffect.discardHand(cardIndex:)` 之一
+- **预言回响**：造成 `X × 本回合预知次数` 伤害  
+  - 需要 `BattleEngine` 追踪 `foresightCountThisTurn`（在 `applyForesight` 增加）并提供一个效果来读取它（例如 `.dealDamageBasedOnForesightCount(basePerForesight:)`）
+- **深渊凝视**：预知 N，然后对所有敌人造成 `k ×（本次预知中攻击牌数量）` 伤害  
+  - 推荐：`BattleEngine` 记录 `lastForesightViewedCardIds`（在 `applyForesight` 内保存），再新增效果 `.dealAOEDamageFromLastForesightAttackCount(multiplier:)`
+- **序列共鸣**（能力）：本场战斗中，每次预知后获得格挡（1 或 2）  
+  - 推荐：新增 `StatusDefinition`（如 `SequenceResonance`）或直接用状态 id 表示，并在 `applyForesight` 中检查该状态并产出 `.gainBlock`
+
+#### P7-2 注册到 CardRegistry
+**文件**：`Sources/GameCore/Cards/CardRegistry.swift`
+
+#### P7-3 卡池接入策略
+当前 `CardPool.rewardableCardIds()` 是“排除 starter，其余全进”，因此：
+- 新增卡牌只要 rarity != starter，就会自动进入奖励/商店
+- 如果要做“按序列/章节分池”，可在 P7-3.1 再拆分（后续扩展点）
+
+#### P7-4 测试（必须新增）
+- 更新 `Tests/GameCoreTests/CardDefinitionPlayTests.swift`：为新增卡牌补齐 play 行为断言
+- 新增 `Tests/GameCoreTests/SeerAdvancedCardsTests.swift`：
+  - 覆盖：预言回响/深渊凝视/净化仪式等需要引擎新增状态的卡
 
 ### P7 验收
 ```bash
