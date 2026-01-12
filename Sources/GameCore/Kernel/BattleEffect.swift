@@ -51,4 +51,23 @@ public enum BattleEffect: Sendable, Equatable {
     ///   - enemyIndex: 目标敌人索引
     ///   - newIntent: 新的意图类型
     case rewriteIntent(enemyIndex: Int, newIntent: RewrittenIntent)
+
+    // MARK: - 赛弗 Boss 特殊机制 (P6)
+
+    /// 预知反制：下回合玩家预知数量 -amount（最低为 0）
+    case applyForesightPenaltyNextTurn(amount: Int)
+
+    /// 命运改写（敌方版）：下回合玩家第一张牌费用 +amount
+    case applyFirstCardCostIncreaseNextTurn(amount: Int)
+
+    /// 随机弃置手牌
+    case discardRandomHand(count: Int)
+
+    /// 敌人回复（用于 Boss “时间回溯”等）
+    case enemyHeal(enemyIndex: Int, amount: Int)
+
+    // MARK: - 占卜家卡牌扩展 (P7)
+
+    /// 造成伤害：伤害值 = basePerForesight × 本回合预知次数
+    case dealDamageBasedOnForesightCount(source: EffectTarget, target: EffectTarget, basePerForesight: Int)
 }

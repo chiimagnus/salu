@@ -10,6 +10,7 @@ enum TestMode {
     private static let mapKey = "SALU_TEST_MAP"
     private static let maxFloorKey = "SALU_TEST_MAX_FLOOR"
     private static let battleDeckKey = "SALU_TEST_BATTLE_DECK"
+    private static let enemyHPKey = "SALU_TEST_ENEMY_HP"
     
     static var isEnabled: Bool {
         ProcessInfo.processInfo.environment[envKey] == "1"
@@ -52,6 +53,8 @@ enum TestMode {
             return runDeck
         case "seer":
             return seerTestBattleDeck()
+        case "seer_p7":
+            return seerP7TestBattleDeck()
         default:
             return [Card(id: "strike_test_1", cardId: "strike")]
         }
@@ -78,21 +81,40 @@ enum TestMode {
             Card(id: "seer_test_time_shard_2", cardId: "time_shard"),
         ]
     }
-    
-    /// 在测试模式下生成一张极小地图（起点 → 精英 → Boss）
-    static func testRunState(seed: UInt64) -> RunState {
-        let player = createDefaultPlayer()
-        let deck = createStarterDeck()
-        
-        var relicManager = RelicManager()
-        relicManager.add("burning_blood")
 
+    private static func seerP7TestBattleDeck() -> [Card] {
+        [
+            // P7：序列共鸣（能力）
+            Card(id: "seer_p7_sequence_resonance_1", cardId: "sequence_resonance"),
+
+            // P7：预言回响（伤害×本回合预知次数）
+            Card(id: "seer_p7_prophecy_echo_1", cardId: "prophecy_echo"),
+
+            // P7：净化仪式（清除所有疯狂）
+            Card(id: "seer_p7_purification_ritual_1", cardId: "purification_ritual"),
+
+            // P1：预知（用于触发序列共鸣/预言回响）
+            Card(id: "seer_p7_spirit_sight_1", cardId: "spirit_sight"),
+            Card(id: "seer_p7_spirit_sight_2", cardId: "spirit_sight"),
+            Card(id: "seer_p7_truth_whisper_1", cardId: "truth_whisper"),
+
+            // P1：清除疯狂（对照用）
+            Card(id: "seer_p7_meditation_1", cardId: "meditation"),
+
+            // P1：改写（用于 Boss 机制验收）
+            Card(id: "seer_p7_fate_rewrite_1", cardId: "fate_rewrite"),
+        ]
+    }
+
+    /// 测试模式下使用的固定小地图（起点 → 1 个房间 → Boss）。
+    ///
+    /// - Note: 用于 Act 推进时复用，避免进入下一幕后退回 15 层分支大地图。
+    static func testMapNodes() -> [MapNode] {
         let kind = testMapKind ?? "1"
-        let map: [MapNode]
         switch kind {
         case "1", "mini":
             // 起点 → 精英 → Boss（原有默认）
-            map = [
+            return [
                 MapNode(
                     id: "0_0",
                     row: 0,
@@ -115,10 +137,10 @@ enum TestMode {
                     roomType: .boss
                 )
             ]
-            
+
         case "battle":
             // 起点 → 普通战斗 → Boss（用于多敌人/目标选择 UI 测试）
-            map = [
+            return [
                 MapNode(
                     id: "0_0",
                     row: 0,
@@ -141,10 +163,10 @@ enum TestMode {
                     roomType: .boss
                 )
             ]
-            
+
         case "shop":
             // 起点 → 商店 → Boss（用于 P2 UI 测试）
-            map = [
+            return [
                 MapNode(
                     id: "0_0",
                     row: 0,
@@ -167,10 +189,10 @@ enum TestMode {
                     roomType: .boss
                 )
             ]
-            
+
         case "rest":
             // 起点 → 休息点 → Boss（用于 P3 UI 测试）
-            map = [
+            return [
                 MapNode(
                     id: "0_0",
                     row: 0,
@@ -196,7 +218,7 @@ enum TestMode {
 
         case "event":
             // 起点 → 事件 → Boss（用于 P5 UI 测试）
-            map = [
+            return [
                 MapNode(
                     id: "0_0",
                     row: 0,
@@ -219,10 +241,10 @@ enum TestMode {
                     roomType: .boss
                 )
             ]
-            
+
         default:
             // fallback：沿用 mini
-            map = [
+            return [
                 MapNode(
                     id: "0_0",
                     row: 0,
@@ -246,6 +268,18 @@ enum TestMode {
                 )
             ]
         }
+    }
+    
+    /// 在测试模式下生成一张极小地图（起点 → 精英 → Boss）
+    static func testRunState(seed: UInt64) -> RunState {
+        let player = createDefaultPlayer()
+        let deck = createStarterDeck()
+        
+        var relicManager = RelicManager()
+        relicManager.add("burning_blood")
+
+        let kind = testMapKind ?? "1"
+        let map = testMapNodes()
         
         let gold: Int
         switch kind {
@@ -274,6 +308,18 @@ enum TestMode {
     static func createEnemy(enemyId: EnemyID, instanceIndex: Int, rng: inout SeededRNG) -> Entity {
         guard isEnabled else {
             return GameCore.createEnemy(enemyId: enemyId, instanceIndex: instanceIndex, rng: &rng)
+        }
+
+        // 允许在测试模式下保留真实 HP（用于手动验收 Boss 阶段机制等）。
+        if let raw = ProcessInfo.processInfo.environment[enemyHPKey] {
+            let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if trimmed == "normal" || trimmed == "keep" {
+                return GameCore.createEnemy(enemyId: enemyId, instanceIndex: instanceIndex, rng: &rng)
+            }
+            if let hp = Int(trimmed), hp > 0 {
+                let def = EnemyRegistry.require(enemyId)
+                return Entity(id: "\(enemyId.rawValue)#\(instanceIndex)", name: def.name, maxHP: hp, enemyId: enemyId)
+            }
         }
         
         let def = EnemyRegistry.require(enemyId)

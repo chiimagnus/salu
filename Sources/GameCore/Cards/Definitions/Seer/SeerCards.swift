@@ -273,6 +273,95 @@ public struct TimeShardPlus: CardDefinition {
     }
 }
 
+// ------------------------------------------------------------
+// Purification Ritual (净化仪式)
+// ------------------------------------------------------------
+
+/// 净化仪式
+/// 技能牌：清除所有疯狂，弃置 1 张手牌
+public struct PurificationRitual: CardDefinition {
+    public static let id: CardID = "purification_ritual"
+    public static let name = "净化仪式"
+    public static let type: CardType = .skill
+    public static let rarity: CardRarity = .uncommon
+    public static let cost = 2
+    public static let rulesText = "「遗忘是一种慈悲——也是一种代价。」清除所有疯狂，随机弃置 1 张手牌。"
+    public static let upgradedId: CardID? = "purification_ritual+"
+
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
+        _ = snapshot
+        _ = targetEnemyIndex
+        return [
+            .clearMadness(amount: 0),
+            .discardRandomHand(count: 1),
+        ]
+    }
+}
+
+/// 净化仪式+
+/// 技能牌：清除所有疯狂，不弃牌
+public struct PurificationRitualPlus: CardDefinition {
+    public static let id: CardID = "purification_ritual+"
+    public static let name = "净化仪式+"
+    public static let type: CardType = .skill
+    public static let rarity: CardRarity = .uncommon
+    public static let cost = 2
+    public static let rulesText = "「遗忘不再需要代价。」清除所有疯狂。"
+    public static let upgradedId: CardID? = nil
+
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
+        _ = snapshot
+        _ = targetEnemyIndex
+        return [
+            .clearMadness(amount: 0),
+        ]
+    }
+}
+
+// ------------------------------------------------------------
+// Prophecy Echo (预言回响)
+// ------------------------------------------------------------
+
+/// 预言回响
+/// 攻击牌：造成 3 伤害 × 本回合预知次数，+1 疯狂
+public struct ProphecyEcho: CardDefinition {
+    public static let id: CardID = "prophecy_echo"
+    public static let name = "预言回响"
+    public static let type: CardType = .attack
+    public static let rarity: CardRarity = .uncommon
+    public static let cost = 1
+    public static let rulesText = "「每一次窥探，都在时间线上留下裂痕。」造成 3 伤害 × 本回合预知次数。+1 疯狂。"
+    public static let upgradedId: CardID? = "prophecy_echo+"
+
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
+        let target = EffectTarget.enemy(index: targetEnemyIndex ?? 0)
+        return [
+            .dealDamageBasedOnForesightCount(source: .player, target: target, basePerForesight: 3),
+            .applyStatus(target: .player, statusId: Madness.id, stacks: 1),
+        ]
+    }
+}
+
+/// 预言回响+
+/// 攻击牌：造成 4 伤害 × 本回合预知次数，+1 疯狂
+public struct ProphecyEchoPlus: CardDefinition {
+    public static let id: CardID = "prophecy_echo+"
+    public static let name = "预言回响+"
+    public static let type: CardType = .attack
+    public static let rarity: CardRarity = .uncommon
+    public static let cost = 1
+    public static let rulesText = "「裂痕回响成雷鸣。」造成 4 伤害 × 本回合预知次数。+1 疯狂。"
+    public static let upgradedId: CardID? = nil
+
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
+        let target = EffectTarget.enemy(index: targetEnemyIndex ?? 0)
+        return [
+            .dealDamageBasedOnForesightCount(source: .player, target: target, basePerForesight: 4),
+            .applyStatus(target: .player, statusId: Madness.id, stacks: 1),
+        ]
+    }
+}
+
 // ============================================================
 // MARK: - Rare Cards (稀有卡)
 // ============================================================
@@ -315,6 +404,52 @@ public struct AbyssalGazePlus: CardDefinition {
         let target = targetEnemyIndex ?? 0
         return [
             .dealDamage(source: .player, target: .enemy(index: target), base: 24)
+        ]
+    }
+}
+
+// ------------------------------------------------------------
+// Sequence Resonance (序列共鸣)
+// ------------------------------------------------------------
+
+/// 序列共鸣
+/// 能力牌：本场战斗中，每次预知后获得 1 格挡，+1 疯狂
+public struct SequenceResonanceCard: CardDefinition {
+    public static let id: CardID = "sequence_resonance"
+    public static let name = "序列共鸣"
+    public static let type: CardType = .power
+    public static let rarity: CardRarity = .rare
+    public static let cost = 3
+    public static let rulesText = "「序列之间存在共鸣——占卜师能听见它们的低语。」本场战斗中，每次预知后获得 1 格挡。+1 疯狂。"
+    public static let upgradedId: CardID? = "sequence_resonance+"
+
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
+        _ = snapshot
+        _ = targetEnemyIndex
+        return [
+            .applyStatus(target: .player, statusId: SequenceResonance.id, stacks: 1),
+            .applyStatus(target: .player, statusId: Madness.id, stacks: 1),
+        ]
+    }
+}
+
+/// 序列共鸣+
+/// 能力牌：本场战斗中，每次预知后获得 2 格挡，+1 疯狂
+public struct SequenceResonanceCardPlus: CardDefinition {
+    public static let id: CardID = "sequence_resonance+"
+    public static let name = "序列共鸣+"
+    public static let type: CardType = .power
+    public static let rarity: CardRarity = .rare
+    public static let cost = 3
+    public static let rulesText = "「共鸣化作屏障。」本场战斗中，每次预知后获得 2 格挡。+1 疯狂。"
+    public static let upgradedId: CardID? = nil
+
+    public static func play(snapshot: BattleSnapshot, targetEnemyIndex: Int?) -> [BattleEffect] {
+        _ = snapshot
+        _ = targetEnemyIndex
+        return [
+            .applyStatus(target: .player, statusId: SequenceResonance.id, stacks: 2),
+            .applyStatus(target: .player, statusId: Madness.id, stacks: 1),
         ]
     }
 }

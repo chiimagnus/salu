@@ -23,6 +23,23 @@ public final class BattleEngine: @unchecked Sendable {
     private var rewriteUsedThisBattle: Bool = false
     /// 是否应该跳过下一次疯狂添加（用于预言者手札遗物）
     private var shouldSkipNextMadnessFromRewrite: Bool = false
+
+    // P6: 赛弗 Boss 特殊机制（仅影响玩家下一回合）
+    /// 下回合预知数量惩罚（回合开始时转入 thisTurn 后清零）
+    private var foresightPenaltyNextTurn: Int = 0
+    /// 本回合预知数量惩罚（对本回合所有预知生效）
+    private var foresightPenaltyThisTurn: Int = 0
+    /// 下回合第一张牌费用增加（回合开始时转入 thisTurn 后清零）
+    private var firstCardCostIncreaseNextTurn: Int = 0
+    /// 本回合第一张牌费用增加（仅首张出牌生效一次）
+    private var firstCardCostIncreaseThisTurn: Int = 0
+    /// 本回合是否已应用“首张牌费用增加”
+    private var didApplyFirstCardCostIncreaseThisTurn: Bool = false
+    /// 下回合回合开始后随机弃置手牌数量（用于赛弗“命运剥夺”等）
+    private var discardRandomHandCountNextTurn: Int = 0
+
+    // P7: 本回合预知次数（用于“预言回响”）
+    private var foresightCountThisTurn: Int = 0
     
     /// 当前战斗携带的遗物（用于 UI 展示）
     public var relicIds: [RelicID] {
@@ -104,9 +121,16 @@ public final class BattleEngine: @unchecked Sendable {
     /// 获取当前可打出的手牌索引
     public var playableCardIndices: [Int] {
         state.hand.enumerated().compactMap { index, card in
-            let def = CardRegistry.require(card.cardId)
-            return def.cost <= state.energy ? index : nil
+            _ = card
+            return costToPlay(cardAtHandIndex: index) <= state.energy ? index : nil
         }
+    }
+
+    /// 获取手牌中某张牌当前的实际费用（会包含“首张牌费用增加”等临时机制）
+    public func costToPlay(cardAtHandIndex index: Int) -> Int {
+        guard index >= 0, index < state.hand.count else { return 0 }
+        let def = CardRegistry.require(state.hand[index].cardId)
+        return effectiveCost(baseCost: def.cost)
     }
     
     /// 清除事件日志
@@ -180,6 +204,15 @@ public final class BattleEngine: @unchecked Sendable {
         
         // P3: 重置本回合预知追踪（用于破碎怀表遗物）
         foresightUsedThisTurn = false
+        // P7: 重置本回合预知计数（用于预言回响等）
+        foresightCountThisTurn = 0
+
+        // P6: 激活“下回合”机制，并重置一次性标记
+        foresightPenaltyThisTurn = foresightPenaltyNextTurn
+        foresightPenaltyNextTurn = 0
+        firstCardCostIncreaseThisTurn = firstCardCostIncreaseNextTurn
+        firstCardCostIncreaseNextTurn = 0
+        didApplyFirstCardCostIncreaseThisTurn = false
         
         emit(.turnStarted(turn: state.turn))
 
@@ -209,6 +242,9 @@ public final class BattleEngine: @unchecked Sendable {
         
         // 抽牌
         drawCards(cardsPerTurn)
+
+        // P6: 赛弗“命运剥夺”等会在敌方回合设置“下回合随机弃牌”，需要在抽牌后执行
+        applyScheduledRandomHandDiscardsIfNeeded()
         
         // AI 决定敌人意图
         decideEnemyIntents()
@@ -328,10 +364,12 @@ public final class BattleEngine: @unchecked Sendable {
         
         let card = state.hand[handIndex]
         let def = CardRegistry.require(card.cardId)
+        let baseCost = def.cost
+        let cost = effectiveCost(baseCost: baseCost)
         
         // 验证能量
-        guard state.energy >= def.cost else {
-            emit(.notEnoughEnergy(required: def.cost, available: state.energy))
+        guard state.energy >= cost else {
+            emit(.notEnoughEnergy(required: cost, available: state.energy))
             return false
         }
 
@@ -365,13 +403,18 @@ public final class BattleEngine: @unchecked Sendable {
             }
         }
         
+        // P6: “下回合第一张牌费用 +N”只在本回合首次成功出牌时生效一次
+        if cost != baseCost && !didApplyFirstCardCostIncreaseThisTurn {
+            didApplyFirstCardCostIncreaseThisTurn = true
+        }
+
         // 消耗能量
-        state.energy -= def.cost
+        state.energy -= cost
         
         // 从手牌移除
         state.hand.remove(at: handIndex)
         
-        emit(.played(cardId: card.cardId, cost: def.cost))
+        emit(.played(cardId: card.cardId, cost: cost))
 
         // P4: 触发打出卡牌的遗物效果
         triggerRelics(.cardPlayed(cardId: card.cardId))
@@ -454,6 +497,25 @@ public final class BattleEngine: @unchecked Sendable {
             
         case .rewriteIntent(let enemyIndex, let newIntent):
             applyRewriteIntent(enemyIndex: enemyIndex, newIntent: newIntent)
+
+        // MARK: - 赛弗 Boss 特殊机制 (P6)
+
+        case .applyForesightPenaltyNextTurn(let amount):
+            applyForesightPenaltyNextTurn(amount: amount)
+
+        case .applyFirstCardCostIncreaseNextTurn(let amount):
+            applyFirstCardCostIncreaseNextTurn(amount: amount)
+
+        case .discardRandomHand(let count):
+            applyDiscardRandomHand(count: count)
+
+        case .enemyHeal(let enemyIndex, let amount):
+            applyHeal(target: .enemy(index: enemyIndex), amount: amount)
+
+        // MARK: - 占卜家卡牌扩展 (P7)
+
+        case .dealDamageBasedOnForesightCount(let source, let target, let basePerForesight):
+            applyDamageBasedOnForesightCount(source: source, target: target, basePerForesight: basePerForesight)
         }
     }
     
@@ -764,6 +826,15 @@ public final class BattleEngine: @unchecked Sendable {
             effectiveCount += 1
         }
         foresightUsedThisTurn = true
+
+        // P6: 赛弗“预知反制”会在本回合对所有预知施加数量惩罚
+        if foresightPenaltyThisTurn > 0 {
+            effectiveCount = max(0, effectiveCount - foresightPenaltyThisTurn)
+        }
+        guard effectiveCount > 0 else { return }
+
+        // P7: 记录本回合预知次数（用于“预言回响”等）
+        foresightCountThisTurn += 1
         
         // 取出顶部 count 张（drawPile 是 LIFO，末尾是顶部）
         let actualCount = min(effectiveCount, state.drawPile.count)
@@ -792,6 +863,12 @@ public final class BattleEngine: @unchecked Sendable {
             if index != chosenIndex {
                 state.drawPile.append(topCards[index])
             }
+        }
+
+        // P7：序列共鸣（能力）——本场战斗中，每次预知后获得格挡
+        let resonanceBlock = state.player.statuses.stacks(of: SequenceResonance.id)
+        if resonanceBlock > 0 {
+            applyBlock(target: .player, base: resonanceBlock)
         }
     }
     
@@ -871,6 +948,77 @@ public final class BattleEngine: @unchecked Sendable {
             newIntent: newMove.intent.text
         ))
     }
+
+    // MARK: - Cipher Boss Mechanics (P6 赛弗 Boss 特殊机制)
+
+    /// 赛弗：下回合预知数量惩罚
+    private func applyForesightPenaltyNextTurn(amount: Int) {
+        guard amount > 0 else { return }
+        foresightPenaltyNextTurn = max(0, foresightPenaltyNextTurn + amount)
+    }
+
+    /// 赛弗：下回合第一张牌费用增加
+    private func applyFirstCardCostIncreaseNextTurn(amount: Int) {
+        guard amount > 0 else { return }
+        firstCardCostIncreaseNextTurn = max(0, firstCardCostIncreaseNextTurn + amount)
+    }
+
+    /// 赛弗：随机弃置手牌
+    ///
+    /// 注意：
+    /// - 当前战斗循环中，玩家回合结束会弃置所有手牌，因此敌方回合执行“弃置手牌”通常会在手牌为空时无效果。
+    /// - 为了让 Boss 机制可感知：当该效果在敌方回合触发时，会被延迟到下回合抽牌后执行。
+    private func applyDiscardRandomHand(count: Int) {
+        guard count > 0 else { return }
+
+        if state.isPlayerTurn {
+            discardRandomFromHandNow(count: count)
+        } else {
+            discardRandomHandCountNextTurn += count
+        }
+    }
+
+    /// 回合开始（抽牌后）处理延迟弃牌
+    private func applyScheduledRandomHandDiscardsIfNeeded() {
+        guard discardRandomHandCountNextTurn > 0 else { return }
+        let count = discardRandomHandCountNextTurn
+        discardRandomHandCountNextTurn = 0
+        discardRandomFromHandNow(count: count)
+    }
+
+    private func discardRandomFromHandNow(count: Int) {
+        guard count > 0, !state.hand.isEmpty else { return }
+
+        let actualCount = min(count, state.hand.count)
+        for _ in 0..<actualCount {
+            let idx = rng.nextInt(upperBound: state.hand.count)
+            let card = state.hand.remove(at: idx)
+            state.discardPile.append(card)
+        }
+        emit(.handDiscarded(count: actualCount))
+    }
+
+    /// 计算当前出牌的实际费用（应用“首张牌费用增加”等临时机制）
+    private func effectiveCost(baseCost: Int) -> Int {
+        guard baseCost >= 0 else { return 0 }
+        if firstCardCostIncreaseThisTurn > 0 && !didApplyFirstCardCostIncreaseThisTurn {
+            return max(0, baseCost + firstCardCostIncreaseThisTurn)
+        }
+        return baseCost
+    }
+
+    // MARK: - Seer Advanced Cards (P7 占卜家扩展卡牌)
+
+    private func applyDamageBasedOnForesightCount(
+        source: EffectTarget,
+        target: EffectTarget,
+        basePerForesight: Int
+    ) {
+        guard basePerForesight > 0 else { return }
+        let times = max(0, foresightCountThisTurn)
+        let base = basePerForesight * times
+        applyDamage(source: source, target: target, base: base)
+    }
     
     // MARK: Relic System (P4)
     
@@ -889,4 +1037,3 @@ public final class BattleEngine: @unchecked Sendable {
         }
     }
 }
-

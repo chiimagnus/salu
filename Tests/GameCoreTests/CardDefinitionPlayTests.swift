@@ -175,6 +175,82 @@ final class CardDefinitionPlayTests: XCTestCase {
             ]
         )
     }
-}
 
+    func testPurificationRitual_play_producesExpectedEffects() {
+
+        print("🧪 测试：testPurificationRitual_play_producesExpectedEffects")
+        let effects = PurificationRitual.play(snapshot: makeSnapshot(), targetEnemyIndex: nil)
+        XCTAssertEqual(
+            effects,
+            [
+                .clearMadness(amount: 0),
+                .discardRandomHand(count: 1),
+            ]
+        )
+    }
+
+    func testPurificationRitualPlus_play_producesExpectedEffects() {
+
+        print("🧪 测试：testPurificationRitualPlus_play_producesExpectedEffects")
+        let effects = PurificationRitualPlus.play(snapshot: makeSnapshot(), targetEnemyIndex: nil)
+        XCTAssertEqual(
+            effects,
+            [
+                .clearMadness(amount: 0),
+            ]
+        )
+    }
+
+    func testProphecyEcho_play_producesExpectedEffects() {
+
+        print("🧪 测试：testProphecyEcho_play_producesExpectedEffects")
+        let effects = ProphecyEcho.play(snapshot: makeSnapshot(), targetEnemyIndex: 0)
+        XCTAssertEqual(
+            effects,
+            [
+                .dealDamageBasedOnForesightCount(source: .player, target: .enemy(index: 0), basePerForesight: 3),
+                .applyStatus(target: .player, statusId: Madness.id, stacks: 1),
+            ]
+        )
+    }
+
+    func testProphecyEchoPlus_play_producesExpectedEffects() {
+
+        print("🧪 测试：testProphecyEchoPlus_play_producesExpectedEffects")
+        let effects = ProphecyEchoPlus.play(snapshot: makeSnapshot(), targetEnemyIndex: 0)
+        XCTAssertEqual(
+            effects,
+            [
+                .dealDamageBasedOnForesightCount(source: .player, target: .enemy(index: 0), basePerForesight: 4),
+                .applyStatus(target: .player, statusId: Madness.id, stacks: 1),
+            ]
+        )
+    }
+
+    func testSequenceResonanceCard_play_producesExpectedEffects() {
+
+        print("🧪 测试：testSequenceResonanceCard_play_producesExpectedEffects")
+        let effects = SequenceResonanceCard.play(snapshot: makeSnapshot(), targetEnemyIndex: nil)
+        XCTAssertEqual(
+            effects,
+            [
+                .applyStatus(target: .player, statusId: SequenceResonance.id, stacks: 1),
+                .applyStatus(target: .player, statusId: Madness.id, stacks: 1),
+            ]
+        )
+    }
+
+    func testSequenceResonanceCardPlus_play_producesExpectedEffects() {
+
+        print("🧪 测试：testSequenceResonanceCardPlus_play_producesExpectedEffects")
+        let effects = SequenceResonanceCardPlus.play(snapshot: makeSnapshot(), targetEnemyIndex: nil)
+        XCTAssertEqual(
+            effects,
+            [
+                .applyStatus(target: .player, statusId: SequenceResonance.id, stacks: 2),
+                .applyStatus(target: .player, statusId: Madness.id, stacks: 1),
+            ]
+        )
+    }
+}
 
