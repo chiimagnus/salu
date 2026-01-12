@@ -3,12 +3,6 @@ import XCTest
 @testable import GameCLI
 import GameCore
 
-#if canImport(Darwin)
-import Darwin
-#else
-import Glibc
-#endif
-
 final class ShopRoomHandlerTests: XCTestCase {
     private final class InMemoryRunSaveStore: RunSaveStore, @unchecked Sendable {
         private var snapshot: RunSnapshot?
@@ -23,35 +17,7 @@ final class ShopRoomHandlerTests: XCTestCase {
         func append(_ record: BattleRecord) throws {}
         func clear() throws {}
     }
-    
-    private func withStdin(_ input: String, _ work: () -> Void) {
-        var fds: [Int32] = [0, 0]
-        XCTAssertEqual(pipe(&fds), 0)
-        
-        let readFD = fds[0]
-        let writeFD = fds[1]
-        
-        let savedStdin = dup(STDIN_FILENO)
-        XCTAssertNotEqual(savedStdin, -1)
-        
-        XCTAssertEqual(dup2(readFD, STDIN_FILENO), STDIN_FILENO)
-        clearerr(stdin)
-        close(readFD)
-        
-        let data = input.data(using: .utf8) ?? Data()
-        data.withUnsafeBytes { ptr in
-            guard let base = ptr.baseAddress else { return }
-            write(writeFD, base, data.count)
-        }
-        close(writeFD)
-        
-        work()
-        
-        XCTAssertEqual(dup2(savedStdin, STDIN_FILENO), STDIN_FILENO)
-        clearerr(stdin)
-        close(savedStdin)
-    }
-    
+
     func testShopRoomHandler_buyAndRemove_updatesRunStateAndPersists() throws {
         print("🧪 测试：testShopRoomHandler_buyAndRemove_updatesRunStateAndPersists")
         let handler = ShopRoomHandler()
@@ -83,10 +49,14 @@ final class ShopRoomHandlerTests: XCTestCase {
             createEnemy: { _, _, _ in Entity(id: "enemy#0", name: "敌人", maxHP: 1, enemyId: "jaw_worm") },
             historyService: historyService
         )
-        
-        withStdin("1\nd\n1\n0\n") {
-            _ = handler.run(node: node, runState: &runState, context: context)
-        }
+
+        var inputs = ["1", "d", "1", "0"].makeIterator()
+        _ = handler.run(
+            node: node,
+            runState: &runState,
+            context: context,
+            inputProvider: { inputs.next() }
+        )
         
         XCTAssertTrue(runState.map.first?.isCompleted == true, "商店节点应标记为完成")
         XCTAssertEqual(runState.gold, 200 - firstOffer.price - ShopPricing.removeCardPrice)

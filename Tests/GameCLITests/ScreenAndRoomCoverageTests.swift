@@ -4,9 +4,9 @@ import XCTest
 import GameCore
 
 #if canImport(Darwin)
-import Darwin
+@preconcurrency import Darwin
 #else
-import Glibc
+@preconcurrency import Glibc
 #endif
 
 /// GameCLI 屏幕渲染 + RoomHandler 覆盖测试（白盒）
@@ -60,7 +60,7 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
         close(writeFD)
         
         work()
-        fflush(stdout)
+        fflush(nil)
         
         XCTAssertEqual(dup2(savedStdout, STDOUT_FILENO), STDOUT_FILENO)
         close(savedStdout)
@@ -209,5 +209,3 @@ private extension String {
         )
     }
 }
-
-

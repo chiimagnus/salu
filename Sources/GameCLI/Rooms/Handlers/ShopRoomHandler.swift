@@ -5,6 +5,15 @@ struct ShopRoomHandler: RoomHandling {
     var roomType: RoomType { .shop }
     
     func run(node: MapNode, runState: inout RunState, context: RoomContext) -> RoomRunResult {
+        run(node: node, runState: &runState, context: context, inputProvider: { readLine() })
+    }
+    
+    func run(
+        node: MapNode,
+        runState: inout RunState,
+        context: RoomContext,
+        inputProvider: () -> String?
+    ) -> RoomRunResult {
         let shopContext = ShopContext(
             seed: runState.seed,
             floor: runState.floor,
@@ -18,7 +27,7 @@ struct ShopRoomHandler: RoomHandling {
         while true {
             Screens.showShop(inventory: inventory, runState: runState, message: message)
             
-            guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
+            guard let input = inputProvider()?.trimmingCharacters(in: .whitespaces).lowercased() else {
                 break
             }
             
@@ -30,7 +39,13 @@ struct ShopRoomHandler: RoomHandling {
             
             // 删牌服务
             if input == "d" {
-                handleRemoveCard(runState: &runState, inventory: inventory, context: context, message: &message)
+                handleRemoveCard(
+                    runState: &runState,
+                    inventory: inventory,
+                    context: context,
+                    message: &message,
+                    inputProvider: inputProvider
+                )
                 continue
             }
             
@@ -187,7 +202,13 @@ struct ShopRoomHandler: RoomHandling {
     
     // MARK: - Remove Card
     
-    private func handleRemoveCard(runState: inout RunState, inventory: ShopInventory, context: RoomContext, message: inout String?) {
+    private func handleRemoveCard(
+        runState: inout RunState,
+        inventory: ShopInventory,
+        context: RoomContext,
+        message: inout String?,
+        inputProvider: () -> String?
+    ) {
         if runState.gold < inventory.removeCardPrice {
             message = "\(Terminal.red)金币不足，无法删牌\(Terminal.reset)"
             return
@@ -196,7 +217,7 @@ struct ShopRoomHandler: RoomHandling {
         var removeMessage: String? = nil
         while true {
             Screens.showShopRemoveCard(runState: runState, price: inventory.removeCardPrice, message: removeMessage)
-            guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
+            guard let input = inputProvider()?.trimmingCharacters(in: .whitespaces).lowercased() else {
                 break
             }
             
