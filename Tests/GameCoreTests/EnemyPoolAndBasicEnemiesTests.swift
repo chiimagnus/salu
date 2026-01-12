@@ -24,6 +24,12 @@ final class EnemyPoolAndBasicEnemiesTests: XCTestCase {
         let m = Act2EnemyPool.randomMedium(rng: &rng)
         XCTAssertTrue(Act2EnemyPool.medium.contains(m))
     }
+
+    func testAct2EnemyPool_includesSeerEnemies() {
+        print("🧪 测试：testAct2EnemyPool_includesSeerEnemies")
+        XCTAssertTrue(Act2EnemyPool.all.contains("mad_prophet"))
+        XCTAssertTrue(Act2EnemyPool.all.contains("time_guardian"))
+    }
     
     func testCreateEnemy_hpRange() {
         print("🧪 测试：testCreateEnemy_hpRange")
@@ -243,5 +249,4 @@ final class EnemyPoolAndBasicEnemiesTests: XCTestCase {
         return nil
     }
 }
-
 

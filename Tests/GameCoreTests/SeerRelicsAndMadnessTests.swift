@@ -29,6 +29,34 @@ final class SeerRelicsAndMadnessTests: XCTestCase {
             return false
         }))
     }
+
+    func testAbyssalEye_triggersForesightAndMadnessOnBattleStart() {
+        let seed: UInt64 = 8
+        let player = createDefaultPlayer()
+        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 40, enemyId: "shadow_stalker")
+
+        var relics = RelicManager()
+        relics.add("abyssal_eye")
+
+        let deck: [Card] = [
+            .init(id: "k1", cardId: "strike"),
+            .init(id: "d1", cardId: "defend"),
+            .init(id: "k2", cardId: "strike"),
+            .init(id: "d2", cardId: "defend"),
+            .init(id: "k3", cardId: "strike"),
+            .init(id: "d3", cardId: "defend"),
+            .init(id: "k4", cardId: "strike"),
+        ]
+
+        let engine = BattleEngine(player: player, enemies: [enemy], deck: deck, relicManager: relics, seed: seed)
+        engine.startBattle()
+
+        XCTAssertTrue(engine.events.contains(where: {
+            if case .foresightChosen(_, let fromCount) = $0 { return fromCount == 3 }
+            return false
+        }))
+        XCTAssertEqual(engine.state.player.statuses.stacks(of: "madness"), 1)
+    }
     
     func testSanityAnchor_delaysThreshold2Weak() {
         let seed: UInt64 = 9
@@ -124,5 +152,39 @@ final class SeerRelicsAndMadnessTests: XCTestCase {
         XCTAssertEqual(dmgWithoutMask, 4)
         XCTAssertEqual(dmgWithMask, 6)
     }
-}
 
+    func testProphetNotes_skipsFirstRewriteMadness() {
+        let seed: UInt64 = 12
+        let player = createDefaultPlayer()
+        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 40, enemyId: "shadow_stalker")
+
+        var relics = RelicManager()
+        relics.add("prophet_notes")
+
+        let deck: [Card] = [
+            .init(id: "rewrite_1", cardId: "fate_rewrite"),
+            .init(id: "strike_1", cardId: "strike"),
+            .init(id: "defend_1", cardId: "defend"),
+            .init(id: "defend_2", cardId: "defend"),
+            .init(id: "defend_3", cardId: "defend"),
+        ]
+
+        let engine = BattleEngine(player: player, enemies: [enemy], deck: deck, relicManager: relics, seed: seed)
+        engine.startBattle()
+
+        guard let rewriteIndex = engine.state.hand.firstIndex(where: { $0.cardId == "fate_rewrite" }) else {
+            return XCTFail("回合开始未抽到 命运改写")
+        }
+
+        engine.clearEvents()
+        _ = engine.handleAction(.playCard(handIndex: rewriteIndex, targetEnemyIndex: 0))
+
+        XCTAssertEqual(engine.state.player.statuses.stacks(of: "madness"), 0)
+        XCTAssertTrue(engine.events.contains(where: {
+            if case .statusApplied(_, let effect, let stacks) = $0 {
+                return effect.contains("预言者手札") && stacks == 0
+            }
+            return false
+        }))
+    }
+}
