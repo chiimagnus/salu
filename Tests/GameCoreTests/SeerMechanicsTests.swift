@@ -2,6 +2,131 @@ import XCTest
 import GameCore
 
 final class SeerMechanicsTests: XCTestCase {
+    func testRewind_returnsMostRecentDiscardToHand() {
+        let seed: UInt64 = 4
+        let player = createDefaultPlayer()
+        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 40, enemyId: "shadow_stalker")
+
+        let deck: [Card] = [
+            .init(id: "strike_1", cardId: "strike"),
+            .init(id: "time_shard_1", cardId: "time_shard"),
+            .init(id: "defend_1", cardId: "defend"),
+            .init(id: "defend_2", cardId: "defend"),
+            .init(id: "defend_3", cardId: "defend"),
+        ]
+
+        let engine = BattleEngine(
+            player: player,
+            enemies: [enemy],
+            deck: deck,
+            relicManager: RelicManager(),
+            seed: seed
+        )
+
+        engine.startBattle()
+
+        guard let strikeIndex = engine.state.hand.firstIndex(where: { $0.cardId == "strike" }) else {
+            return XCTFail("回合开始未抽到 Strike")
+        }
+        _ = engine.handleAction(.playCard(handIndex: strikeIndex, targetEnemyIndex: 0))
+
+        XCTAssertTrue(engine.state.discardPile.contains(where: { $0.cardId == "strike" }))
+
+        guard let timeShardIndex = engine.state.hand.firstIndex(where: { $0.cardId == "time_shard" }) else {
+            return XCTFail("回合开始未抽到 时间碎片")
+        }
+
+        engine.clearEvents()
+        _ = engine.handleAction(.playCard(handIndex: timeShardIndex, targetEnemyIndex: nil))
+
+        XCTAssertTrue(engine.state.hand.contains(where: { $0.cardId == "strike" }))
+        XCTAssertTrue(engine.events.contains(where: {
+            if case .rewindCard(let cardId) = $0 { return cardId == "strike" }
+            return false
+        }))
+    }
+
+    func testClearMadness_reducesStacksWhenPlayingMeditation() {
+        let seed: UInt64 = 5
+        var player = createDefaultPlayer()
+        player.statuses.set("madness", stacks: 2)
+        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 40, enemyId: "shadow_stalker")
+
+        let deck: [Card] = [
+            .init(id: "meditation_1", cardId: "meditation"),
+            .init(id: "defend_1", cardId: "defend"),
+            .init(id: "defend_2", cardId: "defend"),
+            .init(id: "defend_3", cardId: "defend"),
+            .init(id: "strike_1", cardId: "strike"),
+        ]
+
+        let engine = BattleEngine(
+            player: player,
+            enemies: [enemy],
+            deck: deck,
+            relicManager: RelicManager(),
+            seed: seed
+        )
+
+        engine.startBattle()
+
+        guard let meditationIndex = engine.state.hand.firstIndex(where: { $0.cardId == "meditation" }) else {
+            return XCTFail("回合开始未抽到 冥想")
+        }
+
+        engine.clearEvents()
+        _ = engine.handleAction(.playCard(handIndex: meditationIndex, targetEnemyIndex: nil))
+
+        XCTAssertEqual(engine.state.player.statuses.stacks(of: "madness"), 0)
+        XCTAssertTrue(engine.events.contains(where: {
+            if case .madnessCleared(let amount) = $0 { return amount == 2 }
+            return false
+        }))
+    }
+
+    func testRewriteIntent_updatesPlannedMove_andAddsMadness() {
+        let seed: UInt64 = 6
+        let player = createDefaultPlayer()
+        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 40, enemyId: "shadow_stalker")
+
+        let deck: [Card] = [
+            .init(id: "fate_rewrite_1", cardId: "fate_rewrite"),
+            .init(id: "defend_1", cardId: "defend"),
+            .init(id: "defend_2", cardId: "defend"),
+            .init(id: "defend_3", cardId: "defend"),
+            .init(id: "strike_1", cardId: "strike"),
+        ]
+
+        let engine = BattleEngine(
+            player: player,
+            enemies: [enemy],
+            deck: deck,
+            relicManager: RelicManager(),
+            seed: seed
+        )
+
+        engine.startBattle()
+
+        let oldIntent = engine.state.enemies[0].plannedMove?.intent.text
+        XCTAssertNotNil(oldIntent)
+
+        guard let rewriteIndex = engine.state.hand.firstIndex(where: { $0.cardId == "fate_rewrite" }) else {
+            return XCTFail("回合开始未抽到 命运改写")
+        }
+
+        engine.clearEvents()
+        _ = engine.handleAction(.playCard(handIndex: rewriteIndex, targetEnemyIndex: 0))
+
+        let newIntent = engine.state.enemies[0].plannedMove?.intent.text
+        XCTAssertEqual(newIntent, "防御（被改写）")
+        XCTAssertEqual(engine.state.player.statuses.stacks(of: "madness"), 2)
+        XCTAssertTrue(engine.events.contains(where: {
+            if case .intentRewritten(_, let old, let new) = $0 {
+                return old == oldIntent && new == "防御（被改写）"
+            }
+            return false
+        }))
+    }
     func testForesight_picksFirstAttack_andPreservesOrderForOthers() {
         // 目标：预知 N 取出抽牌堆顶 N 张 -> 选 1 张入手（优先攻击牌） -> 其余按原顺序放回
         let seed: UInt64 = 1
@@ -133,4 +258,3 @@ final class SeerMechanicsTests: XCTestCase {
         }))
     }
 }
-
