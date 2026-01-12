@@ -9,6 +9,7 @@ enum TestMode {
     private static let envKey = "SALU_TEST_MODE"
     private static let mapKey = "SALU_TEST_MAP"
     private static let maxFloorKey = "SALU_TEST_MAX_FLOOR"
+    private static let battleDeckKey = "SALU_TEST_BATTLE_DECK"
     
     static var isEnabled: Bool {
         ProcessInfo.processInfo.environment[envKey] == "1"
@@ -37,7 +38,45 @@ enum TestMode {
     /// 在测试模式下，返回一个极小且稳定的战斗牌组，避免 UI 测试跑很久或出现概率性失败。
     static func battleDeck(from runDeck: [Card]) -> [Card] {
         guard isEnabled else { return runDeck }
-        return [Card(id: "strike_test_1", cardId: "strike")]
+        
+        // 允许通过环境变量覆盖测试战斗牌组，便于手动验收特定机制（例如占卜家序列）。
+        // - 默认：minimal（仅 1 张打击）
+        // - run：使用当前冒险牌组（更贴近真实流程，但可能导致 UI 测试不稳定）
+        // - seer：注入一套覆盖“预知/回溯/改写/清理疯狂”的占卜家测试牌组
+        let kind = (ProcessInfo.processInfo.environment[battleDeckKey] ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        
+        switch kind {
+        case "run":
+            return runDeck
+        case "seer":
+            return seerTestBattleDeck()
+        default:
+            return [Card(id: "strike_test_1", cardId: "strike")]
+        }
+    }
+
+    private static func seerTestBattleDeck() -> [Card] {
+        [
+            // 覆盖：预知（SpiritSight / TruthWhisper）
+            Card(id: "seer_test_spirit_sight_1", cardId: "spirit_sight"),
+            Card(id: "seer_test_spirit_sight_2", cardId: "spirit_sight"),
+            Card(id: "seer_test_truth_whisper_1", cardId: "truth_whisper"),
+            Card(id: "seer_test_truth_whisper_2", cardId: "truth_whisper"),
+
+            // 覆盖：清除疯狂（Meditation）
+            Card(id: "seer_test_meditation_1", cardId: "meditation"),
+            Card(id: "seer_test_meditation_2", cardId: "meditation"),
+
+            // 覆盖：改写敌人意图（FateRewrite）
+            Card(id: "seer_test_fate_rewrite_1", cardId: "fate_rewrite"),
+            Card(id: "seer_test_fate_rewrite_2", cardId: "fate_rewrite"),
+
+            // 覆盖：回溯（TimeShard）
+            Card(id: "seer_test_time_shard_1", cardId: "time_shard"),
+            Card(id: "seer_test_time_shard_2", cardId: "time_shard"),
+        ]
     }
     
     /// 在测试模式下生成一张极小地图（起点 → 精英 → Boss）

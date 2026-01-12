@@ -46,6 +46,11 @@ final class ShopInventoryTests: XCTestCase {
         // P4: 遗物和消耗品
         XCTAssertGreaterThanOrEqual(a.relicOffers.count, 0)  // 可能会因为遗物池小而少于 3
         XCTAssertGreaterThanOrEqual(a.consumableOffers.count, 0)  // 可能会因为消耗品池小而少于 3
+
+        // P4: 消耗品价格应符合定价规则
+        XCTAssertTrue(a.consumableOffers.allSatisfy {
+            $0.price == ShopPricing.consumablePrice(for: $0.consumableId)
+        })
         
         // items 包含所有条目
         XCTAssertEqual(a.items.count, a.cardOffers.count + a.relicOffers.count + a.consumableOffers.count + 1)  // +1 for removeCard

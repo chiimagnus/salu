@@ -18,6 +18,19 @@ final class RunLogPersistenceTests: XCTestCase {
         XCTAssertFalse(store.lines[1].contains(Terminal.red), "落盘日志应去除 ANSI 颜色码")
         XCTAssertTrue(store.lines[1].hasPrefix("["))
     }
+
+    func testRunLogService_replacesNewlines() {
+        print("🧪 测试：testRunLogService_replacesNewlines")
+        let store = InMemoryRunLogStore()
+        let service = RunLogService(store: store)
+
+        service.append(uiLine: "第一行\n第二行")
+
+        XCTAssertEqual(store.lines.count, 1)
+        XCTAssertTrue(store.lines[0].contains("第一行 第二行"))
+        XCTAssertFalse(store.lines[0].contains("第一行\n第二行"))
+        XCTAssertTrue(store.lines[0].hasSuffix("\n"))
+    }
     
     func testFileRunLogStore_appendAndClear() throws {
         print("🧪 测试：testFileRunLogStore_appendAndClear")
@@ -49,12 +62,25 @@ final class RunLogPersistenceTests: XCTestCase {
         store.clear()
         XCTAssertFalse(FileManager.default.fileExists(atPath: logURL.path))
     }
+
+    func testRunLogService_clearDelegatesToStore() {
+        print("🧪 测试：testRunLogService_clearDelegatesToStore")
+        let store = InMemoryRunLogStore()
+        let service = RunLogService(store: store)
+
+        store.appendLine("line1")
+        service.clear()
+
+        XCTAssertEqual(store.lines.count, 0)
+        XCTAssertEqual(store.clearCount, 1)
+    }
 }
 
 // MARK: - Test Helpers
 
 private final class InMemoryRunLogStore: RunLogStore, @unchecked Sendable {
     var lines: [String] = []
+    var clearCount = 0
     
     func appendLine(_ line: String) {
         lines.append(line)
@@ -62,7 +88,6 @@ private final class InMemoryRunLogStore: RunLogStore, @unchecked Sendable {
     
     func clear() {
         lines.removeAll()
+        clearCount += 1
     }
 }
-
-
