@@ -1,9 +1,9 @@
 ---
-name: plan-reviewer
-description: Review an existing plan markdown (P1/P2/P3...) by turning priorities into TODOs, auditing the code for gaps/risks/missed cases, and recording findings in a new markdown review file. Use when the user says "审查 plan/根据 plan 建 todo/按 P1~PN 查漏补缺/做代码审计但按计划维度输出".
+name: salu-plan-reviewer
+description: Review an existing Salu plan document under `.codex/plans/*.md` by creating N todos for P1..PN and auditing the corresponding code for issues, missed cases, and gaps; record findings in a new markdown file. Use when the user says "审查执行/根据 plan 建 todo/按 P1~PN 查漏补缺/做代码审计但按计划维度输出".
 ---
 
-# Plan Reviewer（按计划审查）
+# Salu Plan Reviewer（按计划审查执行）
 
 ## 目标输出
 
@@ -22,7 +22,7 @@ description: Review an existing plan markdown (P1/P2/P3...) by turning prioritie
 
 ### Step 3：逐个 TODO 审查（只做“审查”，不先改代码）
 - 打开 plan 中提到的文件；再通过 `rg` 追踪相关符号/调用点。
-- 重点关注：边界条件、错误路径、并发/可复现性、I/O/持久化、依赖方向、对外文案/接口一致性（按项目实际情况）。
+- 重点关注：边界条件、错误路径、并发/可复现性、持久化协议注入、依赖方向、中文文案与一致性。
 
 ### Step 4：记录发现（必须先落盘）
 - 输出文件包含：

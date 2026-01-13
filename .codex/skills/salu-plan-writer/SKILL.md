@@ -1,14 +1,14 @@
 ---
-name: plan-writer
-description: Write a prioritized implementation plan (P1/P2/P3...) and save it as markdown (usually under `.codex/plans/*.md`). Use when the user asks to "制定 plan/写 plan/出方案 A/做 roadmap/先规划再开工", wants a detailed prioritized backlog with acceptance criteria, or wants a plan before coding; ask one question at a time until requirements are clear, then inspect relevant code/docs and include per-priority verification steps (tests/build/lint).
+name: salu-plan-writer
+description: Write a prioritized implementation plan (P1/P2/P3...) for the Salu SwiftPM repo and save it under `.codex/plans/*.md`. Use when the user asks to "制定 plan/写 plan/出方案 A", wants a detailed prioritized backlog, or wants a plan before coding; ask one question at a time until requirements are clear, then inspect relevant code/docs, write the plan, and include per-priority verification steps (swift build / swift test).
 ---
 
-# Plan Writer（制定 Plan）
+# Salu Plan Writer（制定 Plan）
 
 ## 输出目标
 
 - 产出一份 **Plan A**（按 `P1/P2/P3...` 排序、可执行、可验收）并保存到 `.codex/plans/<name>.md`。
-- 每个优先级完成后都明确“如何验证”：优先跑项目标准命令（测试/构建/静态检查），并写清预期结果。
+- 每个优先级完成后都明确“如何验证”：`swift build` 或 `swift test`（优先 `swift test`）。
 
 ## 交互规则（强制）
 
@@ -50,7 +50,7 @@ description: Write a prioritized implementation plan (P1/P2/P3...) and save it a
 - **风险**：潜在回归点与缓解方式（例如补回归测试）。
 
 ### Step 4：在 plan 末尾加“执行工作流约束”
-- 每做完一个 P：先跑项目标准验证命令确认无回归，再进入下一个 P。
+- 每做完一个 P：先跑 `swift test`（或至少 `swift build`）确认无回归，再进入下一个 P。
 - 每个 P 完成后：更新 plan 中该 P 的状态与验证结果。
 
 ## Plan 模板（复制到新文件再填充）
@@ -59,4 +59,5 @@ description: Write a prioritized implementation plan (P1/P2/P3...) and save it a
 
 ## 项目约束速查
 
-- 参考：所有 `AGENTS.md` / `CONTRIBUTING.md` / CI 配置
+- 参考：所有`AGENTS.md`
+- 核心：`GameCore` 纯逻辑层、`GameCLI → GameCore` 单向依赖、中文用户可见文案。
