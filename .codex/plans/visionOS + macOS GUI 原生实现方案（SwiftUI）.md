@@ -56,11 +56,11 @@ updated: 2026-01-14
 |------|------|------|
 | GameCore | `swift test --filter GameCoreTests` | SwiftPM |
 | GameCLI | `swift test --filter GameCLITests` | SwiftPM |
-| Native（编译 - macOS） | `xcodebuild -project Apps/SaluNative/SaluNative.xcodeproj -scheme SaluMacApp -destination 'platform=macOS' build` | Xcodebuild |
-| Native（测试 - macOS） | `xcodebuild -project Apps/SaluNative/SaluNative.xcodeproj -scheme SaluMacApp -destination 'platform=macOS' test` | Xcodebuild |
-| Native（编译 - visionOS） | `xcodebuild -project Apps/SaluNative/SaluNative.xcodeproj -scheme SaluVisionApp -destination 'platform=visionOS Simulator,name=Apple Vision Pro' build` | Xcodebuild（名称按本机 simulator 为准） |
-| Native（测试 - visionOS） | `xcodebuild -project Apps/SaluNative/SaluNative.xcodeproj -scheme SaluVisionApp -destination 'platform=visionOS Simulator,name=Apple Vision Pro' test` | Xcodebuild（若后续有 visionOS 测试 target） |
-| NativeKit（共享逻辑单测） | `xcodebuild -project Apps/SaluNative/SaluNative.xcodeproj -scheme SaluNativeKitTests -destination 'platform=macOS' test` | 优先保证共享模块可测 |
+| Native（编译 - macOS） | `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluMacApp -destination 'platform=macOS' build` | Xcodebuild |
+| Native（测试 - macOS） | `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluMacApp -destination 'platform=macOS' test` | Xcodebuild |
+| Native（编译 - visionOS） | `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluVisionApp -destination 'platform=visionOS Simulator,name=Apple Vision Pro' build` | Xcodebuild（名称按本机 simulator 为准） |
+| Native（测试 - visionOS） | `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluVisionApp -destination 'platform=visionOS Simulator,name=Apple Vision Pro' test` | Xcodebuild（若后续有 visionOS 测试 target） |
+| NativeKit（共享逻辑单测） | `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluNativeKitTests -destination 'platform=macOS' test` | 优先保证共享模块可测 |
 
 ---
 
@@ -162,12 +162,11 @@ updated: 2026-01-14
 建议新增：
 
 ```
-Apps/
-└── SaluNative/
-    ├── SaluNative.xcodeproj
-    ├── SaluNativeKit/              # 共享 Framework Target（SwiftUI + SwiftData + 流程状态机）
-    ├── SaluMacApp/                 # macOS App Target
-    └── SaluVisionApp/              # visionOS App Target
+SaluNative/
+├── SaluNative.xcodeproj
+├── SaluNativeKit/              # 共享 Framework Target（SwiftUI + SwiftData + 流程状态机）
+├── SaluMacApp/                 # macOS App Target
+└── SaluVisionApp/              # visionOS App Target
 ```
 
 `SaluNative.xcodeproj` 通过 “Add Local Package” 引入仓库根目录的 `Package.swift`，从而依赖 `GameCore`。
@@ -304,7 +303,7 @@ AppRoute
 
 **实现步骤**
 
-- 新建 `Apps/SaluNative/SaluNative.xcodeproj`
+- 新建 `SaluNative/SaluNative.xcodeproj`
 - 添加两个 App Target（macOS / visionOS）
 - 添加一个共享 Framework Target：`SaluNativeKit`
 - 两个 App Target 依赖 `SaluNativeKit`
@@ -319,8 +318,8 @@ let _ = CardRegistry.require("strike").name
 **验证**
 
 - `swift build && swift test`
-- `xcodebuild -project Apps/SaluNative/SaluNative.xcodeproj -scheme SaluMacApp -destination 'platform=macOS' build`
-- `xcodebuild -project Apps/SaluNative/SaluNative.xcodeproj -scheme SaluVisionApp -destination 'platform=visionOS Simulator,name=Apple Vision Pro' build`
+- `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluMacApp -destination 'platform=macOS' build`
+- `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluVisionApp -destination 'platform=visionOS Simulator,name=Apple Vision Pro' build`
 
 ---
 
