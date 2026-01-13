@@ -1,5 +1,5 @@
 ---
-title: Plan A（Salu）
+title: Plan A
 date: YYYY-MM-DD
 ---
 
@@ -11,9 +11,8 @@ date: YYYY-MM-DD
 - 验收标准（可复现的操作 + 预期结果）：
 
 ## 1. 约束与前置
-- 约束：GameCore 纯逻辑层（无 print / stdin / UI；尽量不依赖 Foundation）
-- 约束：GameCLI → GameCore 单向依赖；用户可见文本中文
-- 测试策略：每完成一个 P 必须跑 `swift test`（至少 `swift build`）
+- 约束：遵守仓库约定（`AGENTS.md` / `CONTRIBUTING.md` / CI）
+- 测试策略：每完成一个 P 必须跑标准验证命令（测试/构建/静态检查），并记录结果
 
 ## 2. 调研范围（本次 plan 实际查过的文件）
 - 文档：
@@ -34,7 +33,7 @@ date: YYYY-MM-DD
 1. ...
 2. ...
 #### 测试/验证
-- `swift test`
+- `<command>`（例：`swift test` / `npm test` / `pytest` / `go test ./...`）
 #### 风险与回归点
 - ...
 
@@ -47,4 +46,3 @@ date: YYYY-MM-DD
 ## 4. 执行工作流（执行 plan 时遵守）
 - 只做当前 P 的内容；做完立刻验证；验证通过才进入下一个 P。
 - 每完成一个 P：更新本文件状态与验证结果。
-
