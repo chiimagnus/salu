@@ -15,6 +15,7 @@ public enum StatusRegistry {
         // Buffs
         Strength.id: Strength.self,
         Dexterity.id: Dexterity.self,
+        SequenceResonance.id: SequenceResonance.self,
     ]
     
     /// 获取状态定义

@@ -1,13 +1,8 @@
----
-description: Salu 游戏业务说明（玩法系统与触发规则）
-alwaysApply: true
----
-
 # Salu 游戏业务说明（玩法系统与触发规则）
 
 本文档以**玩法/业务视角**说明 Salu 的系统、数值与触发时机，用于统一"游戏应该怎么表现/怎么结算"。
 
-> **设定与剧情**请参阅：`.cursor/rules/Salu游戏设定与剧情（v1.0）.mdc`
+> **设定与剧情**请参阅：`.codex/docs/Salu游戏设定与剧情v1.0.md`
 > **卡牌/敌人/遗物命名映射**已整合到各业务章节（第 4/6/11 章）的表格中。
 
 ---
@@ -452,9 +447,3 @@ alwaysApply: true
 ### 13.5 资源管理页
 
 - 一次性输出全量内容（卡牌/敌人/遭遇/遗物注册表）
-
----
-
-## 14. Roadmap
-- 1.0：
-- **2.0（Apps）**：在 1.0 稳定后，再做 **macOS App + visionOS App**（原生 UI、i18n、签名/上架链路）。`.cursor/plans/plan-a-2.0-macos-swiftui.md`

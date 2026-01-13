@@ -25,29 +25,30 @@ public struct Cipher: EnemyDefinition {
     public static let hpRange: ClosedRange<Int> = 100...110
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {
+        _ = rng
         // 计算当前血量百分比（使用 selfIndex 直接获取，避免多敌人场景下的问题）
         guard selfIndex >= 0, selfIndex < snapshot.enemies.count else {
             // 回退到默认行为
-            return phase1Move(selfIndex: selfIndex, turn: snapshot.turn, rng: &rng)
+            return phase1Move(selfIndex: selfIndex, turn: snapshot.turn)
         }
         let enemy = snapshot.enemies[selfIndex]
         let hpPercent = Double(enemy.currentHP) / Double(enemy.maxHP)
         
         if hpPercent > 0.6 {
             // 阶段 1：试探
-            return phase1Move(selfIndex: selfIndex, turn: snapshot.turn, rng: &rng)
+            return phase1Move(selfIndex: selfIndex, turn: snapshot.turn)
         } else if hpPercent > 0.3 {
             // 阶段 2：认真
-            return phase2Move(selfIndex: selfIndex, turn: snapshot.turn, rng: &rng)
+            return phase2Move(selfIndex: selfIndex, turn: snapshot.turn)
         } else {
             // 阶段 3：觉醒
-            return phase3Move(selfIndex: selfIndex, turn: snapshot.turn, rng: &rng)
+            return phase3Move(selfIndex: selfIndex, turn: snapshot.turn)
         }
     }
     
     // MARK: - 阶段 1：试探（HP > 60%）
     
-    private static func phase1Move(selfIndex: Int, turn: Int, rng: inout SeededRNG) -> EnemyMove {
+    private static func phase1Move(selfIndex: Int, turn: Int) -> EnemyMove {
         let cycle = (turn - 1) % 3
         
         switch cycle {
@@ -68,12 +69,11 @@ public struct Cipher: EnemyDefinition {
                 ]
             )
         default:
-            // 预知反制：给予玩家疯狂 + 力量成长
+            // P6：预知反制（下回合预知 -1，可被“改写”取消）
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "🔮", text: "预知反制：疯狂 +2"),
+                intent: EnemyIntentDisplay(icon: "🔮", text: "预知反制：下回合预知 -1"),
                 effects: [
-                    .applyStatus(target: .player, statusId: Madness.id, stacks: 2),
-                    .applyStatus(target: .enemy(index: selfIndex), statusId: Strength.id, stacks: 1)
+                    .applyForesightPenaltyNextTurn(amount: 1)
                 ]
             )
         }
@@ -81,7 +81,7 @@ public struct Cipher: EnemyDefinition {
     
     // MARK: - 阶段 2：认真（60% ≥ HP > 30%）
     
-    private static func phase2Move(selfIndex: Int, turn: Int, rng: inout SeededRNG) -> EnemyMove {
+    private static func phase2Move(selfIndex: Int, turn: Int) -> EnemyMove {
         let cycle = (turn - 1) % 3
         
         switch cycle {
@@ -94,22 +94,21 @@ public struct Cipher: EnemyDefinition {
                 ]
             )
         case 1:
-            // 命运剥夺：精神冲击 + 大量疯狂
+            // P6：命运剥夺（随机弃置 2 张手牌 + 疯狂 +2，可被“改写”取消）
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "👁️", text: "命运剥夺 12", previewDamage: 12),
+                intent: EnemyIntentDisplay(icon: "👁️", text: "命运剥夺：弃牌 2 + 疯狂 +2"),
                 effects: [
-                    .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 12),
-                    .applyStatus(target: .player, statusId: Madness.id, stacks: 3)
+                    .discardRandomHand(count: 2),
+                    .applyStatus(target: .player, statusId: Madness.id, stacks: 2),
                 ]
             )
         default:
-            // 精神冲击 + 力量成长
+            // 精神冲击：伤害 + 疯狂
             return EnemyMove(
                 intent: EnemyIntentDisplay(icon: "👁️⚡", text: "精神冲击 14", previewDamage: 14),
                 effects: [
                     .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 14),
                     .applyStatus(target: .player, statusId: Madness.id, stacks: 2),
-                    .applyStatus(target: .enemy(index: selfIndex), statusId: Strength.id, stacks: 1)
                 ]
             )
         }
@@ -117,7 +116,7 @@ public struct Cipher: EnemyDefinition {
     
     // MARK: - 阶段 3：觉醒（HP ≤ 30%）
     
-    private static func phase3Move(selfIndex: Int, turn: Int, rng: inout SeededRNG) -> EnemyMove {
+    private static func phase3Move(selfIndex: Int, turn: Int) -> EnemyMove {
         let cycle = (turn - 1) % 4
         
         switch cycle {
@@ -130,21 +129,19 @@ public struct Cipher: EnemyDefinition {
                 ]
             )
         case 1:
-            // 命运改写（敌方版）：大量精神伤害
+            // P6：命运改写（敌方版）：下回合第一张牌费用 +1（可被“改写”取消）
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "✍️", text: "命运改写 16", previewDamage: 16),
+                intent: EnemyIntentDisplay(icon: "✍️", text: "命运改写：下回合首牌费用 +1"),
                 effects: [
-                    .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 16),
-                    .applyStatus(target: .player, statusId: Madness.id, stacks: 4)
+                    .applyFirstCardCostIncreaseNextTurn(amount: 1),
                 ]
             )
         case 2:
-            // 时间回溯：回复 HP + 力量成长
+            // P6：时间回溯：回复 15 HP（可被“改写”取消）
             return EnemyMove(
                 intent: EnemyIntentDisplay(icon: "⏪", text: "时间回溯：回复 15 HP"),
                 effects: [
-                    .heal(target: .enemy(index: selfIndex), amount: 15),
-                    .applyStatus(target: .enemy(index: selfIndex), statusId: Strength.id, stacks: 2)
+                    .enemyHeal(enemyIndex: selfIndex, amount: 15),
                 ]
             )
         default:

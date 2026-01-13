@@ -27,7 +27,7 @@ enum BattleScreen {
         lines.append("")
         
         // 手牌区域
-        lines.append(contentsOf: buildHandArea(engine.state))
+        lines.append(contentsOf: buildHandArea(engine: engine))
         lines.append("")
         
         // 牌堆信息
@@ -158,14 +158,17 @@ enum BattleScreen {
         return lines
     }
     
-    private static func buildHandArea(_ state: BattleState) -> [String] {
+    private static func buildHandArea(engine: BattleEngine) -> [String] {
         var lines: [String] = []
         
+        let state = engine.state
         lines.append("  \(Terminal.bold)🃏 手牌 (\(state.hand.count)张)\(Terminal.reset)")
         
         for (index, card) in state.hand.enumerated() {
             let def = CardRegistry.require(card.cardId)
-            let canPlay = def.cost <= state.energy
+            let baseCost = def.cost
+            let cost = engine.costToPlay(cardAtHandIndex: index)
+            let canPlay = cost <= state.energy
             let statusIcon = canPlay ? "\(Terminal.green)●\(Terminal.reset)" : "\(Terminal.red)○\(Terminal.reset)"
             let cardColor = canPlay ? Terminal.bold : Terminal.dim
             
@@ -179,8 +182,10 @@ enum BattleScreen {
             case .power:
                 effectIcon = "💪"
             }
+
+            let costText = cost == baseCost ? "◆\(cost)" : "◆\(cost)（原\(baseCost)）"
             
-            lines.append("     \(statusIcon) \(cardColor)[\(index + 1)] \(def.name)\(Terminal.reset)  \(Terminal.yellow)◆\(def.cost)\(Terminal.reset)  \(effectIcon) \(def.rulesText)")
+            lines.append("     \(statusIcon) \(cardColor)[\(index + 1)] \(def.name)\(Terminal.reset)  \(Terminal.yellow)\(costText)\(Terminal.reset)  \(effectIcon) \(def.rulesText)")
         }
         
         return lines

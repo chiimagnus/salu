@@ -11,6 +11,11 @@ struct BossRoomHandler: RoomHandling {
         case .won:
             // Boss 胜利：完成节点（可能推进到下一幕，也可能直接通关）
             runState.completeCurrentNode()
+
+            // 测试模式：进入下一幕后继续使用小地图，避免退回 15 层分支大地图导致验收变慢。
+            if TestMode.useTestMap && !runState.isOver {
+                runState.map = TestMode.testMapNodes()
+            }
             
             if runState.isOver {
                 return .runEnded(won: true)

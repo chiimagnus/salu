@@ -43,54 +43,11 @@ tar -xzf salu-macos.tar.gz
 2. 双击 `salu-windows-x86_64.exe` 或在命令提示符中运行
 
 ## 🤝 参与贡献
-<details>
-<summary><strong>（点此展开）</strong></summary>
+欢迎贡献！贡献前请先阅读仓库贡献指南：[AGENTS.md](AGENTS.md)。
 
-欢迎贡献！本项目按架构分为两层：
+本项目按架构分为两层，分别遵循各自模块规范：
 
-- `GameCore`：纯逻辑层（规则/状态/战斗/卡牌/敌人/地图/存档快照模型），[这是开发规范](.cursor/rules/GameCore模块开发规范.mdc)
-- `GameCLI`：CLI/TUI 表现层（终端渲染/输入/房间流程/持久化落盘实现），[这是开发规范](.cursor/rules/GameCLI模块开发规范.mdc)
+- `GameCore`：纯逻辑层（规则/状态/战斗/卡牌/敌人/地图/存档快照模型），见 [Sources/GameCore/AGENTS.md](Sources/GameCore/AGENTS.md)
+- `GameCLI`：CLI/TUI 表现层（终端渲染/输入/房间流程/持久化落盘实现），见 [Sources/GameCLI/AGENTS.md](Sources/GameCLI/AGENTS.md)
 
-### GameCore（纯逻辑层）如何贡献
-
-适用目录：`Sources/GameCore/`
-
-建议你从这些类型入手扩展：
-
-- 新卡牌：新增 `CardDefinition` 并在 `CardRegistry` 注册 `CardID`
-- 新状态：新增 `StatusDefinition` 并在 `StatusRegistry` 注册 `StatusID`
-- 新敌人：新增 `EnemyDefinition` 并在 `EnemyRegistry` 注册 `EnemyID`
-- Run 存档：`GameCore` 只负责 `RunSnapshot/RunSaveVersion` 等快照模型；实际文件读写放在 `GameCLI/Persistence`
-
-测试建议：优先为改动补 `Tests/GameCoreTests/` 单元测试。
-
-### GameCLI（CLI/TUI）如何贡献
-
-适用目录：`Sources/GameCLI/`
-
-常见扩展点：
-
-- 新界面：在 `Sources/GameCLI/Screens/` 增加 screen，并在 `Screens.swift` 挂入口
-- 新房间行为：新增 `Rooms/Handlers/*.swift` 并在 `RoomHandlerRegistry` 注册（避免在主循环写 roomType 分支）
-- UI 渲染：卡牌/状态/敌人展示尽量从 `CardRegistry/StatusRegistry/EnemyRegistry` 取数据渲染，避免写展示用 `switch`
-
-测试建议：
-
-- 统一跑：`swift test`
-- 端到端 CLI “UI” 测试可用：`SALU_TEST_MODE=1 SALU_DATA_DIR=/tmp/salu swift test`
-
-### 提交流程
-
-```bash
-git clone https://github.com/chiimagnus/salu.git
-cd salu
-git checkout -b feat/your-feature
-swift test
-git add .
-git commit -m "feat: your feature description"
-git push origin feat/your-feature
-```
-
-然后在 GitHub 创建 Pull Request，并在描述里写清楚：做了什么 / 为什么 / 如何验证（附上运行过的命令）。
-
-</details>
+最小验证命令：`swift test`
