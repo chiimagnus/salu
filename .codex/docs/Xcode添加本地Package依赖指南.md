@@ -10,7 +10,7 @@
 ## 前置条件
 
 - 已创建 `SaluNative/SaluNative.xcodeproj`
-- 已存在 `SaluMacApp` Target
+- 已存在 `SaluCRH` Target
 - 仓库根目录有 `Package.swift`，其中**必须定义 `products`**
 
 ### 关键：Package.swift 必须定义 products
@@ -58,7 +58,7 @@ let package = Package(
 2. 将整个目录**拖拽**到 Xcode 左侧 Project Navigator 中
 3. 在弹出的对话框中：
    - 确保 **Copy items if needed** 是**未勾选**的状态
-   - 勾选 **Add to targets**：选择 **SaluMacApp**
+   - 勾选 **Add to targets**：选择 **SaluCRH**
    - 点击 **Finish**
 
 ### 步骤 3：验证
@@ -86,7 +86,7 @@ Package 添加成功后，在 Project Navigator 中会出现该 Package，你可
 
 1. 你会看到 Package 的 Products 列表（如 `GameCore`、`GameCLI`）
 2. **在右侧 "Add to Target" 列**，选择你要链接的 Target：
-   - 对于 `GameCore`：选择 **SaluMacApp** 
+   - 对于 `GameCore`：选择 **SaluCRH** 
    - 如果需要添加到多个 Target，需要重复此步骤或稍后手动添加
 3. 点击 **"Add Package"**
 
@@ -101,7 +101,7 @@ Package 添加成功后，在 Project Navigator 中会出现该 Package，你可
 ### 通过 General 标签页
 
 1. 点击项目根节点 **SaluNative**（蓝色图标）
-2. 在 **TARGETS** 列表中选择 **SaluMacApp**
+2. 在 **TARGETS** 列表中选择 **SaluCRH**
 3. 点击 **General** 标签页
 4. 滚动到 **"Frameworks, Libraries, and Embedded Content"** 部分
 5. 点击 **"+"** 按钮
@@ -110,7 +110,7 @@ Package 添加成功后，在 Project Navigator 中会出现该 Package，你可
 
 ### 通过 Build Phases 标签页（备选）
 
-1. 选择 Target（`SaluMacApp`）
+1. 选择 Target（`SaluCRH`）
 2. 点击 **Build Phases** 标签页
 3. 展开 **"Link Binary With Libraries"**
 4. 点击 **"+"**
@@ -126,7 +126,7 @@ Package 添加成功后，在 Project Navigator 中会出现该 Package，你可
 
 ```
 SaluNative
-├── SaluMacApp/
+├── SaluCRH/
 └── Salu (local)              ← 本地 Package
     ├── Sources/
     │   ├── GameCore/         ← GameCore 模块
@@ -137,13 +137,13 @@ SaluNative
 ### 验证 2：检查 Frameworks 是否已链接
 
 1. 点击项目根节点 **SaluNative**
-2. 选择 **SaluMacApp** Target
+2. 选择 **SaluCRH** Target
 3. 点击 **General** → 滚动到 **Frameworks, Libraries, and Embedded Content**
 4. 确认列表中有 **GameCore**
 
 ### 验证 3：编译测试
 
-编辑 `SaluMacApp/ContentView.swift`，添加 `import GameCore`，然后 `Cmd + B` 编译。
+编辑 `SaluCRH/ContentView.swift`，添加 `import GameCore`，然后 `Cmd + B` 编译。
 
 示例代码：
 
@@ -201,9 +201,37 @@ swift build && swift test
 
 # 验证 macOS App 编译
 xcodebuild -project SaluNative/SaluNative.xcodeproj \
-  -scheme SaluMacApp \
+  -scheme SaluCRH \
   -destination 'platform=macOS' \
   build
+```
+
+---
+
+## 配置 Multiplatform App（支持 visionOS）
+
+当前 `SaluCRH` 只支持 macOS。要同时支持 visionOS，需要添加 Supported Destinations。
+
+### 步骤
+
+1. 点击项目根节点 **SaluNative**
+2. 选择 **SaluCRH** Target
+3. 点击 **General** 标签页
+4. 在 **Supported Destinations** 部分，点击 **"+"**
+5. 选择 **Apple Vision Pro**
+6. 确认列表中同时有 **Mac** 和 **Apple Vision Pro**
+
+### 平台差异处理
+
+在代码中使用条件编译处理平台差异：
+
+```swift
+#if os(visionOS)
+// visionOS 特有代码
+import RealityKit
+#elseif os(macOS)
+// macOS 特有代码
+#endif
 ```
 
 ---
@@ -211,7 +239,8 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
 ## 完成状态
 
 ✅ `Package.swift` 已添加 `products` 和 `platforms` 定义
-✅ `SaluMacApp` 能成功 `import GameCore` 并访问 `CardRegistry`
+✅ `SaluCRH` 能成功 `import GameCore` 并访问 `CardRegistry`（macOS）
+⏳ visionOS 支持：待在 Xcode 中添加 Supported Destinations
 
 ---
 

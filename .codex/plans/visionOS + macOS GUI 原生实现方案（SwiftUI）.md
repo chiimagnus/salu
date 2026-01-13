@@ -2,6 +2,7 @@
 title: Plan A - visionOS + macOS GUI 原生实现（SwiftUI）
 date: 2026-01-13
 updated: 2026-01-14
+architecture: Multiplatform App + 条件编译
 ---
 
 # Plan A：visionOS + macOS GUI 原生实现方案（SwiftUI）
@@ -23,9 +24,10 @@ updated: 2026-01-14
    - Native Apps 采用 Apple 原生持久化（首选 SwiftData；必要时混合 `@AppStorage`）
    - 默认不做存档互通（后续可选：通过 `RunSnapshot` 作为“交换格式”实现导入/导出）
 
-2. **Native Apps（macOS/visionOS）共享一套 App 逻辑与 UI 组件**
-   - 通过 Xcode 工程内的共享模块（如 `SaluNativeKit` framework）实现
-   - 平台差异用 `#if os(visionOS)` / `#if os(macOS)` 做细节适配，而不是复制两份流程
+2. **Native Apps（macOS/visionOS）采用 Multiplatform App 架构**
+   - 单一 App Target 同时支持 macOS 和 visionOS（而非两个独立 Target）
+   - 所有代码共享，平台差异用 `#if os(visionOS)` / `#if os(macOS)` 做细节适配
+   - 这种架构对 AI 编程更友好（所有代码都是文本文件，无需手动在 Xcode 中勾选 Target Membership）
 
 3. **UI 的“最小可用”策略**
    - 第一阶段先做 **window-based 2D UI**（visionOS 和 macOS 同构）
@@ -46,8 +48,8 @@ updated: 2026-01-14
 
 - SwiftPM 侧：`swift build && swift test` 通过（确保 `GameCLI`/`GameCore` 不受影响）
 - Xcode 侧：
-  - `SaluMacApp` 能编译并运行
-  - `SaluVisionApp` 能编译并在 visionOS Simulator 运行
+  - `SaluCRH` 能在 macOS 上编译并运行
+  - `SaluCRH` 能在 visionOS Simulator 上编译并运行（同一 Target，切换 Destination）
 - 行为侧：同 seed + 同选择路径，战斗/地图/奖励/事件/商店结果可复现（允许 UI 表现差异）
 
 ### 测试/验证命令参考
@@ -56,11 +58,8 @@ updated: 2026-01-14
 |------|------|------|
 | GameCore | `swift test --filter GameCoreTests` | SwiftPM |
 | GameCLI | `swift test --filter GameCLITests` | SwiftPM |
-| Native（编译 - macOS） | `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluMacApp -destination 'platform=macOS' build` | Xcodebuild |
-| Native（测试 - macOS） | `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluMacApp -destination 'platform=macOS' test` | Xcodebuild |
-| Native（编译 - visionOS） | `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluVisionApp -destination 'platform=visionOS Simulator,name=Apple Vision Pro' build` | Xcodebuild（名称按本机 simulator 为准） |
-| Native（测试 - visionOS） | `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluVisionApp -destination 'platform=visionOS Simulator,name=Apple Vision Pro' test` | Xcodebuild（若后续有 visionOS 测试 target） |
-| NativeKit（共享逻辑单测） | `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluNativeKitTests -destination 'platform=macOS' test` | 优先保证共享模块可测 |
+| Native（编译 - macOS） | `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluCRH -destination 'platform=macOS' build` | Xcodebuild |
+| Native（编译 - visionOS） | `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluCRH -destination 'platform=visionOS Simulator,name=Apple Vision Pro' build` | 同一 Target，切换 destination |
 
 ---
 
@@ -153,36 +152,75 @@ updated: 2026-01-14
 
 ---
 
-## 3. 总体架构（推荐落地形态）
+## 3. 总体架构（Multiplatform App + 条件编译）
 
-> 关键点：**不把 Apple-only 代码放进 SwiftPM 的 `Sources/`**，避免影响 Linux/Windows 构建；原生 App 代码放到独立目录，由 Xcode 管理。
+> 关键点：
+> 1. **不把 Apple-only 代码放进 SwiftPM 的 `Sources/`**，避免影响 Linux/Windows 构建
+> 2. **使用 Multiplatform App 架构**，单一 Target 同时支持 macOS 和 visionOS
+> 3. **平台差异通过 `#if os()` 条件编译处理**，而非创建多个 Target
+> 4. **对 AI 编程友好**：所有代码都是文本文件，无需手动在 Xcode 中勾选 Target Membership
 
 ### 3.1 目录与工程形态
-
-建议新增：
 
 ```
 SaluNative/
 ├── SaluNative.xcodeproj
-├── SaluNativeKit/              # 共享 Framework Target（SwiftUI + SwiftData + 流程状态机）
-├── SaluMacApp/                 # macOS App Target
-└── SaluVisionApp/              # visionOS App Target
+└── SaluCRH/                 # Multiplatform App（同时支持 macOS + visionOS）
+    ├── SaluCRHApp.swift     # @main 入口
+    ├── ContentView.swift
+    ├── GameSession.swift       # 流程状态机
+    ├── Views/                  # 共享 UI
+    │   ├── MainMenuView.swift
+    │   ├── MapView.swift
+    │   └── BattleView.swift
+    ├── Platform/               # 平台特有代码
+    │   └── visionOS/           # visionOS 特有（ImmersiveSpace 等）
+    ├── Persistence/            # SwiftData 模型
+    └── Assets.xcassets
 ```
 
 `SaluNative.xcodeproj` 通过 “Add Local Package” 引入仓库根目录的 `Package.swift`，从而依赖 `GameCore`。
 
 ### 3.2 依赖方向
 
-- `SaluMacApp → SaluNativeKit → GameCore` ✅
-- `SaluVisionApp → SaluNativeKit → GameCore` ✅
+- `SaluCRH → GameCore` ✅
 - `GameCore → (任何 App/UI/SwiftData)` ❌（保持纯逻辑层约束）
 - `GameCLI ↔ Native Apps` ❌（互不依赖）
 
-### 3.3 共享模块 `SaluNativeKit` 的职责
+### 3.3 平台差异处理
 
-- **App 流程状态机**（等价于 CLI 的 `runLoop` + `RoomHandlerRegistry`，但 UI 无关）
-- **持久化**（SwiftData / AppStorage；可实现 `RunSaveStore` / `BattleHistoryStore` 协议）
-- **适配层**（把 `GameCore` 的定义与事件转换为 UI 友好的 ViewModel）
+使用条件编译处理平台差异：
+
+```swift
+// 示例：visionOS 特有的 ImmersiveSpace
+#if os(visionOS)
+import RealityKit
+
+struct ImmersiveBattleView: View {
+    var body: some View {
+        RealityView { ... }
+    }
+}
+#endif
+
+// 示例：根据平台调整 UI
+var body: some View {
+    #if os(visionOS)
+    // visionOS: 更大的点击目标
+    CardView().frame(width: 200, height: 300)
+    #else
+    // macOS: 更紧凑的布局
+    CardView().frame(width: 120, height: 180)
+    #endif
+}
+```
+
+### 3.4 Xcode 配置要点
+
+在 Target 的 Build Settings 中配置 Supported Platforms：
+- `SUPPORTED_PLATFORMS = macosx xros xrsimulator`
+
+或在 Xcode UI 中：Target → General → Supported Destinations，添加 visionOS。
 
 ---
 
@@ -295,19 +333,18 @@ AppRoute
 
 ## 7. 执行计划（按优先级 / 可交付）
 
-### P1（必须）：创建 Xcode 工程 + 两个平台 target，能引用 `GameCore`
+### P1（必须）：创建 Xcode 工程 + Multiplatform App，能引用 `GameCore`
 
 **目标**
 
-- `SaluMacApp`、`SaluVisionApp` 都能编译，且能 `import GameCore`
+- `SaluCRH` 能在 macOS 和 visionOS 上编译，且能 `import GameCore`
 
 **实现步骤**
 
 - 新建 `SaluNative/SaluNative.xcodeproj`
-- 添加两个 App Target（macOS / visionOS）
-- 添加一个共享 Framework Target：`SaluNativeKit`
-- 两个 App Target 依赖 `SaluNativeKit`
-- `SaluNativeKit` 通过本地 package 依赖引入 `GameCore`
+- 添加一个 Multiplatform App Target：`SaluCRH`
+- 配置 Supported Platforms 包含 macOS 和 visionOS
+- 通过本地 package 依赖引入 `GameCore`
 - 在入口页验证：
 
 ```swift
@@ -317,9 +354,11 @@ let _ = CardRegistry.require("strike").name
 
 **验证**
 
-- `swift build && swift test`
-- `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluMacApp -destination 'platform=macOS' build`
-- `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluVisionApp -destination 'platform=visionOS Simulator,name=Apple Vision Pro' build`
+- `swift build && swift test`（确保 SwiftPM 侧不受影响）
+- `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluCRH -destination 'platform=macOS' build`
+- `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluCRH -destination 'platform=visionOS Simulator,name=Apple Vision Pro' build`
+
+**当前状态**：✅ macOS 已完成，visionOS 待配置 Supported Destinations
 
 ---
 
@@ -331,7 +370,8 @@ let _ = CardRegistry.require("strike").name
 
 **验证**
 
-- macOS/visionOS 均能导航到“新游戏 → 地图页”
+- macOS 能导航到"新游戏 → 地图页"
+- visionOS（配置 Supported Destinations 后）能导航到"新游戏 → 地图页"
 
 ---
 
