@@ -17,12 +17,6 @@ swift test           # 跑全部测试
 swift run            # 本地运行（GameCLI）
 ```
 
-端到端 CLI “UI” 测试建议使用固定数据目录：
-
-```bash
-SALU_TEST_MODE=1 SALU_DATA_DIR=/tmp/salu swift test
-```
-
 ## 本地存储与配置
 
 - 本地存储默认位置与文件结构见 `.codex/docs/本地存储说明.md`（run 存档、战斗历史、设置、调试日志）。
