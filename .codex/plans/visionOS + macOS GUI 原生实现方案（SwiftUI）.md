@@ -165,17 +165,26 @@ architecture: Multiplatform App + 条件编译
 ```
 SaluNative/
 ├── SaluNative.xcodeproj
-└── SaluCRH/                 # Multiplatform App（同时支持 macOS + visionOS）
-    ├── SaluCRHApp.swift     # @main 入口
-    ├── ContentView.swift
-    ├── GameSession.swift       # 流程状态机
-    ├── Views/                  # 共享 UI
-    │   ├── MainMenuView.swift
-    │   ├── MapView.swift
-    │   └── BattleView.swift
-    ├── Platform/               # 平台特有代码
-    │   └── visionOS/           # visionOS 特有（ImmersiveSpace 等）
-    ├── Persistence/            # SwiftData 模型
+└── SaluCRH/                     # Multiplatform App（同时支持 macOS + visionOS）
+    ├── SaluCRHApp.swift         # @main 入口
+    ├── ContentView.swift        # 根视图（根据 AppRoute 切换）
+    ├── AppRoute.swift           # 路由枚举
+    ├── GameSession.swift        # 流程状态机
+    ├── Views/                   # 共享 UI
+    │   ├── MainMenuView.swift   # ✅ P2 已实现
+    │   ├── MapView.swift        # ✅ P2 已实现
+    │   ├── BattleView.swift     # P5 待实现
+    │   ├── ShopView.swift       # P7 待实现
+    │   ├── EventView.swift      # P6 待实现
+    │   └── ...
+    ├── ViewModels/              # 视图模型（桥接 GameCore）
+    │   └── BattleSession.swift  # P5 待实现
+    ├── Platform/                # 平台特有代码
+    │   └── visionOS/            # visionOS 特有（ImmersiveSpace 等）
+    ├── Persistence/             # SwiftData 模型（P3 待实现）
+    │   ├── RunSaveEntity.swift
+    │   └── BattleRecordEntity.swift
+    ├── AGENTS.md                # 模块开发规范
     └── Assets.xcassets
 ```
 
@@ -333,7 +342,7 @@ AppRoute
 
 ## 7. 执行计划（按优先级 / 可交付）
 
-### P1（必须）：创建 Xcode 工程 + Multiplatform App，能引用 `GameCore`
+### ✅P1（必须）：创建 Xcode 工程 + Multiplatform App，能引用 `GameCore`
 
 **目标**
 
@@ -362,7 +371,7 @@ let _ = CardRegistry.require("strike").name
 
 ---
 
-### P2（必须）：实现 `GameSession`（最小状态机）+ 主菜单
+### ✅P2（必须）：实现 `GameSession`（最小状态机）+ 主菜单
 
 **目标**
 
@@ -477,7 +486,7 @@ let _ = CardRegistry.require("strike").name
 | P | 完成日期 | 验证命令 | 结果 |
 |---|----------|----------|------|
 | P1 | 2026-01-14 | `xcodebuild ... -scheme SaluCRH -destination 'platform=macOS' build` | ✅ macOS 通过 / ⏳ visionOS 待配置 |
-| P2 | - | - | - |
+| P2 | 2026-01-14 | `xcodebuild ... -scheme SaluCRH -destination 'platform=macOS' build` | ✅ macOS 通过（主菜单 + 地图页） |
 | P3 | - | - | - |
 | P4 | - | - | - |
 | P5 | - | - | - |

@@ -217,6 +217,18 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
   build
 ```
 
+## 构建失败排查指南
+
+**重要**：编译错误通常是因为 GameCore API 使用不正确。遇到构建失败时：
+
+1. **查看 GameCore 源码**：错误提示的类型（如 `RunState`、`Entity`、`MapNode` 等）都定义在 `Sources/GameCore/` 中
+2. **常见 API 差异**：
+   - `RunState.newRun(seed:)` - 创建新冒险（不是直接 `init(seed:)`）
+   - `Entity.currentHP` / `Entity.maxHP` - 注意大小写
+   - `MapNode.roomType` - 不是 `type`
+   - `RelicManager.all` - 获取所有遗物 ID（不是 `relics`）
+   - `ConsumableID` 是 ID 类型，通过 `ConsumableRegistry.require()` 获取定义
+3. **技术文档**：完整的 GameCore API 参考见 [GameCore 规范](../../Sources/GameCore/AGENTS.md)
 ## 禁止事项
 
 - ❌ 在 View 中直接操作 `BattleEngine`（必须通过 `BattleSession`）
@@ -224,6 +236,7 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
 - ❌ 依赖 `GameCLI`（两者互不依赖）
 - ❌ 修改 `GameCore` 来适配 UI（GameCore 保持纯逻辑）
 - ❌ 使用单例 ViewModel（使用依赖注入）
+- ❌ 猜测 API - 遇到不确定的类型/属性，先查看 GameCore 源码
 
 ## 参考文档
 - [总体方案](<../../.codex/plans/visionOS + macOS GUI 原生实现方案（SwiftUI）.md>)
