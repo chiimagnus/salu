@@ -5,12 +5,10 @@
 
 本仓库已有较完整的 Cursor 规则文档；它们也是当前项目的"事实来源"。在做任何较大改动前请先打开对应文档：
 
-- `./.cursor/rules/CLAUDE.mdc`：项目总览、运行方式、CLI 参数、数据目录等
-- `./.cursor/rules/gamecore.mdc`：`GameCore` 模块开发规范（纯逻辑层、PDD、Registry、Effect 管线等）
-- `./.cursor/rules/gamecli.mdc`：`GameCLI` 模块开发规范（界面系统、依赖方向、I/O 服务注入等）
-- `./.cursor/rules/Salu游戏设定与剧情（v1.0）.mdc`：游戏设定、剧情主线、NPC、克苏鲁风格重命名方案
-- `./.cursor/rules/Salu游戏业务说明（玩法系统与触发规则）.mdc`：玩法系统、数值、触发规则
-- `./.cursor/plans/backlog-2026-01-04.md`：未接入系统与后续扩展计划
+- `Sources/GameCore/AGENTS.md`：`GameCore` 模块开发规范（纯逻辑层、PDD、Registry、Effect 管线等）
+- `Sources/GameCLI/AGENTS.md`：`GameCLI` 模块开发规范（界面系统、依赖方向、I/O 服务注入等）
+- `.codex/docs/Salu游戏设定与剧情v1.0.md`：游戏设定、剧情主线、NPC、克苏鲁风格重命名方案
+- `.codex/docs/Salu游戏业务说明（玩法系统与触发规则）.md`：玩法系统、数值、触发规则
 
 ## 项目结构与模块组织
 
