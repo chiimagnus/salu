@@ -1,9 +1,3 @@
----
-description: GameCore 模块开发规范 - 纯逻辑层
-globs: Sources/GameCore/**/*.swift
-alwaysApply: true
----
-
 # GameCore 模块开发规范
 
 > **设定与剧情**请参阅：`.cursor/rules/Salu游戏设定与剧情（v1.0）.mdc`

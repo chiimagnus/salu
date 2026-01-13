@@ -1,8 +1,3 @@
----
-description: Salu 游戏设定与剧情（v1.0）
-alwaysApply: true
----
-
 # Salu 游戏设定与剧情（v1.0）
 
 本文档是 **Salu 的"设定/剧情"事实来源**，用于统一叙事方向与世界观风格。

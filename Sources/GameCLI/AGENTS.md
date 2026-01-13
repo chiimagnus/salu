@@ -1,9 +1,3 @@
----
-description: GameCLI 模块开发规范 - 表现层
-globs: Sources/GameCLI/**/*.swift
-alwaysApply: true
----
-
 # GameCLI 模块开发规范
 
 > **设定与剧情**请参阅：`.cursor/rules/Salu游戏设定与剧情（v1.0）.mdc`
