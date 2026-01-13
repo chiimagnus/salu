@@ -56,9 +56,11 @@ updated: 2026-01-14
 |------|------|------|
 | GameCore | `swift test --filter GameCoreTests` | SwiftPM |
 | GameCLI | `swift test --filter GameCLITests` | SwiftPM |
-| Native Apps（编译） | `xcodebuild build -scheme SaluMacApp -destination 'platform=macOS'` | macOS |
-| Native Apps（编译） | `xcodebuild build -scheme SaluVisionApp -destination 'platform=visionOS Simulator,name=Apple Vision Pro'` | visionOS（名称按本机 simulator 为准） |
-| Native Apps（测试） | `xcodebuild test -scheme SaluNativeKitTests -destination 'platform=macOS'` | 先跑共享模块单测 |
+| Native（编译 - macOS） | `xcodebuild -project Apps/SaluNative/SaluNative.xcodeproj -scheme SaluMacApp -destination 'platform=macOS' build` | Xcodebuild |
+| Native（测试 - macOS） | `xcodebuild -project Apps/SaluNative/SaluNative.xcodeproj -scheme SaluMacApp -destination 'platform=macOS' test` | Xcodebuild |
+| Native（编译 - visionOS） | `xcodebuild -project Apps/SaluNative/SaluNative.xcodeproj -scheme SaluVisionApp -destination 'platform=visionOS Simulator,name=Apple Vision Pro' build` | Xcodebuild（名称按本机 simulator 为准） |
+| Native（测试 - visionOS） | `xcodebuild -project Apps/SaluNative/SaluNative.xcodeproj -scheme SaluVisionApp -destination 'platform=visionOS Simulator,name=Apple Vision Pro' test` | Xcodebuild（若后续有 visionOS 测试 target） |
+| NativeKit（共享逻辑单测） | `xcodebuild -project Apps/SaluNative/SaluNative.xcodeproj -scheme SaluNativeKitTests -destination 'platform=macOS' test` | 优先保证共享模块可测 |
 
 ---
 
@@ -317,8 +319,8 @@ let _ = CardRegistry.require("strike").name
 **验证**
 
 - `swift build && swift test`
-- `xcodebuild build -scheme SaluMacApp -destination 'platform=macOS'`
-- `xcodebuild build -scheme SaluVisionApp -destination 'platform=visionOS Simulator,name=Apple Vision Pro'`
+- `xcodebuild -project Apps/SaluNative/SaluNative.xcodeproj -scheme SaluMacApp -destination 'platform=macOS' build`
+- `xcodebuild -project Apps/SaluNative/SaluNative.xcodeproj -scheme SaluVisionApp -destination 'platform=visionOS Simulator,name=Apple Vision Pro' build`
 
 ---
 
