@@ -10,8 +10,36 @@
 ## 前置条件
 
 - 已创建 `SaluNative/SaluNative.xcodeproj`
-- 已存在 `SaluMacApp` 和 `SaluVisionApp` 两个 Target
-- 仓库根目录有 `Package.swift`，其中定义了 `GameCore` Target
+- 已存在 `SaluMacApp` Target
+- 仓库根目录有 `Package.swift`，其中**必须定义 `products`**
+
+### 关键：Package.swift 必须定义 products
+
+如果 `Package.swift` 中没有 `products` 定义，Xcode 将无法找到可链接的库！
+
+```swift
+// Package.swift
+let package = Package(
+    name: "Salu",
+    platforms: [
+        .macOS(.v14),
+        .visionOS(.v2),
+    ],
+    products: [
+        // 必须！将 GameCore 暴露为 library
+        .library(
+            name: "GameCore",
+            targets: ["GameCore"]
+        ),
+    ],
+    targets: [
+        .target(name: "GameCore"),
+        // ...
+    ]
+)
+```
+
+> ⚠️ **常见坑**：如果只有 `targets` 没有 `products`，在 Xcode 的 Frameworks 列表中看不到 GameCore！
 
 ---
 
@@ -30,7 +58,7 @@
 2. 将整个目录**拖拽**到 Xcode 左侧 Project Navigator 中
 3. 在弹出的对话框中：
    - 确保 **Copy items if needed** 是**未勾选**的状态
-   - 勾选 **Add to targets**：选择 **SaluMacApp** 和 **SaluVisionApp**
+   - 勾选 **Add to targets**：选择 **SaluMacApp**
    - 点击 **Finish**
 
 ### 步骤 3：验证
@@ -79,16 +107,14 @@ Package 添加成功后，在 Project Navigator 中会出现该 Package，你可
 5. 点击 **"+"** 按钮
 6. 在弹出列表中，找到并选择 **GameCore**（应该在列表中显示）
 7. 点击 **Add**
-8. 对 **SaluVisionApp** Target 重复步骤 2-7
 
 ### 通过 Build Phases 标签页（备选）
 
-1. 选择 Target（如 `SaluMacApp`）
+1. 选择 Target（`SaluMacApp`）
 2. 点击 **Build Phases** 标签页
 3. 展开 **"Link Binary With Libraries"**
 4. 点击 **"+"**
 5. 选择 **GameCore**，点击 **Add**
-6. 对另一个 Target 重复
 
 ---
 
@@ -101,9 +127,6 @@ Package 添加成功后，在 Project Navigator 中会出现该 Package，你可
 ```
 SaluNative
 ├── SaluMacApp/
-├── SaluVisionApp/
-├── Packages/
-│   └── RealityKitContent/
 └── Salu (local)              ← 本地 Package
     ├── Sources/
     │   ├── GameCore/         ← GameCore 模块
@@ -121,6 +144,23 @@ SaluNative
 ### 验证 3：编译测试
 
 编辑 `SaluMacApp/ContentView.swift`，添加 `import GameCore`，然后 `Cmd + B` 编译。
+
+示例代码：
+
+```swift
+import SwiftUI
+import GameCore
+
+struct ContentView: View {
+    var body: some View {
+        VStack {
+            Text("GameCore 已连接 ✓")
+            let strike = CardRegistry.require("strike")
+            Text("示例卡牌: \(strike.name)")
+        }
+    }
+}
+```
 
 如果编译成功，说明配置完成！
 
@@ -151,10 +191,6 @@ products: [
 
 尝试：`File → Packages → Reset Package Caches`，然后重新编译。
 
-### 问题：visionOS Target 编译失败
-
-确保 `GameCore` 是纯 Swift 代码，不包含平台特定 API（如 AppKit/UIKit）。
-
 ---
 
 ## 命令行验证（可选）
@@ -168,13 +204,14 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
   -scheme SaluMacApp \
   -destination 'platform=macOS' \
   build
-
-# 验证 visionOS App 编译
-xcodebuild -project SaluNative/SaluNative.xcodeproj \
-  -scheme SaluVisionApp \
-  -destination 'platform=visionOS Simulator,name=Apple Vision Pro' \
-  build
 ```
+
+---
+
+## 完成状态
+
+✅ `Package.swift` 已添加 `products` 和 `platforms` 定义
+✅ `SaluMacApp` 能成功 `import GameCore` 并访问 `CardRegistry`
 
 ---
 
