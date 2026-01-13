@@ -1,243 +1,236 @@
 # GameCore 模块开发规范
 
-> **设定与剧情**请参阅：`.codex/docs/Salu游戏设定与剧情v1.0.md`
-> **卡牌/敌人/遗物命名映射**见业务说明文档各业务章节（第 4/6/11 章）的表格。
+> 设定/剧情/玩法规则文档优先对齐 `.codex/docs/`。
 
 ## 模块定位
 
-GameCore 是**纯逻辑层**，负责游戏规则、状态管理、计算。
+GameCore 是**纯逻辑层**：负责规则、状态、决策、确定性随机、快照模型。
+
+关键目标：
+
+- **可复现**：同 seed + 同输入 → 结果一致（战斗/地图/奖励/事件/商店）。
+- **可测试**：逻辑可在 `GameCoreTests` 里稳定断言。
+- **可扩展**：新增内容优先走 `Definition + Registry`，尽量不改引擎。
+
+当前目录结构（以实际代码为准）：
 
 ```
 Sources/GameCore/  ← 本规范适用范围
 │
 ├── Kernel/                 # 强类型 ID / Effect / Trigger 框架
+├── Entity/                 # Entity（玩家/敌人统一实体）
+├── Battle/                 # BattleEngine / BattleState / Damage&BlockCalculator
 ├── Cards/                  # CardDefinition / CardRegistry / StarterDeck
 ├── Status/                 # StatusDefinition / StatusRegistry / StatusContainer
-├── Enemies/                # EnemyDefinition / EnemyRegistry / EnemyPool
-├── Relics/                 # 遗物定义与管理器
-├── Map/                    # 地图节点与生成策略
-├── Run/                    # 冒险状态 / 存档版本 / Snapshot
-├── Persistence/            # BattleHistoryStore / RunSaveStore 协议
-├── Battle/                 # 战斗引擎与状态
-├── Actions.swift           # 玩家动作定义
-├── Events.swift            # 战斗事件定义
-├── History.swift           # 战绩数据模型
-└── RNG.swift               # 随机数生成器
+├── Enemies/                # EnemyDefinition / EnemyRegistry / EnemyPool / EncounterPool
+├── Relics/                 # RelicDefinition / RelicRegistry / RelicManager / RelicPool
+├── Consumables/            # ConsumableDefinition / ConsumableRegistry
+├── Events/                 # EventDefinition / EventRegistry / EventGenerator
+├── Rewards/                # RewardGenerator / GoldRewardStrategy / CardPool
+├── Shop/                   # ShopInventory / ShopPricing / ShopContext
+├── Map/                    # MapNode / MapGenerator / RoomType
+├── Run/                    # RunState / RunSnapshot / RunEffect / RunSaveVersion
+├── Persistence/            # BattleHistoryStore / RunSaveStore（协议，仅定义接口）
+│
+├── Actions.swift           # 玩家动作定义（输入层可用）
+├── Events.swift            # 战斗事件定义（BattleEvent）
+├── History.swift           # 战绩数据模型（BattleRecord 等，允许 Foundation）
+└── RNG.swift               # SeededRNG（可复现 RNG）
 ```
 
 ---
 
-## 协议驱动开发（PDD）原则
+## 核心架构：Definition + Registry + Effect
 
-GameCore 的核心目标是把“内容扩展点”从 `enum + switch` 迁移到 **Definition + Registry**：
+GameCore 的内容扩展点遵循“协议驱动开发（PDD）”思路：
 
-- **强类型 ID**：`CardID/StatusID/EnemyID/RelicID`（禁止散落字符串）
-- **定义协议**：`CardDefinition/StatusDefinition/EnemyDefinition/RelicDefinition`（只做决策/产出效果，不直接 I/O）
-- **注册表**：`CardRegistry/StatusRegistry/EnemyRegistry/RelicRegistry`（新增内容的唯一入口）
-- **统一效果管线**：`BattleEffect` + `BattleEngine.apply(effect:)`（引擎只负责执行效果并产出事件）
+- **强类型 ID**：`CardID/StatusID/EnemyID/RelicID/EventID/ConsumableID`（禁止散落字符串）。
+- **定义协议（只决策）**：
+  - `CardDefinition`：`play(snapshot:targetEnemyIndex:) -> [BattleEffect]`
+  - `StatusDefinition`：修正（phase+priority）与回合末触发（`onTurnEnd`）
+  - `EnemyDefinition`：`chooseMove(selfIndex:snapshot:rng:) -> EnemyMove`
+  - `RelicDefinition`：`onBattleTrigger(_:snapshot:) -> [BattleEffect]`
+  - `EventDefinition`：`generate(context:rng:) -> EventOffer`
+  - `ConsumableDefinition`：产生效果/修改 RunState（取决于具体协议定义）
+- **注册表（唯一入口）**：`CardRegistry/StatusRegistry/EnemyRegistry/RelicRegistry/EventRegistry/ConsumableRegistry`。
+- **统一效果管线**：所有战斗内影响统一由 `BattleEffect` 描述，只有 `BattleEngine` 执行效果并发出 `BattleEvent`。
 
-约束：新增卡牌/状态/敌人/遗物应当尽量只做 **新增 Definition + 在 Registry 注册**，避免修改 `BattleEngine` 或引入新的 switch 扩展点。
+约束：新增卡牌/状态/敌人/遗物/事件/消耗品时，尽量只做“新增 Definition + 在 Registry 注册”，避免在 `BattleEngine` 里新增 `switch` 扩展点。
 
 ---
 
-## 多敌人战斗 + 目标选择（已接入）
+## 多敌人战斗 + 显式目标
 
-为了支持“多敌人同场 + 显式目标”，核心接口已升级，新增/扩展内容时请遵守：
+多敌人已接入，新增内容时必须遵守：
 
 - **目标模型**：统一使用 `EffectTarget`
   - 玩家：`.player`
   - 敌人实例：`.enemy(index: Int)`（索引对应 `BattleState.enemies`）
-- **战斗状态**：`BattleState.enemies: [Entity]`（不再是单个 enemy）
-- **快照**：`BattleSnapshot` 现在包含 `enemies: [Entity]`（不再包含单个 enemy）
 - **玩家动作**：`PlayerAction.playCard(handIndex:targetEnemyIndex:)`
-  - 当牌需要目标且场上存在多个存活敌人时，必须提供 `targetEnemyIndex`
-  - `BattleEngine` 会对目标合法性做校验（越界/已死亡/缺目标都会返回 `invalidAction`）
-- **卡牌定义**：`CardDefinition.play(snapshot:targetEnemyIndex:)` + `CardDefinition.targeting`
-  - 攻击牌默认 `targeting = .singleEnemy`；技能/能力默认 `targeting = .none`
-  - **不要硬编码敌人索引为 0**；应使用传入的 `targetEnemyIndex` 生成 `.enemy(index:)`
+  - 需要目标的牌必须提供 `targetEnemyIndex`
+  - 目标合法性由 `BattleEngine` 校验并通过 `BattleEvent.invalidAction` 反馈
+- **卡牌定义**：`CardDefinition.play(snapshot:targetEnemyIndex:)`
+  - 不要把敌人索引写死为 0
+  - 生成效果时用 `.enemy(index: targetEnemyIndex)`
 - **敌人 AI**：`EnemyDefinition.chooseMove(selfIndex:snapshot:rng:)`
-  - 需要把“自己”作为 source/target 的效果，必须使用 `selfIndex` 生成 `.enemy(index: selfIndex)`（禁止再写死 0）
+  - 对“自己”施加效果时使用 `selfIndex`
 
 ---
 
-## 设计原则
+## 可复现性（Determinism）规范
 
-### 单一职责原则（SRP）
+### 统一 RNG
 
-每个文件只负责一个明确的领域：
+- GameCore 内随机必须来自 `SeededRNG`（见 `RNG.swift`）。
+- 推荐签名形态：`func foo(..., rng: inout SeededRNG)`，并在需要时由调用方派生 seed 或传入同一个 rng。
 
-| 文件/目录 | 单一职责 | 禁止混入 |
-|------|----------|----------|
-| `Kernel/IDs.swift` | 强类型 ID 定义 | 业务逻辑 |
-| `Kernel/BattleEffect.swift` | 效果枚举/目标 | 状态修改 |
-| `Cards/*` | 卡牌定义/注册表 | 直接修改 BattleState |
-| `Status/*` | 状态定义/注册表/容器 | I/O、事件输出 |
-| `Enemies/*` | 敌人定义/注册表/遭遇表 | UI/输入输出 |
-| `Battle/BattleEngine.swift` | 战斗流程与效果执行 | UI、持久化 |
-| `Run/*` | 冒险状态/存档版本 | CLI 逻辑 |
+严格禁止：
 
-### 组件化原则
+- ❌ `Int.random(...)`、`SystemRandomNumberGenerator`、`array.shuffled()`（无 rng 参数）
+- ❌ 依赖系统时间作为随机源（例如 `Date()` 参与决策）
 
-1. **新增功能模块时**：考虑是否需要独立文件
-2. **文件超过 200 行**：考虑拆分
-3. **类型可独立使用时**：抽取为独立文件
+### 派生 seed（地图/奖励/事件/商店）
 
-```swift
-// ✅ 正确：按领域拆分
-// Models.swift - 数据模型
-// Events.swift - 事件定义
-// BattleEngine.swift - 战斗逻辑
+对“非战斗引擎内部”的生成器（例如事件/奖励/商店），目前采用**派生 seed + salt** 的方式保证稳定性：
 
-// ❌ 错误：所有内容放在一个文件
-```
+- 同 `seed + floor + row + nodeId (+ roomType)` → 结果稳定
+- 不同系统使用不同 salt，避免强相关（例如事件 vs 奖励）
+- Hash 计算必须是纯 Swift（当前使用 FNV-1a 64）
 
-### 依赖方向
+已有实现可参考：`Events/EventGenerator`、`Rewards/RewardGenerator`、`Rewards/GoldRewardStrategy`、`Shop/ShopInventory`。
 
-```
-Battle/BattleEngine.swift
-    ↓ 使用
-┌──────────────────────────────────────────┐
-│ Kernel/*  Cards/*  Status/*  Enemies/*   │
-│ Relics/*  Run/*   Map/*  Actions.swift   │
-└──────────────────────────────────────────┘
-    ↓ 使用
-┌──────────────────────────────────────────┐
-│ RNG.swift                                 │
-└──────────────────────────────────────────┘
-```
+### Date/UUID 的使用边界
+
+- `History.swift` 允许 `Foundation`，并使用 `Date/UUID` 作为默认值来生成**记录 ID/时间戳**。
+- 但在**核心决策/战斗/地图/奖励**里禁止隐式引入 `Date/UUID`：需要时间/ID 时必须由外部注入。
 
 ---
 
-## 核心约束
+## 并发与 Sendable
+
+- 需要跨模块（GameCLI → GameCore）访问的类型应为 `public`。
+- `Sendable` 是默认要求：值类型优先；引用类型如必须出现，应显式标注并解释并发语义。
+
+注意：
+
+- `BattleEngine` 与 `SeededRNG` 当前为 `@unchecked Sendable`，并不意味着线程安全。
+  - 约束：它们应当被当作“单线程/单任务”对象使用；不要在多个并发任务中共享同一个实例。
+
+---
+
+## I/O 与依赖边界
 
 ### 严格禁止
 
 - ❌ `print()` 或任何控制台输出
 - ❌ 读取 `stdin` 或任何用户输入
-- ❌ 导入 `Foundation`（`History.swift` 例外；I/O 协议文件也不应依赖 Foundation）
+- ❌ 文件系统/网络/环境变量读取（这些属于 GameCLI 层）
 - ❌ 导入任何 UI 框架
-- ❌ 导入 GameCLI 模块
+- ❌ 反向依赖 GameCLI
+- ❌ 导入 `Foundation`
+  - ✅ 唯一例外：`History.swift`（战绩模型需要 `Date/UUID`）
 
-### 必须遵守
+### 持久化
 
-- ✅ 所有类型标记为 `public`
-- ✅ 遵循 `Sendable` 协议（支持并发）
-- ✅ 通过事件系统记录状态变化
-- ✅ 使用注入的 RNG 保证可复现性
-- ✅ 每个文件职责单一明确
+- GameCore 只定义协议：`Persistence/BattleHistoryStore`、`Persistence/RunSaveStore`
+- 实际落盘/JSON 编解码/目录结构属于 GameCLI（实现这些协议）
 
 ---
 
-## 代码风格
+## 设计与代码组织
 
-### Swift 6 并发安全
+### 单一职责（SRP）
 
-```swift
-// ✅ 正确：结构体标记 Sendable
-public struct Card: Identifiable, Sendable { ... }
+- Definition 文件：只做“决策/产出”，不直接改 `BattleState`，不直接 emit 事件。
+- Engine 文件：只做“执行效果 + 产生事件 + 驱动流程”。
 
-// ✅ 正确：类使用 @unchecked Sendable
-public final class BattleEngine: @unchecked Sendable { ... }
+### 依赖方向（推荐）
+
 ```
-
-### 事件驱动设计
-
-```swift
-// ✅ 正确：通过事件记录状态变化
-private func emit(_ event: BattleEvent) {
-    events.append(event)
-}
-
-emit(.damageDealt(source: "玩家", target: "敌人", amount: 6, blocked: 0))
-
-// ❌ 错误：直接 print
-print("造成 6 点伤害")  // 禁止！
-```
-
-### 可复现性
-
-```swift
-// ✅ 正确：使用注入的 RNG
-let shuffled = rng.shuffled(deck)
-
-// ❌ 错误：使用系统随机数
-let shuffled = deck.shuffled()  // 不可复现！
+Battle/BattleEngine.swift
+    ↓ 使用
+┌──────────────────────────────────────────────────────────────┐
+│ Kernel/*  Entity/*  Cards/*  Status/*  Enemies/*  Relics/*   │
+│ Consumables/*  Events/*  Rewards/*  Shop/*  Map/*  Run/*     │
+└──────────────────────────────────────────────────────────────┘
+    ↓ 使用
+┌──────────────────────────────────────────┐
+│ RNG.swift                                  │
+└──────────────────────────────────────────┘
 ```
 
 ---
 
-## 文件职责详解
-
-| 文件/目录 | 职责 | 关键类型 |
-|------|------|----------|
-| `Kernel/IDs.swift` | 强类型 ID | CardID, EnemyID, StatusID, RelicID |
-| `Kernel/BattleEffect.swift` | 战斗效果与目标 | BattleEffect, EffectTarget |
-| `Kernel/BattleTrigger.swift` | 战斗触发点 | BattleTrigger |
-| `Cards/*` | 卡牌定义/注册表/起始牌组 | CardDefinition, CardRegistry, Card |
-| `Status/*` | 状态定义/注册表/容器 | StatusDefinition, StatusRegistry, StatusContainer |
-| `Enemies/*` | 敌人定义/注册表/遭遇表 | EnemyDefinition, EnemyRegistry, EnemyMove |
-| `Relics/*` | 遗物定义/注册表/管理器 | RelicDefinition, RelicRegistry, RelicManager |
-| `Map/*` | 地图节点与生成 | MapNode, MapGenerating |
-| `Run/*` | 冒险状态/存档数据 | RunState, RunSnapshot |
-| `Persistence/*` | 持久化协议 | BattleHistoryStore, RunSaveStore |
-| `Battle/BattleEngine.swift` | 战斗引擎 | BattleEngine |
-| `Actions.swift` | 动作定义 | PlayerAction |
-| `Events.swift` | 事件定义 | BattleEvent |
-| `History.swift` | 战绩模型 | BattleRecord, BattleStatistics |
-
----
-
-## 扩展指南
+## 扩展指南（按领域）
 
 ### 添加新卡牌
 
-1. 创建新的 `CardDefinition` 类型（建议放在 `Cards/Definitions/` 子目录）。
-   - 内容文件建议按类别拆分以便维护：卡牌按 **攻击/技能/能力**；敌人按 **普通/精英/Boss**；遗物按 **稀有度**。
-   - 注意：SwiftPM 在同一 target 内**不允许出现同名源文件**（basename 重复会导致 `multiple producers`）。当按 Act 拆分同类定义文件（例如 `BossEnemies.swift`）时，必须使用 `Act1BossEnemies.swift` / `Act2BossEnemies.swift` 这类前缀命名。
-2. 在 `CardRegistry` 中注册 `CardID -> Definition`。
-3. 如需加入起始牌组，更新 `createStarterDeck()`；其余场景通过发牌/奖励直接使用 `CardID`。
-4. 不要在 `BattleEngine` 添加 switch，效果由 `CardDefinition.play` 返回的 `BattleEffect` 统一执行。
+1. 在 `Cards/Definitions/**` 新增一个实现 `CardDefinition` 的类型。
+2. `play(snapshot:targetEnemyIndex:)` 只返回 `[BattleEffect]`，不要直接改状态/emit 事件。
+3. 需要目标时：
+   - `targeting = .singleEnemy`
+   - 生成效果时使用 `.enemy(index: targetEnemyIndex)`
+4. 在 `Cards/CardRegistry.swift` 注册 `CardID -> Definition`。
+5. 奖励池：若该牌可作为奖励出现，确认 `Rewards/CardPool` 的规则能覆盖（避免把起始牌/剧情牌误放入奖励池）。
 
-### 添加状态效果 (Buff/Debuff)
+### 添加状态（Buff/Debuff）
 
-1. 创建新的 `StatusDefinition`，定义修正/触发逻辑。
-2. 在 `StatusRegistry` 注册 `StatusID -> Definition`。
-3. 通过 `StatusContainer.apply` 管理层数，所有修正/触发以 `BattleEffect` 形式返回，由 `BattleEngine` 执行。
-3. 在 `BattleEngine` 伤害计算中应用修正
-4. 在回合结束时递减持续时间
-5. 添加对应的 `BattleEvent` 事件
+1. 在 `Status/Definitions/**` 新增实现 `StatusDefinition` 的类型。
+2. 修正型效果使用 phase + priority：
+   - `outgoingDamagePhase / incomingDamagePhase / blockPhase`
+   - `priority` 用于稳定顺序（越小越先应用）
+   - 具体修正写在 `modifyOutgoingDamage/modifyIncomingDamage/modifyBlock`
+3. 触发型（如中毒）使用：`onTurnEnd(owner:stacks:snapshot:) -> [BattleEffect]`。
+4. 递减规则：通过 `decay` 声明（例如 `.turnEnd(decreaseBy: 1)`）。
+5. 在 `Status/StatusRegistry.swift` 注册。
 
-### 添加新功能模块
+说明：伤害/格挡修正的执行顺序由 `Battle/DamageCalculator.swift`、`Battle/DamageCalculator.swift` 的 `BlockCalculator` 按 **ModifierPhase + priority** 确定性应用。
 
-1. **评估是否独立**：新功能是否与现有文件职责相关？
-2. **创建新文件**：如果是全新领域，创建独立文件
-3. **保持纯逻辑**：不引入 UI 或 I/O 依赖
+### 添加新敌人
 
-### Run 存档（P7）
+1. 在 `Enemies/Definitions/Act*/**` 新增实现 `EnemyDefinition` 的类型。
+2. AI 必须只通过返回 `EnemyMove` 来描述意图与效果：
+   - 随机只能来自 `rng`（inout），且随机结果必须固化进 `EnemyMove.effects`
+3. `chooseMove(selfIndex:snapshot:rng:)` 中：
+   - 对自己施加效果用 `.enemy(index: selfIndex)`
+4. 在 `Enemies/EnemyRegistry.swift` 注册，并根据需要把敌人加入 `EnemyPool/EncounterPool`。
 
-- `GameCore` 只提供 **Run 维度**可序列化快照模型（`RunSnapshot`）与版本管理（`RunSaveVersion`）。
-- 实际文件读写/JSON 编解码必须在 `GameCLI/Persistence`（`RunSaveStore` 的具体实现）。
+### 添加新遗物
+
+1. 在 `Relics/Definitions/**` 新增实现 `RelicDefinition` 的类型。
+2. 仅通过 `onBattleTrigger(_:snapshot:)` 产出 `[BattleEffect]`。
+3. 在 `Relics/RelicRegistry.swift` 注册，并根据需要更新 `RelicPool/RelicDropStrategy`。
+
+### 添加新消耗品
+
+1. 在 `Consumables/Definitions/**` 新增实现 `ConsumableDefinition` 的类型。
+2. 在 `Consumables/ConsumableRegistry.swift` 注册。
+3. 若要进入商店，确认其 ID 出现在 `ConsumableRegistry.shopConsumableIds`（或对应选择逻辑）。
+
+### 添加新地图事件
+
+1. 在 `Events/Definitions/**` 新增实现 `EventDefinition` 的类型。
+2. `generate(context:rng:)` 必须只做决策与产出：返回 `EventOffer`（选项、后续、效果）。
+3. 随机只能来自注入的 `rng`。
+4. 在 `Events/EventRegistry.swift` 注册。
 
 ---
 
-## 命名规范
+## 命名与文件约束
 
-| 类型 | 规范 | 示例 |
-|------|------|------|
-| 类型名 | `PascalCase` | `BattleEngine` |
-| 变量名 | `camelCase` | `currentHP` |
-| 事件名 | `camelCase` | `damageDealt` |
-| 文件名 | 与主类型同名（或领域/分类名） | `BattleEngine.swift` / `Act1NormalEnemies.swift` |
-
-- 注意：同一 SwiftPM target 内文件名（basename）必须唯一。
+- 类型：`UpperCamelCase`
+- 成员/方法：`lowerCamelCase`
+- 文件名：与主类型同名或按领域清晰命名
+- SwiftPM 限制：同一 target 内源文件 basename 必须唯一（避免 `multiple producers`）
+  - 按 Act 拆分同类定义文件时必须带前缀：`Act1BossEnemies.swift` / `Act2BossEnemies.swift` 等
 
 ---
 
 ## 检查清单
 
-- [ ] 无 `print()` 语句
-- [ ] 无外部 UI 框架导入
-- [ ] 所有 public 类型标记 Sendable
-- [ ] 使用 RNG 而非系统随机数
-- [ ] 状态变化通过事件记录
-- [ ] 文件职责单一明确
+- [ ] GameCore 内无 `print()`、无任何 I/O（文件/网络/环境变量）
+- [ ] 除 `History.swift` 外无 `import Foundation`
+- [ ] 随机全部使用 `SeededRNG`（或派生 seed + salt），无系统随机
+- [ ] Definition 层只产出效果/选项，不直接改状态、不直接 emit 事件
+- [ ] 多敌人相关：未把敌人索引写死为 0
+- [ ] 新增内容已在对应 Registry 注册，并补充或更新 `GameCoreTests` 的覆盖

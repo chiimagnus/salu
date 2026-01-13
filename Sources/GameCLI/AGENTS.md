@@ -1,131 +1,150 @@
 # GameCLI 模块开发规范
 
-> **设定与剧情**请参阅：`.codex/docs/Salu游戏设定与剧情v1.0.md`
-> **卡牌/敌人/遗物命名映射**见业务说明文档各业务章节（第 4/6/11 章）的表格。
+> 设定/剧情/玩法规则文档优先对齐 `.codex/docs/`。
 
 ## 模块定位
 
-GameCLI 是**表现层**，负责终端界面渲染、用户输入处理。
+GameCLI 是 CLI 表现层，负责：
+
+- 终端渲染（ANSI/布局/导航栏）
+- 用户输入解析（`readLine()`）
+- 流程编排（主菜单 → 冒险地图 → 房间 → 战斗）
+- 本地持久化（存档/战斗历史/设置/调试日志）
+
+**GameCLI 不承载规则计算**：伤害、奖励生成、地图推进、敌人/卡牌/状态定义均来自 GameCore。
+
+## 目录结构（以当前代码为准）
 
 ```
-Sources/GameCLI/  ← 本规范适用范围
-│
-├── Screens/                    # ✅ 界面系统（主菜单/地图/战斗/历史/统计/资源管理等）
-├── Components/                 # ✅ UI 组件（事件格式化、导航栏等）
-├── Flow/                       # ✅ RoomHandling 协议与注册表
-├── Rooms/Handlers/             # ✅ 房间行为（Start/Battle/Elite/Rest/Boss）
-├── Persistence/                # ✅ 存储实现与服务（历史/存档/设置/日志）
-├── GameCLI.swift               # ✅ 主入口、游戏循环
-├── Terminal.swift              # ✅ ANSI 控制码、终端工具
-└── Screens.swift               # ✅ 界面统一入口
+Sources/GameCLI/
+├── GameCLI.swift               # 入口 + 主菜单 + 冒险循环 + 战斗循环 + 统一日志
+├── Screens.swift               # 屏幕聚合入口（只做转发/组织）
+├── Terminal.swift              # ANSI 常量与终端工具（clear/flush/healthBar 等）
+├── TestMode.swift              # UI 黑盒测试模式（环境变量开关、压缩地图/牌组/敌人 HP）
+├── Components/
+│   ├── EventFormatter.swift    # BattleEvent → 彩色字符串
+│   ├── NavigationBar.swift     # 底部导航栏与 waitForBack
+│   └── String+ANSI.swift       # 去 ANSI（落盘日志/稳定对比）
+├── Flow/
+│   ├── RoomHandling.swift      # RoomHandling/RoomContext/结果枚举
+│   └── RoomHandlerRegistry.swift # RoomType → handler（makeDefault 注册）
+├── Rooms/Handlers/
+│   ├── StartRoomHandler.swift
+│   ├── BattleRoomHandler.swift
+│   ├── EliteRoomHandler.swift
+│   ├── RestRoomHandler.swift
+│   ├── ShopRoomHandler.swift
+│   ├── EventRoomHandler.swift
+│   └── BossRoomHandler.swift
+├── Persistence/
+│   ├── SaveService.swift
+│   ├── FileRunSaveStore.swift
+│   ├── HistoryService.swift
+│   ├── FileBattleHistoryStore.swift
+│   ├── SettingsStore.swift
+│   ├── RunLogService.swift
+│   ├── RunLogStore.swift
+│   └── FileRunLogStore.swift
+└── Screens/
+    ├── MainMenuScreen.swift
+    ├── MapScreen.swift
+    ├── BattleScreen.swift
+    ├── RewardScreen.swift
+    ├── RelicRewardScreen.swift
+    ├── ShopScreen.swift
+    ├── EventScreen.swift
+    ├── PrologueScreen.swift
+    ├── ChapterEndScreen.swift
+    ├── HistoryScreen.swift
+    ├── StatisticsScreen.swift
+    ├── SettingsScreen.swift
+    ├── HelpScreen.swift
+    ├── ResourceScreen.swift
+    └── ResultScreen.swift
 ```
-
-> 说明：✅ 已实现（后续 Reward/Shop/AI 将按计划在新增目录中扩展）
 
 ---
 
 ## 设计原则
 
-### 单一职责原则（SRP）
+### 单一职责（SRP）
 
-每个文件只负责一个明确的功能领域：
+- `Screens/*`：只负责“渲染 + 读取输入”（不要在 Screen 里直接写文件/拼存档/写历史）。
+- `Rooms/Handlers/*`：负责单个房间的完整流程（必要时调用 Screen、更新 `RunState`、写日志）。
+- `Persistence/*Store`：只做文件 I/O 与路径选择。
+- `Persistence/*Service`：承载业务转换/缓存/兼容校验（例如 `RunSnapshot ↔︎ RunState`）。
 
-| 文件 | 单一职责 | 禁止混入 |
-|------|----------|----------|
-| `Terminal.swift` | 终端底层控制 | UI 逻辑、业务逻辑 |
-| `EventFormatter.swift` | 事件 → 文本 | 屏幕布局、输入处理 |
-| `Screens/BattleScreen.swift` | 战斗界面构建 | 菜单逻辑、事件格式化 |
-| `Screens.swift` | 屏幕统一入口（聚合调用） | 游戏循环、状态管理 |
-| `Persistence/HistoryService.swift` | 战绩读写协调（依赖注入） | UI 渲染、文件路径策略 |
-| `Persistence/SaveService.swift` | Run 存档业务（快照/恢复） | UI 渲染、文件 I/O 细节 |
-| `Persistence/SettingsStore.swift` | 用户设置持久化（日志显示等） | UI 渲染、业务逻辑 |
-| `Persistence/RunLogService.swift` | 冒险日志落盘（调试用） | UI 渲染 |
-| `GameCLI.swift` | 流程控制 | 具体渲染实现 |
-
-### 组件化原则
-
-1. **新增 UI 组件时**：考虑是否需要独立文件
-2. **文件超过 300 行**：考虑拆分
-3. **功能可复用时**：抽取为独立组件
-
-```swift
-// ✅ 正确：按职责拆分
-// Terminal.swift - 底层工具
-// Components/EventFormatter.swift - 事件格式化
-// Screens/*.swift - 各界面渲染
-// Flow + Rooms/Handlers - 房间流程
-
-// ❌ 错误：一个文件包含所有 UI 代码
-```
-
-### 依赖方向
-
-```
-GameCLI.swift
-    ↓ 调用
-┌──────────────────────────┬──────────────────────────┐
-│ Screens.swift (+ Screens/)| Flow/RoomHandlerRegistry │
-└──────────────────────────┴──────────────────────────┘
-    ↓ 调用
-┌────────────────────────────────────────────────────┐
-│ Terminal.swift                                     │
-│ Components/* (EventFormatter/NavigationBar)        │
-│ Persistence/* (History/Save/Settings/RunLog)       │
-└────────────────────────────────────────────────────┘
-    ↓ 导入
-┌──────────────────────────────────────────┐
-│               GameCore                    │
-└──────────────────────────────────────────┘
-```
-
----
-
-## 协议驱动开发（PDD）在 GameCLI 的落地点
-
-- **UI 渲染不写 switch**：卡牌/状态/敌人展示从 `CardRegistry/StatusRegistry/EnemyRegistry` 取 `name/rulesText/icon/intent` 渲染
-- **房间流程可插拔**：通过 `RoomHandling` + `RoomHandlerRegistry` 扩展房间行为，`GameCLI.runLoop` 不写 roomType 分支
-- **依赖注入优先**：History/Save 等 I/O 能力通过 Service 注入到 Screens/Handlers，避免在 Screen 内部创建文件存储
-
----
-
-## 核心约束
-
-### 必须遵守
-
-- ✅ 颜色输出使用 `Terminal` 常量
-- ✅ 屏幕刷新使用清屏+重绘模式
-- ✅ 所有用户可见文本使用中文
-- ✅ 每个文件职责单一明确
-
-### 依赖关系
+### 依赖方向（必须）
 
 ```
 GameCLI → GameCore  ✅ 允许
 GameCore → GameCLI  ❌ 禁止
 ```
 
+### 避免对“扩展点 ID”写 switch
+
+- 卡牌/状态/敌人/遗物/消耗品的展示信息，必须从 GameCore 的 Registry 读取。
+- 允许对“封闭事件枚举”做 switch（例如 `BattleEvent` 在 `EventFormatter` 里）。
+
+### 可复现性（强烈建议）
+
+- CLI 默认 seed 来源是时间戳（不可复现）；复现/验收请显式传 `--seed`。
+- 不要在 GameCLI 里引入额外随机源；需要随机行为应落在 GameCore（受 seed/RNG 控制）。
+
+### 输入/EOF 约定（避免测试卡死）
+
+- 在可能跑于管道/黑盒测试的输入点，遇到 EOF（`readLine()==nil`）应默认“退出/跳过”。
+- `battleLoop`：`q` 视为中途退出（上层保留存档），`0` 结束回合，出牌支持 `N` 或 `N M`。
+- `runLoop`：地图输入 `q` 返回主菜单并保存，输入 `abandon` 进入放弃确认。
+
 ---
 
-## 文件职责详解
+## 运行与调试
 
-| 文件/目录 | 职责 | 典型内容 |
-|------|------|----------|
-| `GameCLI.swift` | 入口、菜单、游戏循环、依赖注入 | main(), runLoop() |
-| `Terminal.swift` | ANSI 颜色码、光标控制 | clear(), flush(), 颜色常量 |
-| `Components/EventFormatter.swift` | BattleEvent → 彩色字符串 | format() |
-| `Screens/*.swift` | 单个界面渲染与输入处理 | showMainMenu(), renderBattleScreen(), renderMap(), PrologueScreen, ChapterEndScreen |
-| `Screens.swift` | 全屏界面统一入口 | showMainMenu(), showHelp() |
-| `Flow/RoomHandling.swift` | 房间处理协议/上下文 | RoomHandling, RoomContext, RoomRunResult |
-| `Flow/RoomHandlerRegistry.swift` | RoomType → handler 注册表 | register()/resolve() |
-| `Rooms/Handlers/*.swift` | 房间行为实现 | StartRoomHandler, BattleRoomHandler 等 |
-| `Persistence/HistoryService.swift` | 战绩读写协调 | getAllRecords(), addRecord(), clearHistory() |
-| `Persistence/FileBattleHistoryStore.swift` | 战绩文件实现 | append(), clear() |
-| `Persistence/SaveService.swift` | Run 存档业务（快照/恢复） | createSnapshot(), restoreRunState() |
-| `Persistence/FileRunSaveStore.swift` | Run 存档文件实现 | load(), save(), hasSave() |
-| `Persistence/SettingsStore.swift` | 用户设置存储 | load(), save(), Settings |
-| `Persistence/RunLogService.swift` | 冒险日志服务 | append(), clear() |
-| `Persistence/FileRunLogStore.swift` | 冒险日志文件实现 | append(), clear() |
-| `Components/NavigationBar.swift` | 导航栏与返回提示 | render(), waitForBack() |
+### CLI 参数（当前实现）
+
+- `--seed 1` / `--seed=1`：固定种子
+- `--history` / `-H`：直接打开历史
+- `--stats` / `-S`：直接打开统计
+
+### 常用环境变量
+
+- `SALU_DATA_DIR=/tmp/salu`：覆盖数据目录（存档/历史/设置/调试日志都会写入这里）
+- `SALU_TEST_MODE=1`：启用 UI 黑盒测试模式
+- `SALU_TEST_MAP=mini|battle|shop|rest|event`：固定小地图（加速 UI 测试）
+- `SALU_TEST_MAX_FLOOR=2`：覆盖 Act 数（验证“推进下一幕”链路）
+- `SALU_TEST_BATTLE_DECK=minimal|run|seer|seer_p7`：覆盖测试战斗牌组
+- `SALU_TEST_ENEMY_HP=1|10|normal|keep`：测试模式下覆盖敌人 HP（默认 1；`normal/keep` 保留真实 HP）
+- `SALU_FORCE_MULTI_ENEMY=1`：强制普通战斗进入双敌人遭遇（本地验收目标选择）
+
+### 数据文件名（便于排查/清理）
+
+- 存档：`run_save.json`
+- 战斗历史：`battle_history.json`
+- 设置：`settings.json`
+- 调试日志：`run_log.txt`
+
+---
+
+## 扩展指南
+
+### 添加新屏幕
+
+1. 在 `Screens/` 新增 `XxxScreen.swift`。
+2. 需要对外暴露时，在 `Screens.swift` 增加一个静态转发函数。
+3. 确保：屏幕函数只做渲染与输入，不做持久化。
+
+### 添加新房间
+
+1. 在 `Rooms/Handlers/` 新增 `XxxRoomHandler.swift` 并实现 `RoomHandling`。
+2. 在 `RoomHandlerRegistry.makeDefault()` 注册。
+3. 房间内更新 `RunState` 后，交由 `GameCLI.runLoop` 在节点完成时自动存档。
+
+### 添加/修改持久化
+
+- 新增文件存储：优先 `*Store`（路径选择/JSON 编解码/原子写）。
+- 需要业务转换或缓存：放在 `*Service`。
+- 测试/调试隔离数据：优先使用 `SALU_DATA_DIR`。
 
 ---
 
@@ -137,67 +156,15 @@ GameCore → GameCLI  ❌ 禁止
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⌨️ [q] 返回
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-请选择 > 
+请选择 >
 ```
 
-### 使用方式
+使用方式：
 
 ```swift
-// 渲染导航栏
 NavigationBar.render(items: [.back])
-
-// 等待用户输入 q 返回
 NavigationBar.waitForBack()
 ```
-
-### 可用导航项
-
-| Item | 显示 |
-|------|------|
-| `.back` | `[q] 返回` |
-| `.continueNext` | `[q] 继续` |
-| `.backToMenu` | `[q] 返回主菜单` |
-| `.backToGame` | `[q] 返回游戏` |
-| `.custom(key:label:)` | 自定义 |
-
----
-
-## 扩展指南
-
-### 添加新界面
-
-1. 如果是全屏/独立界面 → 在 `Screens/` 目录新增文件，并在 `Screens.swift` 入口调用。
-2. 战斗/地图等局部更新 → 修改对应的 `Screens/*.swift`。
-3. 房间流程逻辑 → 新增 `Rooms/Handlers/*.swift` 并在 `RoomHandlerRegistry` 注册。
-
-### 添加新菜单项
-
-1. 在 `Screens.swift` 更新菜单显示
-2. 在 `GameCLI.swift` 添加输入处理
-
-### 添加新命令行参数
-
-1. 在 `GameCLI.main()` 添加参数检查
-
-### 存档/继续冒险
-
-- 冒险模式会在**节点完成后自动保存**（`GameCLI.runLoop` 调用 `SaveService.saveRun`）。
-- 主菜单会根据 `SaveService.hasSave()` 决定是否显示“继续上次冒险”入口。
-- `FileRunSaveStore` 支持通过环境变量 `SALU_DATA_DIR` 覆盖存档目录（用于测试/调试；默认仍写入系统 Application Support/LOCALAPPDATA/~/.salu）。
-- `FileRunSaveStore` / `FileBattleHistoryStore` / `SettingsStore` / `FileRunLogStore` 支持通过环境变量 `SALU_DATA_DIR` 覆盖数据目录（用于测试/调试；默认仍写入系统 Application Support/LOCALAPPDATA/~/.salu）。
-- CLI 测试模式支持 `SALU_TEST_MAP` 使用极小地图以加速 UI 测试流程：
-  - `SALU_TEST_MAP=1` 或 `mini`：起点 → 精英 → Boss
-  - `SALU_TEST_MAP=battle`：起点 → 普通战斗 → Boss（用于多敌人/目标选择 UI 测试）
-  - `SALU_TEST_MAP=shop/rest/event`：起点 → 对应房间 → Boss
-- CLI 测试模式支持 `SALU_TEST_MAX_FLOOR` 覆盖最大楼层（Act 数），默认 `1`：
-  - `SALU_TEST_MAX_FLOOR=2`：用于验证“击败 Act1 Boss → 进入 Act2”链路与存档持久化
-- （调试/验收）`SALU_FORCE_MULTI_ENEMY=1`：强制普通战斗进入双敌人遭遇（便于验证目标选择）
-
-### 用户设置持久化
-
-- 用户设置（如日志显示开关）通过 `SettingsStore` 持久化到 `settings.json`。
-- 游戏启动时自动加载设置，设置菜单中修改后立即保存。
-- 设置文件位于游戏数据目录（与存档/战绩同目录）。
 
 ---
 
@@ -206,36 +173,21 @@ NavigationBar.waitForBack()
 ### 颜色使用
 
 ```swift
-// 使用 Terminal 常量
 print("\(Terminal.red)错误文本\(Terminal.reset)")
 print("\(Terminal.bold)\(Terminal.green)成功\(Terminal.reset)")
-
-// 可用颜色
-Terminal.red      // 红色（敌人、伤害、错误）
-Terminal.green    // 绿色（玩家、成功、可用）
-Terminal.yellow   // 黄色（能量、警告、意图）
-Terminal.blue     // 蓝色（玩家名称）
-Terminal.cyan     // 青色（格挡、回合信息）
-Terminal.magenta  // 洋红（特殊效果）
-Terminal.bold     // 加粗
-Terminal.dim      // 暗淡
-Terminal.reset    // 重置
 ```
 
 ### 屏幕刷新
 
 ```swift
-// 清屏并刷新整个界面
-Terminal.clear()  // 清屏 + 光标归位
+Terminal.clear()
 // ... 打印所有内容 ...
-Terminal.flush()  // 刷新缓冲区
+Terminal.flush()
 ```
 
 ---
 
-## 界面布局
-
-战斗主界面固定布局：
+## 界面布局（战斗）
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -249,7 +201,7 @@ Terminal.flush()  // 刷新缓冲区
 ├─────────────────────────────────────────────┤
 │ 牌堆信息（抽牌堆/弃牌堆）                      │
 ├─────────────────────────────────────────────┤
-│ 事件日志（最近6条）                           │
+│ 日志（最近6条，可在设置中开关）                 │
 ├─────────────────────────────────────────────┤
 │ 消息区域（错误提示等）                        │
 ├━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┤
@@ -261,8 +213,7 @@ Terminal.flush()  // 刷新缓冲区
 
 ## 检查清单
 
-- [ ] 颜色使用 Terminal 常量
-- [ ] 屏幕刷新使用清屏模式
-- [ ] 界面布局保持一致
-- [ ] 文件职责单一明确
-- [ ] 新组件考虑复用性
+- [ ] 颜色使用 `Terminal` 常量（不硬编码 ANSI）
+- [ ] Screen 只做渲染/输入，不做持久化
+- [ ] 新房间通过 `RoomHandling` + 注册表扩展
+- [ ] 复现/验收使用 `--seed`，测试隔离用 `SALU_DATA_DIR`
