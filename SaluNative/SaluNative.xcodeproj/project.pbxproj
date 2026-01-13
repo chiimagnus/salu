@@ -7,27 +7,27 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D8A5150D2F16C179005EBB40 /* GameCore in Frameworks */ = {isa = PBXBuildFile; productRef = D8A5150C2F16C179005EBB40 /* GameCore */; };
+		D8A515242F16C8AA005EBB40 /* GameCore in Frameworks */ = {isa = PBXBuildFile; productRef = D8A515232F16C8AA005EBB40 /* GameCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		D8A514D02F16BC51005EBB40 /* SaluMacApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SaluMacApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D8A515172F16C856005EBB40 /* SaluCRH.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SaluCRH.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		D8A514D12F16BC51005EBB40 /* SaluMacApp */ = {
+		D8A515182F16C856005EBB40 /* SaluCRH */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = SaluMacApp;
+			path = SaluCRH;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		D8A514CD2F16BC51005EBB40 /* Frameworks */ = {
+		D8A515142F16C856005EBB40 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D8A5150D2F16C179005EBB40 /* GameCore in Frameworks */,
+				D8A515242F16C8AA005EBB40 /* GameCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -37,7 +37,7 @@
 		D8A514962F16BA92005EBB40 = {
 			isa = PBXGroup;
 			children = (
-				D8A514D12F16BC51005EBB40 /* SaluMacApp */,
+				D8A515182F16C856005EBB40 /* SaluCRH */,
 				D8A514A02F16BA92005EBB40 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -45,7 +45,7 @@
 		D8A514A02F16BA92005EBB40 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				D8A514D02F16BC51005EBB40 /* SaluMacApp.app */,
+				D8A515172F16C856005EBB40 /* SaluCRH.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -53,27 +53,27 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		D8A514CF2F16BC51005EBB40 /* SaluMacApp */ = {
+		D8A515162F16C856005EBB40 /* SaluCRH */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = D8A514D82F16BC52005EBB40 /* Build configuration list for PBXNativeTarget "SaluMacApp" */;
+			buildConfigurationList = D8A5151F2F16C857005EBB40 /* Build configuration list for PBXNativeTarget "SaluCRH" */;
 			buildPhases = (
-				D8A514CC2F16BC51005EBB40 /* Sources */,
-				D8A514CD2F16BC51005EBB40 /* Frameworks */,
-				D8A514CE2F16BC51005EBB40 /* Resources */,
+				D8A515132F16C856005EBB40 /* Sources */,
+				D8A515142F16C856005EBB40 /* Frameworks */,
+				D8A515152F16C856005EBB40 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				D8A514D12F16BC51005EBB40 /* SaluMacApp */,
+				D8A515182F16C856005EBB40 /* SaluCRH */,
 			);
-			name = SaluMacApp;
+			name = SaluCRH;
 			packageProductDependencies = (
-				D8A5150C2F16C179005EBB40 /* GameCore */,
+				D8A515232F16C8AA005EBB40 /* GameCore */,
 			);
-			productName = SaluMacApp;
-			productReference = D8A514D02F16BC51005EBB40 /* SaluMacApp.app */;
+			productName = SaluCRH;
+			productReference = D8A515172F16C856005EBB40 /* SaluCRH.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -86,7 +86,7 @@
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
-					D8A514CF2F16BC51005EBB40 = {
+					D8A515162F16C856005EBB40 = {
 						CreatedOnToolsVersion = 26.0;
 					};
 				};
@@ -108,13 +108,13 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				D8A514CF2F16BC51005EBB40 /* SaluMacApp */,
+				D8A515162F16C856005EBB40 /* SaluCRH */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		D8A514CE2F16BC51005EBB40 /* Resources */ = {
+		D8A515152F16C856005EBB40 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -124,7 +124,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		D8A514CC2F16BC51005EBB40 /* Sources */ = {
+		D8A515132F16C856005EBB40 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -254,7 +254,7 @@
 			};
 			name = Release;
 		};
-		D8A514D92F16BC52005EBB40 /* Debug */ = {
+		D8A515202F16C857005EBB40 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -268,26 +268,32 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Salu the Fire";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.card-games";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiimagnus.SaluMacApp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiimagnus.SaluCRH;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "macosx xros xrsimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 7;
+				XROS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Debug;
 		};
-		D8A514DA2F16BC52005EBB40 /* Release */ = {
+		D8A515212F16C857005EBB40 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -301,22 +307,28 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Salu the Fire";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.card-games";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.chiimagnus.SaluMacApp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiimagnus.SaluCRH;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "macosx xros xrsimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 7;
+				XROS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Release;
 		};
@@ -332,11 +344,11 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		D8A514D82F16BC52005EBB40 /* Build configuration list for PBXNativeTarget "SaluMacApp" */ = {
+		D8A5151F2F16C857005EBB40 /* Build configuration list for PBXNativeTarget "SaluCRH" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				D8A514D92F16BC52005EBB40 /* Debug */,
-				D8A514DA2F16BC52005EBB40 /* Release */,
+				D8A515202F16C857005EBB40 /* Debug */,
+				D8A515212F16C857005EBB40 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -351,8 +363,9 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		D8A5150C2F16C179005EBB40 /* GameCore */ = {
+		D8A515232F16C8AA005EBB40 /* GameCore */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = D8A5150B2F16C179005EBB40 /* XCLocalSwiftPackageReference "../../salu" */;
 			productName = GameCore;
 		};
 /* End XCSwiftPackageProductDependency section */
