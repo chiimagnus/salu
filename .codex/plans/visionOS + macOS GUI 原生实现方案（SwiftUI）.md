@@ -476,7 +476,7 @@ let _ = CardRegistry.require("strike").name
 
 | P | 完成日期 | 验证命令 | 结果 |
 |---|----------|----------|------|
-| P1 | - | - | - |
+| P1 | 2026-01-14 | `xcodebuild ... -scheme SaluCRH -destination 'platform=macOS' build` | ✅ macOS 通过 / ⏳ visionOS 待配置 |
 | P2 | - | - | - |
 | P3 | - | - | - |
 | P4 | - | - | - |
