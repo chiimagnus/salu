@@ -5,6 +5,17 @@ import PackageDescription
 
 let package = Package(
     name: "Salu",
+    platforms: [
+        .macOS(.v14),
+        .visionOS(.v2),
+    ],
+    products: [
+        // GameCore: 暴露为 library，供 Native Apps（macOS/visionOS）依赖
+        .library(
+            name: "GameCore",
+            targets: ["GameCore"]
+        ),
+    ],
     targets: [
         // GameCore: 纯 Swift 游戏逻辑库（禁止 print、禁止 UI）
         .target(
