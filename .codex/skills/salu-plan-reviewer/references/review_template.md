@@ -1,6 +1,6 @@
 # 执行审查记录：<主题>
 
-- plan: `.cursor/plans/<plan>.md`
+- plan: `.codex/plans/<plan>.md`
 - date: YYYY-MM-DD
 
 ## TODO（按优先级）

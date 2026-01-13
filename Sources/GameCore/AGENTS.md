@@ -1,6 +1,6 @@
 # GameCore 模块开发规范
 
-> **设定与剧情**请参阅：`.cursor/rules/Salu游戏设定与剧情（v1.0）.mdc`
+> **设定与剧情**请参阅：`.codex/docs/Salu游戏设定与剧情v1.0.md`
 > **卡牌/敌人/遗物命名映射**见业务说明文档各业务章节（第 4/6/11 章）的表格。
 
 ## 模块定位
@@ -24,8 +24,6 @@ Sources/GameCore/  ← 本规范适用范围
 ├── History.swift           # 战绩数据模型
 └── RNG.swift               # 随机数生成器
 ```
-
-> 说明：奖励/AI/多角色仍在规划中，后续规划请参见 `.cursor/plans/backlog-2026-01-04.md`。
 
 ---
 
@@ -243,4 +241,3 @@ let shuffled = deck.shuffled()  // 不可复现！
 - [ ] 使用 RNG 而非系统随机数
 - [ ] 状态变化通过事件记录
 - [ ] 文件职责单一明确
-- [ ] 业务变更同步更新 CLAUDE.mdc

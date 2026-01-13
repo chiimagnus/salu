@@ -1,6 +1,6 @@
 ---
 name: salu-plan-reviewer
-description: Review an existing Salu plan document under `.cursor/plans/*.md` by creating N todos for P1..PN and auditing the corresponding code for issues, missed cases, and gaps; record findings in a new markdown file. Use when the user says "审查执行/根据 plan 建 todo/按 P1~PN 查漏补缺/做代码审计但按计划维度输出".
+description: Review an existing Salu plan document under `.codex/plans/*.md` by creating N todos for P1..PN and auditing the corresponding code for issues, missed cases, and gaps; record findings in a new markdown file. Use when the user says "审查执行/根据 plan 建 todo/按 P1~PN 查漏补缺/做代码审计但按计划维度输出".
 ---
 
 # Salu Plan Reviewer（按计划审查执行）
@@ -9,7 +9,7 @@ description: Review an existing Salu plan document under `.cursor/plans/*.md` by
 
 - 从 plan 的 `P1..PN` 生成 `N` 个 TODO（顺序审查）。
 - 对每个 P：定位相关代码、找问题/遗漏/潜在回归点。
-- **先记录**发现（保存为 `.cursor/plans/review-YYYY-MM-DD-<topic>.md` 或用户指定路径），再决定是否动代码。
+- **先记录**发现（保存为 `.codex/plans/review-YYYY-MM-DD-<topic>.md` 或用户指定路径），再决定是否动代码。
 
 ## 工作流（强制）
 

@@ -1,13 +1,13 @@
 ---
 name: salu-plan-writer
-description: Write a prioritized implementation plan (P1/P2/P3...) for the Salu SwiftPM repo and save it under `.cursor/plans/*.md`. Use when the user asks to "制定 plan/写 plan/出方案 A", wants a detailed prioritized backlog, or wants a plan before coding; ask one question at a time until requirements are clear, then inspect relevant code/docs, write the plan, and include per-priority verification steps (swift build / swift test).
+description: Write a prioritized implementation plan (P1/P2/P3...) for the Salu SwiftPM repo and save it under `.codex/plans/*.md`. Use when the user asks to "制定 plan/写 plan/出方案 A", wants a detailed prioritized backlog, or wants a plan before coding; ask one question at a time until requirements are clear, then inspect relevant code/docs, write the plan, and include per-priority verification steps (swift build / swift test).
 ---
 
 # Salu Plan Writer（制定 Plan）
 
 ## 输出目标
 
-- 产出一份 **Plan A**（按 `P1/P2/P3...` 排序、可执行、可验收）并保存到 `.cursor/plans/<name>.md`。
+- 产出一份 **Plan A**（按 `P1/P2/P3...` 排序、可执行、可验收）并保存到 `.codex/plans/<name>.md`。
 - 每个优先级完成后都明确“如何验证”：`swift build` 或 `swift test`（优先 `swift test`）。
 
 ## 交互规则（强制）
@@ -21,19 +21,20 @@ description: Write a prioritized implementation plan (P1/P2/P3...) for the Salu 
 ### 2) 再读代码/文档（不要凭空写）
 
 - 必须检索并打开所有“相关 & 可能相关”的文件再落笔：
-  - `.cursor/rules/*.mdc`
-  - `.cursor/plans/*.md`（现有计划/清单）
+  - `.codex/docs/*.md`
+  - `.codex/plans/*.md`（现有计划/清单）
   - `Sources/` & `Tests/` 中命中的实现与测试
   - `README.md` / `Package.swift`
+  - 所有`AGENTS.md`
 
 ## 工作流
 
 ### Step 1：确定计划文件名与路径
-- 默认命名：`.cursor/plans/plan-YYYY-MM-DD-<topic>.md`
+- 默认命名：`.codex/plans/plan-YYYY-MM-DD-<topic>.md`
 - 如果用户已有命名偏好，按用户给的来。
 
 ### Step 2：建立范围清单（你要去看的文件）
-- 用 `rg` 在 `Sources/`、`Tests/`、`.cursor/`、`README.md`、`Package.swift` 搜索关键词。
+- 用 `rg` 在 `Sources/`、`Tests/`、`.codex/`、`README.md`、`Package.swift` 搜索关键词。
 - 把“将要查看的文件列表”写进 plan 的“调研范围”小节，便于复盘。
 
 ### Step 3：写 Plan A（分 P1/P2/P3...）
@@ -58,5 +59,5 @@ description: Write a prioritized implementation plan (P1/P2/P3...) for the Salu 
 
 ## 项目约束速查
 
-- 参考：`.cursor/rules/GameCore模块开发规范.mdc`、`.cursor/rules/GameCLI模块开发规范.mdc`
+- 参考：所有`AGENTS.md`
 - 核心：`GameCore` 纯逻辑层、`GameCLI → GameCore` 单向依赖、中文用户可见文案。

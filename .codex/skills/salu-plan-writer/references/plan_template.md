@@ -17,8 +17,8 @@ date: YYYY-MM-DD
 
 ## 2. 调研范围（本次 plan 实际查过的文件）
 - 文档：
-  - `.cursor/rules/...`
-  - `.cursor/plans/...`
+  - `.codex/docs/...`
+  - `.codex/plans/...`
 - 代码：
   - `Sources/...`
   - `Tests/...`

@@ -1,6 +1,6 @@
 # GameCLI 模块开发规范
 
-> **设定与剧情**请参阅：`.cursor/rules/Salu游戏设定与剧情（v1.0）.mdc`
+> **设定与剧情**请参阅：`.codex/docs/Salu游戏设定与剧情v1.0.md`
 > **卡牌/敌人/遗物命名映射**见业务说明文档各业务章节（第 4/6/11 章）的表格。
 
 ## 模块定位
@@ -178,7 +178,6 @@ NavigationBar.waitForBack()
 ### 添加新命令行参数
 
 1. 在 `GameCLI.main()` 添加参数检查
-2. 更新 CLAUDE.mdc 文档
 
 ### 存档/继续冒险
 
