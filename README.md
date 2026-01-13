@@ -54,12 +54,10 @@ tar -xzf salu-macos.tar.gz
 
 ## 🤝 参与贡献
 
-欢迎贡献！贡献前请先阅读仓库贡献指南：[AGENTS.md](AGENTS.md)。
+欢迎贡献！贡献前请先阅读[仓库贡献指南](AGENTS.md)。
 
 本项目按架构分为多层，分别遵循各自模块规范：
 
-- `GameCore`：纯逻辑层（规则/状态/战斗/卡牌/敌人/地图/存档快照模型），见 [Sources/GameCore/AGENTS.md](Sources/GameCore/AGENTS.md)
-- `GameCLI`：CLI/TUI 表现层（终端渲染/输入/房间流程/持久化落盘实现），见 [Sources/GameCLI/AGENTS.md](Sources/GameCLI/AGENTS.md)
-- `SaluNative/SaluCRH`：原生 App（Multiplatform SwiftUI + SwiftData，支持 macOS/visionOS），见 [SaluNative/SaluCRH/AGENTS.md](SaluNative/SaluCRH/AGENTS.md)
-
-最小验证命令：`swift test`
+- `GameCore`：纯逻辑层（规则/状态/战斗/卡牌/敌人/地图/存档快照模型），见 [GameCore 开发规范](Sources/GameCore/AGENTS.md)
+- `GameCLI`：CLI/TUI 表现层（终端渲染/输入/房间流程/持久化落盘实现），见 [GameCLI 开发规范](Sources/GameCLI/AGENTS.md)
+- `SaluNative/SaluCRH`：原生 App（Multiplatform SwiftUI + SwiftData，支持 macOS/visionOS），见 [SaluCRH 开发规范](SaluNative/SaluCRH/AGENTS.md)

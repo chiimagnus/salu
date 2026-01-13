@@ -40,11 +40,6 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
   build
 ```
 
-> 注意：
-> - Xcode 项目通过本地 Package 引用根目录的 `Package.swift`，从而依赖 `GameCore`
-> - 同一 Target (`SaluCRH`) 支持多平台，通过切换 destination 编译不同平台
-> - 详见 `.codex/docs/Xcode添加本地Package依赖指南.md`
-
 ## 本地存储与配置
 
 - 本地存储默认位置与文件结构见 `.codex/docs/本地存储说明.md`（run 存档、战斗历史、设置、调试日志）。

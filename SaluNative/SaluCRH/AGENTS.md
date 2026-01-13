@@ -226,7 +226,5 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
 - ❌ 使用单例 ViewModel（使用依赖注入）
 
 ## 参考文档
-
-- 总体方案：`.codex/plans/visionOS + macOS GUI 原生实现方案（SwiftUI）.md`
-- GameCore 规范：`Sources/GameCore/AGENTS.md`
-- Package 配置：`.codex/docs/Xcode添加本地Package依赖指南.md`
+- [总体方案](<../../.codex/plans/visionOS + macOS GUI 原生实现方案（SwiftUI）.md>)
+- [GameCore 规范](../../Sources/GameCore/AGENTS.md)
