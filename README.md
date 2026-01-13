@@ -60,6 +60,6 @@ tar -xzf salu-macos.tar.gz
 
 - `GameCore`：纯逻辑层（规则/状态/战斗/卡牌/敌人/地图/存档快照模型），见 [Sources/GameCore/AGENTS.md](Sources/GameCore/AGENTS.md)
 - `GameCLI`：CLI/TUI 表现层（终端渲染/输入/房间流程/持久化落盘实现），见 [Sources/GameCLI/AGENTS.md](Sources/GameCLI/AGENTS.md)
-- `SaluNative`：原生 App（Multiplatform SwiftUI + SwiftData，支持 macOS/visionOS），见 [.codex/plans/visionOS + macOS GUI 原生实现方案（SwiftUI）.md](.codex/plans/visionOS%20+%20macOS%20GUI%20原生实现方案（SwiftUI）.md)
+- `SaluNative/SaluCRH`：原生 App（Multiplatform SwiftUI + SwiftData，支持 macOS/visionOS），见 [SaluNative/SaluCRH/AGENTS.md](SaluNative/SaluCRH/AGENTS.md)
 
 最小验证命令：`swift test`
