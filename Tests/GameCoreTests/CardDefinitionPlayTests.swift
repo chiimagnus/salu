@@ -252,5 +252,44 @@ final class CardDefinitionPlayTests: XCTestCase {
             ]
         )
     }
+
+    func testInflame_canStackStrengthWhenPlayedTwiceInBattle() {
+        let seed: UInt64 = 999
+
+        let player = createDefaultPlayer()
+        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 200, enemyId: "shadow_stalker")
+
+        // deck=5：回合开始手牌固定包含两张禁忌献祭（Inflame）
+        let deck: [Card] = [
+            .init(id: "i1", cardId: Inflame.id),
+            .init(id: "i2", cardId: Inflame.id),
+            .init(id: "d1", cardId: Defend.id),
+            .init(id: "d2", cardId: Defend.id),
+            .init(id: "k1", cardId: Strike.id),
+        ]
+
+        let engine = BattleEngine(
+            player: player,
+            enemies: [enemy],
+            deck: deck,
+            relicManager: RelicManager(),
+            seed: seed
+        )
+        engine.startBattle()
+
+        XCTAssertEqual(engine.state.player.statuses.stacks(of: Strength.id), 0)
+
+        guard let idx1 = engine.state.hand.firstIndex(where: { $0.cardId == Inflame.id }) else {
+            return XCTFail("未抽到 第 1 张 禁忌献祭")
+        }
+        _ = engine.handleAction(.playCard(handIndex: idx1, targetEnemyIndex: nil))
+        XCTAssertEqual(engine.state.player.statuses.stacks(of: Strength.id), 2)
+
+        guard let idx2 = engine.state.hand.firstIndex(where: { $0.cardId == Inflame.id }) else {
+            return XCTFail("未抽到 第 2 张 禁忌献祭")
+        }
+        _ = engine.handleAction(.playCard(handIndex: idx2, targetEnemyIndex: nil))
+        XCTAssertEqual(engine.state.player.statuses.stacks(of: Strength.id), 4)
+    }
 }
 
