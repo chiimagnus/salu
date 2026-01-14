@@ -60,7 +60,7 @@ enum ResourceScreen {
 
         // MARK: - Enemies & Encounters
         lines.append("")
-        lines.append("\(Terminal.bold)👹 敌人池/遭遇池（Act1/Act2）\(Terminal.reset)")
+        lines.append("\(Terminal.bold)👹 敌人池/遭遇池（Act1/Act2/Act3）\(Terminal.reset)")
         lines.append("")
 
         lines.append("\(Terminal.bold)Act1 敌人池\(Terminal.reset)")
@@ -111,6 +111,15 @@ enum ResourceScreen {
 
         lines.append("  \(Terminal.bold)精英敌人（medium）\(Terminal.reset)")
         for id in Act2EnemyPool.medium.sorted(by: { $0.rawValue < $1.rawValue }) {
+            let def = EnemyRegistry.require(id)
+            lines.append("    - \(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
+        }
+
+        // Act2 Boss（用于 P2 核对：Act2 Boss 是否为赛弗）
+        lines.append("")
+        lines.append("  \(Terminal.bold)Boss（Act2）\(Terminal.reset)")
+        do {
+            let id = Act2EnemyPool.boss
             let def = EnemyRegistry.require(id)
             lines.append("    - \(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
         }
