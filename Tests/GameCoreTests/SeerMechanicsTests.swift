@@ -127,8 +127,8 @@ final class SeerMechanicsTests: XCTestCase {
             return false
         }))
     }
-    func testForesight_picksFirstAttack_andPreservesOrderForOthers() {
-        // 目标：预知 N 取出抽牌堆顶 N 张 -> 选 1 张入手（优先攻击牌） -> 其余按原顺序放回
+    func testForesight_promptsForChoice_andPreservesOrderForOthers() {
+        // 目标：预知 N 取出抽牌堆顶 N 张 -> 挂起等待玩家选择 -> 选 1 张入手 -> 其余按原顺序放回
         let seed: UInt64 = 1
         
         let player = createDefaultPlayer()
@@ -172,26 +172,42 @@ final class SeerMechanicsTests: XCTestCase {
         XCTAssertNotNil(spiritSightIndex)
         _ = engine.handleAction(.playCard(handIndex: spiritSightIndex!, targetEnemyIndex: nil))
         
+        // 打出后应挂起预知选择（fromCount=2）
+        guard case .some(.foresight(let options, let fromCount)) = engine.pendingInput else {
+            return XCTFail("期望打出 灵视 后进入 pending foresight")
+        }
+        XCTAssertEqual(fromCount, 2)
+
         // 预知 2：从 drawPile 顶部取 2 张（= drawPile 的 suffix(2) 的顶部优先）
         // 但要注意：开始战斗时抽了 5 张，所以我们需要在 expectedDrawPile 上模拟抽牌消耗。
         let afterDraw5 = Array(expectedDrawPile.dropLast(5))
         XCTAssertGreaterThanOrEqual(afterDraw5.count, 2)
         let top2 = Array(afterDraw5.suffix(2))                  // drawPile 顶部两张（顺序：从底到顶）
         let topCards = Array(top2.reversed())                   // applyForesight 内部转成 [顶部, 次顶]
-        
-        // 预期选择：topCards 中第一张攻击牌，否则第一张
-        let chosen: Card = topCards.first(where: { CardRegistry.require($0.cardId).type == .attack }) ?? topCards[0]
-        let unchosen: [Card] = topCards.filter { $0.id != chosen.id }
-        
-        // 手里应该新增 chosen
+
+        // pending options 顺序应与 topCards 一致
+        XCTAssertEqual(options.map(\.id), topCards.map(\.id))
+
+        // 模拟玩家选择第 1 张（顶部）
+        let chosen = topCards[0]
+        let remaining = topCards[1]
+
+        engine.clearEvents()
+        XCTAssertTrue(engine.submitForesightChoice(index: 0))
+
+        // 手里应新增 chosen
         XCTAssertTrue(engine.state.hand.contains(where: { $0.id == chosen.id }))
-        
-        // 未选中的应该按原顺序放回到抽牌堆顶部（末尾）
-        // applyForesight 会把未选中的卡按 topCards 的原顺序放回，所以顶部应为：... unchosen(按 topCards 顺序)
-        // 由于只有 1 张未选中，直接检查最后一张
-        if let remaining = unchosen.first {
-            XCTAssertEqual(engine.state.drawPile.last?.id, remaining.id)
-        }
+
+        // 未选中的应回到抽牌堆顶部（末尾）
+        XCTAssertEqual(engine.state.drawPile.last?.id, remaining.id)
+
+        // 并应 emit foresightChosen(fromCount: 2)
+        XCTAssertTrue(engine.events.contains(where: { event in
+            if case .foresightChosen(let cardId, let c) = event {
+                return cardId == chosen.cardId && c == 2
+            }
+            return false
+        }))
     }
     
     func testBrokenWatch_addsOneExtraCard_onlyOnFirstForesightEachTurn() {
@@ -236,12 +252,20 @@ final class SeerMechanicsTests: XCTestCase {
         } else {
             return XCTFail("回合开始未抽到灵视，seed/牌组不稳定")
         }
-        
+
+        guard case .some(.foresight(_, let fromCount1)) = engine.pendingInput else {
+            return XCTFail("期望第 1 次灵视后进入 pending foresight")
+        }
+        XCTAssertEqual(fromCount1, 3)
+
+        engine.clearEvents()
+        _ = engine.submitForesightChoice(index: 0)
+
         XCTAssertTrue(engine.events.contains(where: {
             if case .foresightChosen(_, let fromCount) = $0 { return fromCount == 3 }
             return false
         }))
-        
+
         engine.clearEvents()
         
         // 同回合第二次灵视：不应再 +1 => fromCount: 2
@@ -251,7 +275,15 @@ final class SeerMechanicsTests: XCTestCase {
             // 如果第二张不在手里，这个用例就不稳定；但通常 deck 里有两张且 cost=0，抽牌足够会出现
             return XCTFail("同回合未能再次抽到灵视用于验证破碎怀表的“每回合首次”限制")
         }
-        
+
+        guard case .some(.foresight(_, let fromCount2)) = engine.pendingInput else {
+            return XCTFail("期望第 2 次灵视后进入 pending foresight")
+        }
+        XCTAssertEqual(fromCount2, 2)
+
+        engine.clearEvents()
+        _ = engine.submitForesightChoice(index: 0)
+
         XCTAssertTrue(engine.events.contains(where: {
             if case .foresightChosen(_, let fromCount) = $0 { return fromCount == 2 }
             return false

@@ -121,6 +121,10 @@ final class SeerAdvancedCardsTests: XCTestCase {
                 return XCTFail("同回合未能找到 灵视 用于预知次数堆叠")
             }
             _ = engine.handleAction(.playCard(handIndex: idx, targetEnemyIndex: nil))
+            // 预知需要完成选择后才能继续出牌
+            if case .some(.foresight) = engine.pendingInput {
+                _ = engine.submitForesightChoice(index: 0)
+            }
         }
 
         guard let echoIdx = engine.state.hand.firstIndex(where: { $0.cardId == ProphecyEcho.id }) else {
@@ -172,6 +176,9 @@ final class SeerAdvancedCardsTests: XCTestCase {
         }
         _ = engine.handleAction(.playCard(handIndex: ssIdx, targetEnemyIndex: nil))
 
+        if case .some(.foresight) = engine.pendingInput {
+            _ = engine.submitForesightChoice(index: 0)
+        }
         XCTAssertEqual(engine.state.player.block, 1)
     }
 
@@ -209,6 +216,9 @@ final class SeerAdvancedCardsTests: XCTestCase {
         }
         _ = engine.handleAction(.playCard(handIndex: ssIdx, targetEnemyIndex: nil))
 
+        if case .some(.foresight) = engine.pendingInput {
+            _ = engine.submitForesightChoice(index: 0)
+        }
         XCTAssertEqual(engine.state.player.block, 2)
     }
 
@@ -249,6 +259,9 @@ final class SeerAdvancedCardsTests: XCTestCase {
         }
         let blockBefore1 = engine.state.player.block
         _ = engine.handleAction(.playCard(handIndex: ss1, targetEnemyIndex: nil))
+        if case .some(.foresight) = engine.pendingInput {
+            _ = engine.submitForesightChoice(index: 0)
+        }
         let gained1 = engine.state.player.block - blockBefore1
         XCTAssertEqual(gained1, 1)
 
@@ -266,6 +279,9 @@ final class SeerAdvancedCardsTests: XCTestCase {
         }
         let blockBefore2 = engine.state.player.block
         _ = engine.handleAction(.playCard(handIndex: ss2, targetEnemyIndex: nil))
+        if case .some(.foresight) = engine.pendingInput {
+            _ = engine.submitForesightChoice(index: 0)
+        }
         let gained2 = engine.state.player.block - blockBefore2
         XCTAssertEqual(gained2, 2)
     }

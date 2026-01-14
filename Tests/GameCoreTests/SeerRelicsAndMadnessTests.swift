@@ -22,10 +22,19 @@ final class SeerRelicsAndMadnessTests: XCTestCase {
         
         let engine = BattleEngine(player: player, enemies: [enemy], deck: deck, relicManager: relics, seed: seed)
         engine.startBattle()
-        
-        // 第三只眼：battleStart -> foresight(2) -> emit foresightChosen(...)
+
+        // 第三只眼：battleStart -> foresight(2) -> 挂起等待选择
+        guard case .some(.foresight(_, let fromCount)) = engine.pendingInput else {
+            return XCTFail("期望 battleStart 后进入 pending foresight")
+        }
+        XCTAssertEqual(fromCount, 2)
+
+        engine.clearEvents()
+        _ = engine.submitForesightChoice(index: 0)
+
+        // 选择后才会 emit foresightChosen(...)
         XCTAssertTrue(engine.events.contains(where: {
-            if case .foresightChosen(_, let fromCount) = $0 { return fromCount == 2 }
+            if case .foresightChosen(_, let c) = $0 { return c == 2 }
             return false
         }))
     }
@@ -51,11 +60,20 @@ final class SeerRelicsAndMadnessTests: XCTestCase {
         let engine = BattleEngine(player: player, enemies: [enemy], deck: deck, relicManager: relics, seed: seed)
         engine.startBattle()
 
+        guard case .some(.foresight(_, let fromCount)) = engine.pendingInput else {
+            return XCTFail("期望 battleStart 后进入 pending foresight")
+        }
+        XCTAssertEqual(fromCount, 3)
+
+        XCTAssertEqual(engine.state.player.statuses.stacks(of: "madness"), 1)
+
+        engine.clearEvents()
+        _ = engine.submitForesightChoice(index: 0)
+
         XCTAssertTrue(engine.events.contains(where: {
-            if case .foresightChosen(_, let fromCount) = $0 { return fromCount == 3 }
+            if case .foresightChosen(_, let c) = $0 { return c == 3 }
             return false
         }))
-        XCTAssertEqual(engine.state.player.statuses.stacks(of: "madness"), 1)
     }
     
     func testSanityAnchor_delaysThreshold2Weak() {

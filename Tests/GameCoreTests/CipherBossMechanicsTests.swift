@@ -81,8 +81,17 @@ final class CipherBossMechanicsTests: XCTestCase {
         engine.clearEvents()
         _ = engine.handleAction(.playCard(handIndex: idx, targetEnemyIndex: nil))
 
+        // 预知需要先完成选择，才能产生 foresightChosen 事件
+        guard case .some(.foresight(_, let fromCount)) = engine.pendingInput else {
+            return XCTFail("期望打出 灵视 后进入 pending foresight")
+        }
+        XCTAssertEqual(fromCount, 1)
+
+        engine.clearEvents()
+        _ = engine.submitForesightChoice(index: 0)
+
         XCTAssertTrue(engine.events.contains(where: { event in
-            if case .foresightChosen(_, let fromCount) = event { return fromCount == 1 }
+            if case .foresightChosen(_, let c) = event { return c == 1 }
             return false
         }))
     }
@@ -125,6 +134,11 @@ final class CipherBossMechanicsTests: XCTestCase {
 
         let energyAfterFirst = engine.state.energy
         XCTAssertEqual(energyAfterFirst, 2)
+
+        // 完成预知选择，解除 pending，才能继续出牌
+        if case .some(.foresight) = engine.pendingInput {
+            _ = engine.submitForesightChoice(index: 0)
+        }
 
         // 同回合第二张灵视不应再加费
         guard let second = engine.state.hand.firstIndex(where: { $0.cardId == "spirit_sight" }) else {
