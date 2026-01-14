@@ -153,6 +153,9 @@ public final class BattleEngine: @unchecked Sendable {
     public func costToPlay(cardAtHandIndex index: Int) -> Int {
         guard index >= 0, index < state.hand.count else { return 0 }
         let def = CardRegistry.require(state.hand[index].cardId)
+        if def.type == .consumable {
+            return 0
+        }
         return effectiveCost(baseCost: def.cost)
     }
     
@@ -445,7 +448,12 @@ public final class BattleEngine: @unchecked Sendable {
         let card = state.hand[handIndex]
         let def = CardRegistry.require(card.cardId)
         let baseCost = def.cost
-        let cost = effectiveCost(baseCost: baseCost)
+        let cost: Int
+        if def.type == .consumable {
+            cost = 0
+        } else {
+            cost = effectiveCost(baseCost: baseCost)
+        }
         
         // 验证能量
         guard state.energy >= cost else {
@@ -484,17 +492,20 @@ public final class BattleEngine: @unchecked Sendable {
         }
         
         // P6: “下回合第一张牌费用 +N”只在本回合首次成功出牌时生效一次
-        if cost != baseCost && !didApplyFirstCardCostIncreaseThisTurn {
+        // - Note: 消耗性卡牌费用恒为 0，不参与该临时费用机制。
+        if def.type != .consumable, cost != baseCost && !didApplyFirstCardCostIncreaseThisTurn {
             didApplyFirstCardCostIncreaseThisTurn = true
         }
 
         // 消耗能量
-        state.energy -= cost
+        if def.type != .consumable {
+            state.energy -= cost
+        }
         
         // 从手牌移除
         state.hand.remove(at: handIndex)
         
-        emit(.played(cardId: card.cardId, cost: cost))
+        emit(.played(cardInstanceId: card.id, cardId: card.cardId, cost: cost))
 
         // P4: 触发打出卡牌的遗物效果
         triggerRelics(.cardPlayed(cardId: card.cardId))
@@ -502,8 +513,14 @@ public final class BattleEngine: @unchecked Sendable {
         // 执行卡牌效果（新架构：通过 BattleEffect）
         executeCardEffect(card, targetEnemyIndex: resolvedTargetEnemyIndex)
         
-        // 卡牌进入弃牌堆
-        state.discardPile.append(card)
+        // 卡牌去向：
+        // - 普通卡牌：弃牌堆
+        // - 消耗性卡牌：消耗牌堆（本战斗不会再次抽到）
+        if def.type == .consumable {
+            state.exhaustPile.append(card)
+        } else {
+            state.discardPile.append(card)
+        }
         
         // 检查战斗是否结束
         checkBattleEnd()

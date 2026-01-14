@@ -49,11 +49,11 @@ enum ShopScreen {
             print("  \(Terminal.dim)（暂无消耗品上架）\(Terminal.reset)")
         } else {
             for (index, offer) in inventory.consumableOffers.enumerated() {
-                let def = ConsumableRegistry.require(offer.consumableId)
+                let def = CardRegistry.require(offer.cardId)
                 let affordable = runState.gold >= offer.price
                 let priceColor = affordable ? Terminal.yellow : Terminal.dim
-                print("  \(Terminal.cyan)[C\(index + 1)]\(Terminal.reset) \(def.icon) \(def.name) - \(priceColor)\(offer.price)金币\(Terminal.reset)")
-                print("      \(Terminal.dim)\(def.description)\(Terminal.reset)")
+                print("  \(Terminal.cyan)[C\(index + 1)]\(Terminal.reset) 🧪 \(def.name) - \(priceColor)\(offer.price)金币\(Terminal.reset)")
+                print("      \(Terminal.dim)\(def.rulesText)\(Terminal.reset)")
             }
         }
         

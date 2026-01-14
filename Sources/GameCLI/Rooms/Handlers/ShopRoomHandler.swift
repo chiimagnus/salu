@@ -165,7 +165,7 @@ struct ShopRoomHandler: RoomHandling {
         )
     }
     
-    // MARK: - Buy Consumable (P4)
+    // MARK: - Buy Consumable Card (P4R)
     
     private func handleBuyConsumable(
         index: Int,
@@ -185,17 +185,17 @@ struct ShopRoomHandler: RoomHandling {
             return inventory
         }
         
-        guard runState.addConsumable(offer.consumableId) else {
-            message = "\(Terminal.red)消耗品槽位已满（最多 \(RunState.maxConsumableSlots) 个），无法购买\(Terminal.reset)"
+        guard runState.addConsumableCardToDeck(cardId: offer.cardId) else {
+            message = "\(Terminal.red)消耗性卡牌槽位已满（最多 \(RunState.maxConsumableCardSlots) 个），无法购买\(Terminal.reset)"
             return inventory
         }
         
         runState.gold -= offer.price
-        let def = ConsumableRegistry.require(offer.consumableId)
-        context.logLine("\(Terminal.yellow)商店购买：\(def.icon) \(def.name)（-\(offer.price) 金币）\(Terminal.reset)")
+        let def = CardRegistry.require(offer.cardId)
+        context.logLine("\(Terminal.yellow)商店购买：🧪 \(def.name)（-\(offer.price) 金币）\(Terminal.reset)")
         
         // 消耗品可重复购买，不从库存移除
-        message = "\(Terminal.green)购买成功，获得消耗品【\(def.name)】\(Terminal.reset)"
+        message = "\(Terminal.green)购买成功，获得消耗性卡牌【\(def.name)】\(Terminal.reset)"
         
         return inventory
     }

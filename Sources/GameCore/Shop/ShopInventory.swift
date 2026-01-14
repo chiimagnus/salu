@@ -59,12 +59,12 @@ public struct ShopInventory: Sendable, Equatable {
             ShopRelicOffer(relicId: relicId, price: ShopPricing.relicPrice(for: relicId))
         }
         
-        // 消耗品：3 个
-        let consumablePool = ConsumableRegistry.shopConsumableIds
+        // 消耗性卡牌（消耗品）：3 个
+        let consumablePool = CardRegistry.allCardIds.filter { CardRegistry.require($0).type == .consumable }
         let consumableOfferCount = min(defaultConsumableOfferCount, consumablePool.count)
         let consumableChoices = Array(rng.shuffled(consumablePool).prefix(consumableOfferCount))
-        let consumableOffers = consumableChoices.map { consumableId in
-            ShopConsumableOffer(consumableId: consumableId, price: ShopPricing.consumablePrice(for: consumableId))
+        let consumableOffers = consumableChoices.map { cardId in
+            ShopConsumableOffer(cardId: cardId, price: ShopPricing.consumableCardPrice(for: cardId))
         }
         
         return ShopInventory(

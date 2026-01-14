@@ -35,15 +35,9 @@ public enum RunEffect: Sendable, Equatable {
     /// 直接设置玩家状态层数（<=0 视为移除）
     case setStatus(statusId: StatusID, stacks: Int)
 
-    // MARK: - Consumables (P5: 事件奖励消耗品)
-
-    /// 获得一个消耗品（若槽位已满则可能失败，见 RunState.apply 实现）
-    case addConsumable(consumableId: ConsumableID)
-    
     // MARK: - Upgrade
     
     /// 升级牌组中指定索引的卡牌（需要该卡可升级）
     case upgradeCard(deckIndex: Int)
 }
-
 

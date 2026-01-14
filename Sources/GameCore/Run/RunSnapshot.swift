@@ -91,11 +91,6 @@ public struct RunSnapshot: Codable, Sendable {
     
     /// 遗物 ID 列表
     public let relicIds: [String]  // RelicID.rawValue array
-
-    // MARK: - Consumables (P4)
-
-    /// 消耗品 ID 列表
-    public let consumableIds: [String]  // ConsumableID.rawValue array
     
     // MARK: - Run End
     
@@ -116,7 +111,6 @@ public struct RunSnapshot: Codable, Sendable {
         player: PlayerData,
         deck: [CardData],
         relicIds: [String],
-        consumableIds: [String],
         isOver: Bool,
         won: Bool
     ) {
@@ -130,7 +124,6 @@ public struct RunSnapshot: Codable, Sendable {
         self.player = player
         self.deck = deck
         self.relicIds = relicIds
-        self.consumableIds = consumableIds
         self.isOver = isOver
         self.won = won
     }
@@ -150,7 +143,6 @@ extension RunSnapshot {
         case player
         case deck
         case relicIds
-        case consumableIds
         case isOver
         case won
     }
@@ -167,7 +159,6 @@ extension RunSnapshot {
         player = try container.decode(PlayerData.self, forKey: .player)
         deck = try container.decode([CardData].self, forKey: .deck)
         relicIds = try container.decode([String].self, forKey: .relicIds)
-        consumableIds = try container.decode([String].self, forKey: .consumableIds)
         isOver = try container.decode(Bool.self, forKey: .isOver)
         won = try container.decode(Bool.self, forKey: .won)
     }
@@ -184,9 +175,7 @@ extension RunSnapshot {
         try container.encode(player, forKey: .player)
         try container.encode(deck, forKey: .deck)
         try container.encode(relicIds, forKey: .relicIds)
-        try container.encode(consumableIds, forKey: .consumableIds)
         try container.encode(isOver, forKey: .isOver)
         try container.encode(won, forKey: .won)
     }
 }
-

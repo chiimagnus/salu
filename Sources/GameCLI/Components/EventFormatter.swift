@@ -26,7 +26,7 @@ enum EventFormatter {
         case .shuffled(let count):
             return "\(Terminal.magenta)🔀 洗牌: \(count)张\(Terminal.reset)"
             
-        case .played(let cardId, let cost):
+        case .played(_, let cardId, let cost):
             let def = CardRegistry.require(cardId)
             return "\(Terminal.bold)▶️ 打出 \(def.name) (◆\(cost))\(Terminal.reset)"
             

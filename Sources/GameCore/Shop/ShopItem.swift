@@ -24,11 +24,12 @@ public struct ShopRelicOffer: Sendable, Equatable {
 
 /// 商店消耗品报价（P4 新增）
 public struct ShopConsumableOffer: Sendable, Equatable {
-    public let consumableId: ConsumableID
+    /// 消耗性卡牌 ID（`CardType.consumable`）
+    public let cardId: CardID
     public let price: Int
     
-    public init(consumableId: ConsumableID, price: Int) {
-        self.consumableId = consumableId
+    public init(cardId: CardID, price: Int) {
+        self.cardId = cardId
         self.price = price
     }
 }
@@ -70,7 +71,7 @@ public struct ShopItem: Sendable, Equatable {
         case .relic(let offer):
             return RelicRegistry.require(offer.relicId).name
         case .consumable(let offer):
-            return ConsumableRegistry.require(offer.consumableId).name
+            return CardRegistry.require(offer.cardId).name
         case .removeCard:
             return "删除卡牌"
         }
@@ -84,7 +85,8 @@ public struct ShopItem: Sendable, Equatable {
         case .relic(let offer):
             return RelicRegistry.require(offer.relicId).icon
         case .consumable(let offer):
-            return ConsumableRegistry.require(offer.consumableId).icon
+            _ = offer
+            return "🧪"
         case .removeCard:
             return "🗑️"
         }

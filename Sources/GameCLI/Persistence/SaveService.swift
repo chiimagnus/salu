@@ -42,9 +42,6 @@ final class SaveService {
         
         // 转换遗物
         let relicIds = runState.relicManager.all.map { $0.rawValue }
-
-        // 转换消耗品（P4）
-        let consumableIds = runState.consumables.map { $0.rawValue }
         
         return RunSnapshot(
             version: RunSaveVersion.current,
@@ -57,7 +54,6 @@ final class SaveService {
             player: player,
             deck: deck,
             relicIds: relicIds,
-            consumableIds: consumableIds,
             isOver: runState.isOver,
             won: runState.won
         )
@@ -116,15 +112,6 @@ final class SaveService {
             }
             relicManager.add(relicId)
         }
-
-        // 重建消耗品（P4）
-        let consumables: [ConsumableID] = try snapshot.consumableIds.map { consumableIdStr in
-            let consumableId = ConsumableID(consumableIdStr)
-            guard ConsumableRegistry.get(consumableId) != nil else {
-                throw SaveError.corruptedSave("未知消耗品: \(consumableIdStr)")
-            }
-            return consumableId
-        }
         
         // 创建 RunState
         var runState = RunState(
@@ -132,7 +119,6 @@ final class SaveService {
             deck: deck,
             gold: snapshot.gold,
             relicManager: relicManager,
-            consumables: consumables,
             map: mapNodes,
             seed: snapshot.seed,
             floor: snapshot.floor,
