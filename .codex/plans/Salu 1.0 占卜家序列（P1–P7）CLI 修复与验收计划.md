@@ -18,7 +18,8 @@
 - [x] **P1.2 帮助补充说明**：HelpScreen 已补充预知/回溯/疯狂与数据目录说明
 - [x] **P2 注册与池子可见性**：资源管理页可直接核对 Act2 精英池（mad_prophet/time_guardian）与 Act2 Boss（cipher）
 - [x] **P3 遗物可见性与核心机制**：资源管理页可见 Seer 遗物；核心触发逻辑已由测试覆盖（含 battleStart 预知的选牌交互）
-- [x] **P4 消耗品战斗内接入**：战斗界面展示消耗品；战斗内支持 `C1-C3` 使用、`X1-X3` 丢弃（含受控 Engine 入口与测试回归）
+- [x] **P4（旧交互，待删除）消耗品战斗内接入**：战斗界面展示消耗品；战斗内支持 `C1-C3` 使用、`X1-X3` 丢弃（已实现，但按新需求将被移除）
+- [ ] **P4R（破坏性重构）消耗品=消耗性卡牌**：在 `CardType` 新增「消耗性」类型；消耗品会进入战斗牌堆并抽上来，输入 `1..N` 直接打出；费用恒为 0（不耗能量）；打出后从 RunState 永久移除（跨战斗不恢复）；不提供丢弃（进行中）
 - [x] **脚本测试**：`swift test` 已通过（包含对预知 pending 流程的测试更新）
 
 ---
@@ -31,7 +32,10 @@
 - **回溯（Rewind）**：在 `BattleEngine.applyRewind()` 中对 `discardPile.removeLast()` 循环；因此是“弃牌堆顶部（最近进入弃牌堆）的牌”，**不是随机**。
 - **疯狂（Madness）**：阈值检查/回合末 -1 在 `BattleEngine`；CLI `BattleScreen` 已按阈值着色并可在日志面板看到相关事件格式化。
 - **资源管理（ResourceScreen）**：已扩展为覆盖 Card/Status/Consumable/Event/Enemy/Relic（并补 Act3 池、EnemyRegistry 全量列表）。
-- **消耗品（Consumables）**：已接入 GameCore/存档/商店购买链路（`RunSnapshot.consumableIds`、`SaveService`、`ShopRoomHandler`），并且 **战斗界面已展示、战斗内可使用/丢弃（`C1-C3`/`X1-X3`）**。
+- **消耗品（Consumables）**：
+  - 已接入 GameCore/存档/商店购买链路（`RunSnapshot.consumableIds`、`SaveService`、`ShopRoomHandler`）。
+  - 当前实现为“战斗界面工具栏展示 + `C1-C3` 使用 + `X1-X3` 丢弃”（旧交互）。
+  - 新需求（破坏性重构）：改为 **消耗品=消耗性卡牌**（新增 `CardType.consumable`），会被抽上来、用 `1..N` 出牌输入使用；0 费不耗能量；打出后从 RunState 永久移除；无需丢弃功能（见第 7 节）。
 - **数据目录**：已统一通过 `DataDirectory` 解析；UI 测试会注入 `SALU_DATA_DIR=<系统临时目录>/...`；本地手测如不设置 `SALU_DATA_DIR`，macOS 默认会落在 `~/Library/Application Support/Salu/`。
 
 ---
@@ -259,7 +263,7 @@ swift run GameCLI --seed 1
 - 预知：规则、触发时 UI、选择后落点（入手）、未选中的牌顺序。
 - 回溯：明确“从弃牌堆顶部（最近）取回 N 张”。
 - 疯狂：阈值（≥3/6/10）、回合末 -1、清理方式（冥想/净化仪式/净化符文等）。
-- 消耗品（P4 已完成）：战斗内 `C1-C3` 使用、`X1-X3` 丢弃。
+- 消耗品（P4R）：消耗品会以“0 费消耗性卡牌”形式进入战斗牌堆并抽上来，使用走正常出牌输入（不再使用 `C1/X1`，且不提供丢弃）。
 
 **涉及文件**：
 - `Sources/GameCLI/Screens/HelpScreen.swift`
@@ -306,17 +310,25 @@ swift run GameCLI --seed 1
 
 ---
 
-## 7. P4：商店扩展 + 消耗品系统（战斗内接入、使用、丢弃）
+## 7. P4R：商店扩展 + 消耗品系统（破坏性重构：消耗品=消耗性卡牌）
 
-### P4.1 战斗 UI 展示消耗品
-**目标**：战斗界面显示当前持有的 0..3 个消耗品（icon+name+编号）。
+> 你最新确认的需求（以此为准，不考虑向后兼容）：
+> - 消耗品 = 一类「消耗性卡牌」，会进入战斗牌堆并抽上来，出现在手牌列表中
+> - 使用方式走“正常出牌输入 `1..N`”（不再有消耗品工具栏/快捷键）
+> - 消耗品仅做一次性：打出后从 RunState 永久移除（跨战斗不恢复）
+> - 消耗品出牌费用恒为 0（不耗能量）
+> - 不需要“丢弃消耗品”功能
+> - 能力牌（power）的规则不改动
+
+### P4（旧交互，待删除）：战斗 UI 工具栏展示消耗品 + C/X 输入
+**说明**：这部分已实现，但将被删除以满足新交互。
 
 ✅ 已完成（实现落地）：
 - `BattleScreen.renderBattleScreen` 增加参数：`consumables: [ConsumableID]`，并在玩家区域展示“消耗品：暂无 / [C1]...”
 - 操作提示行补充 `C1-Cn`（使用）与 `X1-Xn`（丢弃）的快捷提示
 
-### P4.2 战斗内 `C1/C2/C3` 使用；`X1/X2/X3` 丢弃
-**目标**：与您确认的交互一致。
+### P4（旧交互，待删除）：战斗内 `C1/C2/C3` 使用；`X1/X2/X3` 丢弃
+**说明**：这部分已实现，但将被删除以满足新交互。
 
 ✅ 已完成（实现落地）：
 - `RoomContext.battleLoop` 改为 `(BattleEngine, UInt64, inout RunState) -> BattleLoopResult`，房间 handler 传入 `&runState`，允许战斗内修改消耗品槽位
@@ -339,6 +351,57 @@ swift run GameCLI --seed 1
 ```bash
 SALU_TEST_MODE=1 SALU_TEST_MAP=shop swift run GameCLI --seed 1
 # 买到消耗品后进入战斗：使用 C1/C2 或丢弃 X1
+```
+
+---
+
+## 7.1 P4R：实现方案（不桥接，破坏性重构）
+
+### 7.1.1 新增卡牌类型：`CardType.consumable`
+**目标**：在 `Sources/GameCore/Cards/CardDefinition.swift` 的 `CardType` 增加 `.consumable = "消耗性"`。
+
+**涉及改动**：
+- UI（战斗/预知选择/日志/资源管理）需要为 `.consumable` 增加类型图标与中文标签。
+- 输入校验与出牌提示需要兼容 `.consumable`（消耗品可能不需要目标）。
+
+### 7.1.2 消耗品定义迁移：`ConsumableDefinition` → `CardDefinition`
+**目标**：将 `Sources/GameCore/Consumables/Definitions/*` 的定义迁移为 `CardDefinition`：
+- `type = .consumable`
+- `cost = 0`（费用恒为 0，不耗能量）
+- `rulesText` 复用原 `description`
+- `play(snapshot:...)` 直接返回原本 `useInBattle(snapshot:)` 的效果
+
+> 破坏性变更：可以删除 `ConsumableDefinition/ConsumableRegistry`，并调整资源管理页不再单列 consumables（全部走 CardRegistry 展示）。
+
+### 7.1.3 RunState/商店/存档：用“卡牌实例”持有消耗品
+**目标**：消耗品既然是卡牌，就应以 `Card` 实例加入 `runState.deck`，并随战斗自然抽到。
+
+**计划动作**：
+- 商店购买消耗品：直接向 `runState.deck` 追加一个消耗性卡牌实例（实例 id 需要稳定且不冲突）。
+- 存档：以 deck 序列为准落盘（不再需要 `consumableIds` 字段；不考虑向后兼容）。
+
+### 7.1.4 战斗内“永久消失”：打出后从 RunState 移除
+**目标**：消耗性卡牌打出后：
+- 本战斗不再出现（不进入弃牌堆循环）
+- 并且从 `runState.deck` 中永久移除（跨战斗不恢复）
+
+**计划动作**：
+- `BattleState` 增加 `exhaustPile: [Card]`（用于可视化/调试，或至少保证消耗性卡牌不回到 draw/discard）
+- `BattleEngine.playCard`：对 `.consumable` 走专用路径（不扣能量、执行效果、进入 exhaustPile）
+- 为了能精确移除“哪一张实例”：需要引擎/事件暴露 card instance id（例如把 `BattleEvent.played` 改为携带 `cardInstanceId`）
+- `GameCLI.battleLoop` 在处理一次出牌后，若打出 `.consumable`，就从 `runState.deck` 删除对应实例
+
+### 7.1.5 删除旧交互：工具栏 + C/X 输入
+**目标**：彻底移除消耗品工具栏与 `C1/X1` 输入分支（避免双系统并存造成困惑）。
+
+### 7.1.6 验收命令（建议）
+
+```bash
+SALU_TEST_MODE=1 SALU_TEST_MAP=shop swift run GameCLI --seed 1
+# 在商店购买消耗性卡牌后进入战斗：
+# 1) 能抽到该牌（显示为“消耗性”，费用恒为 0）
+# 2) 输入牌序号打出 → 效果生效
+# 3) 战斗结束后：该牌已从 runState.deck 永久移除（下一场战斗不会再抽到）
 ```
 
 ---
