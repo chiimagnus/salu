@@ -22,6 +22,8 @@ enum SettingsScreen {
         ║  \(Terminal.reset)\(Terminal.cyan)[4]\(Terminal.bold)\(Terminal.yellow) 📦 资源管理（池子/注册表）                  ║
         ║  \(Terminal.reset)\(Terminal.cyan)[5]\(Terminal.bold)\(Terminal.yellow) 📖 游戏帮助                                ║
         ║  \(Terminal.reset)\(Terminal.cyan)[6]\(Terminal.bold)\(Terminal.yellow) 📋 日志显示 [\(logStatus)]                       ║
+        ║  \(Terminal.reset)\(Terminal.cyan)[7]\(Terminal.bold)\(Terminal.yellow) 🗂️ 数据目录（SALU_DATA_DIR）                  ║
+        ║  \(Terminal.reset)\(Terminal.cyan)[8]\(Terminal.bold)\(Terminal.yellow) 🧭 事件种子工具（开发者）                     ║
         ║                                                       ║
         ╠═══════════════════════════════════════════════════════╣
         ║  \(Terminal.reset)\(Terminal.dim)[q] 返回主菜单\(Terminal.bold)\(Terminal.yellow)                                 ║

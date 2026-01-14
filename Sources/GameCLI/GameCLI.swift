@@ -160,6 +160,16 @@ struct GameCLI {
                 var settings = settingsStore.load()
                 settings.showLog = showLog
                 settingsStore.save(settings)
+
+            case "7":
+                // 数据目录（开发者/排查工具）
+                Screens.showDataDirectory()
+                NavigationBar.waitForBack()
+
+            case "8":
+                // 事件种子工具（开发者/验收辅助）
+                Screens.showEventSeedTool()
+                NavigationBar.waitForBack()
                 
             case "q":
                 // 返回主菜单
