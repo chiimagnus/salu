@@ -234,7 +234,7 @@ final class CardDefinitionPlayTests: XCTestCase {
         XCTAssertEqual(
             effects,
             [
-                .applyStatus(target: .player, statusId: SequenceResonance.id, stacks: 1),
+                .applyStatus(target: .player, statusId: SequenceResonanceEffect.id, stacks: 1),
                 .applyStatus(target: .player, statusId: Madness.id, stacks: 1),
             ]
         )
@@ -247,7 +247,7 @@ final class CardDefinitionPlayTests: XCTestCase {
         XCTAssertEqual(
             effects,
             [
-                .applyStatus(target: .player, statusId: SequenceResonance.id, stacks: 2),
+                .applyStatus(target: .player, statusId: SequenceResonanceEffect.id, stacks: 2),
                 .applyStatus(target: .player, statusId: Madness.id, stacks: 1),
             ]
         )
@@ -292,4 +292,3 @@ final class CardDefinitionPlayTests: XCTestCase {
         XCTAssertEqual(engine.state.player.statuses.stacks(of: Strength.id), 4)
     }
 }
-

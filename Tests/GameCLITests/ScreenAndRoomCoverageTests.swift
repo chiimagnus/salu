@@ -176,7 +176,7 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
         let context = RoomContext(
             logBattleEvents: { _ in },
             logLine: { _ in },
-            battleLoop: { engine, _ in
+            battleLoop: { engine, _, _ in
                 // 让战斗在测试里"稳定且快速"结束：打一张 Strike（敌人 HP=1）
                 _ = engine.handleAction(.playCard(handIndex: 0, targetEnemyIndex: 0))
                 return .finished

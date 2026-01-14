@@ -47,7 +47,7 @@ struct RoomContext {
     
     /// 战斗循环（复用现有逻辑）
     /// 返回战斗循环结果，区分正常结束和用户中途退出
-    let battleLoop: (BattleEngine, UInt64) -> BattleLoopResult
+    let battleLoop: (BattleEngine, UInt64, inout RunState) -> BattleLoopResult
     
     /// 创建敌人（复用现有逻辑）
     let createEnemy: (EnemyID, Int, inout SeededRNG) -> Entity

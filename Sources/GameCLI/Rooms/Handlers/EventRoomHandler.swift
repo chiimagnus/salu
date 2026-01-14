@@ -113,7 +113,7 @@ struct EventRoomHandler: RoomHandling {
         context.logBattleEvents(engine.events)
         engine.clearEvents()
         
-        let loopResult = context.battleLoop(engine, battleSeed)
+        let loopResult = context.battleLoop(engine, battleSeed, &runState)
         if loopResult == .aborted {
             return .aborted
         }
