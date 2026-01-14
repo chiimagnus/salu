@@ -28,4 +28,9 @@ public enum StatusRegistry {
         precondition(defs[id] != nil, "StatusRegistry: 未找到状态定义 '\(id.rawValue)'")
         return defs[id]!
     }
+
+    /// 所有已注册状态 ID（按 rawValue 排序，保证确定性）
+    public static var allStatusIds: [StatusID] {
+        Array(defs.keys).sorted { $0.rawValue < $1.rawValue }
+    }
 }

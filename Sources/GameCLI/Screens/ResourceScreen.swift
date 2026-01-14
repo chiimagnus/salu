@@ -12,6 +12,9 @@ enum ResourceScreen {
         var lines: [String] = []
         lines.append(contentsOf: buildHeaderLines())
         lines.append(contentsOf: buildCardsSectionLines())
+        lines.append(contentsOf: buildStatusesSectionLines())
+        lines.append(contentsOf: buildConsumablesSectionLines())
+        lines.append(contentsOf: buildEventsSectionLines())
         lines.append(contentsOf: buildEnemiesAndEncountersSectionLines())
         lines.append(contentsOf: buildRelicsSectionLines())
         for line in lines {
@@ -126,6 +129,134 @@ enum ResourceScreen {
             lines.append("    [\(i + 1)] \(names)")
         }
 
+        // Act3
+        lines.append("")
+        lines.append("\(Terminal.bold)Act3 敌人池\(Terminal.reset)")
+        lines.append("  普通敌人（weak）数量：\(Terminal.yellow)\(Act3EnemyPool.weak.count)\(Terminal.reset)")
+        lines.append("  精英敌人（medium）数量：\(Terminal.yellow)\(Act3EnemyPool.medium.count)\(Terminal.reset)")
+        lines.append("")
+
+        lines.append("  \(Terminal.bold)普通敌人（weak）\(Terminal.reset)")
+        for id in Act3EnemyPool.weak.sorted(by: { $0.rawValue < $1.rawValue }) {
+            let def = EnemyRegistry.require(id)
+            lines.append("    - \(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
+        }
+        lines.append("")
+
+        lines.append("  \(Terminal.bold)精英敌人（medium）\(Terminal.reset)")
+        for id in Act3EnemyPool.medium.sorted(by: { $0.rawValue < $1.rawValue }) {
+            let def = EnemyRegistry.require(id)
+            lines.append("    - \(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
+        }
+
+        lines.append("")
+        lines.append("\(Terminal.bold)🧩 遭遇池（Act3EncounterPool.weak）\(Terminal.reset)")
+        let act3Encounters = Act3EncounterPool.weak
+        let act3MultiCount = act3Encounters.filter { $0.enemyIds.count > 1 }.count
+        let act3TotalCount = max(1, act3Encounters.count)
+        let act3MultiPercent = (act3MultiCount * 100) / act3TotalCount
+        lines.append("  总遭遇数：\(Terminal.yellow)\(act3Encounters.count)\(Terminal.reset)  |  双敌人遭遇：\(Terminal.yellow)\(act3MultiCount)\(Terminal.reset)（约 \(act3MultiPercent)%）")
+        lines.append("")
+
+        for (i, enc) in act3Encounters.enumerated() {
+            let names = enc.enemyIds.map { id in EnemyRegistry.require(id).name }.joined(separator: " + ")
+            lines.append("    [\(i + 1)] \(names)")
+        }
+
+        // Enemy Registry
+        lines.append("")
+        lines.append("\(Terminal.bold)📚 EnemyRegistry（全部已注册敌人）\(Terminal.reset)")
+        lines.append("  总数：\(Terminal.yellow)\(EnemyRegistry.allEnemyIds.count)\(Terminal.reset)")
+        lines.append("")
+        for id in EnemyRegistry.allEnemyIds {
+            let def = EnemyRegistry.require(id)
+            lines.append("    - \(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
+        }
+
+        return lines
+    }
+
+    private static func buildStatusesSectionLines() -> [String] {
+        var lines: [String] = []
+        lines.append("")
+        lines.append("\(Terminal.bold)🧬 状态（StatusRegistry）\(Terminal.reset)")
+
+        let ids = StatusRegistry.allStatusIds
+        lines.append("  总数：\(Terminal.yellow)\(ids.count)\(Terminal.reset)")
+        lines.append("")
+
+        for id in ids {
+            let def = StatusRegistry.require(id)
+            let polarity = def.isPositive ? "\(Terminal.green)正面\(Terminal.reset)" : "\(Terminal.red)负面\(Terminal.reset)"
+
+            let decayText: String
+            switch def.decay {
+            case .none:
+                decayText = "不递减"
+            case .turnEnd(let decreaseBy):
+                decayText = "回合结束 -\(decreaseBy)"
+            }
+
+            let phaseSummary = [
+                "出伤:\(formatPhase(def.outgoingDamagePhase))",
+                "入伤:\(formatPhase(def.incomingDamagePhase))",
+                "格挡:\(formatPhase(def.blockPhase))",
+                "prio:\(def.priority)",
+            ].joined(separator: "  ")
+
+            lines.append("  - \(def.icon)\(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)  \(polarity)  \(Terminal.dim)\(decayText)  \(phaseSummary)\(Terminal.reset)")
+        }
+
+        lines.append("")
+        return lines
+    }
+
+    private static func formatPhase(_ phase: ModifierPhase?) -> String {
+        guard let phase else { return "-" }
+        switch phase {
+        case .add:
+            return "add"
+        case .multiply:
+            return "mul"
+        }
+    }
+
+    private static func buildConsumablesSectionLines() -> [String] {
+        var lines: [String] = []
+        lines.append("")
+        lines.append("\(Terminal.bold)🧪 消耗品（ConsumableRegistry）\(Terminal.reset)")
+
+        let ids = ConsumableRegistry.allConsumableIds
+        lines.append("  已注册：\(Terminal.yellow)\(ids.count)\(Terminal.reset)  |  商店池：\(Terminal.yellow)\(ConsumableRegistry.shopConsumableIds.count)\(Terminal.reset)")
+        lines.append("")
+
+        for id in ids {
+            let def = ConsumableRegistry.require(id)
+            let battle = def.usableInBattle ? "\(Terminal.green)战斗内可用\(Terminal.reset)" : "\(Terminal.dim)战斗内不可用\(Terminal.reset)"
+            let outside = def.usableOutsideBattle ? "\(Terminal.green)战斗外可用\(Terminal.reset)" : "\(Terminal.dim)战斗外不可用\(Terminal.reset)"
+            lines.append("  - \(def.icon)\(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)  \(Terminal.dim)\(def.rarity.rawValue)\(Terminal.reset)  \(battle)  \(outside)")
+            lines.append("    \(Terminal.dim)\(def.description)\(Terminal.reset)")
+        }
+
+        lines.append("")
+        return lines
+    }
+
+    private static func buildEventsSectionLines() -> [String] {
+        var lines: [String] = []
+        lines.append("")
+        lines.append("\(Terminal.bold)🧭 事件（EventRegistry）\(Terminal.reset)")
+
+        let ids = EventRegistry.allEventIds
+        lines.append("  总数：\(Terminal.yellow)\(ids.count)\(Terminal.reset)")
+        lines.append("")
+
+        for id in ids {
+            let def = EventRegistry.require(id)
+            lines.append("  - \(def.icon)\(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
+        }
+
+        lines.append("")
         return lines
     }
 

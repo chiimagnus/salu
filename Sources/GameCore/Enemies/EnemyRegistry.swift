@@ -49,4 +49,9 @@ public enum EnemyRegistry {
         precondition(defs[id] != nil, "EnemyRegistry: 未找到敌人定义 '\(id.rawValue)'")
         return defs[id]!
     }
+
+    /// 所有已注册敌人 ID（按 rawValue 排序，保证确定性）
+    public static var allEnemyIds: [EnemyID] {
+        Array(defs.keys).sorted { $0.rawValue < $1.rawValue }
+    }
 }
