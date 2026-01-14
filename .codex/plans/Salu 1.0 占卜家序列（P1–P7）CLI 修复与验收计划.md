@@ -18,6 +18,7 @@
 - [x] **P1.2 帮助补充说明**：HelpScreen 已补充预知/回溯/疯狂与数据目录说明
 - [x] **P2 注册与池子可见性**：资源管理页可直接核对 Act2 精英池（mad_prophet/time_guardian）与 Act2 Boss（cipher）
 - [x] **P3 遗物可见性与核心机制**：资源管理页可见 Seer 遗物；核心触发逻辑已由测试覆盖（含 battleStart 预知的选牌交互）
+- [x] **P4 消耗品战斗内接入**：战斗界面展示消耗品；战斗内支持 `C1-C3` 使用、`X1-X3` 丢弃（含受控 Engine 入口与测试回归）
 - [x] **脚本测试**：`swift test` 已通过（包含对预知 pending 流程的测试更新）
 
 ---
@@ -30,7 +31,7 @@
 - **回溯（Rewind）**：在 `BattleEngine.applyRewind()` 中对 `discardPile.removeLast()` 循环；因此是“弃牌堆顶部（最近进入弃牌堆）的牌”，**不是随机**。
 - **疯狂（Madness）**：阈值检查/回合末 -1 在 `BattleEngine`；CLI `BattleScreen` 已按阈值着色并可在日志面板看到相关事件格式化。
 - **资源管理（ResourceScreen）**：已扩展为覆盖 Card/Status/Consumable/Event/Enemy/Relic（并补 Act3 池、EnemyRegistry 全量列表）。
-- **消耗品（Consumables）**：GameCore/存档/商店购买链路已接入（`RunSnapshot.consumableIds`、`SaveService`、`ShopRoomHandler`）；但 **战斗界面不展示、战斗内无法使用/丢弃**。
+- **消耗品（Consumables）**：已接入 GameCore/存档/商店购买链路（`RunSnapshot.consumableIds`、`SaveService`、`ShopRoomHandler`），并且 **战斗界面已展示、战斗内可使用/丢弃（`C1-C3`/`X1-X3`）**。
 - **数据目录**：已统一通过 `DataDirectory` 解析；UI 测试会注入 `SALU_DATA_DIR=<系统临时目录>/...`；本地手测如不设置 `SALU_DATA_DIR`，macOS 默认会落在 `~/Library/Application Support/Salu/`。
 
 ---
@@ -52,7 +53,7 @@
 
 ### P2–P7
 - P2/P3/P7 的“注册表可见性”验收依赖资源管理页（因此 P0 里先补）。
-- P4（消耗品战斗内接入 + 丢弃）是你明确指出的缺口。
+- P4（消耗品战斗内接入 + 丢弃）已完成（见第 7 节）。
 - P5（事件）需要“种子命中工具”辅助验收。
 - P6（赛弗 Boss）主要是 UI 可见性与机制链路验证。
 
@@ -258,7 +259,7 @@ swift run GameCLI --seed 1
 - 预知：规则、触发时 UI、选择后落点（入手）、未选中的牌顺序。
 - 回溯：明确“从弃牌堆顶部（最近）取回 N 张”。
 - 疯狂：阈值（≥3/6/10）、回合末 -1、清理方式（冥想/净化仪式/净化符文等）。
-- 消耗品（为 P4 铺垫）：战斗内 `C1-C3` 使用、`X1-X3` 丢弃。
+- 消耗品（P4 已完成）：战斗内 `C1-C3` 使用、`X1-X3` 丢弃。
 
 **涉及文件**：
 - `Sources/GameCLI/Screens/HelpScreen.swift`
@@ -310,20 +311,19 @@ swift run GameCLI --seed 1
 ### P4.1 战斗 UI 展示消耗品
 **目标**：战斗界面显示当前持有的 0..3 个消耗品（icon+name+编号）。
 
-**实现建议**：
-- `BattleScreen.renderBattleScreen` 增加参数：`consumables: [ConsumableID]`
-- 在玩家区域下方增加一行：`🧪 消耗品： [C1]🧪治疗药剂  [C2]📿净化符文  ...`（空则显示“暂无”）
+✅ 已完成（实现落地）：
+- `BattleScreen.renderBattleScreen` 增加参数：`consumables: [ConsumableID]`，并在玩家区域展示“消耗品：暂无 / [C1]...”
+- 操作提示行补充 `C1-Cn`（使用）与 `X1-Xn`（丢弃）的快捷提示
 
 ### P4.2 战斗内 `C1/C2/C3` 使用；`X1/X2/X3` 丢弃
 **目标**：与您确认的交互一致。
 
-**实现建议**：
-- 在冒险战斗（RoomHandler）里调用 battleLoop 时，把 `runState` 以 inout 传入，允许 battleLoop 修改消耗品槽位。
-- `GameCLI.battleLoop`：
-  - 解析输入 `c1/c2/c3`：取出对应 `ConsumableID`，检查 `usableInBattle`，构造 `BattleSnapshot`，调用 `engine` 的“外部效果入口”应用 `useInBattle` 的效果；成功后从 `runState` 移除该消耗品并写日志。
-  - 解析输入 `x1/x2/x3`：直接从 `runState` 移除该消耗品并写日志（无战斗效果）。
-- 为 `BattleEngine` 增加一个受控入口（避免 CLI 直接碰私有 apply）：
-  - 例如：`public func applyExternalEffects(_ effects: [BattleEffect], reason: String)` 或 `public func useConsumable(_ id: ConsumableID) -> Bool`
+✅ 已完成（实现落地）：
+- `RoomContext.battleLoop` 改为 `(BattleEngine, UInt64, inout RunState) -> BattleLoopResult`，房间 handler 传入 `&runState`，允许战斗内修改消耗品槽位
+- `GameCLI.battleLoop` 输入解析：
+  - `C1-Cn`：检查 `usableInBattle`，基于当前战斗状态构造 `BattleSnapshot`，调用 `BattleEngine.applyExternalEffects(_:)` 应用 `useInBattle` 效果；成功后从 `runState` 移除该消耗品并写日志
+  - `X1-Xn`：直接从 `runState` 移除并写日志
+- `BattleEngine` 新增受控入口 `applyExternalEffects(_:)`（避免 CLI 访问私有 `apply`，并在存在 pendingInput 时拒绝执行）
 
 **涉及文件**：
 - `Sources/GameCLI/GameCLI.swift`（battleLoop + 传递 runState/consumables）
@@ -338,7 +338,7 @@ swift run GameCLI --seed 1
 
 ```bash
 SALU_TEST_MODE=1 SALU_TEST_MAP=shop swift run GameCLI --seed 1
-# 买到消耗品后进入战斗，使用 C1/C2 或丢弃 X1
+# 买到消耗品后进入战斗：使用 C1/C2 或丢弃 X1
 ```
 
 ---
@@ -390,4 +390,3 @@ swift run GameCLI --seed 1
 3) **P4（消耗品战斗内接入）**  
 4) **P5（事件 + seed 工具回归）**  
 5) **P2/P3/P6/P7** 按清单逐项回归（资源管理页已完善，验收会变快）
-
