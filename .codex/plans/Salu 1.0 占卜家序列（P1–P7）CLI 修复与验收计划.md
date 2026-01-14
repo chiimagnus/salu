@@ -17,6 +17,7 @@
 - [x] **P1.1 预知选牌 UI**：预知触发时进入“预知选牌”界面，玩家输入 `1..N` 选择 1 张入手
 - [x] **P1.2 帮助补充说明**：HelpScreen 已补充预知/回溯/疯狂与数据目录说明
 - [x] **P2 注册与池子可见性**：资源管理页可直接核对 Act2 精英池（mad_prophet/time_guardian）与 Act2 Boss（cipher）
+- [x] **P3 遗物可见性与核心机制**：资源管理页可见 Seer 遗物；核心触发逻辑已由测试覆盖（含 battleStart 预知的选牌交互）
 - [x] **脚本测试**：`swift test` 已通过（包含对预知 pending 流程的测试更新）
 
 ---
@@ -289,6 +290,11 @@ swift run GameCLI --seed 1
 
 ## 6. P3：占卜家遗物（UI）
 > 依赖：P0.2 资源管理页补齐后，P3 的“遗物可见性”验收更直观。
+
+✅ 已完成（实现落地）：
+- 资源管理页已能看到清单要求的占卜家遗物（`third_eye/broken_watch/sanity_anchor/abyssal_eye/prophet_notes/madness_mask`）。
+- 遗物触发预知的交互链路已由 P1 的 `pendingInput` 机制覆盖（battleStart 触发预知会进入“预知选牌”界面）。
+- 相关核心逻辑已由 `swift test` 覆盖并通过（第三只眼/深渊之瞳/破碎怀表/预言者手札/理智之锚/疯狂面具等）。
 
 **计划动作**：
 - 确认 ResourceScreen/RelicPool 展示包含：第三只眼、破碎怀表、理智之锚、深渊之瞳、预言者手札、疯狂面具。
