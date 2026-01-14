@@ -514,6 +514,8 @@ public final class BattleEngine: @unchecked Sendable {
             battleStats.defendsPlayed += 1
         case .power:
             battleStats.skillsPlayed += 1
+        case .consumable:
+            battleStats.skillsPlayed += 1
         }
         
         // 生成战斗快照

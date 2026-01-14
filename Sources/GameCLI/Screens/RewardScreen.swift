@@ -26,6 +26,7 @@ enum RewardScreen {
                 case .attack: typeIcon = "⚔️"
                 case .skill: typeIcon = "🛡️"
                 case .power: typeIcon = "💪"
+                case .consumable: typeIcon = "🧪"
                 }
                 
                 print("  \(Terminal.cyan)[\(index + 1)]\(Terminal.reset) \(Terminal.bold)\(def.name)\(Terminal.reset)  \(Terminal.yellow)◆\(def.cost)\(Terminal.reset)  \(typeIcon) \(def.rulesText)")
@@ -72,5 +73,4 @@ enum RewardScreen {
         }
     }
 }
-
 

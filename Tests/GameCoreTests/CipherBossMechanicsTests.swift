@@ -130,7 +130,10 @@ final class CipherBossMechanicsTests: XCTestCase {
 
         engine.clearEvents()
         _ = engine.handleAction(.playCard(handIndex: first, targetEnemyIndex: nil))
-        XCTAssertTrue(engine.events.contains(.played(cardId: "spirit_sight", cost: 1)))
+        XCTAssertTrue(engine.events.contains { event in
+            guard case let .played(_, cardId, cost) = event else { return false }
+            return cardId == "spirit_sight" && cost == 1
+        })
 
         let energyAfterFirst = engine.state.energy
         XCTAssertEqual(energyAfterFirst, 2)
@@ -147,8 +150,10 @@ final class CipherBossMechanicsTests: XCTestCase {
 
         engine.clearEvents()
         _ = engine.handleAction(.playCard(handIndex: second, targetEnemyIndex: nil))
-        XCTAssertTrue(engine.events.contains(.played(cardId: "spirit_sight", cost: 0)))
+        XCTAssertTrue(engine.events.contains { event in
+            guard case let .played(_, cardId, cost) = event else { return false }
+            return cardId == "spirit_sight" && cost == 0
+        })
         XCTAssertEqual(engine.state.energy, energyAfterFirst)
     }
 }
-

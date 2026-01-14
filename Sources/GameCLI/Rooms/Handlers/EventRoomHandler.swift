@@ -40,8 +40,12 @@ struct EventRoomHandler: RoomHandling {
             let ok = runState.apply(effect)
             if !ok {
                 switch effect {
-                case .addConsumable:
-                    applyFailureLines.append("消耗品槽位已满，未能获得消耗品")
+                case .addCard(let cardId):
+                    if let def = CardRegistry.get(cardId), def.type == .consumable {
+                        applyFailureLines.append("消耗性卡牌槽位已满，未能获得：\(def.name)")
+                    } else {
+                        applyFailureLines.append("未能获得卡牌")
+                    }
                 default:
                     applyFailureLines.append("有一项效果未能生效")
                 }
@@ -212,4 +216,3 @@ struct EventRoomHandler: RoomHandling {
         return base + additional
     }
 }
-

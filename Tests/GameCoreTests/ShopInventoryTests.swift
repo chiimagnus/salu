@@ -15,10 +15,10 @@ final class ShopInventoryTests: XCTestCase {
         XCTAssertEqual(ShopPricing.relicPrice(for: .uncommon), 150)
         XCTAssertEqual(ShopPricing.relicPrice(for: .rare), 250)
         
-        // P4: 消耗品定价
-        XCTAssertEqual(ShopPricing.consumablePrice(for: .common), 35)
-        XCTAssertEqual(ShopPricing.consumablePrice(for: .uncommon), 60)
-        XCTAssertEqual(ShopPricing.consumablePrice(for: .rare), 100)
+        // P4R: 消耗性卡牌（消耗品）定价
+        XCTAssertEqual(ShopPricing.consumableCardPrice(for: .common), 35)
+        XCTAssertEqual(ShopPricing.consumableCardPrice(for: .uncommon), 60)
+        XCTAssertEqual(ShopPricing.consumableCardPrice(for: .rare), 100)
     }
     
     func test_shopInventoryGeneration_isDeterministic_andValid() {
@@ -43,13 +43,17 @@ final class ShopInventoryTests: XCTestCase {
         // 价格应符合定价规则
         XCTAssertTrue(a.cardOffers.allSatisfy { $0.price == ShopPricing.cardPrice(for: $0.cardId) })
         
-        // P4: 遗物和消耗品
+        // P4R: 遗物和消耗性卡牌（消耗品）
         XCTAssertGreaterThanOrEqual(a.relicOffers.count, 0)  // 可能会因为遗物池小而少于 3
-        XCTAssertGreaterThanOrEqual(a.consumableOffers.count, 0)  // 可能会因为消耗品池小而少于 3
+        XCTAssertGreaterThanOrEqual(a.consumableOffers.count, 0)  // 可能会因为池子小而少于 3
 
-        // P4: 消耗品价格应符合定价规则
         XCTAssertTrue(a.consumableOffers.allSatisfy {
-            $0.price == ShopPricing.consumablePrice(for: $0.consumableId)
+            CardRegistry.require($0.cardId).type == .consumable
+        })
+
+        // P4R: 消耗性卡牌价格应符合定价规则
+        XCTAssertTrue(a.consumableOffers.allSatisfy {
+            $0.price == ShopPricing.consumableCardPrice(for: $0.cardId)
         })
         
         // items 包含所有条目

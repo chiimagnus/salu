@@ -271,6 +271,10 @@ public struct RunState: Sendable {
             return true
             
         case .addCard(let cardId):
+            guard let def = CardRegistry.get(cardId) else { return false }
+            if def.type == .consumable {
+                return addConsumableCardToDeck(cardId: cardId)
+            }
             addCardToDeck(cardId: cardId)
             return true
             
