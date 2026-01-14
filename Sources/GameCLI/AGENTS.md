@@ -161,22 +161,18 @@ swift run GameCLI -S
 
 ```bash
 # 最小地图（快速跑通从起点到 Boss 的流程）
-SALU_TEST_MODE=1 SALU_TEST_MAP=mini \
-swift run GameCLI --seed 1
+SALU_TEST_MODE=1 SALU_TEST_MAP=mini swift run GameCLI --seed 1
 
 # 覆盖最大推进深度（数值越大推进越深；用于验证 Act 推进与收束文本）
-SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=2 \
-swift run GameCLI --seed 1
+SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=2 swift run GameCLI --seed 1
 
-SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=3 \
-swift run GameCLI --seed 1
+SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=3 swift run GameCLI --seed 1
 ```
 
 #### 2.2 事件系统（事件 UI/选项分支/结果摘要）
 
 ```bash
-SALU_TEST_MODE=1 SALU_TEST_MAP=event \
-swift run GameCLI --seed 1
+SALU_TEST_MODE=1 SALU_TEST_MAP=event swift run GameCLI --seed 1
 ```
 
 #### 2.3 商店系统（遗物/消耗品/删牌服务）
@@ -184,27 +180,23 @@ swift run GameCLI --seed 1
 用于手测：购买/金币不足提示/消耗品槽位上限（最多 3）/删牌流程。
 
 ```bash
-SALU_TEST_MODE=1 SALU_TEST_MAP=shop \
-swift run GameCLI --seed 1
+SALU_TEST_MODE=1 SALU_TEST_MAP=shop swift run GameCLI --seed 1
 ```
 
 #### 2.4 休息房（休息/升级/恢复提示与落盘）
 
 ```bash
-SALU_TEST_MODE=1 SALU_TEST_MAP=rest \
-swift run GameCLI --seed 1
+SALU_TEST_MODE=1 SALU_TEST_MAP=rest swift run GameCLI --seed 1
 ```
 
 #### 2.5 战斗沙盒（战斗核心：目标选择/状态/伤害结算）
 
 ```bash
 # 基础战斗
-SALU_TEST_MODE=1 SALU_TEST_MAP=battle \
-swift run GameCLI --seed 1
+SALU_TEST_MODE=1 SALU_TEST_MAP=battle swift run GameCLI --seed 1
 
 # 双敌人遭遇：验收“出牌输入：卡牌序号 目标序号”与目标合法性
-SALU_TEST_MODE=1 SALU_TEST_MAP=battle SALU_FORCE_MULTI_ENEMY=1 \
-swift run GameCLI --seed 1
+SALU_TEST_MODE=1 SALU_TEST_MAP=battle SALU_FORCE_MULTI_ENEMY=1 swift run GameCLI --seed 1
 ```
 
 ### 3) “看特定机制”的常用组合（更精细）
@@ -213,35 +205,28 @@ swift run GameCLI --seed 1
 
 ```bash
 # minimal：极简牌组（适合测流程/输入，不适合测复杂机制）
-SALU_TEST_MODE=1 SALU_TEST_MAP=battle SALU_TEST_BATTLE_DECK=minimal \
-swift run GameCLI --seed 1
+SALU_TEST_MODE=1 SALU_TEST_MAP=battle SALU_TEST_BATTLE_DECK=minimal swift run GameCLI --seed 1
 
 # run：更接近正常冒险牌组
-SALU_TEST_MODE=1 SALU_TEST_MAP=battle SALU_TEST_BATTLE_DECK=run \
-swift run GameCLI --seed 1
+SALU_TEST_MODE=1 SALU_TEST_MAP=battle SALU_TEST_BATTLE_DECK=run swift run GameCLI --seed 1
 
 # seer / seer_p7：占卜家机制验收牌组
-SALU_TEST_MODE=1 SALU_TEST_MAP=battle SALU_TEST_BATTLE_DECK=seer \
-swift run GameCLI --seed 1
+SALU_TEST_MODE=1 SALU_TEST_MAP=battle SALU_TEST_BATTLE_DECK=seer swift run GameCLI --seed 1
 
-SALU_TEST_MODE=1 SALU_TEST_MAP=battle SALU_TEST_BATTLE_DECK=seer_p7 \
-swift run GameCLI --seed 1
+SALU_TEST_MODE=1 SALU_TEST_MAP=battle SALU_TEST_BATTLE_DECK=seer_p7 swift run GameCLI --seed 1
 ```
 
 #### 3.2 Boss/阶段机制：保留真实 HP 或自定义 HP（否则默认 HP=1 很难触发阶段）
 
 ```bash
 # 保留真实 HP（normal/keep）：更接近真实 Boss 阶段与意图变化
-SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=3 SALU_TEST_ENEMY_HP=normal \
-swift run GameCLI --seed 1
+SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=3 SALU_TEST_ENEMY_HP=normal swift run GameCLI --seed 1
 
 # 手测更快：给敌人一个固定 HP（例如 10），便于快速压到阈值
-SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=3 SALU_TEST_ENEMY_HP=10 \
-swift run GameCLI --seed 1
+SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=3 SALU_TEST_ENEMY_HP=10 swift run GameCLI --seed 1
 
 # 常见组合：Seer + 保留真实 HP（用于验收 Cipher 等机制）
-SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=3 SALU_TEST_ENEMY_HP=normal SALU_TEST_BATTLE_DECK=seer_p7 \
-swift run GameCLI --seed 1
+SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=3 SALU_TEST_ENEMY_HP=normal SALU_TEST_BATTLE_DECK=seer_p7 swift run GameCLI --seed 1
 ```
 
 ### 4) 手测排查：查看落盘文件
