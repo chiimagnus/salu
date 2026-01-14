@@ -83,7 +83,7 @@ GameCore → GameCLI  ❌ 禁止
 
 ### 避免对“扩展点 ID”写 switch
 
-- 卡牌/状态/敌人/遗物/消耗品的展示信息，必须从 GameCore 的 Registry 读取。
+- 卡牌/状态/敌人/遗物/“消耗性卡牌（消耗品）”的展示信息，必须从 GameCore 的 Registry 读取。
 - 允许对“封闭事件枚举”做 switch（例如 `BattleEvent` 在 `EventFormatter` 里）。
 
 ### 可复现性（强烈建议）
@@ -126,7 +126,7 @@ GameCore → GameCLI  ❌ 禁止
 
 ## 手动验收命令（开发者）
 
-目标：用“固定 seed + 可选测试模式 + 隔离数据目录”的方式，让你可以快速、可复现地手动验收某一个系统（遗物/消耗品/事件/Boss/多敌人目标选择等）。
+目标：用“固定 seed + 可选测试模式 + 隔离数据目录”的方式，让你可以快速、可复现地手动验收某一个系统（遗物/消耗性卡牌/事件/Boss/多敌人目标选择等）。
 
 ### 0) 强烈建议：每次手测先隔离数据目录
 
@@ -175,9 +175,9 @@ SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=3 swift run GameCLI --se
 SALU_TEST_MODE=1 SALU_TEST_MAP=event swift run GameCLI --seed 1
 ```
 
-#### 2.3 商店系统（遗物/消耗品/删牌服务）
+#### 2.3 商店系统（遗物/消耗性卡牌/删牌服务）
 
-用于手测：购买/金币不足提示/消耗品槽位上限（最多 3）/删牌流程。
+用于手测：购买/金币不足提示/消耗性卡牌槽位上限（最多 3）/删牌流程。
 
 ```bash
 SALU_TEST_MODE=1 SALU_TEST_MAP=shop swift run GameCLI --seed 1
@@ -231,7 +231,7 @@ SALU_TEST_MODE=1 SALU_TEST_MAP=mini SALU_TEST_MAX_FLOOR=3 SALU_TEST_ENEMY_HP=nor
 
 ### 4) 手测排查：查看落盘文件
 
-当你在验收“遗物/消耗品是否写入存档”“事件选择是否落盘”“日志是否正确”时，可以直接查看 `SALU_DATA_DIR`：
+当你在验收“遗物/消耗性卡牌是否写入存档”“事件选择是否落盘”“日志是否正确”时，可以直接查看 `SALU_DATA_DIR`：
 
 ```bash
 ls -la "$SALU_DATA_DIR"
