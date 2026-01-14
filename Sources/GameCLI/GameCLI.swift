@@ -464,6 +464,39 @@ struct GameCLI {
     @discardableResult
     static func battleLoop(engine: BattleEngine, seed: UInt64) -> BattleLoopResult {
         while !engine.state.isOver {
+            // P1：若战斗引擎需要额外输入（如“预知选牌”），优先处理该输入
+            if let pending = engine.pendingInput {
+                switch pending {
+                case .foresight(let options, let fromCount):
+                    ForesightSelectionScreen.render(options: options, fromCount: fromCount, message: currentMessage)
+
+                    guard let input = readLine()?.trimmingCharacters(in: .whitespaces) else {
+                        // EOF：为了避免黑盒测试卡死，默认选择第 1 张
+                        currentMessage = nil
+                        _ = engine.submitForesightChoice(index: 0)
+                        appendBattleEvents(engine.events)
+                        engine.clearEvents()
+                        continue
+                    }
+
+                    currentMessage = nil
+
+                    if input.lowercased() == "q" {
+                        return .aborted
+                    }
+
+                    guard let n = Int(input), n >= 1, n <= options.count else {
+                        currentMessage = "\(Terminal.red)⚠️ 无效选择：1-\(options.count)\(Terminal.reset)"
+                        continue
+                    }
+
+                    _ = engine.submitForesightChoice(index: n - 1)
+                    appendBattleEvents(engine.events)
+                    engine.clearEvents()
+                    continue
+                }
+            }
+
             // 刷新整个屏幕
             BattleScreen.renderBattleScreen(
                 engine: engine,
