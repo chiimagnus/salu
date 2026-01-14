@@ -191,6 +191,32 @@ public final class BattleEngine: @unchecked Sendable {
 
         return true
     }
+
+    // MARK: - External Effects (P4: Consumables)
+
+    /// 由战斗外部系统（例如：消耗品）注入并执行一组战斗效果。
+    ///
+    /// - Note:
+    /// - 该入口用于避免 GameCLI 直接访问 Engine 的私有 `apply`。
+    /// - 若当前存在待处理输入（如预知选牌），会拒绝执行并发出 invalidAction。
+    @discardableResult
+    public func applyExternalEffects(_ effects: [BattleEffect]) -> Bool {
+        guard !state.isOver else { return false }
+        guard pendingInput == nil else {
+            emit(.invalidAction(reason: "请先完成当前选择（预知）"))
+            return false
+        }
+        guard !effects.isEmpty else { return true }
+
+        for effect in effects {
+            apply(effect)
+            if pendingInput != nil || state.isOver { break }
+        }
+
+        // 外部效果也可能导致击杀/战斗结束
+        checkBattleEnd()
+        return true
+    }
     
     // MARK: - Private Methods
     
@@ -919,7 +945,7 @@ public final class BattleEngine: @unchecked Sendable {
         }
 
         // P7：序列共鸣（能力）——本场战斗中，每次预知后获得格挡
-        let resonanceBlock = state.player.statuses.stacks(of: SequenceResonance.id)
+        let resonanceBlock = state.player.statuses.stacks(of: SequenceResonanceEffect.id)
         if resonanceBlock > 0 {
             applyBlock(target: .player, base: resonanceBlock)
         }

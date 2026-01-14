@@ -280,8 +280,8 @@ struct GameCLI {
             logLine: { line in
                 appendLogLine(line)
             },
-            battleLoop: { engine, seed in
-                return battleLoop(engine: engine, seed: seed)
+            battleLoop: { engine, seed, runState in
+                return battleLoop(engine: engine, seed: seed, runState: &runState)
             },
             createEnemy: { enemyId, instanceIndex, rng in
                 TestMode.createEnemy(enemyId: enemyId, instanceIndex: instanceIndex, rng: &rng)
@@ -444,7 +444,19 @@ struct GameCLI {
         engine.clearEvents()
         
         // 直接进入游戏主循环
-        battleLoop(engine: engine, seed: seed)
+        // - Note: 快速战斗不依赖 RunState（消耗品/地图/存档），这里注入一个最小 RunState 仅用于复用 battleLoop。
+        var tempRunState = RunState(
+            player: engine.state.player,
+            deck: [],
+            gold: 0,
+            relicManager: RelicManager(),
+            consumables: [],
+            map: [],
+            seed: seed,
+            floor: 1,
+            maxFloor: 1
+        )
+        battleLoop(engine: engine, seed: seed, runState: &tempRunState)
         
         // 战斗结束 - 保存战绩
         let record = BattleRecordBuilder.build(from: engine, seed: seed)
@@ -462,7 +474,7 @@ struct GameCLI {
     /// 战斗主循环（用于冒险模式和快速战斗模式）
     /// 返回战斗循环结果，区分正常结束和用户中途退出
     @discardableResult
-    static func battleLoop(engine: BattleEngine, seed: UInt64) -> BattleLoopResult {
+    static func battleLoop(engine: BattleEngine, seed: UInt64, runState: inout RunState) -> BattleLoopResult {
         while !engine.state.isOver {
             // P1：若战斗引擎需要额外输入（如“预知选牌”），优先处理该输入
             if let pending = engine.pendingInput {
@@ -503,7 +515,8 @@ struct GameCLI {
                 seed: seed,
                 logs: recentLogs,
                 message: currentMessage,
-                showLog: showLog
+                showLog: showLog,
+                consumables: runState.consumables
             )
             
             // 读取玩家输入
@@ -521,11 +534,54 @@ struct GameCLI {
             case "q":
                 // 返回主菜单（用户中途退出，保留存档）
                 return .aborted
-                
+
             default:
                 break
             }
-            
+
+            // P4：消耗品（战斗内使用/丢弃）
+            if let cmd = parseConsumableCommand(input) {
+                let idx = cmd.index
+                guard idx >= 0, idx < runState.consumables.count else {
+                    currentMessage = "\(Terminal.red)⚠️ 无效消耗品序号：1-\(runState.consumables.count)\(Terminal.reset)"
+                    continue
+                }
+
+                let consumableId = runState.consumables[idx]
+                let def = ConsumableRegistry.require(consumableId)
+
+                switch cmd.action {
+                case .use:
+                    guard def.usableInBattle else {
+                        currentMessage = "\(Terminal.red)⚠️ 该消耗品不可在战斗中使用\(Terminal.reset)"
+                        continue
+                    }
+
+                    let snapshot = BattleSnapshot(
+                        turn: engine.state.turn,
+                        player: engine.state.player,
+                        enemies: engine.state.enemies,
+                        energy: engine.state.energy
+                    )
+                    let effects = def.useInBattle(snapshot: snapshot)
+                    let didApply = engine.applyExternalEffects(effects)
+                    if didApply {
+                        runState.removeConsumable(at: idx)
+                        currentMessage = "\(Terminal.green)✅ 已使用：\(def.icon)\(def.name)\(Terminal.reset)"
+                    } else {
+                        currentMessage = "\(Terminal.red)⚠️ 当前无法使用消耗品（请先完成当前选择）\(Terminal.reset)"
+                    }
+                    appendBattleEvents(engine.events)
+                    engine.clearEvents()
+                    continue
+
+                case .discard:
+                    runState.removeConsumable(at: idx)
+                    currentMessage = "\(Terminal.dim)🗑️ 已丢弃：\(def.icon)\(def.name)\(Terminal.reset)"
+                    continue
+                }
+            }
+                
             let parts = input.split { $0 == " " || $0 == "\t" }
             guard !parts.isEmpty else {
                 currentMessage = "\(Terminal.red)⚠️ 请输入有效指令\(Terminal.reset)"
@@ -589,6 +645,42 @@ struct GameCLI {
         
         // 战斗正常结束（胜利或失败）
         return .finished
+    }
+
+    // MARK: - Consumables (Battle Input)
+
+    private enum ConsumableCommandAction: Sendable {
+        case use
+        case discard
+    }
+
+    private struct ConsumableCommand: Sendable {
+        let action: ConsumableCommandAction
+        let index: Int
+    }
+
+    /// 解析消耗品指令：`C1..Cn`（使用）/ `X1..Xn`（丢弃）
+    private static func parseConsumableCommand(_ raw: String) -> ConsumableCommand? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count >= 2 else { return nil }
+
+        let lower = trimmed.lowercased()
+        guard let first = lower.first else { return nil }
+
+        let action: ConsumableCommandAction
+        switch first {
+        case "c":
+            action = .use
+        case "x":
+            action = .discard
+        default:
+            return nil
+        }
+
+        let numString = String(lower.dropFirst())
+        guard let n = Int(numString), n >= 1 else { return nil }
+
+        return ConsumableCommand(action: action, index: n - 1)
     }
     
     // MARK: - Log (Unified)
