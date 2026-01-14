@@ -8,16 +8,29 @@
 
 ---
 
+## 完成进度（已完成部分）
+
+- [x] **P0.1 数据目录可见性**：设置菜单与帮助中均可看到当前数据目录（支持 `SALU_DATA_DIR` 覆盖）
+- [x] **P0.2 资源管理页补齐**：已覆盖 Card/Status/Consumable/Event/Enemy/Relic（含 Act3 池与 EnemyRegistry 全量）
+- [x] **P0.3 事件种子工具**：设置菜单提供事件 seed 扫描工具（用于 P5 验收）
+- [x] **P0.4 能力叠加问题兜底**：已补测试验证 Strength/SequenceResonance 等状态叠加行为正确
+- [x] **P1.1 预知选牌 UI**：预知触发时进入“预知选牌”界面，玩家输入 `1..N` 选择 1 张入手
+- [x] **P1.2 帮助补充说明**：HelpScreen 已补充预知/回溯/疯狂与数据目录说明
+- [x] **P2 注册与池子可见性**：资源管理页可直接核对 Act2 精英池（mad_prophet/time_guardian）与 Act2 Boss（cipher）
+- [x] **脚本测试**：`swift test` 已通过（包含对预知 pending 流程的测试更新）
+
+---
+
 ## 0. 现状核对（已确认的事实）
 
-基于代码审阅（`Sources/GameCore` / `Sources/GameCLI`）与 `swift test`（已通过）：
+基于代码审阅（`Sources/GameCore` / `Sources/GameCLI`）与 `swift test`：
 
-- **预知（Foresight）**：目前在 `BattleEngine.applyForesight()` 内部“自动选择第一张攻击牌”，并 `emit(.foresightChosen(...))`；CLI 仅能通过日志/手牌变化确认，**没有交互选牌 UI**。
+- **预知（Foresight）**：已改为“需要玩家选牌”的交互：`BattleEngine` 暴露 `pendingInput`；CLI 会弹出“预知选牌”界面，输入 `1..N` 选择 1 张入手，其余按原顺序放回。
 - **回溯（Rewind）**：在 `BattleEngine.applyRewind()` 中对 `discardPile.removeLast()` 循环；因此是“弃牌堆顶部（最近进入弃牌堆）的牌”，**不是随机**。
 - **疯狂（Madness）**：阈值检查/回合末 -1 在 `BattleEngine`；CLI `BattleScreen` 已按阈值着色并可在日志面板看到相关事件格式化。
-- **资源管理（ResourceScreen）**：当前仅展示卡牌（按类型）、Act1/Act2 敌人池与遭遇池、遗物（按稀有度）；**未覆盖 Status/Event/Consumable 等注册表**，导致“资源不全”的观感。
+- **资源管理（ResourceScreen）**：已扩展为覆盖 Card/Status/Consumable/Event/Enemy/Relic（并补 Act3 池、EnemyRegistry 全量列表）。
 - **消耗品（Consumables）**：GameCore/存档/商店购买链路已接入（`RunSnapshot.consumableIds`、`SaveService`、`ShopRoomHandler`）；但 **战斗界面不展示、战斗内无法使用/丢弃**。
-- **UI 测试临时目录**：UI 测试会为进程注入 `SALU_DATA_DIR=<系统临时目录>/...`；本地手测如不设置 `SALU_DATA_DIR`，macOS 默认会落在 `~/Library/Application Support/Salu/`（见 `FileRunSaveStore`）。
+- **数据目录**：已统一通过 `DataDirectory` 解析；UI 测试会注入 `SALU_DATA_DIR=<系统临时目录>/...`；本地手测如不设置 `SALU_DATA_DIR`，macOS 默认会落在 `~/Library/Application Support/Salu/`。
 
 ---
 
@@ -65,6 +78,13 @@ swift run GameCLI --seed 1
 ### P0.1 在 CLI 明确显示“当前数据目录（SALU_DATA_DIR）”
 **目标**：解决“临时 SALU_DATA_DIR 在哪”的问题，并方便你排查 `run_save.json / settings.json / run_log.txt`。
 
+✅ 已完成（实现落地）：
+- 新增 `Sources/GameCLI/Persistence/DataDirectory.swift` 统一解析数据目录（支持 `SALU_DATA_DIR` 覆盖 + 平台默认 + 临时目录回退）。
+- 持久化存储统一使用该目录：`FileRunSaveStore` / `SettingsStore` / `FileBattleHistoryStore` / `FileRunLogStore`。
+- 设置菜单新增入口：`[7] 🗂️ 数据目录（SALU_DATA_DIR）` → `DataDirectoryScreen` 展示当前路径与常见文件名。
+- HelpScreen 也会显示当前数据目录路径与来源（满足“设置 + 帮助”双入口）。
+- `swift test` 已通过。
+
 **实现建议**（二选一，或都做）：
 - **A. 设置菜单新增一项**：`[7] 🗂️ 显示当前数据目录` → 打印实际使用的目录路径（包含覆盖与默认）。
   - 需要为 `FileRunSaveStore`/`SettingsStore`/`FileRunLogStore` 增加一个只读接口（例如 `var resolvedDirectory: URL` 或 `static func resolvedDirectory()`），供 CLI 显示。
@@ -89,6 +109,18 @@ swift run GameCLI --seed 1
 
 ### P0.2 扩展资源管理页：覆盖 Status/Event/Consumable/Registry（不硬编码）
 **目标**：解决“资源管理页面没有显示所有资源”的问题；让 P2/P3/P7 的验收可以直接从 UI 查。
+
+✅ 已完成（实现落地）：
+- `ResourceScreen` 已新增：
+  - StatusRegistry 全量列表（含 icon/name/id/decay/phase/priority）
+  - ConsumableRegistry 全量列表（含是否战斗内/外可用）
+  - EventRegistry 全量列表
+  - Act3 敌人池与遭遇池
+  - EnemyRegistry 全量列表（含 Boss）
+- 为了让 CLI 可以列出全量敌人/状态，补充了：
+  - `EnemyRegistry.allEnemyIds`
+  - `StatusRegistry.allStatusIds`
+- `swift test` 已通过。
 
 **内容建议**：
 - **状态（StatusRegistry）**：列出所有 `StatusRegistry` 注册项（id/name/icon/decay/positive）。
@@ -116,6 +148,11 @@ swift run GameCLI --seed 1
 ### P0.3 事件种子定位工具（开发者工具）
 **目标**：解决“我不确定什么时候能碰到事件”的痛点；提供稳定方式找到能命中指定事件的 seed。
 
+✅ 已完成（实现落地）：
+- 新增 `Sources/GameCLI/Screens/EventSeedToolScreen.swift`，并在设置菜单提供入口：`[8] 🧭 事件种子工具（开发者）`。
+- 工具会扫描 seed 范围并按 EventRegistry 全量事件输出命中 seeds（默认上下文对齐测试地图 `floor=1,row=1,nodeId=1_0`）。
+- `swift test` 已通过。
+
 **实现建议**：
 - 新增一个 CLI 工具屏幕（例如 `EventSeedToolScreen`），从设置菜单进入：
   - 输入：`seedRange`（如 1..2000）、`floor/row/nodeId`（默认采用测试地图的 `floor=1,row=1,nodeId="1_0"`）。
@@ -139,6 +176,12 @@ swift run GameCLI --seed 1
 
 ### P0.4 “能力牌效果不叠加”问题定位与兜底
 **目标**：先把问题变成“可复现 + 可断言”，再决定修还是澄清。
+
+✅ 已完成（结论 & 覆盖）：
+- 已补充测试用例，确认 **GameCore 层状态叠加逻辑正常**（`StatusContainer.apply` 为加法叠加）。
+  - `CardDefinitionPlayTests.testInflame_canStackStrengthWhenPlayedTwiceInBattle`：两次打出 `Inflame` → `Strength` 从 0→2→4
+  - `SeerAdvancedCardsTests.testSequenceResonance_stacksAcrossMultiplePlays_grantsMoreBlock`：两次打出 `序列共鸣` → 预知后格挡从 1→2
+- `swift test` 已通过。
 
 **定位思路**：
 - 从代码看，`applyStatus` 走 `StatusContainer.apply`（加法叠加），理论上 Strength/Dexterity/SequenceResonance 都应可叠加。
@@ -164,33 +207,24 @@ swift run GameCLI --seed 1
 ### P1.1 预知“选牌 UI”实现（你确认：需要一个 screen）
 **目标**：预知触发时弹出界面，展示“抽牌堆顶 N 张”，玩家输入编号选择 1 张入手；未选中的按原顺序放回。
 
-**关键难点**：预知发生在一次 `handleAction(.playCard...)` 的“效果执行途中”，需要让战斗引擎支持“暂停 → 等待输入 → 继续执行”，而不是一次调用把整段流程跑完。
-
-**建议方案（可扩展、最少破坏）**：
-- GameCore 新增“战斗待处理输入”状态（示例）：
-  - `public enum BattlePendingInput { case foresight(options: [Card], fromCount: Int) }`
-  - `public var pendingInput: BattlePendingInput? { get }`
-  - `public func submit(_ input: BattleInput) -> Bool`（例如 `.chooseForesight(index: Int)`）
-- `BattleEngine` 内部把“卡牌效果执行”改为**队列驱动**：
-  - 出牌时把 `def.play(...)` 的 `[BattleEffect]` 放入 `effectQueue`
-  - `drainEffectQueue()` 逐个执行；遇到 `.foresight` 时：
-    - 从抽牌堆取出顶 N 张放入 pending（暂存）
-    - `pendingInput = .foresight(...)`
-    - **停止 drain**，把后续效果留在队列里
-  - 当 CLI `submit(.chooseForesight(index))`：
-    - 根据选择把牌移入手牌，其余放回抽牌堆（保持顺序）
-    - `emit(.foresightChosen(...))`
-    - 清空 pending 并继续 drain 队列
-- CLI 在 `battleLoop` 中增加分支：
-  - 若 `engine.pendingInput != nil`：渲染 `ForesightSelectionScreen`，读取输入（1..N），调用 `engine.submit(...)`，然后收集事件日志并回到循环。
-
-**CLI 交互细节（按你反馈）**：
-- 选择指令：纯数字 `1..N` 即可（与战斗出牌输入一致，降低心智负担）。
-- 如果输入非法/EOF：默认选 `1`（保证黑盒测试/管道输入不会卡死）。
+✅ 已完成（实现落地）：
+- GameCore：
+  - 新增 `Sources/GameCore/Battle/BattlePendingInput.swift`：`BattlePendingInput.foresight(options:fromCount:)`
+  - `BattleEngine` 新增 `public private(set) var pendingInput` 与 `submitForesightChoice(index:)`
+  - `applyForesight` 会从抽牌堆顶取出 N 张并进入 pending；选择后 `emit(.foresightChosen...)`，未选按原顺序放回
+  - 选择完成时会触发 `序列共鸣`（SequenceResonance）的“预知后获得格挡”
+- GameCLI：
+  - 新增 `Sources/GameCLI/Screens/ForesightSelectionScreen.swift`
+  - `GameCLI.battleLoop` 在渲染战斗屏幕前优先处理 `engine.pendingInput`（输入 `1..N`）
+  - 预知选牌界面已按你的要求显示【攻击/技能/能力】中文标签
+  - EOF 时默认选第 1 张，避免 UI 测试卡死
+- 测试：
+  - 已更新 `GameCoreTests` 中所有受影响用例（预知从“自动选牌”改为 “pending + submit”）
+  - `swift test` 已通过
 
 **涉及文件**：
 - `Sources/GameCore/Battle/BattleEngine.swift`
-- `Sources/GameCore/Events.swift`（如需新增事件：例如“进入预知选择”可选）
+- `Sources/GameCore/Battle/BattlePendingInput.swift`
 - 新增：`Sources/GameCLI/Screens/ForesightSelectionScreen.swift`
 - `Sources/GameCLI/GameCLI.swift`（battleLoop 支持 pendingInput 分支）
 
@@ -211,6 +245,14 @@ swift run GameCLI --seed 1
 ### P1.2 HelpScreen 补充：预知/回溯/疯狂（以及日志面板）
 **目标**：让设置→帮助成为“机制说明书”，覆盖你提到的预知/回溯/疯狂（以及关键：日志面板开关）。
 
+✅ 已完成（实现落地）：
+- `HelpScreen` 已补充：
+  - 预知：规则 + CLI 选牌方式（`1..N`）
+  - 回溯：明确为“弃牌堆顶部（最近）”
+  - 疯狂：阈值与清理方式
+  - 数据目录：显示当前路径与来源，并提示设置菜单 `[7]`
+- `swift test` 已通过。
+
 **内容建议**：
 - 预知：规则、触发时 UI、选择后落点（入手）、未选中的牌顺序。
 - 回溯：明确“从弃牌堆顶部（最近）取回 N 张”。
@@ -228,6 +270,12 @@ swift run GameCLI --seed 1
 
 ## 5. P2：敌人意图扩展（UI/池子）
 > 依赖：P0.2 资源管理页补齐后，P2 的“注册可见性”验收会更快。
+
+✅ 已完成（实现落地）：
+- 资源管理页现在可直接核对：
+  - Act2 精英池：`mad_prophet / time_guardian`（以及现有 `rune_guardian`）
+  - Act2 Boss：`cipher`（已在 Act2 敌人池区域明确展示）
+- `swift test` 已通过。
 
 **计划动作**：
 - 用资源管理页补充 Boss/Act3 列表，确保 `mad_prophet / time_guardian / cipher` 的 id/name/icon 可直接查。
