@@ -12,8 +12,7 @@ enum BattleScreen {
         seed: UInt64,
         logs: [String],
         message: String?,
-        showLog: Bool = false,
-        consumables: [ConsumableID] = []
+        showLog: Bool = false
     ) {
         var lines: [String] = []
         
@@ -30,7 +29,7 @@ enum BattleScreen {
         lines.append("")
         
         // 玩家区域
-        lines.append(contentsOf: buildPlayerArea(engine.state, relicIds: engine.relicIds, consumables: consumables))
+        lines.append(contentsOf: buildPlayerArea(engine.state, relicIds: engine.relicIds))
         lines.append("")
         
         // 手牌区域
@@ -38,7 +37,7 @@ enum BattleScreen {
         lines.append("")
         
         // 牌堆信息
-        lines.append("\(Terminal.dim)  📚 抽牌堆: \(engine.state.drawPile.count)张    🗑️ 弃牌堆: \(engine.state.discardPile.count)张\(Terminal.reset)")
+        lines.append("\(Terminal.dim)  📚 抽牌堆: \(engine.state.drawPile.count)张    🗑️ 弃牌堆: \(engine.state.discardPile.count)张    💨 消耗堆: \(engine.state.exhaustPile.count)张\(Terminal.reset)")
         lines.append("")
         
         // 事件日志区域（可折叠）
@@ -55,7 +54,6 @@ enum BattleScreen {
         lines.append(contentsOf: buildInputPrompt(
             handCount: engine.state.hand.count,
             enemyCount: engine.state.enemies.count,
-            consumableCount: consumables.count,
             showLog: showLog
         ))
         
@@ -130,7 +128,7 @@ enum BattleScreen {
         return lines
     }
     
-    private static func buildPlayerArea(_ state: BattleState, relicIds: [RelicID], consumables: [ConsumableID]) -> [String] {
+    private static func buildPlayerArea(_ state: BattleState, relicIds: [RelicID]) -> [String] {
         var lines: [String] = []
         
         let hpPercent = Double(state.player.currentHP) / Double(state.player.maxHP)
@@ -167,18 +165,6 @@ enum BattleScreen {
             lines.append("     \(Terminal.dim)🏺 遗物：\(Terminal.reset)\(relicText)")
         }
 
-        // P4：消耗品展示（最多 3 个）
-        if consumables.isEmpty {
-            lines.append("     \(Terminal.dim)🧪 消耗品：暂无\(Terminal.reset)")
-        } else {
-            let parts: [String] = consumables.enumerated().map { idx, id in
-                let def = ConsumableRegistry.require(id)
-                return "\(Terminal.cyan)[C\(idx + 1)]\(Terminal.reset)\(def.icon)\(def.name)"
-            }
-            lines.append("     \(Terminal.dim)🧪 消耗品：\(Terminal.reset)\(parts.joined(separator: "  "))")
-            lines.append("     \(Terminal.dim)   使用：C1-C\(consumables.count)  丢弃：X1-X\(consumables.count)\(Terminal.reset)")
-        }
-        
         return lines
     }
     
@@ -205,6 +191,8 @@ enum BattleScreen {
                 effectIcon = "🛡️"
             case .power:
                 effectIcon = "💪"
+            case .consumable:
+                effectIcon = "🧪"
             }
 
             let costText = cost == baseCost ? "◆\(cost)" : "◆\(cost)（原\(baseCost)）"
@@ -236,19 +224,13 @@ enum BattleScreen {
         return lines
     }
     
-    private static func buildInputPrompt(handCount: Int, enemyCount: Int, consumableCount: Int, showLog: Bool = false) -> [String] {
+    private static func buildInputPrompt(handCount: Int, enemyCount: Int, showLog: Bool = false) -> [String] {
         let targetHint = enemyCount > 1
             ? "  \(Terminal.cyan)输入「卡牌 目标」\(Terminal.reset) 选择目标（目标 1-\(enemyCount)）"
             : "  \(Terminal.dim)（单敌人：可直接输入卡牌序号）\(Terminal.reset)"
-        let consumableHint: String
-        if consumableCount > 0 {
-            consumableHint = "  \(Terminal.cyan)[C1-C\(consumableCount)]\(Terminal.reset) 用消耗品  \(Terminal.cyan)[X1-X\(consumableCount)]\(Terminal.reset) 丢弃"
-        } else {
-            consumableHint = ""
-        }
         return [
             "\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)",
-            "\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(handCount)]\(Terminal.reset) 出牌  \(Terminal.cyan)[0]\(Terminal.reset) 结束  \(Terminal.cyan)[q]\(Terminal.reset) 返回主菜单\(targetHint)\(consumableHint)",
+            "\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(handCount)]\(Terminal.reset) 出牌  \(Terminal.cyan)[0]\(Terminal.reset) 结束  \(Terminal.cyan)[q]\(Terminal.reset) 返回主菜单\(targetHint)",
             "\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)"
         ]
     }

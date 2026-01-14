@@ -205,9 +205,6 @@ struct EventRoomHandler: RoomHandling {
             case .setStatus(let statusId, let stacks):
                 let name = StatusRegistry.get(statusId)?.name ?? statusId.rawValue
                 return "\(name) 设为 \(stacks)"
-            case .addConsumable(let consumableId):
-                let def = ConsumableRegistry.require(consumableId)
-                return "获得消耗品：\(def.icon)\(def.name)"
             case .upgradeCard:
                 return "升级了一张卡牌"
             }
@@ -215,5 +212,4 @@ struct EventRoomHandler: RoomHandling {
         return base + additional
     }
 }
-
 

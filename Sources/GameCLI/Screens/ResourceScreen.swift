@@ -233,18 +233,16 @@ enum ResourceScreen {
     private static func buildConsumablesSectionLines() -> [String] {
         var lines: [String] = []
         lines.append("")
-        lines.append("\(Terminal.bold)🧪 消耗品（ConsumableRegistry）\(Terminal.reset)")
+        lines.append("\(Terminal.bold)🧪 消耗性卡牌（CardRegistry）\(Terminal.reset)")
 
-        let ids = ConsumableRegistry.allConsumableIds
-        lines.append("  已注册：\(Terminal.yellow)\(ids.count)\(Terminal.reset)  |  商店池：\(Terminal.yellow)\(ConsumableRegistry.shopConsumableIds.count)\(Terminal.reset)")
+        let ids = CardRegistry.allCardIds.filter { CardRegistry.require($0).type == .consumable }
+        lines.append("  已注册：\(Terminal.yellow)\(ids.count)\(Terminal.reset)  |  商店池：\(Terminal.yellow)\(ids.count)\(Terminal.reset)  |  槽位上限：\(Terminal.yellow)\(RunState.maxConsumableCardSlots)\(Terminal.reset)")
         lines.append("")
 
         for id in ids {
-            let def = ConsumableRegistry.require(id)
-            let battle = def.usableInBattle ? "\(Terminal.green)战斗内可用\(Terminal.reset)" : "\(Terminal.dim)战斗内不可用\(Terminal.reset)"
-            let outside = def.usableOutsideBattle ? "\(Terminal.green)战斗外可用\(Terminal.reset)" : "\(Terminal.dim)战斗外不可用\(Terminal.reset)"
-            lines.append("  - \(def.icon)\(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)  \(Terminal.dim)\(def.rarity.rawValue)\(Terminal.reset)  \(battle)  \(outside)")
-            lines.append("    \(Terminal.dim)\(def.description)\(Terminal.reset)")
+            let def = CardRegistry.require(id)
+            lines.append("  - 🧪\(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)  \(Terminal.dim)\(def.rarity.rawValue)\(Terminal.reset)  \(Terminal.dim)费用 \(def.cost)\(Terminal.reset)")
+            lines.append("    \(Terminal.dim)\(def.rulesText)\(Terminal.reset)")
         }
 
         lines.append("")

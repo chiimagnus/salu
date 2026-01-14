@@ -450,7 +450,6 @@ struct GameCLI {
             deck: [],
             gold: 0,
             relicManager: RelicManager(),
-            consumables: [],
             map: [],
             seed: seed,
             floor: 1,
@@ -515,8 +514,7 @@ struct GameCLI {
                 seed: seed,
                 logs: recentLogs,
                 message: currentMessage,
-                showLog: showLog,
-                consumables: runState.consumables
+                showLog: showLog
             )
             
             // 读取玩家输入
@@ -539,49 +537,6 @@ struct GameCLI {
                 break
             }
 
-            // P4：消耗品（战斗内使用/丢弃）
-            if let cmd = parseConsumableCommand(input) {
-                let idx = cmd.index
-                guard idx >= 0, idx < runState.consumables.count else {
-                    currentMessage = "\(Terminal.red)⚠️ 无效消耗品序号：1-\(runState.consumables.count)\(Terminal.reset)"
-                    continue
-                }
-
-                let consumableId = runState.consumables[idx]
-                let def = ConsumableRegistry.require(consumableId)
-
-                switch cmd.action {
-                case .use:
-                    guard def.usableInBattle else {
-                        currentMessage = "\(Terminal.red)⚠️ 该消耗品不可在战斗中使用\(Terminal.reset)"
-                        continue
-                    }
-
-                    let snapshot = BattleSnapshot(
-                        turn: engine.state.turn,
-                        player: engine.state.player,
-                        enemies: engine.state.enemies,
-                        energy: engine.state.energy
-                    )
-                    let effects = def.useInBattle(snapshot: snapshot)
-                    let didApply = engine.applyExternalEffects(effects)
-                    if didApply {
-                        runState.removeConsumable(at: idx)
-                        currentMessage = "\(Terminal.green)✅ 已使用：\(def.icon)\(def.name)\(Terminal.reset)"
-                    } else {
-                        currentMessage = "\(Terminal.red)⚠️ 当前无法使用消耗品（请先完成当前选择）\(Terminal.reset)"
-                    }
-                    appendBattleEvents(engine.events)
-                    engine.clearEvents()
-                    continue
-
-                case .discard:
-                    runState.removeConsumable(at: idx)
-                    currentMessage = "\(Terminal.dim)🗑️ 已丢弃：\(def.icon)\(def.name)\(Terminal.reset)"
-                    continue
-                }
-            }
-                
             let parts = input.split { $0 == " " || $0 == "\t" }
             guard !parts.isEmpty else {
                 currentMessage = "\(Terminal.red)⚠️ 请输入有效指令\(Terminal.reset)"
@@ -639,6 +594,7 @@ struct GameCLI {
             engine.handleAction(.playCard(handIndex: handIndex, targetEnemyIndex: targetEnemyIndex))
             
             // 收集新事件
+            applyConsumableCardRemovals(from: engine.events, runState: &runState)
             appendBattleEvents(engine.events)
             engine.clearEvents()
         }
@@ -647,40 +603,15 @@ struct GameCLI {
         return .finished
     }
 
-    // MARK: - Consumables (Battle Input)
+    // MARK: - Consumable Cards (P4R)
 
-    private enum ConsumableCommandAction: Sendable {
-        case use
-        case discard
-    }
-
-    private struct ConsumableCommand: Sendable {
-        let action: ConsumableCommandAction
-        let index: Int
-    }
-
-    /// 解析消耗品指令：`C1..Cn`（使用）/ `X1..Xn`（丢弃）
-    private static func parseConsumableCommand(_ raw: String) -> ConsumableCommand? {
-        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard trimmed.count >= 2 else { return nil }
-
-        let lower = trimmed.lowercased()
-        guard let first = lower.first else { return nil }
-
-        let action: ConsumableCommandAction
-        switch first {
-        case "c":
-            action = .use
-        case "x":
-            action = .discard
-        default:
-            return nil
+    /// 消耗性卡牌：打出后应从 RunState.deck 永久移除（跨战斗不恢复）。
+    private static func applyConsumableCardRemovals(from events: [BattleEvent], runState: inout RunState) {
+        for event in events {
+            guard case let .played(cardInstanceId, cardId, _) = event else { continue }
+            guard let def = CardRegistry.get(cardId), def.type == .consumable else { continue }
+            runState.removeCardFromDeck(instanceId: cardInstanceId)
         }
-
-        let numString = String(lower.dropFirst())
-        guard let n = Int(numString), n >= 1 else { return nil }
-
-        return ConsumableCommand(action: action, index: n - 1)
     }
     
     // MARK: - Log (Unified)

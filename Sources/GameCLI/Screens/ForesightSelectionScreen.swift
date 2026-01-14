@@ -30,6 +30,9 @@ enum ForesightSelectionScreen {
                 case .power:
                     typeIcon = "💪"
                     typeLabel = "能力"
+                case .consumable:
+                    typeIcon = "🧪"
+                    typeLabel = "消耗性"
                 }
                 lines.append("  \(Terminal.cyan)[\(idx + 1)]\(Terminal.reset) \(Terminal.bold)\(def.name)\(Terminal.reset)  \(Terminal.yellow)◆\(def.cost)\(Terminal.reset)  \(typeIcon)\(Terminal.dim)【\(typeLabel)】\(Terminal.reset) \(Terminal.dim)\(def.rulesText)\(Terminal.reset)")
             }
@@ -53,4 +56,3 @@ enum ForesightSelectionScreen {
         Terminal.flush()
     }
 }
-
