@@ -1,116 +1,115 @@
 ---
 name: writing-plans
-description: Use when you have a spec or requirements for a multi-step task, before touching code
+description: "当需求/设计已明确且工作是多步骤时使用：在动代码前写可执行实施计划（含文件路径、验证命令与 Swift 示例）。"
 ---
 
-# Writing Plans
+# 编写实施计划（Writing Plans）
 
-## Overview
+## 目的
 
-Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits.
+把“已确认的需求/设计要点”拆成可执行的小任务清单，让执行者在几乎不了解仓库的情况下也能照着做，并且每一步都有验证方式（优先 TDD）。
 
-Assume they are a skilled developer, but know almost nothing about our toolset or problem domain. Assume they don't know good test design very well.
+进入本 skill 后先声明：正在使用 `writing-plans` 编写实施计划（此阶段不改代码）。
 
-**Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
+前置条件：
+- 需求/范围/验收标准已明确（否则先用 `brainstorming` 澄清）
 
-**Context:** This should be run in a dedicated worktree (created by brainstorming skill).
+计划保存位置：
+- 放到仓库约定的 plans 目录（例如 `.codex/plans/`），文件名建议 `YYYY-MM-DD-主题-implementation-plan.md`
 
-**Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
+## 任务粒度（必须够小）
 
-## Bite-Sized Task Granularity
+每一步最好是 2–10 分钟可完成的单动作（避免“做一大坨再验证”）：
+- 写一个失败用例（或更新既有用例）
+- 运行它，确认是失败且失败原因符合预期
+- 写最小实现让它通过
+- 再跑一次确认通过
+- 需要时再小步重构 + 跑测试回归
 
-**Each step is one action (2-5 minutes):**
-- "Write the failing test" - step
-- "Run it to make sure it fails" - step
-- "Implement the minimal code to make the test pass" - step
-- "Run the tests and make sure they pass" - step
-- "Commit" - step
+## 计划文档头部模板
 
-## Plan Document Header
-
-**Every plan MUST start with this header:**
+每个计划建议从以下结构开始（可按需精简）：
 
 ```markdown
-# [Feature Name] Implementation Plan
+# [主题] 实施计划
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> 执行方式：建议使用 `executing-plans` 按批次实现与验收。
 
-**Goal:** [One sentence describing what this builds]
+**Goal（目标）:** [一句话描述要达成什么]
 
-**Architecture:** [2-3 sentences about approach]
+**Non-goals（非目标）:** [明确不做什么，避免范围漂移]
 
-**Tech Stack:** [Key technologies/libraries]
+**Approach（方案）:** [2–5 句描述核心思路与关键权衡]
+
+**Acceptance（验收）:** [可测的验收条目，最好能对应测试/命令]
 
 ---
 ```
 
-## Task Structure
+## 任务结构模板（Swift 版本）
 
 ```markdown
-### Task N: [Component Name]
+### Task N: [任务名]
 
 **Files:**
-- Create: `exact/path/to/file.py`
-- Modify: `exact/path/to/existing.py:123-145`
-- Test: `tests/exact/path/to/test.py`
+- Create: `Sources/MyModule/MyType.swift`
+- Modify: `Sources/MyModule/ExistingType.swift`
+- Test: `Tests/MyModuleTests/MyTypeTests.swift`
 
-**Step 1: Write the failing test**
+**Step 1: 写一个失败的测试（XCTest）**
 
-```python
-def test_specific_behavior():
-    result = function(input)
-    assert result == expected
+```swift
+import XCTest
+@testable import MyModule
+
+final class MyTypeTests: XCTestCase {
+    func test_parsesIntOrNil() {
+        XCTAssertEqual(MyType.parseIntOrNil("42"), 42)
+        XCTAssertNil(MyType.parseIntOrNil("not-a-number"))
+    }
+}
 ```
 
-**Step 2: Run test to verify it fails**
+**Step 2: 运行测试，确认按预期失败**
 
-Run: `pytest tests/path/test.py::test_name -v`
-Expected: FAIL with "function not defined"
+Run: `swift test --filter MyModuleTests.MyTypeTests/test_parsesIntOrNil`  
+Expected: FAIL（例如：`MyType.parseIntOrNil` 不存在或行为不符）
 
-**Step 3: Write minimal implementation**
+**Step 3: 写最小实现让测试通过**
 
-```python
-def function(input):
-    return expected
+```swift
+public enum MyType {
+    public static func parseIntOrNil(_ text: String) -> Int? {
+        Int(text)
+    }
+}
 ```
 
-**Step 4: Run test to verify it passes**
+**Step 4: 再跑一次测试，确认通过**
 
-Run: `pytest tests/path/test.py::test_name -v`
+Run: `swift test --filter MyModuleTests.MyTypeTests/test_parsesIntOrNil`  
 Expected: PASS
 
-**Step 5: Commit**
+**Step 5:（可选）小步提交**
 
 ```bash
-git add tests/path/test.py src/path/file.py
-git commit -m "feat: add specific feature"
+git add Sources/MyModule/MyType.swift Tests/MyModuleTests/MyTypeTests.swift
+git commit -m "feat: implement parseIntOrNil"
 ```
 ```
 
-## Remember
-- Exact file paths always
-- Complete code in plan (not "add validation")
-- Exact commands with expected output
-- Reference relevant skills with @ syntax
-- DRY, YAGNI, TDD, frequent commits
+## 计划必须包含的信息（清单）
 
-## Execution Handoff
+- **精确文件路径**：不要写“改某个文件”，要写到具体路径（必要时写到符号名）
+- **可验证步骤**：每个任务至少一个验证命令（最好是 `swift test --filter ...`）
+- **边界条件**：错误输入、空值、极端值、并发/线程安全（如适用）
+- **回归策略**：任务完成后跑哪些测试（局部/全量），是否需要 `swift build`
+- **不确定项**：把需要确认的问题列出来，避免执行者猜
 
-After saving the plan, offer execution choice:
+## 交接给执行
 
-**"Plan complete and saved to `docs/plans/<filename>.md`. Two execution options:**
+计划写好后给出下一步选择：
+- 直接进入执行：使用 `executing-plans` 分批实现并在每批后汇报验证结果
+- 先 review：等待对计划的修改意见，再开始执行
 
-**1. Subagent-Driven (this session)** - I dispatch fresh subagent per task, review between tasks, fast iteration
-
-**2. Parallel Session (separate)** - Open new session with executing-plans, batch execution with checkpoints
-
-**Which approach?"**
-
-**If Subagent-Driven chosen:**
-- **REQUIRED SUB-SKILL:** Use superpowers:subagent-driven-development
-- Stay in this session
-- Fresh subagent per task + code review
-
-**If Parallel Session chosen:**
-- Guide them to open new session in worktree
-- **REQUIRED SUB-SKILL:** New session uses superpowers:executing-plans
+不要在计划里写“做完再看情况”。计划的价值在于：每一步都能被执行、被验证、被回滚。
