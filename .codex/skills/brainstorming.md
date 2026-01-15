@@ -1,54 +1,52 @@
 ---
 name: brainstorming
-description: "You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation."
+description: "在做新功能/改行为/需求不清晰时先用：澄清目标与约束，探索方案并产出可落地的设计要点。"
 ---
 
-# Brainstorming Ideas Into Designs
+# 从想法到设计（Brainstorming）
 
-## Overview
+## 目的
 
-Help turn ideas into fully formed designs and specs through natural collaborative dialogue.
+通过对话把“想做什么”变成“准备怎么做”：明确目标、边界、约束、验收标准，并在不写代码的前提下给出 2–3 个可行方案与推荐方案。
 
-Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design in small sections (200-300 words), checking after each section whether it looks right so far.
+适用场景：
+- 新功能/新模块/大改动
+- 需求存在歧义、验收标准不清
+- 需要在多个方案之间取舍（性能/可维护性/复杂度/风险）
 
-## The Process
+## 使用方式（流程）
 
-**Understanding the idea:**
-- Check out the current project state first (files, docs, recent commits)
-- Ask questions one at a time to refine the idea
-- Prefer multiple choice questions when possible, but open-ended is fine too
-- Only one question per message - if a topic needs more exploration, break it into multiple questions
-- Focus on understanding: purpose, constraints, success criteria
+### 1) 先看上下文（不动代码）
+- 快速浏览相关目录/文档/最近改动（只读）
+- 找到“现状/痛点/已有约束”：现有接口、数据结构、并发模型、测试方式、构建命令
 
-**Exploring approaches:**
-- Propose 2-3 different approaches with trade-offs
-- Present options conversationally with your recommendation and reasoning
-- Lead with your recommended option and explain why
+### 2) 一次只问一个问题
+- 优先问“能决定设计走向”的问题：目标、非目标、约束、失败方式、兼容性、验收口径
+- 尽量用选择题降低回答成本；需要开放式时再开放式
+- 每条消息只问一个问题；同一主题拆成多轮
 
-**Presenting the design:**
-- Once you believe you understand what you're building, present the design
-- Break it into sections of 200-300 words
-- Ask after each section whether it looks right so far
-- Cover: architecture, components, data flow, error handling, testing
-- Be ready to go back and clarify if something doesn't make sense
+### 3) 探索 2–3 个方案（含取舍）
+- 给出 2–3 个候选方案，明确各自的优缺点与风险
+- 明确推荐方案与理由（复杂度、可测试性、可扩展性、迁移成本）
+- 如需要，提出一个“保守 MVP 方案”降低首版风险
 
-## After the Design
+### 4) 产出“可执行设计要点”（短 spec）
+把结论写成可交付的要点（建议 10–30 行），至少包含：
+- **Goal / Non-goals**：要做什么、不做什么
+- **约束**：兼容性、性能/内存、并发/线程、可观测性
+- **接口与数据流**：关键 API、输入输出、数据结构
+- **错误处理**：错误类型、边界条件、降级策略
+- **测试策略**：哪些行为必须有测试（单测/集成）、如何复现
 
-**Documentation:**
-- Write the validated design to `docs/plans/YYYY-MM-DD-<topic>-design.md`
-- Use elements-of-style:writing-clearly-and-concisely skill if available
-- Commit the design document to git
+## 交接到“计划”
+当设计要点被确认后，询问是否进入实施计划：
+- 如果要：使用 `writing-plans` 把设计拆成可执行的任务清单（含具体文件路径与验证命令）
+- 如果不要：停在这里，等待下一步指示
 
-**Implementation (if continuing):**
-- Ask: "Ready to set up for implementation?"
-- Use superpowers:using-git-worktrees to create isolated workspace
-- Use superpowers:writing-plans to create detailed implementation plan
+## 原则
 
-## Key Principles
-
-- **One question at a time** - Don't overwhelm with multiple questions
-- **Multiple choice preferred** - Easier to answer than open-ended when possible
-- **YAGNI ruthlessly** - Remove unnecessary features from all designs
-- **Explore alternatives** - Always propose 2-3 approaches before settling
-- **Incremental validation** - Present design in sections, validate each
-- **Be flexible** - Go back and clarify when something doesn't make sense
+- **一次一个问题**：降低沟通成本
+- **优先明确验收**：避免“做完才发现不对”
+- **先做最小闭环**：YAGNI，先能跑通再扩展
+- **始终给备选方案**：至少 2 个思路，明确取舍
+- **不写代码**：这里产出设计与计划输入，不做实现
