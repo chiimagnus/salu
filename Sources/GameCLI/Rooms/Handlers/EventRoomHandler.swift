@@ -40,8 +40,12 @@ struct EventRoomHandler: RoomHandling {
             let ok = runState.apply(effect)
             if !ok {
                 switch effect {
-                case .addConsumable:
-                    applyFailureLines.append("消耗品槽位已满，未能获得消耗品")
+                case .addCard(let cardId):
+                    if let def = CardRegistry.get(cardId), def.type == .consumable {
+                        applyFailureLines.append("消耗性卡牌槽位已满，未能获得：\(def.name)")
+                    } else {
+                        applyFailureLines.append("未能获得卡牌")
+                    }
                 default:
                     applyFailureLines.append("有一项效果未能生效")
                 }
@@ -113,7 +117,7 @@ struct EventRoomHandler: RoomHandling {
         context.logBattleEvents(engine.events)
         engine.clearEvents()
         
-        let loopResult = context.battleLoop(engine, battleSeed)
+        let loopResult = context.battleLoop(engine, battleSeed, &runState)
         if loopResult == .aborted {
             return .aborted
         }
@@ -205,9 +209,6 @@ struct EventRoomHandler: RoomHandling {
             case .setStatus(let statusId, let stacks):
                 let name = StatusRegistry.get(statusId)?.name ?? statusId.rawValue
                 return "\(name) 设为 \(stacks)"
-            case .addConsumable(let consumableId):
-                let def = ConsumableRegistry.require(consumableId)
-                return "获得消耗品：\(def.icon)\(def.name)"
             case .upgradeCard:
                 return "升级了一张卡牌"
             }
@@ -215,5 +216,3 @@ struct EventRoomHandler: RoomHandling {
         return base + additional
     }
 }
-
-

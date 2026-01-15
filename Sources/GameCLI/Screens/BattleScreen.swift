@@ -7,7 +7,13 @@ enum BattleScreen {
     // MARK: - 主屏幕渲染
     
     /// 渲染战斗主界面
-    static func renderBattleScreen(engine: BattleEngine, seed: UInt64, logs: [String], message: String?, showLog: Bool = false) {
+    static func renderBattleScreen(
+        engine: BattleEngine,
+        seed: UInt64,
+        logs: [String],
+        message: String?,
+        showLog: Bool = false
+    ) {
         var lines: [String] = []
         
         // 顶部标题栏
@@ -31,7 +37,7 @@ enum BattleScreen {
         lines.append("")
         
         // 牌堆信息
-        lines.append("\(Terminal.dim)  📚 抽牌堆: \(engine.state.drawPile.count)张    🗑️ 弃牌堆: \(engine.state.discardPile.count)张\(Terminal.reset)")
+        lines.append("\(Terminal.dim)  📚 抽牌堆: \(engine.state.drawPile.count)张    🗑️ 弃牌堆: \(engine.state.discardPile.count)张    💨 消耗堆: \(engine.state.exhaustPile.count)张\(Terminal.reset)")
         lines.append("")
         
         // 事件日志区域（可折叠）
@@ -45,7 +51,11 @@ enum BattleScreen {
         lines.append("")
         
         // 操作提示
-        lines.append(contentsOf: buildInputPrompt(handCount: engine.state.hand.count, enemyCount: engine.state.enemies.count, showLog: showLog))
+        lines.append(contentsOf: buildInputPrompt(
+            handCount: engine.state.hand.count,
+            enemyCount: engine.state.enemies.count,
+            showLog: showLog
+        ))
         
         // 清屏并打印
         Terminal.clear()
@@ -154,7 +164,7 @@ enum BattleScreen {
             }.joined(separator: "  ")
             lines.append("     \(Terminal.dim)🏺 遗物：\(Terminal.reset)\(relicText)")
         }
-        
+
         return lines
     }
     
@@ -181,6 +191,8 @@ enum BattleScreen {
                 effectIcon = "🛡️"
             case .power:
                 effectIcon = "💪"
+            case .consumable:
+                effectIcon = "🧪"
             }
 
             let costText = cost == baseCost ? "◆\(cost)" : "◆\(cost)（原\(baseCost)）"

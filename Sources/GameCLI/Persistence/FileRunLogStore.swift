@@ -5,7 +5,6 @@ import Foundation
 /// - 路径规则与 save/history 一致：优先使用 `SALU_DATA_DIR` 覆盖目录。
 final class FileRunLogStore: RunLogStore, @unchecked Sendable {
     private let fileName = "run_log.txt"
-    private let dataDirEnvKey = "SALU_DATA_DIR"
     
     init() {}
     
@@ -41,32 +40,8 @@ final class FileRunLogStore: RunLogStore, @unchecked Sendable {
     // MARK: - Private
     
     private func getStoragePath() -> URL? {
-        // 允许通过环境变量覆盖存储目录（用于测试/调试）
-        if let overridePath = ProcessInfo.processInfo.environment[dataDirEnvKey],
-           !overridePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            let dir = URL(fileURLWithPath: overridePath, isDirectory: true)
-            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-            return dir.appendingPathComponent(fileName)
-        }
-        
-        #if os(Windows)
-        if let localAppData = ProcessInfo.processInfo.environment["LOCALAPPDATA"] {
-            let saluDir = URL(fileURLWithPath: localAppData).appendingPathComponent("Salu")
-            try? FileManager.default.createDirectory(at: saluDir, withIntermediateDirectories: true)
-            return saluDir.appendingPathComponent(fileName)
-        }
-        return URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent(fileName)
-        #else
-        if let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
-            let saluDir = appSupport.appendingPathComponent("Salu")
-            try? FileManager.default.createDirectory(at: saluDir, withIntermediateDirectories: true)
-            return saluDir.appendingPathComponent(fileName)
-        }
-        let homeDir = FileManager.default.homeDirectoryForCurrentUser
-        let saluDir = homeDir.appendingPathComponent(".salu")
-        try? FileManager.default.createDirectory(at: saluDir, withIntermediateDirectories: true)
-        return saluDir.appendingPathComponent(fileName)
-        #endif
+        let (dir, _) = DataDirectory.resolved()
+        return dir.appendingPathComponent(fileName)
     }
 }
 

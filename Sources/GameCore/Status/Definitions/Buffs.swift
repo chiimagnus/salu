@@ -43,16 +43,18 @@ public struct Dexterity: StatusDefinition {
 }
 
 // ============================================================
-// Sequence Resonance (序列共鸣) - 占卜家序列能力牌
+// Sequence Resonance (序列共鸣) - 由能力牌产生的持续效果
 // ============================================================
 
-/// 序列共鸣：本场战斗中，每次预知后获得格挡
+/// 序列共鸣（能力效果）：本场战斗中，每次预知后获得格挡
 ///
 /// 说明：
-/// - 该状态本身不直接修正伤害/格挡，而是作为 BattleEngine.applyForesight() 的触发标记。
-/// - stacks 表示“每次预知获得的基础格挡值”（1 或 2）。
-public struct SequenceResonance: StatusDefinition {
-    public static let id: StatusID = "sequence_resonance"
+/// - `序列共鸣（sequence_resonance）` 本身是一张能力牌（见 `Cards/Definitions/Seer/SeerCards.swift`）。
+/// - 该状态用于承载“能力牌已生效”的持续效果展示与数值叠加：
+///   - stacks 表示“每次预知获得的基础格挡值”（1 或 2）。
+/// - 该状态不直接修正伤害/格挡，而是由 `BattleEngine.applyForesight()` 在预知结算后触发。
+public struct SequenceResonanceEffect: StatusDefinition {
+    public static let id: StatusID = "sequence_resonance_effect"
     public static let name = "序列共鸣"
     public static let icon = "〰️"
     public static let isPositive = true

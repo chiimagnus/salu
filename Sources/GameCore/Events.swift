@@ -20,7 +20,7 @@ public enum BattleEvent: Sendable, Equatable {
     case shuffled(count: Int)
     
     /// 打出卡牌
-    case played(cardId: CardID, cost: Int)
+    case played(cardInstanceId: String, cardId: CardID, cost: Int)
     
     /// 造成伤害
     case damageDealt(source: String, target: String, amount: Int, blocked: Int)
@@ -110,7 +110,7 @@ extension BattleEvent {
         case .shuffled(let count):
             return "🔀 洗牌：\(count) 张牌从弃牌堆洗入抽牌堆"
             
-        case .played(let cardId, let cost):
+        case .played(_, let cardId, let cost):
             let def = CardRegistry.require(cardId)
             return "▶️ 打出 \(def.name)（消耗 \(cost) 能量）"
             

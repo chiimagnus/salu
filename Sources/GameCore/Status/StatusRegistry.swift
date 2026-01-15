@@ -15,7 +15,7 @@ public enum StatusRegistry {
         // Buffs
         Strength.id: Strength.self,
         Dexterity.id: Dexterity.self,
-        SequenceResonance.id: SequenceResonance.self,
+        SequenceResonanceEffect.id: SequenceResonanceEffect.self,
     ]
     
     /// 获取状态定义
@@ -27,5 +27,10 @@ public enum StatusRegistry {
     public static func require(_ id: StatusID) -> any StatusDefinition.Type {
         precondition(defs[id] != nil, "StatusRegistry: 未找到状态定义 '\(id.rawValue)'")
         return defs[id]!
+    }
+
+    /// 所有已注册状态 ID（按 rawValue 排序，保证确定性）
+    public static var allStatusIds: [StatusID] {
+        Array(defs.keys).sorted { $0.rawValue < $1.rawValue }
     }
 }

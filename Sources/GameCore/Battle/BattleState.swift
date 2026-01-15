@@ -13,6 +13,7 @@ public struct BattleState: Sendable {
     public var drawPile: [Card]
     public var hand: [Card]
     public var discardPile: [Card]
+    public var exhaustPile: [Card]
     
     public var isOver: Bool
     public var playerWon: Bool?
@@ -31,8 +32,8 @@ public struct BattleState: Sendable {
         self.drawPile = []
         self.hand = []
         self.discardPile = []
+        self.exhaustPile = []
         self.isOver = false
         self.playerWon = nil
     }
 }
-

@@ -2,7 +2,7 @@
 
 > 目的：让“占卜家序列”相关功能在 CLI 中**可验收、可复现**。  
 > 覆盖范围：P1～P7（并补充 P0“疯狂”在 UI 中的可见性，因为它是占卜家序列的前置核心）。  
-> 备注：1.0 的“预知”采用**简化版（自动选牌）**，不会出现“玩家从 N 张中手动选择”的交互。
+> 备注：1.0 的“预知”在 CLI 中会出现 **“预知选牌”** 交互：展示抽牌堆顶 N 张牌，玩家选择 1 张入手，其余按原顺序放回。
 
 ---
 
@@ -35,7 +35,7 @@ swift test
   - 解决：用 `SALU_TEST_BATTLE_DECK=seer`（P1 核心牌）或 `SALU_TEST_BATTLE_DECK=seer_p7`（含 P7 新牌）注入占卜家验收牌组（见 §2 / §9）。
 - [ ] **测试模式下敌人 HP 默认被压缩为 1**：这会导致 Boss 很难进入不同血量阶段，从而看不到 P6 的三阶段机制。  
   - 解决：加上 `SALU_TEST_ENEMY_HP=normal`（保留真实 HP）或 `SALU_TEST_ENEMY_HP=30`（手动验收更快）。
-- [ ] **预知是“自动选牌”**：1.0 的实现不会弹出“请选择一张”的 UI；你需要通过“手牌变化 + 日志”确认。
+- [ ] **预知需要完成“选牌”交互**：打出带预知的牌后，会弹出“预知选牌”界面；需输入 `1..N` 选择 1 张入手（EOF 时会默认选择第 1 张以避免测试卡死）。
 
 ---
 
@@ -60,9 +60,10 @@ swift run GameCLI --seed 1
 
 步骤：
 - [ ] 在战斗中打出 `灵视` 或 `真相低语`。
+- [ ] 在弹出的“预知选牌”界面输入 `1..N` 选择 1 张入手。
 
 预期（至少满足其一）：
-- [ ] **手牌变化**：手牌数量会因为“预知选牌入手”而增加（通常在结算后能看到新增的那张牌）。
+- [ ] **手牌变化**：手牌数量会因为“预知选牌入手”而增加（选择后立即生效）。
 - [ ] **日志（若开启）**：出现类似“预知 N 张，选择 XXX 入手”的日志。
 
 额外核对（边界）：
@@ -163,7 +164,7 @@ swift run GameCLI --seed 1
 
 ---
 
-## 6. P4：商店扩展（12 格 + 消耗品）
+## 6. P4R：商店扩展（12 格 + 消耗性卡牌）
 
 启动：
 
@@ -172,19 +173,41 @@ SALU_TEST_MODE=1 SALU_TEST_MAP=shop swift run GameCLI --seed 1
 ```
 
 核对点：
-- [ ] 商店界面分为：卡牌 / 遗物 / 消耗品 / 删牌服务（`D`）。
-- [ ] 输入支持：`1..` 买卡、`R1..` 买遗物、`C1..` 买消耗品、`D` 进入删牌、`0` 离开。
+- [ ] 商店界面分为：卡牌 / 遗物 / 消耗性卡牌（原“消耗品”） / 删牌服务（`D`）。
+- [ ] 输入支持：`1..` 买卡、`R1..` 买遗物、`C1..` 买消耗性卡牌、`D` 进入删牌、`0` 离开。
 - [ ] 当金币不足时，购买应失败并提示。
-- [ ] 当消耗品槽位满（最多 3 个）时，继续购买消耗品应失败并提示。
+- [ ] 当“消耗性卡牌槽位”满（最多 3 张）时，继续购买应失败并提示。
 
 可选（验证“接入存档”）：
-- [ ] 购买任意消耗品后，退出到主菜单；检查 `SALU_DATA_DIR/run_save.json` 中 `consumableIds` 是否包含对应 ID。
+- [ ] 购买任意消耗性卡牌后，退出到主菜单；检查 `SALU_DATA_DIR/run_save.json` 中 `deck` 是否包含对应 `cardId`。
+
+### 6.1 战斗内验收（消耗性卡牌的使用与永久移除）
+
+说明：消耗性卡牌会“像普通卡牌一样进入战斗牌堆并抽上来”，因此在测试模式下需要让战斗使用 run 牌组。
+
+推荐命令：
+
+```bash
+SALU_TEST_MODE=1 \
+SALU_TEST_MAP=shop \
+SALU_TEST_BATTLE_DECK=run \
+swift run GameCLI --seed 1
+```
+
+核对点：
+- [ ] 在商店购买 1 张消耗性卡牌后，进入下一场战斗（Boss 战）能抽到它（在手牌列表中，类型显示为“消耗性”）。
+- [ ] 打出该牌：费用显示为 0，且不消耗能量；效果生效（回血/格挡/力量等）。
+- [ ] 本场打出后该牌进入 Exhaust（不会进入弃牌堆循环）。
+- [ ] 战斗结束后：下一场战斗不会再抽到该牌（它已从冒险牌组永久移除）。
 
 ---
 
 ## 7. P5：占卜家专属事件（UI）
 
-> 事件出现由 seed 决定。推荐直接跑已有黑盒 UI 测试（§7.4），它会自动穷举找到能命中指定事件的 seed。
+> 事件出现由 seed + floor + row + nodeId 派生决定：同样的上下文与 seed 会稳定命中同一个事件。
+> 推荐：
+> - 手测：用「事件种子工具」找到某事件的 seed，再用该 seed 进入事件房间验收。
+> - 自动化：跑已有黑盒 UI 测试（§7.4），它会自动穷举找到能命中指定事件的 seed。
 
 ### 7.1 事件 UI 通用核对（进入事件房间）
 
@@ -276,7 +299,7 @@ swift run GameCLI --seed 1
 - P0（疯狂定义 + UI）：`Sources/GameCore/Status/Definitions/Debuffs.swift`、`Sources/GameCLI/Screens/BattleScreen.swift`
 - P2（敌人）：`Sources/GameCore/Enemies/Definitions/Act2/*`、`Sources/GameCore/Enemies/Act2EnemyPool.swift`
 - P3（遗物）：`Sources/GameCore/Relics/Definitions/SeerRelics.swift`
-- P4（商店/消耗品/存档）：`Sources/GameCore/Consumables/*`、`Sources/GameCore/Shop/*`、`Sources/GameCLI/Screens/ShopScreen.swift`、`Sources/GameCLI/Persistence/SaveService.swift`
+- P4R（商店/消耗性卡牌/存档）：`Sources/GameCore/Cards/Definitions/Consumables/*`、`Sources/GameCore/Shop/*`、`Sources/GameCLI/Screens/ShopScreen.swift`、`Sources/GameCLI/Persistence/SaveService.swift`
 - P5（事件）：`Sources/GameCore/Events/Definitions/SeerEvents.swift`、`Sources/GameCLI/Rooms/Handlers/EventRoomHandler.swift`、`Tests/GameCLIUITests/GameCLISeerEventUITests.swift`
 - P6（赛弗 Boss 机制 + 费用显示）：`Sources/GameCore/Kernel/BattleEffect.swift`、`Sources/GameCore/Battle/BattleEngine.swift`、`Sources/GameCore/Enemies/Definitions/Act2/Act2BossEnemies.swift`、`Sources/GameCLI/Screens/BattleScreen.swift`、`Tests/GameCoreTests/CipherBossMechanicsTests.swift`
 - P7（新卡牌/状态 + 测试牌组）：`Sources/GameCore/Cards/Definitions/Seer/SeerCards.swift`、`Sources/GameCore/Cards/CardRegistry.swift`、`Sources/GameCore/Status/Definitions/Buffs.swift`、`Sources/GameCore/Status/StatusRegistry.swift`、`Sources/GameCLI/TestMode.swift`、`Tests/GameCoreTests/SeerAdvancedCardsTests.swift`

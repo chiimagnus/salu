@@ -160,6 +160,16 @@ struct GameCLI {
                 var settings = settingsStore.load()
                 settings.showLog = showLog
                 settingsStore.save(settings)
+
+            case "7":
+                // 数据目录（开发者/排查工具）
+                Screens.showDataDirectory()
+                NavigationBar.waitForBack()
+
+            case "8":
+                // 事件种子工具（开发者/验收辅助）
+                Screens.showEventSeedTool()
+                NavigationBar.waitForBack()
                 
             case "q":
                 // 返回主菜单
@@ -270,8 +280,8 @@ struct GameCLI {
             logLine: { line in
                 appendLogLine(line)
             },
-            battleLoop: { engine, seed in
-                return battleLoop(engine: engine, seed: seed)
+            battleLoop: { engine, seed, runState in
+                return battleLoop(engine: engine, seed: seed, runState: &runState)
             },
             createEnemy: { enemyId, instanceIndex, rng in
                 TestMode.createEnemy(enemyId: enemyId, instanceIndex: instanceIndex, rng: &rng)
@@ -434,7 +444,18 @@ struct GameCLI {
         engine.clearEvents()
         
         // 直接进入游戏主循环
-        battleLoop(engine: engine, seed: seed)
+        // - Note: 快速战斗不依赖 RunState（消耗品/地图/存档），这里注入一个最小 RunState 仅用于复用 battleLoop。
+        var tempRunState = RunState(
+            player: engine.state.player,
+            deck: [],
+            gold: 0,
+            relicManager: RelicManager(),
+            map: [],
+            seed: seed,
+            floor: 1,
+            maxFloor: 1
+        )
+        battleLoop(engine: engine, seed: seed, runState: &tempRunState)
         
         // 战斗结束 - 保存战绩
         let record = BattleRecordBuilder.build(from: engine, seed: seed)
@@ -452,8 +473,41 @@ struct GameCLI {
     /// 战斗主循环（用于冒险模式和快速战斗模式）
     /// 返回战斗循环结果，区分正常结束和用户中途退出
     @discardableResult
-    static func battleLoop(engine: BattleEngine, seed: UInt64) -> BattleLoopResult {
+    static func battleLoop(engine: BattleEngine, seed: UInt64, runState: inout RunState) -> BattleLoopResult {
         while !engine.state.isOver {
+            // P1：若战斗引擎需要额外输入（如“预知选牌”），优先处理该输入
+            if let pending = engine.pendingInput {
+                switch pending {
+                case .foresight(let options, let fromCount):
+                    ForesightSelectionScreen.render(options: options, fromCount: fromCount, message: currentMessage)
+
+                    guard let input = readLine()?.trimmingCharacters(in: .whitespaces) else {
+                        // EOF：为了避免黑盒测试卡死，默认选择第 1 张
+                        currentMessage = nil
+                        _ = engine.submitForesightChoice(index: 0)
+                        appendBattleEvents(engine.events)
+                        engine.clearEvents()
+                        continue
+                    }
+
+                    currentMessage = nil
+
+                    if input.lowercased() == "q" {
+                        return .aborted
+                    }
+
+                    guard let n = Int(input), n >= 1, n <= options.count else {
+                        currentMessage = "\(Terminal.red)⚠️ 无效选择：1-\(options.count)\(Terminal.reset)"
+                        continue
+                    }
+
+                    _ = engine.submitForesightChoice(index: n - 1)
+                    appendBattleEvents(engine.events)
+                    engine.clearEvents()
+                    continue
+                }
+            }
+
             // 刷新整个屏幕
             BattleScreen.renderBattleScreen(
                 engine: engine,
@@ -478,11 +532,11 @@ struct GameCLI {
             case "q":
                 // 返回主菜单（用户中途退出，保留存档）
                 return .aborted
-                
+
             default:
                 break
             }
-            
+
             let parts = input.split { $0 == " " || $0 == "\t" }
             guard !parts.isEmpty else {
                 currentMessage = "\(Terminal.red)⚠️ 请输入有效指令\(Terminal.reset)"
@@ -540,12 +594,24 @@ struct GameCLI {
             engine.handleAction(.playCard(handIndex: handIndex, targetEnemyIndex: targetEnemyIndex))
             
             // 收集新事件
+            applyConsumableCardRemovals(from: engine.events, runState: &runState)
             appendBattleEvents(engine.events)
             engine.clearEvents()
         }
         
         // 战斗正常结束（胜利或失败）
         return .finished
+    }
+
+    // MARK: - Consumable Cards (P4R)
+
+    /// 消耗性卡牌：打出后应从 RunState.deck 永久移除（跨战斗不恢复）。
+    private static func applyConsumableCardRemovals(from events: [BattleEvent], runState: inout RunState) {
+        for event in events {
+            guard case let .played(cardInstanceId, cardId, _) = event else { continue }
+            guard let def = CardRegistry.get(cardId), def.type == .consumable else { continue }
+            runState.removeCardFromDeck(instanceId: cardInstanceId)
+        }
     }
     
     // MARK: - Log (Unified)

@@ -50,6 +50,12 @@ public enum CardRegistry {
         AbyssalGazePlus.id: AbyssalGazePlus.self,
         SequenceResonanceCard.id: SequenceResonanceCard.self,
         SequenceResonanceCardPlus.id: SequenceResonanceCardPlus.self,
+
+        // Consumable Cards (P4R)
+        HealingPotion.id: HealingPotion.self,
+        BlockPotion.id: BlockPotion.self,
+        StrengthPotion.id: StrengthPotion.self,
+        PurificationRune.id: PurificationRune.self,
     ]
     
     /// 获取卡牌定义

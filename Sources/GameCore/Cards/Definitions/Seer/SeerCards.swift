@@ -427,7 +427,7 @@ public struct SequenceResonanceCard: CardDefinition {
         _ = snapshot
         _ = targetEnemyIndex
         return [
-            .applyStatus(target: .player, statusId: SequenceResonance.id, stacks: 1),
+            .applyStatus(target: .player, statusId: SequenceResonanceEffect.id, stacks: 1),
             .applyStatus(target: .player, statusId: Madness.id, stacks: 1),
         ]
     }
@@ -448,7 +448,7 @@ public struct SequenceResonanceCardPlus: CardDefinition {
         _ = snapshot
         _ = targetEnemyIndex
         return [
-            .applyStatus(target: .player, statusId: SequenceResonance.id, stacks: 2),
+            .applyStatus(target: .player, statusId: SequenceResonanceEffect.id, stacks: 2),
             .applyStatus(target: .player, statusId: Madness.id, stacks: 1),
         ]
     }

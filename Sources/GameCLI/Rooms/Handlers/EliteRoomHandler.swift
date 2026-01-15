@@ -49,7 +49,7 @@ struct EliteRoomHandler: RoomHandling {
         engine.clearEvents()
         
         // 战斗循环
-        let loopResult = context.battleLoop(engine, battleSeed)
+        let loopResult = context.battleLoop(engine, battleSeed, &runState)
         
         // 用户中途退出：不保存战斗记录，不更新玩家状态，直接返回
         if loopResult == .aborted {

@@ -5,6 +5,7 @@ public enum CardType: String, Sendable {
     case attack = "攻击"
     case skill = "技能"
     case power = "能力"
+    case consumable = "消耗性"
 }
 
 /// 卡牌稀有度

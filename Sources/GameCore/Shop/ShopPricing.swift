@@ -51,16 +51,18 @@ public enum ShopPricing {
         }
     }
     
-    // MARK: - 消耗品定价（P4 新增）
-    
-    /// 购买消耗品价格
-    public static func consumablePrice(for consumableId: ConsumableID) -> Int {
-        let def = ConsumableRegistry.require(consumableId)
-        return consumablePrice(for: def.rarity)
+    // MARK: - 消耗性卡牌定价（P4R）
+
+    /// 购买“消耗性卡牌（消耗品）”价格
+    public static func consumableCardPrice(for cardId: CardID) -> Int {
+        let def = CardRegistry.require(cardId)
+        return consumableCardPrice(for: def.rarity)
     }
-    
-    public static func consumablePrice(for rarity: ConsumableRarity) -> Int {
+
+    public static func consumableCardPrice(for rarity: CardRarity) -> Int {
         switch rarity {
+        case .starter:
+            return 35
         case .common:
             return 35
         case .uncommon:

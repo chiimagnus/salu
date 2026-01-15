@@ -8,9 +8,9 @@ public enum CardPool {
         CardRegistry.allCardIds
             .filter { id in
                 let def = CardRegistry.require(id)
-                return def.rarity != .starter
+                // 排除：起始牌、消耗性卡牌（消耗品不作为战斗奖励出现）
+                return def.rarity != .starter && def.type != .consumable
             }
     }
 }
-
 

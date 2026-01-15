@@ -35,7 +35,6 @@ final class RunSnapshotCodableTests: XCTestCase {
                 .init(id: "inflame_1", cardId: "inflame"),
             ],
             relicIds: ["burning_blood", "lantern"],
-            consumableIds: ["purification_rune"],
             isOver: false,
             won: false
         )
@@ -51,7 +50,6 @@ final class RunSnapshotCodableTests: XCTestCase {
         XCTAssertEqual(decoded.player.statuses["strength"], 2)
         XCTAssertEqual(decoded.deck.count, 2)
         XCTAssertEqual(decoded.relicIds, ["burning_blood", "lantern"])
-        XCTAssertEqual(decoded.consumableIds, ["purification_rune"])
         XCTAssertEqual(decoded.mapNodes.first?.roomType, RoomType.start.rawValue)
     }
     
@@ -84,7 +82,6 @@ final class RunSnapshotCodableTests: XCTestCase {
                 ["id": "strike_1", "cardId": "strike"],
             ],
             "relicIds": ["burning_blood"],
-            "consumableIds": [],
             "isOver": false,
             "won": false,
         ]
@@ -93,4 +90,3 @@ final class RunSnapshotCodableTests: XCTestCase {
         XCTAssertThrowsError(try JSONDecoder().decode(RunSnapshot.self, from: data))
     }
 }
-

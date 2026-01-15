@@ -6,6 +6,10 @@ public final class BattleEngine: @unchecked Sendable {
     
     public private(set) var state: BattleState
     public private(set) var events: [BattleEvent] = []
+
+    /// 当战斗需要玩家进一步输入（如预知选牌）时，会挂起在此处。
+    /// - Note: 需要先通过 `submitForesightChoice` 等接口完成输入，战斗流程才会继续推进。
+    public private(set) var pendingInput: BattlePendingInput? = nil
     
     /// 战斗统计（累积，不会被清除）
     public private(set) var battleStats: BattleStats = BattleStats()
@@ -40,6 +44,19 @@ public final class BattleEngine: @unchecked Sendable {
 
     // P7: 本回合预知次数（用于“预言回响”）
     private var foresightCountThisTurn: Int = 0
+
+    // MARK: - Pending / Continuation (用于需要玩家输入的效果)
+
+    private struct PendingForesight: Sendable {
+        let cards: [Card]
+        let fromCount: Int
+    }
+
+    /// 当前待处理的预知选择上下文
+    private var pendingForesight: PendingForesight? = nil
+
+    /// 当出现 pendingInput 时，用于恢复后续流程的延续逻辑
+    private var pendingContinuation: (() -> Void)? = nil
     
     /// 当前战斗携带的遗物（用于 UI 展示）
     public var relicIds: [RelicID] {
@@ -107,6 +124,12 @@ public final class BattleEngine: @unchecked Sendable {
             emit(.invalidAction(reason: "不是玩家回合"))
             return false
         }
+
+        // 当有待处理输入（如预知选牌）时，必须先完成输入再继续战斗。
+        if pendingInput != nil {
+            emit(.invalidAction(reason: "请先完成当前选择（预知）"))
+            return false
+        }
         
         switch action {
         case .playCard(let handIndex, let targetEnemyIndex):
@@ -130,6 +153,9 @@ public final class BattleEngine: @unchecked Sendable {
     public func costToPlay(cardAtHandIndex index: Int) -> Int {
         guard index >= 0, index < state.hand.count else { return 0 }
         let def = CardRegistry.require(state.hand[index].cardId)
+        if def.type == .consumable {
+            return 0
+        }
         return effectiveCost(baseCost: def.cost)
     }
     
@@ -137,7 +163,38 @@ public final class BattleEngine: @unchecked Sendable {
     public func clearEvents() {
         events.removeAll()
     }
-    
+
+    // MARK: - Pending Input API
+
+    /// 提交“预知”选牌结果，并继续推进战斗流程。
+    ///
+    /// - Parameter index: 玩家选择的卡牌序号（0-based）。越界时会自动回退为 0。
+    @discardableResult
+    public func submitForesightChoice(index: Int) -> Bool {
+        guard case .some(.foresight) = pendingInput else {
+            emit(.invalidAction(reason: "当前没有需要处理的预知选择"))
+            return false
+        }
+        guard let pending = pendingForesight else {
+            emit(.invalidAction(reason: "预知上下文丢失"))
+            pendingInput = nil
+            return false
+        }
+
+        resolveForesightChoice(pending: pending, index: index)
+
+        // 清理 pending，并恢复后续流程
+        pendingForesight = nil
+        pendingInput = nil
+
+        if let cont = pendingContinuation {
+            pendingContinuation = nil
+            cont()
+        }
+
+        return true
+    }
+
     // MARK: - Private Methods
     
     private func emit(_ event: BattleEvent) {
@@ -365,7 +422,12 @@ public final class BattleEngine: @unchecked Sendable {
         let card = state.hand[handIndex]
         let def = CardRegistry.require(card.cardId)
         let baseCost = def.cost
-        let cost = effectiveCost(baseCost: baseCost)
+        let cost: Int
+        if def.type == .consumable {
+            cost = 0
+        } else {
+            cost = effectiveCost(baseCost: baseCost)
+        }
         
         // 验证能量
         guard state.energy >= cost else {
@@ -404,17 +466,20 @@ public final class BattleEngine: @unchecked Sendable {
         }
         
         // P6: “下回合第一张牌费用 +N”只在本回合首次成功出牌时生效一次
-        if cost != baseCost && !didApplyFirstCardCostIncreaseThisTurn {
+        // - Note: 消耗性卡牌费用恒为 0，不参与该临时费用机制。
+        if def.type != .consumable, cost != baseCost && !didApplyFirstCardCostIncreaseThisTurn {
             didApplyFirstCardCostIncreaseThisTurn = true
         }
 
         // 消耗能量
-        state.energy -= cost
+        if def.type != .consumable {
+            state.energy -= cost
+        }
         
         // 从手牌移除
         state.hand.remove(at: handIndex)
         
-        emit(.played(cardId: card.cardId, cost: cost))
+        emit(.played(cardInstanceId: card.id, cardId: card.cardId, cost: cost))
 
         // P4: 触发打出卡牌的遗物效果
         triggerRelics(.cardPlayed(cardId: card.cardId))
@@ -422,8 +487,14 @@ public final class BattleEngine: @unchecked Sendable {
         // 执行卡牌效果（新架构：通过 BattleEffect）
         executeCardEffect(card, targetEnemyIndex: resolvedTargetEnemyIndex)
         
-        // 卡牌进入弃牌堆
-        state.discardPile.append(card)
+        // 卡牌去向：
+        // - 普通卡牌：弃牌堆
+        // - 消耗性卡牌：消耗牌堆（本战斗不会再次抽到）
+        if def.type == .consumable {
+            state.exhaustPile.append(card)
+        } else {
+            state.discardPile.append(card)
+        }
         
         // 检查战斗是否结束
         checkBattleEnd()
@@ -442,6 +513,8 @@ public final class BattleEngine: @unchecked Sendable {
         case .skill:
             battleStats.defendsPlayed += 1
         case .power:
+            battleStats.skillsPlayed += 1
+        case .consumable:
             battleStats.skillsPlayed += 1
         }
         
@@ -810,14 +883,14 @@ public final class BattleEngine: @unchecked Sendable {
     
     // MARK: - Seer Sequence Mechanics (P1 占卜家序列机制)
     
-    /// 应用预知效果（简化版：自动选择第一张攻击牌）
+    /// 应用预知效果（需要玩家选牌）
     ///
-    /// 预知 N = 查看抽牌堆顶 N 张牌，选 1 张入手，其余按原顺序放回
-    /// 简化逻辑：自动选择第一张攻击牌；如果没有攻击牌则选择第一张
+    /// 预知 N = 查看抽牌堆顶 N 张牌，玩家选择 1 张入手，其余按原顺序放回。
     ///
     /// P3 遗物支持：
     /// - 破碎怀表（broken_watch）：每回合首次预知时，额外预知 1 张
     private func applyForesight(count: Int) {
+        guard pendingInput == nil else { return }
         guard count > 0, !state.drawPile.isEmpty else { return }
         
         // P3: 破碎怀表遗物 - 每回合首次预知时，额外预知 1 张
@@ -841,32 +914,31 @@ public final class BattleEngine: @unchecked Sendable {
         // 反转使第一张（顶部）在数组开头
         let topCards = Array(state.drawPile.suffix(actualCount).reversed())
         state.drawPile.removeLast(actualCount)
-        
-        // 选择第一张攻击牌（简化逻辑）
-        var chosenIndex = 0
-        for (index, card) in topCards.enumerated() {
-            let def = CardRegistry.require(card.cardId)
-            if def.type == .attack {
-                chosenIndex = index
-                break
-            }
-        }
-        
+
+        // 挂起：等待玩家选择其中 1 张入手
+        pendingForesight = PendingForesight(cards: topCards, fromCount: actualCount)
+        pendingInput = .foresight(options: topCards, fromCount: actualCount)
+    }
+
+    private func resolveForesightChoice(pending: PendingForesight, index: Int) {
+        guard !pending.cards.isEmpty else { return }
+
+        let chosenIndex = (0..<pending.cards.count).contains(index) ? index : 0
+        let topCards = pending.cards
+
         // 选中的牌入手
         let chosenCard = topCards[chosenIndex]
         state.hand.append(chosenCard)
-        emit(.foresightChosen(cardId: chosenCard.cardId, fromCount: actualCount))
-        
+        emit(.foresightChosen(cardId: chosenCard.cardId, fromCount: pending.fromCount))
+
         // 其余牌按原顺序放回（顶部放在 drawPile 末尾）
         // 需要反向遍历以保持原顺序：原来的第一张应该回到顶部
-        for index in (0..<topCards.count).reversed() {
-            if index != chosenIndex {
-                state.drawPile.append(topCards[index])
-            }
+        for i in (0..<topCards.count).reversed() where i != chosenIndex {
+            state.drawPile.append(topCards[i])
         }
 
         // P7：序列共鸣（能力）——本场战斗中，每次预知后获得格挡
-        let resonanceBlock = state.player.statuses.stacks(of: SequenceResonance.id)
+        let resonanceBlock = state.player.statuses.stacks(of: SequenceResonanceEffect.id)
         if resonanceBlock > 0 {
             applyBlock(target: .player, base: resonanceBlock)
         }

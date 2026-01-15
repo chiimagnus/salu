@@ -36,6 +36,38 @@ final class GameCLISeerEventUITests: XCTestCase {
         XCTAssertTrue(snapshot.relicIds.contains("broken_watch"))
         XCTAssertEqual(snapshot.player.statuses["madness"], 2)
     }
+
+    func testSeerTimeRift_pastOption_upgradesOneCardInSave() throws {
+        print("🧪 测试：testSeerTimeRift_pastOption_upgradesOneCardInSave")
+        let tmp = try TemporaryDirectory()
+        defer { tmp.cleanup() }
+
+        let seed = try findSeedForEvent(expected: "seer_time_rift")
+
+        let env: [String: String] = [
+            "SALU_DATA_DIR": tmp.url.path,
+            "SALU_TEST_MODE": "1",
+            "SALU_TEST_MAP": "event",
+        ]
+
+        let result = try CLIRunner.runGameCLI(
+            arguments: ["--seed", "\(seed)"],
+            // 新冒险 → 起点 → 事件（时间裂隙）→ 选项 1（窥视过去）→ 选择第 1 张可升级卡 → q 继续 → 回地图 q → 退出
+            stdin: "1\n1\n1\n1\n1\nq\nq\n4\n",
+            environment: env,
+            timeout: 12
+        )
+
+        XCTAssertEqual(result.exitCode, 0)
+
+        let saveURL = tmp.url.appendingPathComponent("run_save.json")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: saveURL.path), "期望生成 run_save.json")
+
+        let data = try Data(contentsOf: saveURL)
+        let snapshot = try JSONDecoder().decode(RunSnapshot.self, from: data)
+
+        XCTAssertTrue(snapshot.deck.contains(where: { $0.cardId.contains("+") }), "期望至少有一张牌被升级为 + 版本")
+    }
     
     func testSeerMadProphet_listenOption_addsAbyssalGazeAndMadnessInSave() throws {
         print("🧪 测试：testSeerMadProphet_listenOption_addsAbyssalGazeAndMadnessInSave")
@@ -126,4 +158,3 @@ final class GameCLISeerEventUITests: XCTestCase {
         ])
     }
 }
-

@@ -121,6 +121,10 @@ final class SeerAdvancedCardsTests: XCTestCase {
                 return XCTFail("同回合未能找到 灵视 用于预知次数堆叠")
             }
             _ = engine.handleAction(.playCard(handIndex: idx, targetEnemyIndex: nil))
+            // 预知需要完成选择后才能继续出牌
+            if case .some(.foresight) = engine.pendingInput {
+                _ = engine.submitForesightChoice(index: 0)
+            }
         }
 
         guard let echoIdx = engine.state.hand.firstIndex(where: { $0.cardId == ProphecyEcho.id }) else {
@@ -172,6 +176,9 @@ final class SeerAdvancedCardsTests: XCTestCase {
         }
         _ = engine.handleAction(.playCard(handIndex: ssIdx, targetEnemyIndex: nil))
 
+        if case .some(.foresight) = engine.pendingInput {
+            _ = engine.submitForesightChoice(index: 0)
+        }
         XCTAssertEqual(engine.state.player.block, 1)
     }
 
@@ -209,7 +216,74 @@ final class SeerAdvancedCardsTests: XCTestCase {
         }
         _ = engine.handleAction(.playCard(handIndex: ssIdx, targetEnemyIndex: nil))
 
+        if case .some(.foresight) = engine.pendingInput {
+            _ = engine.submitForesightChoice(index: 0)
+        }
         XCTAssertEqual(engine.state.player.block, 2)
+    }
+
+    func testSequenceResonance_stacksAcrossMultiplePlays_grantsMoreBlock() {
+        let seed: UInt64 = 6
+
+        let player = createDefaultPlayer()
+        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 200, enemyId: "shadow_stalker")
+
+        // deck=6：每回合抽 5，抽牌堆保证至少剩 1 张，让预知必定可触发
+        // 使用 3×序列共鸣 + 3×灵视，避免因洗牌导致缺牌（无论遗漏哪一张，手牌都必含 SR 与 SS）
+        let deck: [Card] = [
+            .init(id: "sr1", cardId: SequenceResonanceCard.id),
+            .init(id: "sr2", cardId: SequenceResonanceCard.id),
+            .init(id: "sr3", cardId: SequenceResonanceCard.id),
+            .init(id: "ss1", cardId: SpiritSight.id),
+            .init(id: "ss2", cardId: SpiritSight.id),
+            .init(id: "ss3", cardId: SpiritSight.id),
+        ]
+
+        let engine = BattleEngine(
+            player: player,
+            enemies: [enemy],
+            deck: deck,
+            relicManager: RelicManager(),
+            seed: seed
+        )
+        engine.startBattle()
+
+        // Turn 1: 打出 1 次序列共鸣 + 触发 1 次预知 → 应获得 1 点格挡
+        guard let sr1 = engine.state.hand.firstIndex(where: { $0.cardId == SequenceResonanceCard.id }) else {
+            return XCTFail("回合开始未抽到 序列共鸣")
+        }
+        _ = engine.handleAction(.playCard(handIndex: sr1, targetEnemyIndex: nil))
+
+        guard let ss1 = engine.state.hand.firstIndex(where: { $0.cardId == SpiritSight.id }) else {
+            return XCTFail("回合开始未抽到 灵视（用于触发预知）")
+        }
+        let blockBefore1 = engine.state.player.block
+        _ = engine.handleAction(.playCard(handIndex: ss1, targetEnemyIndex: nil))
+        if case .some(.foresight) = engine.pendingInput {
+            _ = engine.submitForesightChoice(index: 0)
+        }
+        let gained1 = engine.state.player.block - blockBefore1
+        XCTAssertEqual(gained1, 1)
+
+        // 结束回合，进入 Turn 2
+        _ = engine.handleAction(.endTurn)
+
+        // Turn 2: 再打出 1 次序列共鸣（应叠加 stacks）+ 触发 1 次预知 → 应获得 2 点格挡
+        guard let sr2 = engine.state.hand.firstIndex(where: { $0.cardId == SequenceResonanceCard.id }) else {
+            return XCTFail("第 2 回合未抽到 序列共鸣")
+        }
+        _ = engine.handleAction(.playCard(handIndex: sr2, targetEnemyIndex: nil))
+
+        guard let ss2 = engine.state.hand.firstIndex(where: { $0.cardId == SpiritSight.id }) else {
+            return XCTFail("第 2 回合未抽到 灵视（用于触发预知）")
+        }
+        let blockBefore2 = engine.state.player.block
+        _ = engine.handleAction(.playCard(handIndex: ss2, targetEnemyIndex: nil))
+        if case .some(.foresight) = engine.pendingInput {
+            _ = engine.submitForesightChoice(index: 0)
+        }
+        let gained2 = engine.state.player.block - blockBefore2
+        XCTAssertEqual(gained2, 2)
     }
 }
 

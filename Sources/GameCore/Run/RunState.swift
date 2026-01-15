@@ -15,10 +15,6 @@ public struct RunState: Sendable {
     
     /// 遗物管理器（P4 新增）
     public var relicManager: RelicManager
-
-    /// 消耗品列表（P4 新增）
-    /// - Note: 1.0 版本默认最多 3 个槽位
-    public private(set) var consumables: [ConsumableID]
     
     /// 地图节点
     public var map: [MapNode]
@@ -49,7 +45,6 @@ public struct RunState: Sendable {
         deck: [Card],
         gold: Int = RunState.startingGold,
         relicManager: RelicManager = RelicManager(),
-        consumables: [ConsumableID] = [],
         map: [MapNode],
         seed: UInt64,
         floor: Int = 1,
@@ -59,7 +54,6 @@ public struct RunState: Sendable {
         self.deck = deck
         self.gold = gold
         self.relicManager = relicManager
-        self.consumables = Array(consumables.prefix(RunState.maxConsumableSlots))
         self.map = map
         self.currentNodeId = nil
         self.seed = seed
@@ -84,7 +78,6 @@ public struct RunState: Sendable {
             deck: deck,
             gold: RunState.startingGold,
             relicManager: relicManager,
-            consumables: [],
             map: map,
             seed: seed,
             floor: 1,
@@ -218,23 +211,33 @@ public struct RunState: Sendable {
         deck.remove(at: index)
     }
 
-    // MARK: - Consumables (P4)
+    // MARK: - Consumable Cards (P4R)
 
-    /// 消耗品槽位上限
-    public static let maxConsumableSlots = 3
+    /// 冒险中“消耗性卡牌（消耗品）”持有上限
+    /// - Note: 复用 1.0 的 3 槽位设定，但以卡牌实例存在于 deck 中。
+    public static let maxConsumableCardSlots = 3
 
-    /// 添加一个消耗品（若槽位已满则失败）
+    /// 当前牌组中“消耗性卡牌”的数量
+    public var consumableCardCount: Int {
+        deck.reduce(into: 0) { acc, card in
+            guard let def = CardRegistry.get(card.cardId), def.type == .consumable else { return }
+            acc += 1
+        }
+    }
+
+    /// 添加一张“消耗性卡牌”到牌组（若槽位已满则失败）
     @discardableResult
-    public mutating func addConsumable(_ id: ConsumableID) -> Bool {
-        guard consumables.count < RunState.maxConsumableSlots else { return false }
-        consumables.append(id)
+    public mutating func addConsumableCardToDeck(cardId: CardID) -> Bool {
+        guard let def = CardRegistry.get(cardId), def.type == .consumable else { return false }
+        guard consumableCardCount < RunState.maxConsumableCardSlots else { return false }
+        addCardToDeck(cardId: cardId)
         return true
     }
 
-    /// 移除指定索引的消耗品
-    public mutating func removeConsumable(at index: Int) {
-        guard index >= 0 && index < consumables.count else { return }
-        consumables.remove(at: index)
+    /// 从牌组中移除指定实例 ID 的卡牌（用于消耗性卡牌“一次性永久消失”）
+    public mutating func removeCardFromDeck(instanceId: String) {
+        guard let idx = deck.firstIndex(where: { $0.id == instanceId }) else { return }
+        deck.remove(at: idx)
     }
 
     // MARK: - RunEffect（P5：事件系统）
@@ -268,6 +271,10 @@ public struct RunState: Sendable {
             return true
             
         case .addCard(let cardId):
+            guard let def = CardRegistry.get(cardId) else { return false }
+            if def.type == .consumable {
+                return addConsumableCardToDeck(cardId: cardId)
+            }
             addCardToDeck(cardId: cardId)
             return true
             
@@ -284,9 +291,6 @@ public struct RunState: Sendable {
             player.statuses.set(statusId, stacks: stacks)
             return true
 
-        case .addConsumable(let consumableId):
-            return addConsumable(consumableId)
-            
         case .upgradeCard(let deckIndex):
             return upgradeCard(at: deckIndex)
         }

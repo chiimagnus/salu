@@ -24,7 +24,6 @@ Sources/GameCore/  ← 本规范适用范围
 ├── Status/                 # StatusDefinition / StatusRegistry / StatusContainer
 ├── Enemies/                # EnemyDefinition / EnemyRegistry / EnemyPool / EncounterPool
 ├── Relics/                 # RelicDefinition / RelicRegistry / RelicManager / RelicPool
-├── Consumables/            # ConsumableDefinition / ConsumableRegistry
 ├── Events/                 # EventDefinition / EventRegistry / EventGenerator
 ├── Rewards/                # RewardGenerator / GoldRewardStrategy / CardPool
 ├── Shop/                   # ShopInventory / ShopPricing / ShopContext
@@ -44,18 +43,17 @@ Sources/GameCore/  ← 本规范适用范围
 
 GameCore 的内容扩展点遵循“协议驱动开发（PDD）”思路：
 
-- **强类型 ID**：`CardID/StatusID/EnemyID/RelicID/EventID/ConsumableID`（禁止散落字符串）。
+- **强类型 ID**：`CardID/StatusID/EnemyID/RelicID/EventID`（禁止散落字符串）。
 - **定义协议（只决策）**：
   - `CardDefinition`：`play(snapshot:targetEnemyIndex:) -> [BattleEffect]`
   - `StatusDefinition`：修正（phase+priority）与回合末触发（`onTurnEnd`）
   - `EnemyDefinition`：`chooseMove(selfIndex:snapshot:rng:) -> EnemyMove`
   - `RelicDefinition`：`onBattleTrigger(_:snapshot:) -> [BattleEffect]`
   - `EventDefinition`：`generate(context:rng:) -> EventOffer`
-  - `ConsumableDefinition`：产生效果/修改 RunState（取决于具体协议定义）
-- **注册表（唯一入口）**：`CardRegistry/StatusRegistry/EnemyRegistry/RelicRegistry/EventRegistry/ConsumableRegistry`。
+- **注册表（唯一入口）**：`CardRegistry/StatusRegistry/EnemyRegistry/RelicRegistry/EventRegistry`。
 - **统一效果管线**：所有战斗内影响统一由 `BattleEffect` 描述，只有 `BattleEngine` 执行效果并发出 `BattleEvent`。
 
-约束：新增卡牌/状态/敌人/遗物/事件/消耗品时，尽量只做“新增 Definition + 在 Registry 注册”，避免在 `BattleEngine` 里新增 `switch` 扩展点。
+约束：新增卡牌/状态/敌人/遗物/事件时，尽量只做“新增 Definition + 在 Registry 注册”，避免在 `BattleEngine` 里新增 `switch` 扩展点。
 
 ---
 
@@ -151,7 +149,7 @@ Battle/BattleEngine.swift
     ↓ 使用
 ┌──────────────────────────────────────────────────────────────┐
 │ Kernel/*  Entity/*  Cards/*  Status/*  Enemies/*  Relics/*   │
-│ Consumables/*  Events/*  Rewards/*  Shop/*  Map/*  Run/*     │
+│ Events/*  Rewards/*  Shop/*  Map/*  Run/*                    │
 └──────────────────────────────────────────────────────────────┘
     ↓ 使用
 ┌──────────────────────────────────────────┐
@@ -201,11 +199,13 @@ Battle/BattleEngine.swift
 2. 仅通过 `onBattleTrigger(_:snapshot:)` 产出 `[BattleEffect]`。
 3. 在 `Relics/RelicRegistry.swift` 注册，并根据需要更新 `RelicPool/RelicDropStrategy`。
 
-### 添加新消耗品
+### 添加新“消耗性卡牌”（一次性消耗品）
 
-1. 在 `Consumables/Definitions/**` 新增实现 `ConsumableDefinition` 的类型。
-2. 在 `Consumables/ConsumableRegistry.swift` 注册。
-3. 若要进入商店，确认其 ID 出现在 `ConsumableRegistry.shopConsumableIds`（或对应选择逻辑）。
+1. 在 `Cards/Definitions/**` 新增一个实现 `CardDefinition` 的类型：
+   - `type = .consumable`
+   - `cost = 0`（费用恒为 0，不耗能量）
+2. 在 `Cards/CardRegistry.swift` 注册。
+3. 商店与事件系统会从 `CardRegistry` 读取 `type == .consumable` 的卡牌作为“消耗品候选”；如需排除/限量，按 `ShopInventory`/事件定义的规则调整。
 
 ### 添加新地图事件
 

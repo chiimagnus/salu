@@ -12,7 +12,7 @@ final class BattleEventDescriptionTests: XCTestCase {
             (.blockCleared(target: "玩家", amount: 5), "玩家"),
             (.drew(cardId: "strike"), "抽到"),
             (.shuffled(count: 5), "洗牌"),
-            (.played(cardId: "strike", cost: 1), "打出"),
+            (.played(cardInstanceId: "strike_1", cardId: "strike", cost: 1), "打出"),
             (.damageDealt(source: "玩家", target: "敌人", amount: 6, blocked: 0), "造成"),
             (.damageDealt(source: "玩家", target: "敌人", amount: 6, blocked: 3), "被格挡"),
             (.blockGained(target: "玩家", amount: 5), "格挡"),
@@ -36,5 +36,4 @@ final class BattleEventDescriptionTests: XCTestCase {
         }
     }
 }
-
 
