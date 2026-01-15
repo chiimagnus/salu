@@ -1,12 +1,12 @@
 // MARK: - Shop Inventory
 
-/// 商店库存（P4 扩展：支持卡牌、遗物、消耗品）
+/// 商店库存（P4 扩展：支持卡牌、遗物、消耗性卡牌）
 public struct ShopInventory: Sendable, Equatable {
     /// 卡牌报价（5 张）
     public let cardOffers: [ShopCardOffer]
     /// 遗物报价（3 个）
     public let relicOffers: [ShopRelicOffer]
-    /// 消耗品报价（3 个）
+    /// 消耗性卡牌报价（3 个）
     public let consumableOffers: [ShopConsumableOffer]
     /// 删牌服务价格
     public let removeCardPrice: Int
@@ -23,7 +23,7 @@ public struct ShopInventory: Sendable, Equatable {
         self.removeCardPrice = removeCardPrice
     }
     
-    /// 统一条目列表（卡牌 + 遗物 + 消耗品 + 删牌服务）
+    /// 统一条目列表（卡牌 + 遗物 + 消耗性卡牌 + 删牌服务）
     public var items: [ShopItem] {
         var result: [ShopItem] = []
         result.append(contentsOf: cardOffers.map { ShopItem(kind: .card($0)) })
@@ -59,7 +59,7 @@ public struct ShopInventory: Sendable, Equatable {
             ShopRelicOffer(relicId: relicId, price: ShopPricing.relicPrice(for: relicId))
         }
         
-        // 消耗性卡牌（消耗品）：3 个
+        // 消耗性卡牌（原“消耗品”）：3 个
         let consumablePool = CardRegistry.allCardIds.filter { CardRegistry.require($0).type == .consumable }
         let consumableOfferCount = min(defaultConsumableOfferCount, consumablePool.count)
         let consumableChoices = Array(rng.shuffled(consumablePool).prefix(consumableOfferCount))

@@ -1,6 +1,6 @@
 import GameCore
 
-/// 商店界面（P4 扩展：支持遗物和消耗品）
+/// 商店界面（P4 扩展：支持遗物和消耗性卡牌）
 enum ShopScreen {
     static func show(inventory: ShopInventory, runState: RunState, message: String? = nil) {
         Terminal.clear()
@@ -42,11 +42,11 @@ enum ShopScreen {
             }
         }
         
-        // 消耗品区域
+        // 消耗性卡牌区域
         print("")
-        print("  \(Terminal.bold)🧪 消耗品：\(Terminal.reset)")
+        print("  \(Terminal.bold)🧪 消耗性卡牌：\(Terminal.reset)")
         if inventory.consumableOffers.isEmpty {
-            print("  \(Terminal.dim)（暂无消耗品上架）\(Terminal.reset)")
+            print("  \(Terminal.dim)（暂无消耗性卡牌上架）\(Terminal.reset)")
         } else {
             for (index, offer) in inventory.consumableOffers.enumerated() {
                 let def = CardRegistry.require(offer.cardId)
@@ -77,7 +77,7 @@ enum ShopScreen {
             hints.append("\(Terminal.cyan)[R1-R\(inventory.relicOffers.count)]\(Terminal.reset) 买遗物")
         }
         if !inventory.consumableOffers.isEmpty {
-            hints.append("\(Terminal.cyan)[C1-C\(inventory.consumableOffers.count)]\(Terminal.reset) 买消耗品")
+            hints.append("\(Terminal.cyan)[C1-C\(inventory.consumableOffers.count)]\(Terminal.reset) 买消耗性卡牌")
         }
         hints.append("\(Terminal.cyan)[D]\(Terminal.reset) 删牌")
         hints.append("\(Terminal.cyan)[0]\(Terminal.reset) 离开")

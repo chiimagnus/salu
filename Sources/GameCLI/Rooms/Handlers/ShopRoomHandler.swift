@@ -1,6 +1,6 @@
 import GameCore
 
-/// 商店房间处理器（P4 扩展：支持遗物和消耗品）
+/// 商店房间处理器（P4 扩展：支持遗物和消耗性卡牌）
 struct ShopRoomHandler: RoomHandling {
     var roomType: RoomType { .shop }
     
@@ -61,7 +61,7 @@ struct ShopRoomHandler: RoomHandling {
                 continue
             }
             
-            // P4: 购买消耗品 (C1, C2, C3...)
+            // P4R: 购买消耗性卡牌 (C1, C2, C3...)
             if input.hasPrefix("c"), let indexStr = input.dropFirst().first, let index = Int(String(indexStr)) {
                 inventory = handleBuyConsumable(
                     index: index,
@@ -175,13 +175,13 @@ struct ShopRoomHandler: RoomHandling {
         message: inout String?
     ) -> ShopInventory {
         guard index >= 1, index <= inventory.consumableOffers.count else {
-            message = "\(Terminal.red)⚠️ 无效的消耗品编号\(Terminal.reset)"
+            message = "\(Terminal.red)⚠️ 无效的消耗性卡牌编号\(Terminal.reset)"
             return inventory
         }
         
         let offer = inventory.consumableOffers[index - 1]
         if runState.gold < offer.price {
-            message = "\(Terminal.red)金币不足，无法购买该消耗品\(Terminal.reset)"
+            message = "\(Terminal.red)金币不足，无法购买该消耗性卡牌\(Terminal.reset)"
             return inventory
         }
         
@@ -194,7 +194,7 @@ struct ShopRoomHandler: RoomHandling {
         let def = CardRegistry.require(offer.cardId)
         context.logLine("\(Terminal.yellow)商店购买：🧪 \(def.name)（-\(offer.price) 金币）\(Terminal.reset)")
         
-        // 消耗品可重复购买，不从库存移除
+        // 消耗性卡牌可重复购买，不从库存移除
         message = "\(Terminal.green)购买成功，获得消耗性卡牌【\(def.name)】\(Terminal.reset)"
         
         return inventory

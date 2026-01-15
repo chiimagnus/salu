@@ -22,7 +22,7 @@ public struct ShopRelicOffer: Sendable, Equatable {
     }
 }
 
-/// 商店消耗品报价（P4 新增）
+/// 商店消耗性卡牌报价（P4R，原“消耗品”）
 public struct ShopConsumableOffer: Sendable, Equatable {
     /// 消耗性卡牌 ID（`CardType.consumable`）
     public let cardId: CardID
@@ -39,7 +39,7 @@ public struct ShopItem: Sendable, Equatable {
     public enum Kind: Sendable, Equatable {
         case card(ShopCardOffer)
         case relic(ShopRelicOffer)           // P4: 遗物
-        case consumable(ShopConsumableOffer) // P4: 消耗品
+        case consumable(ShopConsumableOffer) // P4R: 消耗性卡牌（原“消耗品”）
         case removeCard(price: Int)
     }
     

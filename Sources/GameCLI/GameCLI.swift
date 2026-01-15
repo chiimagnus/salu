@@ -444,7 +444,7 @@ struct GameCLI {
         engine.clearEvents()
         
         // 直接进入游戏主循环
-        // - Note: 快速战斗不依赖 RunState（消耗品/地图/存档），这里注入一个最小 RunState 仅用于复用 battleLoop。
+        // - Note: 快速战斗不依赖 RunState（消耗性卡牌/地图/存档），这里注入一个最小 RunState 仅用于复用 battleLoop。
         var tempRunState = RunState(
             player: engine.state.player,
             deck: [],

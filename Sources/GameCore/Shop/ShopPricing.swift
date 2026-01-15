@@ -53,7 +53,7 @@ public enum ShopPricing {
     
     // MARK: - 消耗性卡牌定价（P4R）
 
-    /// 购买“消耗性卡牌（消耗品）”价格
+    /// 购买“消耗性卡牌（原“消耗品”）”价格
     public static func consumableCardPrice(for cardId: CardID) -> Int {
         let def = CardRegistry.require(cardId)
         return consumableCardPrice(for: def.rarity)
