@@ -1,76 +1,63 @@
 ---
 name: executing-plans
-description: Use when you have a written implementation plan to execute in a separate session with review checkpoints
+description: "当已有实施计划（任务清单）时使用：按批次实现、验证、汇报，留出 review 检查点。"
 ---
 
-# Executing Plans
+# 执行实施计划（Executing Plans）
 
-## Overview
+## 目的
 
-Load plan, review critically, execute tasks in batches, report for review between batches.
+把“写好的实施计划”稳定地落地为代码变更：先审计划再动手；按批次执行；每批都要有可复现的验证输出与等待 review 的停顿点。
 
-**Core principle:** Batch execution with checkpoints for architect review.
+核心原则：**小批量 + 检查点**（每批 2–4 个任务）。
 
-**Announce at start:** "I'm using the executing-plans skill to implement this plan."
+进入此 executing-plans skill 后先声明：正在使用 `executing-plans` 按计划执行。
 
-## The Process
+## 流程
 
-### Step 1: Load and Review Plan
-1. Read plan file
-2. Review critically - identify any questions or concerns about the plan
-3. If concerns: Raise them with your human partner before starting
-4. If no concerns: Create TodoWrite and proceed
+### 1) 读取并审查计划（先质疑，后实现）
+- 读计划文件，确认目标、范围、验证方式、文件路径是否明确
+- 主动指出风险/缺口：依赖不清、边界条件缺失、验证命令不可执行、步骤过大
+- 有疑问先问清楚再开始；不要“猜着做”
 
-### Step 2: Execute Batch
-**Default: First 3 tasks**
+### 2) 建立执行看板
+- 用 `update_plan` 把本批次任务写成步骤，并维护状态（`pending` / `in_progress` / `completed`）
+- 默认从前 2–4 个任务开始；若任务涉及基础设施（公共类型/接口），优先执行它们
 
-For each task:
-1. Mark as in_progress
-2. Follow each step exactly (plan has bite-sized steps)
-3. Run verifications as specified
-4. Mark as completed
+### 3) 批次执行（每个任务都要可验证）
+对每个任务：
+1) 标记 `in_progress`  
+2) 严格按计划的小步骤做（不要跳步）  
+3) 按计划运行验证命令，并记录关键输出（至少包含命令与通过/失败）  
+4) 通过后标记 `completed`
 
-### Step 3: Report
-When batch complete:
-- Show what was implemented
-- Show verification output
-- Say: "Ready for feedback."
+Swift/SwiftPM 项目常见验证方式（示例）：
+- 只跑相关测试：`swift test --filter MyModuleTests.MyTypeTests/testSpecificBehavior`
+- 跑全量测试：`swift test`
+- 只验证编译：`swift build`
 
-### Step 4: Continue
-Based on feedback:
-- Apply changes if needed
-- Execute next batch
-- Repeat until complete
+### 4) 批次汇报并等待 review
+一批做完后，只汇报三类信息：
+- 做了什么（涉及的文件/核心改动点）
+- 如何验证（命令 + 关键输出/结果）
+- 接下来准备做什么（下一批任务）
 
-### Step 5: Complete Development
+然后停住等待反馈；按反馈调整后进入下一批，直到计划完成。
 
-After all tasks complete and verified:
-- Announce: "I'm using the finishing-a-development-branch skill to complete this work."
-- **REQUIRED SUB-SKILL:** Use superpowers:finishing-a-development-branch
-- Follow that skill to verify tests, present options, execute choice
+## 何时必须停下并求助
 
-## When to Stop and Ask for Help
+遇到以下情况立即停止继续执行并提出具体问题：
+- 中途被阻塞（缺依赖/权限/构建失败/测试失败）
+- 计划关键步骤不明确（“加校验”“优化性能”但没有可验证定义）
+- 你不理解某条指令或它与现有代码矛盾
+- 验证反复失败（超过 2 次仍不清楚原因）
 
-**STOP executing immediately when:**
-- Hit a blocker mid-batch (missing dependency, test fails, instruction unclear)
-- Plan has critical gaps preventing starting
-- You don't understand an instruction
-- Verification fails repeatedly
+原则：**问清楚，不猜。**
 
-**Ask for clarification rather than guessing.**
+## 何时回到“审计划”
 
-## When to Revisit Earlier Steps
+出现以下情况回到第 1 步重新审查：
+- 计划被更新（步骤/范围/验收口径变化）
+- 基础方案需要推翻或明显走不通
 
-**Return to Review (Step 1) when:**
-- Partner updates the plan based on your feedback
-- Fundamental approach needs rethinking
-
-**Don't force through blockers** - stop and ask.
-
-## Remember
-- Review plan critically first
-- Follow plan steps exactly
-- Don't skip verifications
-- Reference skills when plan says to
-- Between batches: just report and wait
-- Stop when blocked, don't guess
+不要硬顶障碍；用最小成本澄清后再继续。
