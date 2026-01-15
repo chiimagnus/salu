@@ -15,7 +15,8 @@ description: "当需求/设计已明确且工作是多步骤时使用：在动�
 - 需求/范围/验收标准已明确（否则先用 `brainstorming` 澄清）
 
 计划保存位置：
-- 放到仓库约定的 plans 目录（例如 `.codex/plans/`），文件名建议 `YYYY-MM-DD-主题-implementation-plan.md`
+- 保存为 Markdown 文件，路径放在 `.codex/plans/`，文件名建议 `YYYY-MM-DD-主题-implementation-plan.md`
+- 如果存在明确的优先级（如 P1/P2/P3…），在计划中用标题分组，并标注“Plan A（主方案）”
 
 ## 任务粒度（必须够小）
 
@@ -49,6 +50,10 @@ description: "当需求/设计已明确且工作是多步骤时使用：在动�
 ## 任务结构模板（Swift 版本）
 
 ```markdown
+## Plan A（主方案）
+
+### P1（最高优先级）：[目标/范围]
+
 ### Task N: [任务名]
 
 **Files:**
@@ -103,7 +108,7 @@ git commit -m "feat: implement parseIntOrNil"
 - **精确文件路径**：不要写“改某个文件”，要写到具体路径（必要时写到符号名）
 - **可验证步骤**：每个任务至少一个验证命令（最好是 `swift test --filter ...`）
 - **边界条件**：错误输入、空值、极端值、并发/线程安全（如适用）
-- **回归策略**：任务完成后跑哪些测试（局部/全量），是否需要 `swift build`
+- **回归策略**：每完成一个优先级分组（P1/P2/P3…）后，明确要跑的验证（例如 `swift build`、`swift test`，或需要时 `xcodebuild`）
 - **不确定项**：把需要确认的问题列出来，避免执行者猜
 
 ## 交接给执行
