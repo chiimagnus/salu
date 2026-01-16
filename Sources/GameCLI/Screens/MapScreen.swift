@@ -93,9 +93,22 @@ enum MapScreen {
         
         // 按层从高到低显示（Boss 在顶部）
         let maxRow = runState.map.maxRow
+        let map = runState.map
+        
+        // 计算每层最大节点数，用于对齐
+        var maxNodesInRow = 1
+        for row in 0...maxRow {
+            let count = map.nodes(atRow: row).count
+            if count > maxNodesInRow {
+                maxNodesInRow = count
+            }
+        }
+        
+        // 节点宽度（包含方括号和间距）
+        _ = 5  // "[X]" + "  " 的宽度，用于计算对齐
         
         for row in stride(from: maxRow, through: 0, by: -1) {
-            let rowNodes = runState.map.nodes(atRow: row)
+            let rowNodes = map.nodes(atRow: row)
             var rowLine = "  "
             
             // 检查这一层是否有可选择的节点
@@ -113,21 +126,100 @@ enum MapScreen {
                 rowLine += "        "
             }
             
-            // 显示该层的所有节点
+            // 显示该层的所有节点（居中对齐）
+            let nodeCount = rowNodes.count
+            let padding = (maxNodesInRow - nodeCount) / 2
+            
+            // 添加左侧填充
+            for _ in 0..<padding {
+                rowLine += "     "  // 5 个空格
+            }
+            
+            // 显示节点
             var nodeStrings: [String] = []
             for node in rowNodes {
                 let nodeStr = formatNode(node)
                 nodeStrings.append(nodeStr)
             }
-            
             rowLine += nodeStrings.joined(separator: "  ")
+            
             lines.append(rowLine)
+            
+            // 绘制连接线（当前层到下一层）
+            if row > 0 {
+                let nextRowNodes = map.nodes(atRow: row - 1)
+                let connectionLine = buildConnectionLine(
+                    fromNodes: rowNodes,
+                    toNodes: nextRowNodes,
+                    maxNodesInRow: maxNodesInRow,
+                    fromPadding: padding
+                )
+                if !connectionLine.isEmpty {
+                    lines.append("          \(connectionLine)")
+                }
+            }
         }
         
         lines.append("")
         lines.append("\(Terminal.bold)─────────────────────────────────────────────\(Terminal.reset)")
         
         return lines
+    }
+    
+    /// 构建连接线
+    private static func buildConnectionLine(
+        fromNodes: [MapNode],
+        toNodes: [MapNode],
+        maxNodesInRow: Int,
+        fromPadding: Int
+    ) -> String {
+        // 简化版连接线：只显示 | 或 / \ 表示连接方向
+        let fromCount = fromNodes.count
+        let toCount = toNodes.count
+        let toPadding = (maxNodesInRow - toCount) / 2
+        
+        // 如果只有一个节点连接到一个节点，显示简单的 |
+        if fromCount == 1 && toCount == 1 {
+            var line = ""
+            for _ in 0..<fromPadding {
+                line += "     "
+            }
+            line += "  \(Terminal.dim)│\(Terminal.reset)"
+            return line
+        }
+        
+        // 构建连接线数组
+        // 每个位置的宽度是 5 个字符（对应节点宽度）
+        var lineChars: [String] = Array(repeating: " ", count: maxNodesInRow * 5)
+        
+        for (fromIdx, fromNode) in fromNodes.enumerated() {
+            let fromPos = (fromPadding + fromIdx) * 5 + 1  // 节点中心位置
+            
+            for connectedId in fromNode.connections {
+                guard let toIdx = toNodes.firstIndex(where: { $0.id == connectedId }) else { continue }
+                let toPos = (toPadding + toIdx) * 5 + 1
+                
+                // 根据位置差决定连接符号
+                if fromPos == toPos {
+                    // 直线向下
+                    if fromPos < lineChars.count {
+                        lineChars[fromPos] = "\(Terminal.dim)│\(Terminal.reset)"
+                    }
+                } else if fromPos < toPos {
+                    // 向右下
+                    if fromPos < lineChars.count {
+                        lineChars[fromPos] = "\(Terminal.dim)╲\(Terminal.reset)"
+                    }
+                } else {
+                    // 向左下
+                    if fromPos < lineChars.count {
+                        lineChars[fromPos] = "\(Terminal.dim)╱\(Terminal.reset)"
+                    }
+                }
+            }
+        }
+        
+        return lineChars.joined()
     }
     
     private static func formatNode(_ node: MapNode) -> String {
