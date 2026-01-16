@@ -12,7 +12,13 @@ permissions:
 jobs:
   test:
     name: Run Tests
-    runs-on: macos-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+          - windows-latest
 
     steps:
       - name: Checkout code
@@ -24,4 +30,10 @@ jobs:
           swift-version: '6.2'
 
       - name: Run Swift tests
+        if: matrix.os != 'windows-latest'
         run: swift test
+
+      - name: Run Swift tests
+        if: matrix.os == 'windows-latest'
+        run: swift test
+        shell: bash
