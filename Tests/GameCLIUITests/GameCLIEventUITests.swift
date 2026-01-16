@@ -33,7 +33,7 @@ final class GameCLIEventUITests: XCTestCase {
         XCTAssertEqual(result.exitCode, 0)
         
         let output = result.stdout.strippingANSICodes()
-        XCTAssertTrue(output.contains("事件"), "期望出现事件界面相关文本（stdout）")
+        XCTAssertTrue(output.contains("Event"), "Expected Event screen text (stdout)")
         
         let saveURL = tmp.url.appendingPathComponent("run_save.json")
         XCTAssertTrue(FileManager.default.fileExists(atPath: saveURL.path), "期望生成 run_save.json")
@@ -53,5 +53,4 @@ final class GameCLIEventUITests: XCTestCase {
         XCTAssertTrue(hasGoldChanged || hasRelicChanged || hasUpgradedCard, "期望事件选择对冒险状态产生可观察变化（gold/relic/deck）")
     }
 }
-
 

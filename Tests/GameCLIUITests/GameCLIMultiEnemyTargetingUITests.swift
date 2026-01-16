@@ -30,12 +30,11 @@ final class GameCLIMultiEnemyTargetingUITests: XCTestCase {
         
         let output = result.stdout.strippingANSICodes()
         
-        XCTAssertTrue(output.contains("翠鳞虫"))
-        XCTAssertTrue(output.contains("血眼虫"))
+        XCTAssertTrue(output.contains("Green Louse"))
+        XCTAssertTrue(output.contains("Red Louse"))
         XCTAssertTrue(output.contains("👹 [1]"))
         XCTAssertTrue(output.contains("👹 [2]"))
-        XCTAssertTrue(output.contains("该牌需要选择目标"))
+        XCTAssertTrue(output.contains("This card requires a target"))
     }
 }
-
 

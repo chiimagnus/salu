@@ -31,7 +31,7 @@ final class GameCLIIntegrationUITests: XCTestCase {
         
         let output = result.stdout.strippingANSICodes()
         XCTAssertTrue(output.contains("SALU"), "期望出现游戏标题/主菜单（stdout）")
-        XCTAssertTrue(output.contains("开始冒险"), "期望出现无存档时的菜单项（stdout）")
+        XCTAssertTrue(output.contains("Start Run"), "Expected Start Run menu item in stdout")
     }
     
     // MARK: - 战斗界面测试
@@ -57,7 +57,7 @@ final class GameCLIIntegrationUITests: XCTestCase {
         XCTAssertEqual(result.exitCode, 0)
         
         let output = result.stdout.strippingANSICodes()
-        XCTAssertTrue(output.contains("👹") || output.contains("意图"), "期望出现战斗界面关键标识（stdout）")
+        XCTAssertTrue(output.contains("👹") || output.contains("Intent"), "Expected battle UI markers in stdout")
     }
     
     // MARK: - 帮助界面测试
@@ -82,7 +82,7 @@ final class GameCLIIntegrationUITests: XCTestCase {
         XCTAssertEqual(result.exitCode, 0)
         
         let output = result.stdout.strippingANSICodes()
-        XCTAssertTrue(output.contains("游戏帮助"), "期望能打开帮助界面（stdout）")
+        XCTAssertTrue(output.contains("Help"), "Expected Help screen in stdout")
     }
     
     // MARK: - 设置菜单测试
@@ -116,9 +116,9 @@ final class GameCLIIntegrationUITests: XCTestCase {
         XCTAssertEqual(result.exitCode, 0)
         
         let output = result.stdout.strippingANSICodes()
-        XCTAssertTrue(output.contains("设置菜单"), "期望进入设置菜单（stdout）")
-        XCTAssertTrue(output.contains("战绩统计"), "期望能打开统计界面（stdout）")
-        XCTAssertTrue(output.contains("历史记录已清除"), "期望清除历史记录的提示出现（stdout）")
+        XCTAssertTrue(output.contains("Settings"), "Expected Settings screen in stdout")
+        XCTAssertTrue(output.contains("Statistics"), "Expected Statistics screen in stdout")
+        XCTAssertTrue(output.contains("History cleared"), "Expected history cleared message in stdout")
     }
     
     // MARK: - 真实模式烟雾测试
@@ -143,6 +143,6 @@ final class GameCLIIntegrationUITests: XCTestCase {
         XCTAssertEqual(result.exitCode, 0)
         
         let output = result.stdout.strippingANSICodes()
-        XCTAssertTrue(output.contains("冒险失败") || output.contains("战斗"), "期望至少进入过 run/battle 相关界面（stdout）")
+        XCTAssertTrue(output.contains("Adventure Failed") || output.contains("Battle"), "Expected run/battle output in stdout")
     }
 }

@@ -53,20 +53,20 @@ final class GameCLIRelicRewardUITests: XCTestCase {
         
         // 先验证：遗物确实出现在战斗界面的「遗物列表」里（证明持久化与展示链路正常）
         if let relicId = earnedRelic, let def = RelicRegistry.get(RelicID(relicId)) {
-            XCTAssertTrue(output.contains("\(def.icon)\(def.name.zhHans)"), "期望继续冒险后遗物仍显示在战斗界面中")
+            XCTAssertTrue(output.contains("\(def.icon)\(def.name.en)"), "Expected relic to appear in battle UI after continue")
         }
         
         // 再验证（尽力）：对“战斗开始立即可观察”的遗物效果做断言
         // - 力量/敏捷：战斗界面状态栏会显示「力量+N / 敏捷+N」
         // - 额外能量：能量栏会显示「4/3」等
         if earnedRelic == "vajra" {
-            XCTAssertTrue(output.contains("💪力量+1"), "期望继续冒险后力量加成依旧生效")
+            XCTAssertTrue(output.contains("💪Strength+1"), "Expected strength bonus to persist")
         } else if earnedRelic == "lantern" {
-            XCTAssertTrue(output.contains("4/3"), "期望继续冒险后额外能量依旧生效")
+            XCTAssertTrue(output.contains("4/3"), "Expected extra energy to persist")
         } else if earnedRelic == "war_banner" {
-            XCTAssertTrue(output.contains("💪力量+2"), "期望继续冒险后战旗力量加成依旧生效")
+            XCTAssertTrue(output.contains("💪Strength+2"), "Expected war banner strength bonus to persist")
         } else if earnedRelic == "feather_cloak" {
-            XCTAssertTrue(output.contains("敏捷+1"), "期望继续冒险后敏捷加成依旧生效")
+            XCTAssertTrue(output.contains("Dexterity+1"), "Expected dexterity bonus to persist")
         } else {
             // 其他遗物目前可能不是“战斗开始立即可观察”的类型：至少保证持久化与展示
         }

@@ -100,7 +100,7 @@ final class SaveServiceTests: XCTestCase {
             guard case SaveError.corruptedSave(let reason) = error else {
                 return XCTFail("期望抛出 SaveError.corruptedSave，但得到：\(error)")
             }
-            XCTAssertTrue(reason.contains("未知卡牌"), "reason 应包含“未知卡牌”，实际：\(reason)")
+            XCTAssertTrue(reason.contains("Unknown card"), "Expected unknown card message, got: \(reason)")
         }
     }
     
@@ -130,7 +130,7 @@ final class SaveServiceTests: XCTestCase {
             guard case SaveError.corruptedSave(let reason) = error else {
                 return XCTFail("期望抛出 SaveError.corruptedSave，但得到：\(error)")
             }
-            XCTAssertTrue(reason.contains("未知遗物"), "reason 应包含“未知遗物”，实际：\(reason)")
+            XCTAssertTrue(reason.contains("Unknown relic"), "Expected unknown relic message, got: \(reason)")
         }
     }
 }

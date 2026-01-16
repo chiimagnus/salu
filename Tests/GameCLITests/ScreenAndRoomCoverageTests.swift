@@ -84,9 +84,9 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
             HistoryScreen.show(historyService: service)
         }.strippingANSICodes()
         
-        XCTAssertTrue(output.contains("战斗历史记录"))
-        XCTAssertTrue(output.contains("序号"))
-        XCTAssertTrue(output.contains("显示最近"), "期望出现“显示最近 N 场战斗”的统计行")
+        XCTAssertTrue(output.contains("Battle History"))
+        XCTAssertTrue(output.contains("#"))
+        XCTAssertTrue(output.contains("Showing last"), "Expected summary line for recent battles")
     }
     
     func testStatisticsScreen_withRecords_rendersSummary() {
@@ -101,9 +101,9 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
             StatisticsScreen.show(historyService: service)
         }.strippingANSICodes()
         
-        XCTAssertTrue(output.contains("战绩统计"))
-        XCTAssertTrue(output.contains("总场次"))
-        XCTAssertTrue(output.contains("胜率"))
+        XCTAssertTrue(output.contains("Statistics"))
+        XCTAssertTrue(output.contains("Total battles"))
+        XCTAssertTrue(output.contains("Win rate"))
     }
     
     func testResourceScreen_rendersRegistriesAndPools() {
@@ -113,10 +113,10 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
             ResourceScreen.show()
         }.strippingANSICodes()
         
-        XCTAssertTrue(output.contains("资源管理"))
-        XCTAssertTrue(output.contains("卡牌（Registry）"))
-        XCTAssertTrue(output.contains("遗物（Registry）"))
-        XCTAssertTrue(output.contains("遭遇池"))
+        XCTAssertTrue(output.contains("Resources (Registries & Pools)"))
+        XCTAssertTrue(output.contains("Cards (Registry)"))
+        XCTAssertTrue(output.contains("Relics (Registry)"))
+        XCTAssertTrue(output.contains("Encounter Pool"))
         XCTAssertTrue(output.contains("Act1EncounterPool.weak"))
         XCTAssertTrue(output.contains("Act2"), "期望资源管理页包含 Act2 内容")
     }
@@ -138,9 +138,9 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
             ResultScreen.showFinal(state: state, record: record)
         }.strippingANSICodes()
         
-        XCTAssertTrue(output.contains("战 斗 胜 利") || output.contains("战斗胜利"))
-        XCTAssertTrue(output.contains("本局统计"))
-        XCTAssertTrue(output.contains("使用 --history"), "期望出现后续提示文案（stdout）")
+        XCTAssertTrue(output.contains("VICTORY"))
+        XCTAssertTrue(output.contains("Run Stats"))
+        XCTAssertTrue(output.contains("Use --history"), "Expected follow-up hint (stdout)")
     }
     
     func testBossRoomHandler_win_returnsRunEndedTrue_andWritesHistory() {

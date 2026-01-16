@@ -30,7 +30,7 @@ final class GameCLIRewardUITests: XCTestCase {
         XCTAssertEqual(result.exitCode, 0)
         
         let output = result.stdout.strippingANSICodes()
-        XCTAssertTrue(output.contains("战斗奖励"), "期望出现“🎁 战斗奖励”界面（stdout）")
+        XCTAssertTrue(output.contains("Battle Rewards"), "Expected Battle Rewards screen (stdout)")
         
         // 存档应存在，且 deck 增长
         let saveURL = tmp.url.appendingPathComponent("run_save.json")
@@ -41,5 +41,4 @@ final class GameCLIRewardUITests: XCTestCase {
         XCTAssertEqual(snapshot.deck.count, 14, "选择奖励后 deck 应从 13 增加到 14")
     }
 }
-
 
