@@ -91,7 +91,7 @@ enum ResourceScreen {
         lines.append("")
 
         for (i, enc) in encounters.enumerated() {
-            let names = enc.enemyIds.map { id in EnemyRegistry.require(id).name }.joined(separator: " + ")
+            let names = enc.enemyIds.map { id in L10n.resolve(EnemyRegistry.require(id).name) }.joined(separator: " + ")
             lines.append("    [\(i + 1)] \(names)")
         }
 
@@ -134,7 +134,7 @@ enum ResourceScreen {
         lines.append("")
 
         for (i, enc) in act2Encounters.enumerated() {
-            let names = enc.enemyIds.map { id in EnemyRegistry.require(id).name }.joined(separator: " + ")
+            let names = enc.enemyIds.map { id in L10n.resolve(EnemyRegistry.require(id).name) }.joined(separator: " + ")
             lines.append("    [\(i + 1)] \(names)")
         }
 
@@ -168,7 +168,7 @@ enum ResourceScreen {
         lines.append("")
 
         for (i, enc) in act3Encounters.enumerated() {
-            let names = enc.enemyIds.map { id in EnemyRegistry.require(id).name }.joined(separator: " + ")
+            let names = enc.enemyIds.map { id in L10n.resolve(EnemyRegistry.require(id).name) }.joined(separator: " + ")
             lines.append("    [\(i + 1)] \(names)")
         }
 

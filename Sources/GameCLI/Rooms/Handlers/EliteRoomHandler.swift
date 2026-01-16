@@ -65,7 +65,7 @@ struct EliteRoomHandler: RoomHandling {
         
         // 如果胜利，完成节点
         if engine.state.playerWon == true {
-            let enemyName = engine.state.enemies.first?.name.map { L10n.resolve($0) } ?? L10n.text("敌人", "Enemy")
+            let enemyName = engine.state.enemies.first.map { L10n.resolve($0.name) } ?? L10n.text("敌人", "Enemy")
             context.logLine("\(Terminal.green)\(L10n.text("精英胜利", "Elite victory"))：\(L10n.text("击败", "Defeated")) \(enemyName)\(Terminal.reset)")
             let rewardContext = RewardContext(
                 seed: runState.seed,

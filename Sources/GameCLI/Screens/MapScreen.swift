@@ -224,7 +224,7 @@ enum MapScreen {
           \(L10n.text("当前 HP", "Current HP")): \(Terminal.yellow)\(player.currentHP)/\(player.maxHP)\(Terminal.reset)
           
           \(Terminal.green)[1] \(L10n.text("休息", "Rest"))\(Terminal.reset) - \(L10n.text("恢复", "Recover")) \(healAmount) HP (→ \(newHP) HP)
-          \(upgradeableCount > 0 ? "\(Terminal.blue)[2] \(L10n.text("升级卡牌", "Upgrade Card"))\(Terminal.reset) - \(L10n.text("可升级", "Upgradable")) \(upgradeableCount) \(L10n.text("张", "cards")" : "\(Terminal.dim)[2] \(L10n.text("升级卡牌", "Upgrade Card")) - \(L10n.text("当前无可升级卡牌", "No upgradable cards"))\(Terminal.reset)")
+          \(upgradeableCount > 0 ? "\(Terminal.blue)[2] \(L10n.text("升级卡牌", "Upgrade Card"))\(Terminal.reset) - \(L10n.text("可升级", "Upgradable")) \(upgradeableCount) \(L10n.text("张", "cards"))" : "\(Terminal.dim)[2] \(L10n.text("升级卡牌", "Upgrade Card")) - \(L10n.text("当前无可升级卡牌", "No upgradable cards"))\(Terminal.reset)")
           \(Terminal.magenta)[3] \(L10n.text("与艾拉对话", "Talk to Aira"))\(Terminal.reset) - \(L10n.text("听听她想说的话", "Hear what she has to say"))
           
         \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)

@@ -26,7 +26,7 @@ enum SettingsScreen {
         ║  \(Terminal.reset)\(Terminal.cyan)[5]\(Terminal.bold)\(Terminal.yellow) 📖 \(L10n.text("游戏帮助", "Help"))                                ║
         ║  \(Terminal.reset)\(Terminal.cyan)[6]\(Terminal.bold)\(Terminal.yellow) 📋 \(L10n.text("日志显示", "Show Log")) [\(logStatus)]                       ║
         ║  \(Terminal.reset)\(Terminal.cyan)[7]\(Terminal.bold)\(Terminal.yellow) 🗂️ \(L10n.text("数据目录", "Data Directory"))（SALU_DATA_DIR）                  ║
-        ║  \(Terminal.reset)\(Terminal.cyan)[8]\(Terminal.bold)\(Terminal.yellow) 🧭 \(L10n.text("事件种子工具", "Event Seed Tool"))（\(L10n.text("开发者", "Dev")）                     ║
+        ║  \(Terminal.reset)\(Terminal.cyan)[8]\(Terminal.bold)\(Terminal.yellow) 🧭 \(L10n.text("事件种子工具", "Event Seed Tool"))（\(L10n.text("开发者", "Dev"))）                     ║
         ║  \(Terminal.reset)\(Terminal.cyan)[9]\(Terminal.bold)\(Terminal.yellow) 🌐 \(L10n.text("语言", "Language"))：\(languageName)                           ║
         ║                                                       ║
         ╠═══════════════════════════════════════════════════════╣

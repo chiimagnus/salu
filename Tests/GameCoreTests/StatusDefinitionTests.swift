@@ -48,15 +48,17 @@ final class StatusDefinitionTests: XCTestCase {
         print("🧪 测试：testPoison_onTurnEnd_dealsDamageEqualToStacks_andDecaysEachTurn")
         let snapshot = BattleSnapshot(
             turn: 1,
-            player: Entity(id: "p", name: "玩家", maxHP: 10),
-            enemies: [Entity(id: "e", name: "敌人", maxHP: 10, enemyId: "jaw_worm")],
+            player: Entity(id: "p", name: LocalizedText("玩家", "玩家"), maxHP: 10),
+            enemies: [Entity(id: "e", name: LocalizedText("敌人", "敌人"), maxHP: 10, enemyId: "jaw_worm")],
             energy: 3
         )
         
         let effects = Poison.onTurnEnd(owner: .player, stacks: 4, snapshot: snapshot)
-        XCTAssertEqual(effects, [.dealDamage(source: .player, target: .player, base: 4)])
+        let expected: [BattleEffect] = [
+            .dealDamage(source: .player, target: .player, base: 4)
+        ]
+        XCTAssertEqual(effects, expected)
         XCTAssertEqual(Poison.decay, .turnEnd(decreaseBy: 1))
     }
 }
-
 

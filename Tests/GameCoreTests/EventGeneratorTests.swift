@@ -118,7 +118,7 @@ final class EventGeneratorTests: XCTestCase {
         let offer = TrainingEvent.generate(context: context, rng: &rng)
         XCTAssertEqual(offer.eventId, TrainingEvent.id)
         
-        guard let upgrade = offer.options.first(where: { $0.title == "接受尼古拉的指导" }) else {
+        guard let upgrade = offer.options.first(where: { $0.title.zhHans == "接受尼古拉的指导" }) else {
             return XCTFail("期望存在“接受尼古拉的指导”选项")
         }
         
@@ -135,5 +135,4 @@ final class EventGeneratorTests: XCTestCase {
         }
     }
 }
-
 

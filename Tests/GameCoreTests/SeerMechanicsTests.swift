@@ -5,7 +5,7 @@ final class SeerMechanicsTests: XCTestCase {
     func testRewind_returnsMostRecentDiscardToHand() {
         let seed: UInt64 = 4
         let player = createDefaultPlayer()
-        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 40, enemyId: "shadow_stalker")
+        let enemy = Entity(id: "e0", name: LocalizedText("测试敌人", "测试敌人"), maxHP: 40, enemyId: "shadow_stalker")
 
         let deck: [Card] = [
             .init(id: "strike_1", cardId: "strike"),
@@ -28,7 +28,7 @@ final class SeerMechanicsTests: XCTestCase {
         guard let strikeIndex = engine.state.hand.firstIndex(where: { $0.cardId == "strike" }) else {
             return XCTFail("回合开始未抽到 Strike")
         }
-        _ = engine.handleAction(.playCard(handIndex: strikeIndex, targetEnemyIndex: 0))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: strikeIndex, targetEnemyIndex: 0))
 
         XCTAssertTrue(engine.state.discardPile.contains(where: { $0.cardId == "strike" }))
 
@@ -37,7 +37,7 @@ final class SeerMechanicsTests: XCTestCase {
         }
 
         engine.clearEvents()
-        _ = engine.handleAction(.playCard(handIndex: timeShardIndex, targetEnemyIndex: nil))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: timeShardIndex, targetEnemyIndex: nil))
 
         XCTAssertTrue(engine.state.hand.contains(where: { $0.cardId == "strike" }))
         XCTAssertTrue(engine.events.contains(where: {
@@ -50,7 +50,7 @@ final class SeerMechanicsTests: XCTestCase {
         let seed: UInt64 = 5
         var player = createDefaultPlayer()
         player.statuses.set("madness", stacks: 2)
-        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 40, enemyId: "shadow_stalker")
+        let enemy = Entity(id: "e0", name: LocalizedText("测试敌人", "测试敌人"), maxHP: 40, enemyId: "shadow_stalker")
 
         let deck: [Card] = [
             .init(id: "meditation_1", cardId: "meditation"),
@@ -75,7 +75,7 @@ final class SeerMechanicsTests: XCTestCase {
         }
 
         engine.clearEvents()
-        _ = engine.handleAction(.playCard(handIndex: meditationIndex, targetEnemyIndex: nil))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: meditationIndex, targetEnemyIndex: nil))
 
         XCTAssertEqual(engine.state.player.statuses.stacks(of: "madness"), 0)
         XCTAssertTrue(engine.events.contains(where: {
@@ -87,7 +87,7 @@ final class SeerMechanicsTests: XCTestCase {
     func testRewriteIntent_updatesPlannedMove_andAddsMadness() {
         let seed: UInt64 = 6
         let player = createDefaultPlayer()
-        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 40, enemyId: "shadow_stalker")
+        let enemy = Entity(id: "e0", name: LocalizedText("测试敌人", "测试敌人"), maxHP: 40, enemyId: "shadow_stalker")
 
         let deck: [Card] = [
             .init(id: "fate_rewrite_1", cardId: "fate_rewrite"),
@@ -107,22 +107,23 @@ final class SeerMechanicsTests: XCTestCase {
 
         engine.startBattle()
 
-        let oldIntent = engine.state.enemies[0].plannedMove?.intent.text
-        XCTAssertNotNil(oldIntent)
+        guard let oldIntent = engine.state.enemies[0].plannedMove?.intent.text else {
+            return XCTFail("未找到旧意图")
+        }
 
         guard let rewriteIndex = engine.state.hand.firstIndex(where: { $0.cardId == "fate_rewrite" }) else {
             return XCTFail("回合开始未抽到 命运改写")
         }
 
         engine.clearEvents()
-        _ = engine.handleAction(.playCard(handIndex: rewriteIndex, targetEnemyIndex: 0))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: rewriteIndex, targetEnemyIndex: 0))
 
         let newIntent = engine.state.enemies[0].plannedMove?.intent.text
-        XCTAssertEqual(newIntent, "防御（被改写）")
+        XCTAssertEqual(newIntent?.zhHans, "防御（被改写）")
         XCTAssertEqual(engine.state.player.statuses.stacks(of: "madness"), 2)
         XCTAssertTrue(engine.events.contains(where: {
             if case .intentRewritten(_, let old, let new) = $0 {
-                return old == oldIntent && new == "防御（被改写）"
+                return old == oldIntent && new.zhHans == "防御（被改写）"
             }
             return false
         }))
@@ -132,7 +133,7 @@ final class SeerMechanicsTests: XCTestCase {
         let seed: UInt64 = 1
         
         let player = createDefaultPlayer()
-        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 50, enemyId: "shadow_stalker")
+        let enemy = Entity(id: "e0", name: LocalizedText("测试敌人", "测试敌人"), maxHP: 50, enemyId: "shadow_stalker")
         
         // deck 洗牌是确定性的：我们在断言里用同一 RNG 复算初始牌堆顺序
         // 为避免“抽不到灵视/抽牌堆不足 N 张”的不稳定问题，这里放足够多张牌
@@ -170,7 +171,7 @@ final class SeerMechanicsTests: XCTestCase {
         // 找到灵视并打出
         let spiritSightIndex = engine.state.hand.firstIndex { $0.cardId == "spirit_sight" }
         XCTAssertNotNil(spiritSightIndex)
-        _ = engine.handleAction(.playCard(handIndex: spiritSightIndex!, targetEnemyIndex: nil))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: spiritSightIndex!, targetEnemyIndex: nil))
         
         // 打出后应挂起预知选择（fromCount=2）
         guard case .some(.foresight(let options, let fromCount)) = engine.pendingInput else {
@@ -186,7 +187,7 @@ final class SeerMechanicsTests: XCTestCase {
         let topCards = Array(top2.reversed())                   // applyForesight 内部转成 [顶部, 次顶]
 
         // pending options 顺序应与 topCards 一致
-        XCTAssertEqual(options.map(\.id), topCards.map(\.id))
+        XCTAssertEqual(options.map { $0.id }, topCards.map { $0.id })
 
         // 模拟玩家选择第 1 张（顶部）
         let chosen = topCards[0]
@@ -214,7 +215,7 @@ final class SeerMechanicsTests: XCTestCase {
         let seed: UInt64 = 2
         
         let player = createDefaultPlayer()
-        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 80, enemyId: "shadow_stalker")
+        let enemy = Entity(id: "e0", name: LocalizedText("测试敌人", "测试敌人"), maxHP: 80, enemyId: "shadow_stalker")
         
         // 放两张灵视，确保同一回合能打两次预知
         // 放多张灵视，确保同一回合能打出两次预知，且抽牌堆仍有足够卡用于 fromCount=3 的断言
@@ -248,7 +249,7 @@ final class SeerMechanicsTests: XCTestCase {
         
         // 打第一张灵视：预知 2 + 破碎怀表额外 +1 => 会触发一次 foresightChosen(fromCount: 3)
         if let idx1 = engine.state.hand.firstIndex(where: { $0.cardId == "spirit_sight" }) {
-            _ = engine.handleAction(.playCard(handIndex: idx1, targetEnemyIndex: nil))
+            _ = engine.handleAction(PlayerAction.playCard(handIndex: idx1, targetEnemyIndex: nil))
         } else {
             return XCTFail("回合开始未抽到灵视，seed/牌组不稳定")
         }
@@ -270,7 +271,7 @@ final class SeerMechanicsTests: XCTestCase {
         
         // 同回合第二次灵视：不应再 +1 => fromCount: 2
         if let idx2 = engine.state.hand.firstIndex(where: { $0.cardId == "spirit_sight" }) {
-            _ = engine.handleAction(.playCard(handIndex: idx2, targetEnemyIndex: nil))
+            _ = engine.handleAction(PlayerAction.playCard(handIndex: idx2, targetEnemyIndex: nil))
         } else {
             // 如果第二张不在手里，这个用例就不稳定；但通常 deck 里有两张且 cost=0，抽牌足够会出现
             return XCTFail("同回合未能再次抽到灵视用于验证破碎怀表的“每回合首次”限制")

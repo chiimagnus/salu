@@ -3,27 +3,27 @@ import XCTest
 
 final class CipherBossMechanicsTests: XCTestCase {
     func testCipher_chooseMove_includesP6EffectsAcrossPhases() {
-        let player = Entity(id: "player", name: "玩家", maxHP: 80)
+        let player = Entity(id: "player", name: LocalizedText("玩家", "玩家"), maxHP: 80)
 
         // Phase 1 (HP > 60%): turn 3 is “预知反制”
         do {
             var rng = SeededRNG(seed: 1)
-            var cipher = Entity(id: "cipher", name: "赛弗", maxHP: 100, enemyId: "cipher")
+            var cipher = Entity(id: "cipher", name: LocalizedText("赛弗", "赛弗"), maxHP: 100, enemyId: "cipher")
             cipher.currentHP = 100
             let snap = BattleSnapshot(turn: 3, player: player, enemies: [cipher], energy: 3)
             let move = Cipher.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng)
-            XCTAssertTrue(move.intent.text.contains("预知反制"))
+            XCTAssertTrue(move.intent.text.zhHans.contains("预知反制"))
             XCTAssertTrue(move.effects.contains(.applyForesightPenaltyNextTurn(amount: 1)))
         }
 
         // Phase 2 (60% ≥ HP > 30%): turn 2 is “命运剥夺”
         do {
             var rng = SeededRNG(seed: 2)
-            var cipher = Entity(id: "cipher", name: "赛弗", maxHP: 100, enemyId: "cipher")
+            var cipher = Entity(id: "cipher", name: LocalizedText("赛弗", "赛弗"), maxHP: 100, enemyId: "cipher")
             cipher.currentHP = 50
             let snap = BattleSnapshot(turn: 2, player: player, enemies: [cipher], energy: 3)
             let move = Cipher.chooseMove(selfIndex: 0, snapshot: snap, rng: &rng)
-            XCTAssertTrue(move.intent.text.contains("命运剥夺"))
+            XCTAssertTrue(move.intent.text.zhHans.contains("命运剥夺"))
             XCTAssertTrue(move.effects.contains(.discardRandomHand(count: 2)))
             XCTAssertTrue(move.effects.contains(.applyStatus(target: .player, statusId: Madness.id, stacks: 2)))
         }
@@ -31,17 +31,17 @@ final class CipherBossMechanicsTests: XCTestCase {
         // Phase 3 (HP ≤ 30%): turn 2 is “命运改写”，turn 3 is “时间回溯”
         do {
             var rng = SeededRNG(seed: 3)
-            var cipher = Entity(id: "cipher", name: "赛弗", maxHP: 100, enemyId: "cipher")
+            var cipher = Entity(id: "cipher", name: LocalizedText("赛弗", "赛弗"), maxHP: 100, enemyId: "cipher")
             cipher.currentHP = 30
 
             let t2 = BattleSnapshot(turn: 2, player: player, enemies: [cipher], energy: 3)
             let m2 = Cipher.chooseMove(selfIndex: 0, snapshot: t2, rng: &rng)
-            XCTAssertTrue(m2.intent.text.contains("命运改写"))
+            XCTAssertTrue(m2.intent.text.zhHans.contains("命运改写"))
             XCTAssertTrue(m2.effects.contains(.applyFirstCardCostIncreaseNextTurn(amount: 1)))
 
             let t3 = BattleSnapshot(turn: 3, player: player, enemies: [cipher], energy: 3)
             let m3 = Cipher.chooseMove(selfIndex: 0, snapshot: t3, rng: &rng)
-            XCTAssertTrue(m3.intent.text.contains("时间回溯"))
+            XCTAssertTrue(m3.intent.text.zhHans.contains("时间回溯"))
             XCTAssertTrue(m3.effects.contains(.enemyHeal(enemyIndex: 0, amount: 15)))
         }
     }
@@ -51,7 +51,7 @@ final class CipherBossMechanicsTests: XCTestCase {
         let seed: UInt64 = 1
         let player = createDefaultPlayer()
 
-        var cipher = Entity(id: "cipher", name: "赛弗", maxHP: 100, enemyId: "cipher")
+        var cipher = Entity(id: "cipher", name: LocalizedText("赛弗", "赛弗"), maxHP: 100, enemyId: "cipher")
         cipher.currentHP = 100 // Phase 1
 
         // 牌组全部是灵视，保证下一回合一定能打出预知牌
@@ -79,7 +79,7 @@ final class CipherBossMechanicsTests: XCTestCase {
         }
 
         engine.clearEvents()
-        _ = engine.handleAction(.playCard(handIndex: idx, targetEnemyIndex: nil))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: idx, targetEnemyIndex: nil))
 
         // 预知需要先完成选择，才能产生 foresightChosen 事件
         guard case .some(.foresight(_, let fromCount)) = engine.pendingInput else {
@@ -101,7 +101,7 @@ final class CipherBossMechanicsTests: XCTestCase {
         let seed: UInt64 = 2
         let player = createDefaultPlayer()
 
-        var cipher = Entity(id: "cipher", name: "赛弗", maxHP: 100, enemyId: "cipher")
+        var cipher = Entity(id: "cipher", name: LocalizedText("赛弗", "赛弗"), maxHP: 100, enemyId: "cipher")
         cipher.currentHP = 30 // Phase 3
 
         // 牌组全部是灵视（cost=0），便于验证“首牌费用 +1”会让 played.cost 变为 1
@@ -129,7 +129,7 @@ final class CipherBossMechanicsTests: XCTestCase {
         }
 
         engine.clearEvents()
-        _ = engine.handleAction(.playCard(handIndex: first, targetEnemyIndex: nil))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: first, targetEnemyIndex: nil))
         XCTAssertTrue(engine.events.contains { event in
             guard case let .played(_, cardId, cost) = event else { return false }
             return cardId == "spirit_sight" && cost == 1
@@ -149,7 +149,7 @@ final class CipherBossMechanicsTests: XCTestCase {
         }
 
         engine.clearEvents()
-        _ = engine.handleAction(.playCard(handIndex: second, targetEnemyIndex: nil))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: second, targetEnemyIndex: nil))
         XCTAssertTrue(engine.events.contains { event in
             guard case let .played(_, cardId, cost) = event else { return false }
             return cardId == "spirit_sight" && cost == 0

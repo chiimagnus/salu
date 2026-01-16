@@ -22,7 +22,7 @@ final class SeerEventDefinitionsTests: XCTestCase {
         
         // 选项 1：命运改写 + 疯狂 +3
         let o1 = offer.options[0]
-        XCTAssertTrue(o1.title.contains("阅读"))
+        XCTAssertTrue(o1.title.zhHans.contains("阅读"))
         XCTAssertTrue(o1.effects.contains(.addCard(cardId: "fate_rewrite")))
         XCTAssertTrue(o1.effects.contains(.applyStatus(statusId: "madness", stacks: 3)))
         
@@ -109,4 +109,3 @@ final class SeerEventDefinitionsTests: XCTestCase {
         XCTAssertTrue(o3.effects.contains(.applyStatus(statusId: "madness", stacks: -2)))
     }
 }
-

@@ -8,15 +8,15 @@ import XCTest
 /// - 防止“卡牌数值/状态写错但编译仍通过”的回归
 final class CardDefinitionPlayTests: XCTestCase {
     private func makeSnapshot(energy: Int = 3) -> BattleSnapshot {
-        let player = Entity(id: "player", name: "玩家", maxHP: 80)
-        let enemy = Entity(id: "jaw_worm", name: "下颚虫", maxHP: 40, enemyId: "jaw_worm")
+        let player = Entity(id: "player", name: LocalizedText("玩家", "玩家"), maxHP: 80)
+        let enemy = Entity(id: "jaw_worm", name: LocalizedText("下颚虫", "下颚虫"), maxHP: 40, enemyId: "jaw_worm")
         return BattleSnapshot(turn: 1, player: player, enemies: [enemy], energy: energy)
     }
     
     private func makeSnapshotWithTwoEnemies(energy: Int = 3) -> BattleSnapshot {
-        let player = Entity(id: "player", name: "玩家", maxHP: 80)
-        let e1 = Entity(id: "e1", name: "敌人A", maxHP: 40, enemyId: "jaw_worm")
-        let e2 = Entity(id: "e2", name: "敌人B", maxHP: 40, enemyId: "jaw_worm")
+        let player = Entity(id: "player", name: LocalizedText("玩家", "玩家"), maxHP: 80)
+        let e1 = Entity(id: "e1", name: LocalizedText("敌人A", "敌人A"), maxHP: 40, enemyId: "jaw_worm")
+        let e2 = Entity(id: "e2", name: LocalizedText("敌人B", "敌人B"), maxHP: 40, enemyId: "jaw_worm")
         return BattleSnapshot(turn: 1, player: player, enemies: [e1, e2], energy: energy)
     }
     
@@ -257,7 +257,7 @@ final class CardDefinitionPlayTests: XCTestCase {
         let seed: UInt64 = 999
 
         let player = createDefaultPlayer()
-        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 200, enemyId: "shadow_stalker")
+        let enemy = Entity(id: "e0", name: LocalizedText("测试敌人", "测试敌人"), maxHP: 200, enemyId: "shadow_stalker")
 
         // deck=5：回合开始手牌固定包含两张禁忌献祭（Inflame）
         let deck: [Card] = [
@@ -282,13 +282,13 @@ final class CardDefinitionPlayTests: XCTestCase {
         guard let idx1 = engine.state.hand.firstIndex(where: { $0.cardId == Inflame.id }) else {
             return XCTFail("未抽到 第 1 张 禁忌献祭")
         }
-        _ = engine.handleAction(.playCard(handIndex: idx1, targetEnemyIndex: nil))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: idx1, targetEnemyIndex: nil))
         XCTAssertEqual(engine.state.player.statuses.stacks(of: Strength.id), 2)
 
         guard let idx2 = engine.state.hand.firstIndex(where: { $0.cardId == Inflame.id }) else {
             return XCTFail("未抽到 第 2 张 禁忌献祭")
         }
-        _ = engine.handleAction(.playCard(handIndex: idx2, targetEnemyIndex: nil))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: idx2, targetEnemyIndex: nil))
         XCTAssertEqual(engine.state.player.statuses.stacks(of: Strength.id), 4)
     }
 }

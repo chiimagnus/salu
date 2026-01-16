@@ -78,7 +78,7 @@ struct BossRoomHandler: RoomHandling {
         
         // 胜利后掉落遗物
         if engine.state.playerWon == true {
-            let enemyName = engine.state.enemies.first?.name.map { L10n.resolve($0) } ?? L10n.text("敌人", "Enemy")
+            let enemyName = engine.state.enemies.first.map { L10n.resolve($0.name) } ?? L10n.text("敌人", "Enemy")
             context.logLine("\(Terminal.green)Boss \(L10n.text("胜利", "victory"))：\(L10n.text("击败", "Defeated")) \(enemyName)\(Terminal.reset)")
             let rewardContext = RewardContext(
                 seed: runState.seed,
@@ -116,7 +116,7 @@ struct BossRoomHandler: RoomHandling {
         }
         
         // 战斗失败（玩家 HP 归零）
-        let enemyName = engine.state.enemies.first?.name.map { L10n.resolve($0) } ?? L10n.text("敌人", "Enemy")
+        let enemyName = engine.state.enemies.first.map { L10n.resolve($0.name) } ?? L10n.text("敌人", "Enemy")
         context.logLine("\(Terminal.red)Boss \(L10n.text("失败", "defeat"))：\(L10n.text("倒在", "Fell before")) \(enemyName)\(Terminal.reset)")
         return .lost
     }

@@ -131,7 +131,7 @@ struct EventRoomHandler: RoomHandling {
         
         // 胜利：按“精英战斗”链路结算（金币 + 遗物掉落 + 卡牌奖励）
         if engine.state.playerWon == true {
-            let enemyName = engine.state.enemies.first?.name.map { L10n.resolve($0) } ?? L10n.text("敌人", "Enemy")
+            let enemyName = engine.state.enemies.first.map { L10n.resolve($0.name) } ?? L10n.text("敌人", "Enemy")
             context.logLine("\(Terminal.green)\(L10n.text("精英胜利", "Elite victory"))：\(L10n.text("击败", "Defeated")) \(enemyName)\(Terminal.reset)")
             
             let rewardContext = RewardContext(

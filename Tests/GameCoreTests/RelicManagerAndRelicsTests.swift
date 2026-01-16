@@ -26,8 +26,8 @@ final class RelicManagerAndRelicsTests: XCTestCase {
     
     func testRelicManager_onBattleTrigger_collectsEffects() {
         print("🧪 测试：testRelicManager_onBattleTrigger_collectsEffects")
-        let player = Entity(id: "player", name: "玩家", maxHP: 80)
-        let enemy = Entity(id: "enemy", name: "敌人", maxHP: 40, enemyId: "jaw_worm")
+        let player = Entity(id: "player", name: LocalizedText("玩家", "玩家"), maxHP: 80)
+        let enemy = Entity(id: "enemy", name: LocalizedText("敌人", "敌人"), maxHP: 40, enemyId: "jaw_worm")
         let snapshot = BattleSnapshot(turn: 1, player: player, enemies: [enemy], energy: 3)
         
         let mgr = RelicManager(relics: ["burning_blood", "vajra", "lantern", "unknown_relic"])
@@ -46,8 +46,8 @@ final class RelicManagerAndRelicsTests: XCTestCase {
     
     func testBasicRelics_triggers() {
         print("🧪 测试：testBasicRelics_triggers")
-        let player = Entity(id: "player", name: "玩家", maxHP: 80)
-        let enemy = Entity(id: "enemy", name: "敌人", maxHP: 40, enemyId: "jaw_worm")
+        let player = Entity(id: "player", name: LocalizedText("玩家", "玩家"), maxHP: 80)
+        let enemy = Entity(id: "enemy", name: LocalizedText("敌人", "敌人"), maxHP: 40, enemyId: "jaw_worm")
         let snapshot = BattleSnapshot(turn: 1, player: player, enemies: [enemy], energy: 3)
         
         // Burning Blood：仅胜利战斗结束触发
@@ -67,9 +67,9 @@ final class RelicManagerAndRelicsTests: XCTestCase {
 
     func testExtendedRelics_triggers() {
         print("🧪 测试：testExtendedRelics_triggers")
-        let player = Entity(id: "player", name: "玩家", maxHP: 80)
-        let e1 = Entity(id: "e1", name: "敌人1", maxHP: 40, enemyId: "jaw_worm")
-        let e2 = Entity(id: "e2", name: "敌人2", maxHP: 40, enemyId: "cultist")
+        let player = Entity(id: "player", name: LocalizedText("玩家", "玩家"), maxHP: 80)
+        let e1 = Entity(id: "e1", name: LocalizedText("敌人1", "敌人1"), maxHP: 40, enemyId: "jaw_worm")
+        let e2 = Entity(id: "e2", name: LocalizedText("敌人2", "敌人2"), maxHP: 40, enemyId: "cultist")
         let snapshot = BattleSnapshot(turn: 1, player: player, enemies: [e1, e2], energy: 3)
         
         // Feather Cloak：战斗开始获得敏捷

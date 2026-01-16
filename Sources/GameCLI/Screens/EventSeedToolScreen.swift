@@ -19,7 +19,7 @@ enum EventSeedToolScreen {
         - \(L10n.text("事件的出现由 seed + floor + row + nodeId 派生，保证可复现。", "Events are derived from seed + floor + row + nodeId for determinism."))
         - \(L10n.text("这个工具会在给定 seed 范围内，扫描并列出“每个事件”的可命中 seeds。", "This tool scans a seed range and lists matching seeds for each event."))
         
-        \(L10n.text("默认上下文（匹配测试地图 SALU_TEST_MAP=event）：", "Default context (matches SALU_TEST_MAP=event):")
+        \(L10n.text("默认上下文（匹配测试地图 SALU_TEST_MAP=event）：", "Default context (matches SALU_TEST_MAP=event):"))
         - floor=1, row=1, nodeId=1_0
         
         \(L10n.text("直接回车使用默认值。", "Press Enter to use defaults."))
