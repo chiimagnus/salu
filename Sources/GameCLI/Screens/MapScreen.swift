@@ -145,7 +145,7 @@ enum MapScreen {
                 guard y0 >= 0, y0 < mapHeight, x0 >= 0, x0 < mapWidth else { continue }
                 let stepX = x0 - prevX
                 let stepY = y0 - prevY
-                if stepY == 0 {
+                if stepY == 0 || y0 % 2 == 0 {
                     continue
                 }
                 let lineChar: Character
