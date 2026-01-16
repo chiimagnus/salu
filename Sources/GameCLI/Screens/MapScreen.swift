@@ -145,11 +145,12 @@ enum MapScreen {
                 guard y0 >= 0, y0 < mapHeight, x0 >= 0, x0 < mapWidth else { continue }
                 let stepX = x0 - prevX
                 let stepY = y0 - prevY
+                if stepY == 0 {
+                    continue
+                }
                 let lineChar: Character
                 if stepX == 0 {
                     lineChar = "│"
-                } else if stepY == 0 {
-                    lineChar = "─"
                 } else if (stepX > 0 && stepY > 0) || (stepX < 0 && stepY < 0) {
                     lineChar = "╲"
                 } else {
