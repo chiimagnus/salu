@@ -99,7 +99,7 @@ enum MapScreen {
         let maxNodesPerRow = (0...maxRow).map { mapNodes.nodes(atRow: $0).count }.max() ?? 1
         let mapWidth = max(1, (maxNodesPerRow - 1) * mapSpacing + mapNodeWidth)
         let mapHeight = maxRow * 2 + 1
-        var canvas = Array(repeating: Array(repeating: " ", count: mapWidth), count: mapHeight)
+        var canvas = Array(repeating: Array(repeating: Character(" "), count: mapWidth), count: mapHeight)
         var nodePositions: [String: (x: Int, y: Int)] = [:]
         var rowNodesByPosition: [Int: [Int: MapNode]] = [:]
         var rowNodesByRow: [Int: [MapNode]] = [:]
