@@ -17,8 +17,8 @@ jobs:
       matrix:
         os:
           - macos-latest
-          - ubuntu-latest
-          - windows-latest
+          - ubuntu-22.04
+          - windows-2022
 
     steps:
       - name: Checkout code
@@ -30,10 +30,10 @@ jobs:
           swift-version: '6.2'
 
       - name: Run Swift tests
-        if: matrix.os != 'windows-latest'
+        if: matrix.os != 'windows-2022'
         run: swift test
 
       - name: Run Swift tests
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         run: swift test
         shell: bash
