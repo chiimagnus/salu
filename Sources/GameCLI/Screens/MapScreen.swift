@@ -173,53 +173,45 @@ enum MapScreen {
         maxNodesInRow: Int,
         fromPadding: Int
     ) -> String {
-        // 简化版连接线：只显示 | 或 / \ 表示连接方向
-        let fromCount = fromNodes.count
         let toCount = toNodes.count
         let toPadding = (maxNodesInRow - toCount) / 2
         
-        // 如果只有一个节点连接到一个节点，显示简单的 |
-        if fromCount == 1 && toCount == 1 {
-            var line = ""
-            for _ in 0..<fromPadding {
-                line += "     "
-            }
-            line += "  \(Terminal.dim)│\(Terminal.reset)"
-            return line
-        }
-        
-        // 构建连接线数组
-        // 每个位置的宽度是 5 个字符（对应节点宽度）
-        var lineChars: [String] = Array(repeating: " ", count: maxNodesInRow * 5)
+        // 使用字符数组构建连接线
+        // 每个节点位置占 5 个字符宽度 "[X]  "
+        let lineWidth = maxNodesInRow * 5
+        var lineChars: [Character] = Array(repeating: " ", count: lineWidth)
         
         for (fromIdx, fromNode) in fromNodes.enumerated() {
-            let fromPos = (fromPadding + fromIdx) * 5 + 1  // 节点中心位置
+            // 计算源节点中心位置（在第 fromPadding + fromIdx 个槽位，每个槽位 5 字符宽）
+            let fromCenter = (fromPadding + fromIdx) * 5 + 1  // +1 是因为 "[X]" 的中心在第 2 个字符
             
             for connectedId in fromNode.connections {
                 guard let toIdx = toNodes.firstIndex(where: { $0.id == connectedId }) else { continue }
-                let toPos = (toPadding + toIdx) * 5 + 1
+                let toCenter = (toPadding + toIdx) * 5 + 1
                 
                 // 根据位置差决定连接符号
-                if fromPos == toPos {
+                let pos = fromCenter
+                guard pos >= 0 && pos < lineWidth else { continue }
+                
+                if fromCenter == toCenter {
                     // 直线向下
-                    if fromPos < lineChars.count {
-                        lineChars[fromPos] = "\(Terminal.dim)│\(Terminal.reset)"
-                    }
-                } else if fromPos < toPos {
+                    lineChars[pos] = "│"
+                } else if fromCenter < toCenter {
                     // 向右下
-                    if fromPos < lineChars.count {
-                        lineChars[fromPos] = "\(Terminal.dim)╲\(Terminal.reset)"
-                    }
+                    lineChars[pos] = "╲"
                 } else {
                     // 向左下
-                    if fromPos < lineChars.count {
-                        lineChars[fromPos] = "\(Terminal.dim)╱\(Terminal.reset)"
-                    }
+                    lineChars[pos] = "╱"
                 }
             }
         }
         
-        return lineChars.joined()
+        let result = String(lineChars)
+        // 如果全是空格，返回空字符串
+        if result.trimmingCharacters(in: .whitespaces).isEmpty {
+            return ""
+        }
+        return "\(Terminal.dim)\(result)\(Terminal.reset)"
     }
     
     private static func formatNode(_ node: MapNode) -> String {
