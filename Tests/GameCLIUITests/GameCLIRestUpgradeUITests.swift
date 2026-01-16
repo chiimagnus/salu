@@ -31,7 +31,7 @@ final class GameCLIRestUpgradeUITests: XCTestCase {
         XCTAssertEqual(result.exitCode, 0)
         
         let output = result.stdout.strippingANSICodes()
-        XCTAssertTrue(output.contains("Upgrade Card"), "Expected Upgrade Card prompt")
+        XCTAssertTrue(output.contains("升级卡牌"), "期望出现“升级卡牌”相关提示")
         
         let saveURL = tmp.url.appendingPathComponent("run_save.json")
         XCTAssertTrue(FileManager.default.fileExists(atPath: saveURL.path), "期望生成 run_save.json")

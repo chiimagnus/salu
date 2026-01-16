@@ -18,7 +18,7 @@ struct GameCLI {
     private nonisolated(unsafe) static var showLog: Bool = false
 
     /// 当前语言
-    private nonisolated(unsafe) static var language: GameLanguage = .en
+    private nonisolated(unsafe) static var language: GameLanguage = .zhHans
     
     /// 历史记录服务（依赖注入，替代单例）
     private nonisolated(unsafe) static var historyService: HistoryService!

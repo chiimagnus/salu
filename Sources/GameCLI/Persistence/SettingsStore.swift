@@ -11,7 +11,7 @@ final class SettingsStore {
     /// 设置数据模型
     struct Settings: Codable {
         var showLog: Bool = false
-        var language: GameLanguage = .en
+        var language: GameLanguage = .zhHans
     }
     
     init() {

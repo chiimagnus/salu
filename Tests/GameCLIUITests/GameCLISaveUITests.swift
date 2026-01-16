@@ -44,7 +44,8 @@ final class GameCLISaveUITests: XCTestCase {
         )
         
         let out2 = result2.stdout.strippingANSICodes()
-        XCTAssertTrue(out2.contains("Save loaded!"), "Expected save loaded prompt (stdout)")
+        XCTAssertTrue(out2.contains("存档加载成功"), "期望出现“存档加载成功！”提示（stdout）")
     }
 }
+
 

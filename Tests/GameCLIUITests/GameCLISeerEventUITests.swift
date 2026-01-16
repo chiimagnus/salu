@@ -126,7 +126,7 @@ final class GameCLISeerEventUITests: XCTestCase {
         XCTAssertEqual(result.exitCode, 0)
         
         let output = result.stdout.strippingANSICodes()
-        XCTAssertTrue(output.contains("Mad Prophet") || output.contains("Event"), "Expected event-related output")
+        XCTAssertTrue(output.contains("疯狂预言者") || output.contains("事件"), "期望输出包含事件相关文本")
     }
     
     /// 事件池按 seed+node 派生，测试侧用穷举找一个能命中指定事件的 seed。

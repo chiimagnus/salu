@@ -31,7 +31,7 @@ final class GameCLIMultiActProgressionUITests: XCTestCase {
         
         XCTAssertEqual(result.exitCode, 0)
         let output = result.stdout.strippingANSICodes()
-        XCTAssertTrue(output.contains("Floor 2 Map"), "Expected Act2 map (floor=2)")
+        XCTAssertTrue(output.contains("第 2 层地图"), "期望进入 Act2 地图（floor=2）")
         
         let saveURL = tmp.url.appendingPathComponent("run_save.json")
         XCTAssertTrue(FileManager.default.fileExists(atPath: saveURL.path), "期望生成 run_save.json")
@@ -45,4 +45,5 @@ final class GameCLIMultiActProgressionUITests: XCTestCase {
         XCTAssertFalse(snapshot.won)
     }
 }
+
 

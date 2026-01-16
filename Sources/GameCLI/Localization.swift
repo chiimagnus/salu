@@ -2,7 +2,7 @@ import GameCore
 
 private final class L10nState: @unchecked Sendable {
     static let shared = L10nState()
-    var language: GameLanguage = .en
+    var language: GameLanguage = .zhHans
 }
 
 enum L10n {
