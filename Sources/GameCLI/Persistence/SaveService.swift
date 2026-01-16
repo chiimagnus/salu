@@ -70,7 +70,7 @@ final class SaveService {
         var mapNodes: [MapNode] = []
         for nodeData in snapshot.mapNodes {
             guard let roomType = RoomType(rawValue: nodeData.roomType) else {
-                throw SaveError.corruptedSave("未知房间类型: \(nodeData.roomType)")
+                throw SaveError.corruptedSave("\(L10n.text("未知房间类型", "Unknown room type")): \(nodeData.roomType)")
             }
             
             let node = MapNode(
@@ -86,7 +86,7 @@ final class SaveService {
         }
         
         // 重建玩家实体
-        var player = Entity(id: "player", name: "安德", maxHP: snapshot.player.maxHP)
+        var player = Entity(id: "player", name: LocalizedText("安德", "Ander"), maxHP: snapshot.player.maxHP)
         player.currentHP = snapshot.player.currentHP
         
         // 恢复状态效果
@@ -98,7 +98,7 @@ final class SaveService {
         let deck = try snapshot.deck.map { cardData in
             let cardId = CardID(cardData.cardId)
             guard CardRegistry.get(cardId) != nil else {
-                throw SaveError.corruptedSave("未知卡牌: \(cardData.cardId)")
+                throw SaveError.corruptedSave("\(L10n.text("未知卡牌", "Unknown card")): \(cardData.cardId)")
             }
             return Card(id: cardData.id, cardId: cardId)
         }
@@ -108,7 +108,7 @@ final class SaveService {
         for relicIdStr in snapshot.relicIds {
             let relicId = RelicID(relicIdStr)
             guard RelicRegistry.get(relicId) != nil else {
-                throw SaveError.corruptedSave("未知遗物: \(relicIdStr)")
+                throw SaveError.corruptedSave("\(L10n.text("未知遗物", "Unknown relic")): \(relicIdStr)")
             }
             relicManager.add(relicId)
         }
@@ -169,9 +169,9 @@ enum SaveError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .incompatibleVersion(let saved, let current):
-            return "存档版本不兼容: 存档版本 \(saved), 当前版本 \(current)"
+            return "\(L10n.text("存档版本不兼容", "Save version incompatible")): \(L10n.text("存档版本", "saved")) \(saved), \(L10n.text("当前版本", "current")) \(current)"
         case .corruptedSave(let reason):
-            return "存档已损坏或数据不合法：\(reason)"
+            return "\(L10n.text("存档已损坏或数据不合法", "Save is corrupted or invalid")): \(reason)"
         }
     }
 }

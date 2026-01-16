@@ -78,8 +78,8 @@ struct BossRoomHandler: RoomHandling {
         
         // 胜利后掉落遗物
         if engine.state.playerWon == true {
-            let enemyName = engine.state.enemies.first?.name ?? "敌人"
-            context.logLine("\(Terminal.green)Boss 胜利：击败 \(enemyName)\(Terminal.reset)")
+            let enemyName = engine.state.enemies.first?.name.map { L10n.resolve($0) } ?? L10n.text("敌人", "Enemy")
+            context.logLine("\(Terminal.green)Boss \(L10n.text("胜利", "victory"))：\(L10n.text("击败", "Defeated")) \(enemyName)\(Terminal.reset)")
             let rewardContext = RewardContext(
                 seed: runState.seed,
                 floor: runState.floor,
@@ -96,9 +96,9 @@ struct BossRoomHandler: RoomHandling {
                 let relicDef = RelicRegistry.require(relicId)
                 if RelicRewardScreen.chooseRelic(relicId: relicId) {
                     runState.relicManager.add(relicId)
-                    context.logLine("\(Terminal.magenta)获得遗物：\(relicDef.icon)\(relicDef.name)\(Terminal.reset)")
+                    context.logLine("\(Terminal.magenta)\(L10n.text("获得遗物", "Relic gained"))：\(relicDef.icon)\(L10n.resolve(relicDef.name))\(Terminal.reset)")
                 } else {
-                    context.logLine("\(Terminal.dim)遗物奖励：跳过（\(relicDef.icon)\(relicDef.name)）\(Terminal.reset)")
+                    context.logLine("\(Terminal.dim)\(L10n.text("遗物奖励", "Relic reward"))：\(L10n.text("跳过", "Skipped"))（\(relicDef.icon)\(L10n.resolve(relicDef.name))）\(Terminal.reset)")
                 }
             }
             
@@ -109,15 +109,15 @@ struct BossRoomHandler: RoomHandling {
             
             // 若不是最终幕，提示进入下一幕
             if runState.floor < runState.maxFloor {
-                context.logLine("\(Terminal.cyan)进入第 \(runState.floor + 1) 层冒险…\(Terminal.reset)")
+                context.logLine("\(Terminal.cyan)\(L10n.text("进入第", "Entering floor")) \(runState.floor + 1) \(L10n.text("层冒险…", "..."))\(Terminal.reset)")
             }
             
             return .won
         }
         
         // 战斗失败（玩家 HP 归零）
-        let enemyName = engine.state.enemies.first?.name ?? "敌人"
-        context.logLine("\(Terminal.red)Boss 失败：倒在 \(enemyName) 面前\(Terminal.reset)")
+        let enemyName = engine.state.enemies.first?.name.map { L10n.resolve($0) } ?? L10n.text("敌人", "Enemy")
+        context.logLine("\(Terminal.red)Boss \(L10n.text("失败", "defeat"))：\(L10n.text("倒在", "Fell before")) \(enemyName)\(Terminal.reset)")
         return .lost
     }
 }

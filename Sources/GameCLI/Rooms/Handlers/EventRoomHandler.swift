@@ -18,10 +18,10 @@ struct EventRoomHandler: RoomHandling {
         )
         
         let offer = EventGenerator.generate(context: eventContext)
-        context.logLine("\(Terminal.magenta)事件：\(offer.icon)\(offer.name)\(Terminal.reset)")
+        context.logLine("\(Terminal.magenta)\(L10n.text("事件", "Event"))：\(offer.icon)\(L10n.resolve(offer.name))\(Terminal.reset)")
         guard let choiceIndex = EventScreen.chooseOption(offer: offer) else {
             // 默认视为离开（不产生效果）
-            context.logLine("\(Terminal.dim)事件：离开\(Terminal.reset)")
+            context.logLine("\(Terminal.dim)\(L10n.text("事件", "Event"))：\(L10n.text("离开", "Leave"))\(Terminal.reset)")
             runState.completeCurrentNode()
             return .completedNode
         }
@@ -32,7 +32,7 @@ struct EventRoomHandler: RoomHandling {
         }
         
         let picked = offer.options[choiceIndex]
-        context.logLine("\(Terminal.cyan)事件选择：\(picked.title)\(Terminal.reset)")
+        context.logLine("\(Terminal.cyan)\(L10n.text("事件选择", "Event choice"))：\(L10n.resolve(picked.title))\(Terminal.reset)")
         
         // 应用效果
         var applyFailureLines: [String] = []
@@ -42,12 +42,12 @@ struct EventRoomHandler: RoomHandling {
                 switch effect {
                 case .addCard(let cardId):
                     if let def = CardRegistry.get(cardId), def.type == .consumable {
-                        applyFailureLines.append("消耗性卡牌槽位已满，未能获得：\(def.name)")
+                        applyFailureLines.append("\(L10n.text("消耗性卡牌槽位已满，未能获得", "Consumable slots full; could not gain"))：\(L10n.resolve(def.name))")
                     } else {
-                        applyFailureLines.append("未能获得卡牌")
+                        applyFailureLines.append(L10n.text("未能获得卡牌", "Failed to gain card"))
                     }
                 default:
-                    applyFailureLines.append("有一项效果未能生效")
+                    applyFailureLines.append(L10n.text("有一项效果未能生效", "One effect failed to apply"))
                 }
             }
         }
@@ -63,8 +63,8 @@ struct EventRoomHandler: RoomHandling {
                     if let upgradedId = beforeDef.upgradedId {
                         let upgradedDef = CardRegistry.require(upgradedId)
                         _ = runState.apply(.upgradeCard(deckIndex: deckIndex))
-                        followUpLines.append("升级：\(beforeDef.name) → \(upgradedDef.name)")
-                        context.logLine("\(Terminal.cyan)升级：\(beforeDef.name) → \(upgradedDef.name)\(Terminal.reset)")
+                        followUpLines.append("\(L10n.text("升级", "Upgraded"))：\(L10n.resolve(beforeDef.name)) → \(L10n.resolve(upgradedDef.name))")
+                        context.logLine("\(Terminal.cyan)\(L10n.text("升级", "Upgraded"))：\(L10n.resolve(beforeDef.name)) → \(L10n.resolve(upgradedDef.name))\(Terminal.reset)")
                     }
                 }
             case .startEliteBattle(let enemyId):
@@ -72,7 +72,7 @@ struct EventRoomHandler: RoomHandling {
                 switch battleResult {
                 case .won:
                     let name = EnemyRegistry.require(enemyId).name
-                    followUpLines.append("你击败了：\(name)")
+                    followUpLines.append("\(L10n.text("你击败了", "You defeated"))：\(L10n.resolve(name))")
                 case .lost:
                     return .runEnded(won: false)
                 case .aborted:
@@ -83,7 +83,7 @@ struct EventRoomHandler: RoomHandling {
         
         // 结算展示（简单：逐条展示 preview 或效果摘要）
         let resultLines = buildResultLines(option: picked, additional: followUpLines + applyFailureLines)
-        EventScreen.showResult(title: "你选择了：\(picked.title)", lines: resultLines)
+        EventScreen.showResult(title: "\(L10n.text("你选择了", "You chose"))：\(L10n.resolve(picked.title))", lines: resultLines)
         _ = readLine()
         
         // 完成节点
@@ -131,8 +131,8 @@ struct EventRoomHandler: RoomHandling {
         
         // 胜利：按“精英战斗”链路结算（金币 + 遗物掉落 + 卡牌奖励）
         if engine.state.playerWon == true {
-            let enemyName = engine.state.enemies.first?.name ?? "敌人"
-            context.logLine("\(Terminal.green)精英胜利：击败 \(enemyName)\(Terminal.reset)")
+            let enemyName = engine.state.enemies.first?.name.map { L10n.resolve($0) } ?? L10n.text("敌人", "Enemy")
+            context.logLine("\(Terminal.green)\(L10n.text("精英胜利", "Elite victory"))：\(L10n.text("击败", "Defeated")) \(enemyName)\(Terminal.reset)")
             
             let rewardContext = RewardContext(
                 seed: runState.seed,
@@ -144,7 +144,7 @@ struct EventRoomHandler: RoomHandling {
             
             let goldEarned = GoldRewardStrategy.generateGoldReward(context: rewardContext)
             runState.gold += goldEarned
-            context.logLine("\(Terminal.yellow)获得金币：+\(goldEarned)\(Terminal.reset)")
+            context.logLine("\(Terminal.yellow)\(L10n.text("获得金币", "Gold gained"))：+\(goldEarned)\(Terminal.reset)")
             
             if let relicId = RelicDropStrategy.generateRelicDrop(
                 context: rewardContext,
@@ -154,18 +154,18 @@ struct EventRoomHandler: RoomHandling {
                 let relicDef = RelicRegistry.require(relicId)
                 if RelicRewardScreen.chooseRelic(relicId: relicId) {
                     runState.relicManager.add(relicId)
-                    context.logLine("\(Terminal.magenta)获得遗物：\(relicDef.icon)\(relicDef.name)\(Terminal.reset)")
+                    context.logLine("\(Terminal.magenta)\(L10n.text("获得遗物", "Relic gained"))：\(relicDef.icon)\(L10n.resolve(relicDef.name))\(Terminal.reset)")
                 } else {
-                    context.logLine("\(Terminal.dim)遗物奖励：跳过（\(relicDef.icon)\(relicDef.name)）\(Terminal.reset)")
+                    context.logLine("\(Terminal.dim)\(L10n.text("遗物奖励", "Relic reward"))：\(L10n.text("跳过", "Skipped"))（\(relicDef.icon)\(L10n.resolve(relicDef.name))）\(Terminal.reset)")
                 }
             }
             
             let offer = RewardGenerator.generateCardReward(context: rewardContext)
             if let chosen = RewardScreen.chooseCard(offer: offer, goldEarned: goldEarned) {
                 runState.addCardToDeck(cardId: chosen)
-                context.logLine("\(Terminal.cyan)卡牌奖励：获得「\(CardRegistry.require(chosen).name)」\(Terminal.reset)")
+                context.logLine("\(Terminal.cyan)\(L10n.text("卡牌奖励", "Card reward"))：\(L10n.text("获得", "Gain"))「\(L10n.resolve(CardRegistry.require(chosen).name))」\(Terminal.reset)")
             } else {
-                context.logLine("\(Terminal.dim)卡牌奖励：跳过\(Terminal.reset)")
+                context.logLine("\(Terminal.dim)\(L10n.text("卡牌奖励", "Card reward"))：\(L10n.text("跳过", "Skipped"))\(Terminal.reset)")
             }
             
             return .won
@@ -175,13 +175,13 @@ struct EventRoomHandler: RoomHandling {
     }
     
     private func buildResultLines(option: EventOption, additional: [String]) -> [String] {
-        if let preview = option.preview, !preview.isEmpty {
-            return [preview] + additional
+        if let preview = option.preview, !L10n.resolve(preview).isEmpty {
+            return [L10n.resolve(preview)] + additional
         }
         
         if option.effects.isEmpty {
             if additional.isEmpty {
-                return ["没有发生任何事。"]
+                return [L10n.text("没有发生任何事。", "Nothing happened.")]
             }
             return additional
         }
@@ -189,28 +189,28 @@ struct EventRoomHandler: RoomHandling {
         let base = option.effects.map { effect in
             switch effect {
             case .gainGold(let amount):
-                return "获得 \(amount) 金币"
+                return "\(L10n.text("获得", "Gain")) \(amount) \(L10n.text("金币", "gold"))"
             case .loseGold(let amount):
-                return "失去 \(amount) 金币"
+                return "\(L10n.text("失去", "Lose")) \(amount) \(L10n.text("金币", "gold"))"
             case .heal(let amount):
-                return "恢复 \(amount) HP"
+                return "\(L10n.text("恢复", "Restore")) \(amount) HP"
             case .takeDamage(let amount):
-                return "失去 \(amount) HP"
+                return "\(L10n.text("失去", "Lose")) \(amount) HP"
             case .addCard(let cardId):
                 let name = CardRegistry.require(cardId).name
-                return "获得卡牌：\(name)"
+                return "\(L10n.text("获得卡牌", "Gain card"))：\(L10n.resolve(name))"
             case .addRelic(let relicId):
                 let def = RelicRegistry.require(relicId)
-                return "获得遗物：\(def.icon)\(def.name)"
+                return "\(L10n.text("获得遗物", "Gain relic"))：\(def.icon)\(L10n.resolve(def.name))"
             case .applyStatus(let statusId, let stacks):
-                let name = StatusRegistry.get(statusId)?.name ?? statusId.rawValue
+                let name = StatusRegistry.get(statusId).map { L10n.resolve($0.name) } ?? statusId.rawValue
                 let sign = stacks >= 0 ? "+" : ""
                 return "\(name) \(sign)\(stacks)"
             case .setStatus(let statusId, let stacks):
-                let name = StatusRegistry.get(statusId)?.name ?? statusId.rawValue
-                return "\(name) 设为 \(stacks)"
+                let name = StatusRegistry.get(statusId).map { L10n.resolve($0.name) } ?? statusId.rawValue
+                return "\(name) \(L10n.text("设为", "set to")) \(stacks)"
             case .upgradeCard:
-                return "升级了一张卡牌"
+                return L10n.text("升级了一张卡牌", "Upgraded a card")
             }
         }
         return base + additional

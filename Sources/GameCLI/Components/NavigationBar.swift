@@ -21,13 +21,13 @@ enum NavigationBar {
         for item in items {
             switch item {
             case .back:
-                parts.append("\(Terminal.cyan)[q]\(Terminal.reset) 返回")
+                parts.append("\(Terminal.cyan)[q]\(Terminal.reset) \(L10n.text("返回", "Back"))")
             case .continueNext:
-                parts.append("\(Terminal.cyan)[q]\(Terminal.reset) 继续")
+                parts.append("\(Terminal.cyan)[q]\(Terminal.reset) \(L10n.text("继续", "Continue"))")
             case .backToMenu:
-                parts.append("\(Terminal.cyan)[q]\(Terminal.reset) 返回主菜单")
+                parts.append("\(Terminal.cyan)[q]\(Terminal.reset) \(L10n.text("返回主菜单", "Back to Menu"))")
             case .backToGame:
-                parts.append("\(Terminal.cyan)[q]\(Terminal.reset) 返回游戏")
+                parts.append("\(Terminal.cyan)[q]\(Terminal.reset) \(L10n.text("返回游戏", "Back to Game"))")
             case .custom(let key, let label):
                 parts.append("\(Terminal.cyan)[\(key)]\(Terminal.reset) \(label)")
             }
@@ -38,7 +38,7 @@ enum NavigationBar {
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
         
         if showPrompt {
-            print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
+            print("\(Terminal.yellow)\(L10n.text("请选择", "Select")) > \(Terminal.reset)", terminator: "")
         }
         
         Terminal.flush()
@@ -68,9 +68,8 @@ enum NavigationBar {
             // \u{1B}[A = 光标上移一行
             // \r = 回到行首
             // \u{1B}[K = 清除从光标到行尾
-            print("\u{1B}[A\r\u{1B}[K\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
+            print("\u{1B}[A\r\u{1B}[K\(Terminal.yellow)\(L10n.text("请选择", "Select")) > \(Terminal.reset)", terminator: "")
             Terminal.flush()
         }
     }
 }
-

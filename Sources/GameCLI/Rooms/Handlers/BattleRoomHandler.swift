@@ -95,8 +95,8 @@ struct BattleRoomHandler: RoomHandling {
         
         // 如果胜利，完成节点
         if engine.state.playerWon == true {
-            let enemyNames = engine.state.enemies.map(\.name).joined(separator: "、")
-            context.logLine("\(Terminal.green)战斗胜利：击败 \(enemyNames)\(Terminal.reset)")
+            let enemyNames = engine.state.enemies.map { L10n.resolve($0.name) }.joined(separator: L10n.text("、", ", "))
+            context.logLine("\(Terminal.green)\(L10n.text("战斗胜利", "Battle won"))：\(L10n.text("击败", "Defeated")) \(enemyNames)\(Terminal.reset)")
             // P1：战斗奖励（卡牌 3 选 1）
             let rewardContext = RewardContext(
                 seed: runState.seed,
@@ -109,13 +109,13 @@ struct BattleRoomHandler: RoomHandling {
             // P2：战斗胜利获得金币（可复现）
             let goldEarned = GoldRewardStrategy.generateGoldReward(context: rewardContext)
             runState.gold += goldEarned
-            context.logLine("\(Terminal.yellow)获得金币：+\(goldEarned)\(Terminal.reset)")
+            context.logLine("\(Terminal.yellow)\(L10n.text("获得金币", "Gold gained"))：+\(goldEarned)\(Terminal.reset)")
             let offer = RewardGenerator.generateCardReward(context: rewardContext)
             if let chosen = RewardScreen.chooseCard(offer: offer, goldEarned: goldEarned) {
                 runState.addCardToDeck(cardId: chosen)
-                context.logLine("\(Terminal.cyan)卡牌奖励：获得「\(CardRegistry.require(chosen).name)」\(Terminal.reset)")
+                context.logLine("\(Terminal.cyan)\(L10n.text("卡牌奖励", "Card reward"))：\(L10n.text("获得", "Gain"))「\(L10n.resolve(CardRegistry.require(chosen).name))」\(Terminal.reset)")
             } else {
-                context.logLine("\(Terminal.dim)卡牌奖励：跳过\(Terminal.reset)")
+                context.logLine("\(Terminal.dim)\(L10n.text("卡牌奖励", "Card reward"))：\(L10n.text("跳过", "Skipped"))\(Terminal.reset)")
             }
             
             runState.completeCurrentNode()

@@ -27,7 +27,7 @@ enum ResourceScreen {
     private static func buildHeaderLines() -> [String] {
         [
             "\(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)",
-            "\(Terminal.bold)\(Terminal.cyan)  📦 资源管理（内容与池子一览）\(Terminal.reset)",
+            "\(Terminal.bold)\(Terminal.cyan)  📦 \(L10n.text("资源管理（内容与池子一览）", "Resources (Registries & Pools)"))\(Terminal.reset)",
             "\(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)",
             ""
         ]
@@ -44,13 +44,13 @@ enum ResourceScreen {
         let skills = cardDefs.filter { $0.1.type == .skill }
         let powers = cardDefs.filter { $0.1.type == .power }
 
-        lines.append("\(Terminal.bold)🃏 卡牌（Registry）\(Terminal.reset)")
-        lines.append("  总数：\(Terminal.yellow)\(cardIds.count)\(Terminal.reset)  |  攻击：\(Terminal.yellow)\(attacks.count)\(Terminal.reset)  技能：\(Terminal.yellow)\(skills.count)\(Terminal.reset)  能力：\(Terminal.yellow)\(powers.count)\(Terminal.reset)")
+        lines.append("\(Terminal.bold)🃏 \(L10n.text("卡牌（Registry）", "Cards (Registry)"))\(Terminal.reset)")
+        lines.append("  \(L10n.text("总数", "Total"))：\(Terminal.yellow)\(cardIds.count)\(Terminal.reset)  |  \(L10n.text("攻击", "Attack"))：\(Terminal.yellow)\(attacks.count)\(Terminal.reset)  \(L10n.text("技能", "Skill"))：\(Terminal.yellow)\(skills.count)\(Terminal.reset)  \(L10n.text("能力", "Power"))：\(Terminal.yellow)\(powers.count)\(Terminal.reset)")
         lines.append("")
 
-        lines.append(contentsOf: formatCardGroup(title: "⚔️ 攻击牌", cards: attacks))
-        lines.append(contentsOf: formatCardGroup(title: "🛡️ 技能牌", cards: skills))
-        lines.append(contentsOf: formatCardGroup(title: "✨ 能力牌", cards: powers))
+        lines.append(contentsOf: formatCardGroup(title: "⚔️ \(L10n.text("攻击牌", "Attack Cards"))", cards: attacks))
+        lines.append(contentsOf: formatCardGroup(title: "🛡️ \(L10n.text("技能牌", "Skill Cards"))", cards: skills))
+        lines.append(contentsOf: formatCardGroup(title: "✨ \(L10n.text("能力牌", "Power Cards"))", cards: powers))
 
         return lines
     }
@@ -60,34 +60,34 @@ enum ResourceScreen {
 
         // MARK: - Enemies & Encounters
         lines.append("")
-        lines.append("\(Terminal.bold)👹 敌人池/遭遇池（Act1/Act2/Act3）\(Terminal.reset)")
+        lines.append("\(Terminal.bold)👹 \(L10n.text("敌人池/遭遇池（Act1/Act2/Act3）", "Enemy/Encounter Pools (Act1/Act2/Act3)"))\(Terminal.reset)")
         lines.append("")
 
-        lines.append("\(Terminal.bold)Act1 敌人池\(Terminal.reset)")
-        lines.append("  普通敌人（weak）数量：\(Terminal.yellow)\(Act1EnemyPool.weak.count)\(Terminal.reset)")
-        lines.append("  精英敌人（medium）数量：\(Terminal.yellow)\(Act1EnemyPool.medium.count)\(Terminal.reset)")
+        lines.append("\(Terminal.bold)Act1 \(L10n.text("敌人池", "Enemy Pool"))\(Terminal.reset)")
+        lines.append("  \(L10n.text("普通敌人（weak）数量", "Weak enemies"))：\(Terminal.yellow)\(Act1EnemyPool.weak.count)\(Terminal.reset)")
+        lines.append("  \(L10n.text("精英敌人（medium）数量", "Medium enemies"))：\(Terminal.yellow)\(Act1EnemyPool.medium.count)\(Terminal.reset)")
         lines.append("")
 
-        lines.append("  \(Terminal.bold)普通敌人（weak）\(Terminal.reset)")
+        lines.append("  \(Terminal.bold)\(L10n.text("普通敌人（weak）", "Weak enemies"))\(Terminal.reset)")
         for id in Act1EnemyPool.weak.sorted(by: { $0.rawValue < $1.rawValue }) {
             let def = EnemyRegistry.require(id)
-            lines.append("    - \(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
+            lines.append("    - \(L10n.resolve(def.name))  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
         }
         lines.append("")
 
-        lines.append("  \(Terminal.bold)精英敌人（medium）\(Terminal.reset)")
+        lines.append("  \(Terminal.bold)\(L10n.text("精英敌人（medium）", "Medium enemies"))\(Terminal.reset)")
         for id in Act1EnemyPool.medium.sorted(by: { $0.rawValue < $1.rawValue }) {
             let def = EnemyRegistry.require(id)
-            lines.append("    - \(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
+            lines.append("    - \(L10n.resolve(def.name))  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
         }
 
         lines.append("")
-        lines.append("\(Terminal.bold)🧩 遭遇池（Act1EncounterPool.weak）\(Terminal.reset)")
+        lines.append("\(Terminal.bold)🧩 \(L10n.text("遭遇池", "Encounter Pool"))（Act1EncounterPool.weak）\(Terminal.reset)")
         let encounters = Act1EncounterPool.weak
         let multiCount = encounters.filter { $0.enemyIds.count > 1 }.count
         let totalCount = max(1, encounters.count)
         let multiPercent = (multiCount * 100) / totalCount
-        lines.append("  总遭遇数：\(Terminal.yellow)\(encounters.count)\(Terminal.reset)  |  双敌人遭遇：\(Terminal.yellow)\(multiCount)\(Terminal.reset)（约 \(multiPercent)%）")
+        lines.append("  \(L10n.text("总遭遇数", "Total encounters"))：\(Terminal.yellow)\(encounters.count)\(Terminal.reset)  |  \(L10n.text("双敌人遭遇", "Multi-enemy"))：\(Terminal.yellow)\(multiCount)\(Terminal.reset)（\(L10n.text("约", "~")) \(multiPercent)%）")
         lines.append("")
 
         for (i, enc) in encounters.enumerated() {
@@ -97,40 +97,40 @@ enum ResourceScreen {
 
         // Act2
         lines.append("")
-        lines.append("\(Terminal.bold)Act2 敌人池\(Terminal.reset)")
-        lines.append("  普通敌人（weak）数量：\(Terminal.yellow)\(Act2EnemyPool.weak.count)\(Terminal.reset)")
-        lines.append("  精英敌人（medium）数量：\(Terminal.yellow)\(Act2EnemyPool.medium.count)\(Terminal.reset)")
+        lines.append("\(Terminal.bold)Act2 \(L10n.text("敌人池", "Enemy Pool"))\(Terminal.reset)")
+        lines.append("  \(L10n.text("普通敌人（weak）数量", "Weak enemies"))：\(Terminal.yellow)\(Act2EnemyPool.weak.count)\(Terminal.reset)")
+        lines.append("  \(L10n.text("精英敌人（medium）数量", "Medium enemies"))：\(Terminal.yellow)\(Act2EnemyPool.medium.count)\(Terminal.reset)")
         lines.append("")
 
-        lines.append("  \(Terminal.bold)普通敌人（weak）\(Terminal.reset)")
+        lines.append("  \(Terminal.bold)\(L10n.text("普通敌人（weak）", "Weak enemies"))\(Terminal.reset)")
         for id in Act2EnemyPool.weak.sorted(by: { $0.rawValue < $1.rawValue }) {
             let def = EnemyRegistry.require(id)
-            lines.append("    - \(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
+            lines.append("    - \(L10n.resolve(def.name))  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
         }
         lines.append("")
 
-        lines.append("  \(Terminal.bold)精英敌人（medium）\(Terminal.reset)")
+        lines.append("  \(Terminal.bold)\(L10n.text("精英敌人（medium）", "Medium enemies"))\(Terminal.reset)")
         for id in Act2EnemyPool.medium.sorted(by: { $0.rawValue < $1.rawValue }) {
             let def = EnemyRegistry.require(id)
-            lines.append("    - \(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
+            lines.append("    - \(L10n.resolve(def.name))  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
         }
 
         // Act2 Boss（用于 P2 核对：Act2 Boss 是否为赛弗）
         lines.append("")
-        lines.append("  \(Terminal.bold)Boss（Act2）\(Terminal.reset)")
+        lines.append("  \(Terminal.bold)\(L10n.text("Boss（Act2）", "Boss (Act2)"))\(Terminal.reset)")
         do {
             let id = Act2EnemyPool.boss
             let def = EnemyRegistry.require(id)
-            lines.append("    - \(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
+            lines.append("    - \(L10n.resolve(def.name))  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
         }
 
         lines.append("")
-        lines.append("\(Terminal.bold)🧩 遭遇池（Act2EncounterPool.weak）\(Terminal.reset)")
+        lines.append("\(Terminal.bold)🧩 \(L10n.text("遭遇池", "Encounter Pool"))（Act2EncounterPool.weak）\(Terminal.reset)")
         let act2Encounters = Act2EncounterPool.weak
         let act2MultiCount = act2Encounters.filter { $0.enemyIds.count > 1 }.count
         let act2TotalCount = max(1, act2Encounters.count)
         let act2MultiPercent = (act2MultiCount * 100) / act2TotalCount
-        lines.append("  总遭遇数：\(Terminal.yellow)\(act2Encounters.count)\(Terminal.reset)  |  双敌人遭遇：\(Terminal.yellow)\(act2MultiCount)\(Terminal.reset)（约 \(act2MultiPercent)%）")
+        lines.append("  \(L10n.text("总遭遇数", "Total encounters"))：\(Terminal.yellow)\(act2Encounters.count)\(Terminal.reset)  |  \(L10n.text("双敌人遭遇", "Multi-enemy"))：\(Terminal.yellow)\(act2MultiCount)\(Terminal.reset)（\(L10n.text("约", "~")) \(act2MultiPercent)%）")
         lines.append("")
 
         for (i, enc) in act2Encounters.enumerated() {
@@ -140,31 +140,31 @@ enum ResourceScreen {
 
         // Act3
         lines.append("")
-        lines.append("\(Terminal.bold)Act3 敌人池\(Terminal.reset)")
-        lines.append("  普通敌人（weak）数量：\(Terminal.yellow)\(Act3EnemyPool.weak.count)\(Terminal.reset)")
-        lines.append("  精英敌人（medium）数量：\(Terminal.yellow)\(Act3EnemyPool.medium.count)\(Terminal.reset)")
+        lines.append("\(Terminal.bold)Act3 \(L10n.text("敌人池", "Enemy Pool"))\(Terminal.reset)")
+        lines.append("  \(L10n.text("普通敌人（weak）数量", "Weak enemies"))：\(Terminal.yellow)\(Act3EnemyPool.weak.count)\(Terminal.reset)")
+        lines.append("  \(L10n.text("精英敌人（medium）数量", "Medium enemies"))：\(Terminal.yellow)\(Act3EnemyPool.medium.count)\(Terminal.reset)")
         lines.append("")
 
-        lines.append("  \(Terminal.bold)普通敌人（weak）\(Terminal.reset)")
+        lines.append("  \(Terminal.bold)\(L10n.text("普通敌人（weak）", "Weak enemies"))\(Terminal.reset)")
         for id in Act3EnemyPool.weak.sorted(by: { $0.rawValue < $1.rawValue }) {
             let def = EnemyRegistry.require(id)
-            lines.append("    - \(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
+            lines.append("    - \(L10n.resolve(def.name))  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
         }
         lines.append("")
 
-        lines.append("  \(Terminal.bold)精英敌人（medium）\(Terminal.reset)")
+        lines.append("  \(Terminal.bold)\(L10n.text("精英敌人（medium）", "Medium enemies"))\(Terminal.reset)")
         for id in Act3EnemyPool.medium.sorted(by: { $0.rawValue < $1.rawValue }) {
             let def = EnemyRegistry.require(id)
-            lines.append("    - \(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
+            lines.append("    - \(L10n.resolve(def.name))  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
         }
 
         lines.append("")
-        lines.append("\(Terminal.bold)🧩 遭遇池（Act3EncounterPool.weak）\(Terminal.reset)")
+        lines.append("\(Terminal.bold)🧩 \(L10n.text("遭遇池", "Encounter Pool"))（Act3EncounterPool.weak）\(Terminal.reset)")
         let act3Encounters = Act3EncounterPool.weak
         let act3MultiCount = act3Encounters.filter { $0.enemyIds.count > 1 }.count
         let act3TotalCount = max(1, act3Encounters.count)
         let act3MultiPercent = (act3MultiCount * 100) / act3TotalCount
-        lines.append("  总遭遇数：\(Terminal.yellow)\(act3Encounters.count)\(Terminal.reset)  |  双敌人遭遇：\(Terminal.yellow)\(act3MultiCount)\(Terminal.reset)（约 \(act3MultiPercent)%）")
+        lines.append("  \(L10n.text("总遭遇数", "Total encounters"))：\(Terminal.yellow)\(act3Encounters.count)\(Terminal.reset)  |  \(L10n.text("双敌人遭遇", "Multi-enemy"))：\(Terminal.yellow)\(act3MultiCount)\(Terminal.reset)（\(L10n.text("约", "~")) \(act3MultiPercent)%）")
         lines.append("")
 
         for (i, enc) in act3Encounters.enumerated() {
@@ -174,12 +174,12 @@ enum ResourceScreen {
 
         // Enemy Registry
         lines.append("")
-        lines.append("\(Terminal.bold)📚 EnemyRegistry（全部已注册敌人）\(Terminal.reset)")
-        lines.append("  总数：\(Terminal.yellow)\(EnemyRegistry.allEnemyIds.count)\(Terminal.reset)")
+        lines.append("\(Terminal.bold)📚 \(L10n.text("EnemyRegistry（全部已注册敌人）", "EnemyRegistry (All enemies)"))\(Terminal.reset)")
+        lines.append("  \(L10n.text("总数", "Total"))：\(Terminal.yellow)\(EnemyRegistry.allEnemyIds.count)\(Terminal.reset)")
         lines.append("")
         for id in EnemyRegistry.allEnemyIds {
             let def = EnemyRegistry.require(id)
-            lines.append("    - \(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
+            lines.append("    - \(L10n.resolve(def.name))  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
         }
 
         return lines
@@ -188,22 +188,22 @@ enum ResourceScreen {
     private static func buildStatusesSectionLines() -> [String] {
         var lines: [String] = []
         lines.append("")
-        lines.append("\(Terminal.bold)🧬 状态（StatusRegistry）\(Terminal.reset)")
+        lines.append("\(Terminal.bold)🧬 \(L10n.text("状态（StatusRegistry）", "Statuses (StatusRegistry)"))\(Terminal.reset)")
 
         let ids = StatusRegistry.allStatusIds
-        lines.append("  总数：\(Terminal.yellow)\(ids.count)\(Terminal.reset)")
+        lines.append("  \(L10n.text("总数", "Total"))：\(Terminal.yellow)\(ids.count)\(Terminal.reset)")
         lines.append("")
 
         for id in ids {
             let def = StatusRegistry.require(id)
-            let polarity = def.isPositive ? "\(Terminal.green)正面\(Terminal.reset)" : "\(Terminal.red)负面\(Terminal.reset)"
+            let polarity = def.isPositive ? "\(Terminal.green)\(L10n.text("正面", "Positive"))\(Terminal.reset)" : "\(Terminal.red)\(L10n.text("负面", "Negative"))\(Terminal.reset)"
 
             let decayText: String
             switch def.decay {
             case .none:
-                decayText = "不递减"
+                decayText = L10n.text("不递减", "No decay")
             case .turnEnd(let decreaseBy):
-                decayText = "回合结束 -\(decreaseBy)"
+                decayText = "\(L10n.text("回合结束", "Turn end")) -\(decreaseBy)"
             }
 
             let phaseSummary = [
@@ -213,7 +213,7 @@ enum ResourceScreen {
                 "prio:\(def.priority)",
             ].joined(separator: "  ")
 
-            lines.append("  - \(def.icon)\(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)  \(polarity)  \(Terminal.dim)\(decayText)  \(phaseSummary)\(Terminal.reset)")
+            lines.append("  - \(def.icon)\(L10n.resolve(def.name))  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)  \(polarity)  \(Terminal.dim)\(decayText)  \(phaseSummary)\(Terminal.reset)")
         }
 
         lines.append("")
@@ -233,16 +233,16 @@ enum ResourceScreen {
     private static func buildConsumablesSectionLines() -> [String] {
         var lines: [String] = []
         lines.append("")
-        lines.append("\(Terminal.bold)🧪 消耗性卡牌（CardRegistry）\(Terminal.reset)")
+        lines.append("\(Terminal.bold)🧪 \(L10n.text("消耗性卡牌（CardRegistry）", "Consumables (CardRegistry)"))\(Terminal.reset)")
 
         let ids = CardRegistry.allCardIds.filter { CardRegistry.require($0).type == .consumable }
-        lines.append("  已注册：\(Terminal.yellow)\(ids.count)\(Terminal.reset)  |  商店池：\(Terminal.yellow)\(ids.count)\(Terminal.reset)  |  槽位上限：\(Terminal.yellow)\(RunState.maxConsumableCardSlots)\(Terminal.reset)")
+        lines.append("  \(L10n.text("已注册", "Registered"))：\(Terminal.yellow)\(ids.count)\(Terminal.reset)  |  \(L10n.text("商店池", "Shop pool"))：\(Terminal.yellow)\(ids.count)\(Terminal.reset)  |  \(L10n.text("槽位上限", "Slots"))：\(Terminal.yellow)\(RunState.maxConsumableCardSlots)\(Terminal.reset)")
         lines.append("")
 
         for id in ids {
             let def = CardRegistry.require(id)
-            lines.append("  - 🧪\(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)  \(Terminal.dim)\(def.rarity.rawValue)\(Terminal.reset)  \(Terminal.dim)费用 \(def.cost)\(Terminal.reset)")
-            lines.append("    \(Terminal.dim)\(def.rulesText)\(Terminal.reset)")
+            lines.append("  - 🧪\(L10n.resolve(def.name))  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)  \(Terminal.dim)\(def.rarity.displayName(language: L10n.language))\(Terminal.reset)  \(Terminal.dim)\(L10n.text("费用", "Cost")) \(def.cost)\(Terminal.reset)")
+            lines.append("    \(Terminal.dim)\(L10n.resolve(def.rulesText))\(Terminal.reset)")
         }
 
         lines.append("")
@@ -252,15 +252,15 @@ enum ResourceScreen {
     private static func buildEventsSectionLines() -> [String] {
         var lines: [String] = []
         lines.append("")
-        lines.append("\(Terminal.bold)🧭 事件（EventRegistry）\(Terminal.reset)")
+        lines.append("\(Terminal.bold)🧭 \(L10n.text("事件（EventRegistry）", "Events (EventRegistry)"))\(Terminal.reset)")
 
         let ids = EventRegistry.allEventIds
-        lines.append("  总数：\(Terminal.yellow)\(ids.count)\(Terminal.reset)")
+        lines.append("  \(L10n.text("总数", "Total"))：\(Terminal.yellow)\(ids.count)\(Terminal.reset)")
         lines.append("")
 
         for id in ids {
             let def = EventRegistry.require(id)
-            lines.append("  - \(def.icon)\(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
+            lines.append("  - \(def.icon)\(L10n.resolve(def.name))  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)")
         }
 
         lines.append("")
@@ -272,12 +272,12 @@ enum ResourceScreen {
 
         // MARK: - Relics
         lines.append("")
-        lines.append("\(Terminal.bold)🏺 遗物（Registry）\(Terminal.reset)")
+        lines.append("\(Terminal.bold)🏺 \(L10n.text("遗物（Registry）", "Relics (Registry)"))\(Terminal.reset)")
 
         let droppable = RelicPool.availableRelicIds(excluding: [])
         let allRelicIds = RelicRegistry.allRelicIds
 
-        lines.append("  已注册：\(Terminal.yellow)\(allRelicIds.count)\(Terminal.reset)  |  可掉落（排除起始）：\(Terminal.yellow)\(droppable.count)\(Terminal.reset)")
+        lines.append("  \(L10n.text("已注册", "Registered"))：\(Terminal.yellow)\(allRelicIds.count)\(Terminal.reset)  |  \(L10n.text("可掉落（排除起始）", "Droppable (excl. starter)"))：\(Terminal.yellow)\(droppable.count)\(Terminal.reset)")
         lines.append("")
 
         let groupedByRarity: [(RelicRarity, [RelicID])] = [
@@ -290,10 +290,10 @@ enum ResourceScreen {
         ]
 
         for (rarity, ids) in groupedByRarity where !ids.isEmpty {
-            lines.append("  \(Terminal.bold)\(rarity.rawValue)（\(ids.count)）\(Terminal.reset)")
+            lines.append("  \(Terminal.bold)\(rarity.displayName(language: L10n.language))（\(ids.count)）\(Terminal.reset)")
             for id in ids.sorted(by: { $0.rawValue < $1.rawValue }) {
                 let def = RelicRegistry.require(id)
-                lines.append("    - \(def.icon)\(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)  \(Terminal.dim)\(def.description)\(Terminal.reset)")
+                lines.append("    - \(def.icon)\(L10n.resolve(def.name))  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)  \(Terminal.dim)\(L10n.resolve(def.description))\(Terminal.reset)")
             }
             lines.append("")
         }
@@ -309,7 +309,7 @@ enum ResourceScreen {
         lines.append("  \(Terminal.bold)\(title)（\(cards.count)）\(Terminal.reset)")
         
         for (id, def) in cards.sorted(by: { $0.0.rawValue < $1.0.rawValue }) {
-            lines.append("    - \(def.name)  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)  ◆\(def.cost)  \(Terminal.dim)\(def.rarity.rawValue)\(Terminal.reset)")
+            lines.append("    - \(L10n.resolve(def.name))  \(Terminal.dim)(\(id.rawValue))\(Terminal.reset)  ◆\(def.cost)  \(Terminal.dim)\(def.rarity.displayName(language: L10n.language))\(Terminal.reset)")
         }
         
         lines.append("")

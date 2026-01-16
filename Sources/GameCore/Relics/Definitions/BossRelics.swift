@@ -8,8 +8,11 @@
 /// 效果：序列始祖的一部分。战斗开始时，使所有敌人获得中毒 3
 public struct ColossusCoreRelic: RelicDefinition {
     public static let id: RelicID = "colossus_core"
-    public static let name = "始祖碎片"
-    public static let description = "序列始祖的一部分。战斗开始时，使所有敌人获得中毒 3。"
+    public static let name = LocalizedText("始祖碎片", "Progenitor Fragment")
+    public static let description = LocalizedText(
+        "序列始祖的一部分。战斗开始时，使所有敌人获得中毒 3。",
+        "A piece of the Sequence Progenitor. At battle start, apply 3 Poison to all enemies."
+    )
     public static let rarity: RelicRarity = .boss
     public static let icon = "🧪"
     
@@ -22,5 +25,4 @@ public struct ColossusCoreRelic: RelicDefinition {
         }
     }
 }
-
 

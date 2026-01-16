@@ -10,83 +10,158 @@ public enum ChapterText {
     // MARK: - 第一章：觉醒
     
     /// 第一章收束文本（击败瘴气之主后）
-    public static let chapter1Ending: String = """
-    瘴气散去，阳光透过裂缝照入神殿。
-    
-    安德站在废墟中央，手中的卡牌渐渐冷却。
-    他回头望向同伴们：尼古拉正在检查伤口，阿尔托沉默地站在阴影中。
-    
-    「第一个污染源已经净化。」
-    海因斯的声音从通讯器中传来，
-    「但这只是开始。前方还有更强大的敌人等着你。」
-    
-    安德低头看着自己的手掌。
-    那里曾经灼热的位置，现在只剩下一道淡淡的疤痕。
-    
-    他不知道自己究竟是救世者，还是另一种形式的牺牲品。
-    
-    但他知道——他必须继续前进。
-    
-    ——第一章：觉醒 · 完——
-    """
+    public static let chapter1Ending = LocalizedText(
+        """
+        瘴气散去，阳光透过裂缝照入神殿。
+        
+        安德站在废墟中央，手中的卡牌渐渐冷却。
+        他回头望向同伴们：尼古拉正在检查伤口，阿尔托沉默地站在阴影中。
+        
+        「第一个污染源已经净化。」
+        海因斯的声音从通讯器中传来，
+        「但这只是开始。前方还有更强大的敌人等着你。」
+        
+        安德低头看着自己的手掌。
+        那里曾经灼热的位置，现在只剩下一道淡淡的疤痕。
+        
+        他不知道自己究竟是救世者，还是另一种形式的牺牲品。
+        
+        但他知道——他必须继续前进。
+        
+        ——第一章：觉醒 · 完——
+        """,
+        """
+        The miasma clears, and sunlight spills into the temple through the cracks.
+        
+        Ander stands amid the ruins, the card in his hand cooling at last.
+        He looks back at his companions: Nikola checks his wounds, while Alto stands in silence among the shadows.
+        
+        "The first source of corruption has been purified."
+        Hines' voice crackles through the communicator.
+        "But this is only the beginning. Stronger enemies await you ahead."
+        
+        Ander lowers his gaze to his palm.
+        Where it once burned, only a faint scar remains.
+        
+        He does not know whether he is a savior—or simply another kind of sacrifice.
+        
+        But he knows this: he must keep moving forward.
+        
+        — Chapter I: Awakening · End —
+        """
+    )
     
     // MARK: - 第二章：真相
     
     /// 第二章收束文本（击败窥视者后）
-    public static let chapter2Ending: String = """
-    窥视者的身躯化为无数光点消散，时钟塔恢复了正常的时间流动。
-    
-    安德跪在地上，浑身是伤。
-    赛弗的话在他脑海中回响：「你只是祭品……」
-    
-    但他想起了尼古拉的笑容，
-    想起了艾拉的双手，
-    想起了阿尔托沉默的守护。
-    
-    「就算是祭品又怎样。」
-    安德站起身，
-    「我要用我自己的方式结束这一切。」
-    
-    通讯器中传来艾拉的声音：
-    「安德……尼古拉醒了。他说让你别担心他。」
-    
-    安德终于露出了微笑：
-    「告诉他，我很快就回去。但在那之前——我还有一件事要做。」
-    
-    ——第二章：真相 · 完——
-    """
+    public static let chapter2Ending = LocalizedText(
+        """
+        窥视者的身躯化为无数光点消散，时钟塔恢复了正常的时间流动。
+        
+        安德跪在地上，浑身是伤。
+        赛弗的话在他脑海中回响：「你只是祭品……」
+        
+        但他想起了尼古拉的笑容，
+        想起了艾拉的双手，
+        想起了阿尔托沉默的守护。
+        
+        「就算是祭品又怎样。」
+        安德站起身，
+        「我要用我自己的方式结束这一切。」
+        
+        通讯器中传来艾拉的声音：
+        「安德……尼古拉醒了。他说让你别担心他。」
+        
+        安德终于露出了微笑：
+        「告诉他，我很快就回去。但在那之前——我还有一件事要做。」
+        
+        ——第二章：真相 · 完——
+        """,
+        """
+        The Watcher dissolves into countless points of light, and time flows normally once more within the clock tower.
+        
+        Ander kneels on the ground, battered and bleeding.
+        Cipher's words echo in his mind: "You are only a sacrifice..."
+        
+        Yet he remembers Nikola's smile,
+        Aira's hands,
+        Alto's silent protection.
+        
+        "So what if I'm a sacrifice?"
+        Ander rises.
+        "I will end this in my own way."
+        
+        Aira's voice crackles through the communicator:
+        "Ander... Nikola is awake. He says not to worry about him."
+        
+        At last, Ander smiles:
+        "Tell him I'll be back soon. But before that—there is one more thing I must do."
+        
+        — Chapter II: Truth · End —
+        """
+    )
     
     // MARK: - 最终章：终结
     
     /// 最终章结局文本（击败序列始祖后 / 通关）
-    public static let finalEnding: String = """
-    序列之力消散的那一天，世界变得安静了。
-    
-    那些曾经被力量支配的人们——
-    无论是猎人还是猎物——
-    都回归了普通人的生活。
-    
-    海因斯解散了组织，独自踏上了赎罪之路。
-    赛弗消失在人海中，没有人再见过他。
-    尼古拉和阿尔托成为了真正的朋友，一起经营着一家小酒馆。
-    
-    而安德和艾拉，终于能够在一起。
-    他们回到了童年生活的小镇，
-    举办了一场只有挚友参加的小小婚礼。
-    
-    有时候，安德会在深夜醒来，感觉手心隐隐发烫。
-    他会走到窗边，望向远方那棵古老的树——
-    然后微笑着回到床上，握住艾拉的手。
-    
-    「这一次，是真正的结束。」他在心里对自己说。
-    
-    但在世界的某个黑暗角落，一个孩子在雨夜醒来，
-    发现自己的手心里，躺着一张灼热的卡牌……
-    
-    ——序列终结，循环不止——
-    
-    🔥 Salu the Fire · 通关 🔥
-    """
+    public static let finalEnding = LocalizedText(
+        """
+        序列之力消散的那一天，世界变得安静了。
+        
+        那些曾经被力量支配的人们——
+        无论是猎人还是猎物——
+        都回归了普通人的生活。
+        
+        海因斯解散了组织，独自踏上了赎罪之路。
+        赛弗消失在人海中，没有人再见过他。
+        尼古拉和阿尔托成为了真正的朋友，一起经营着一家小酒馆。
+        
+        而安德和艾拉，终于能够在一起。
+        他们回到了童年生活的小镇，
+        举办了一场只有挚友参加的小小婚礼。
+        
+        有时候，安德会在深夜醒来，感觉手心隐隐发烫。
+        他会走到窗边，望向远方那棵古老的树——
+        然后微笑着回到床上，握住艾拉的手。
+        
+        「这一次，是真正的结束。」他在心里对自己说。
+        
+        但在世界的某个黑暗角落，一个孩子在雨夜醒来，
+        发现自己的手心里，躺着一张灼热的卡牌……
+        
+        ——序列终结，循环不止——
+        
+        🔥 Salu the Fire · 通关 🔥
+        """,
+        """
+        The day the power of the Sequence faded, the world grew quiet.
+        
+        Those once ruled by its power—
+        hunter and prey alike—
+        returned to ordinary lives.
+        
+        Hines disbanded the organization and set out alone on a path of atonement.
+        Cipher vanished into the crowd, never to be seen again.
+        Nikola and Alto became true friends, running a small tavern together.
+        
+        And Ander and Aira, at last, could be together.
+        They returned to the town of their childhood,
+        and held a small wedding attended only by close friends.
+        
+        Sometimes, Ander would wake in the night, feeling a faint heat in his palm.
+        He would stand by the window, gaze at the ancient tree in the distance—
+        then smile and return to bed, taking Aira's hand.
+        
+        "This time, it is truly the end," he tells himself.
+        
+        Yet in some dark corner of the world, a child wakes on a rainy night,
+        and finds a searing card resting in their palm...
+        
+        — The Sequence ends, the cycle endures —
+        
+        🔥 Salu the Fire · Completed 🔥
+        """
+    )
     
     // MARK: - 工具方法
     
@@ -94,7 +169,7 @@ public enum ChapterText {
     /// - Parameter floor: 当前楼层（1=Act1, 2=Act2, 3=Act3）
     /// - Parameter maxFloor: 最大楼层数
     /// - Returns: 章节文本；若是真正的最终章（floor >= 3 且 floor >= maxFloor）则返回结局文本，否则返回收束文本
-    public static func getChapterEnding(floor: Int, maxFloor: Int) -> String {
+    public static func getChapterEnding(floor: Int, maxFloor: Int) -> LocalizedText {
         // 只有在真正的最终章（第 3 章及以上且已达到 maxFloor）才显示最终结局
         // 这样即使测试模式下 maxFloor=1，也会显示对应章节的收束文本
         if floor >= 3 && floor >= maxFloor {
@@ -109,14 +184,24 @@ public enum ChapterText {
             return chapter2Ending
         default:
             // 未定义的章节（3+ 但还没到 maxFloor），返回通用文本
-            return """
-            又一个污染源被净化了。
-            
-            但安德知道，这还远远不是结束。
-            更强大的敌人正在前方等待着他。
-            
-            ——第\(floor)章 · 完——
-            """
+            return LocalizedText(
+                """
+                又一个污染源被净化了。
+                
+                但安德知道，这还远远不是结束。
+                更强大的敌人正在前方等待着他。
+                
+                ——第\(floor)章 · 完——
+                """,
+                """
+                Another source of corruption has been purified.
+                
+                But Ander knows it is far from over.
+                Stronger enemies await ahead.
+                
+                — Chapter \(floor) · End —
+                """
+            )
         }
     }
 }

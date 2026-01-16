@@ -11,7 +11,7 @@ struct StartRoomHandler: RoomHandling {
             PrologueScreen.show(floor: runState.floor)
         } else {
             // 测试模式下只打印简短信息
-            context.logLine("\(Terminal.dim)【测试模式】跳过第 \(runState.floor) 章开场剧情\(Terminal.reset)")
+            context.logLine("\(Terminal.dim)【\(L10n.text("测试模式", "Test Mode"))】\(L10n.text("跳过第", "Skip chapter")) \(runState.floor) \(L10n.text("章开场剧情", "prologue"))\(Terminal.reset)")
         }
         
         // 起点完成

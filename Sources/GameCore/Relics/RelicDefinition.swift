@@ -8,6 +8,22 @@ public enum RelicRarity: String, Sendable {
     case rare = "稀有"
     case boss = "Boss"
     case event = "事件"
+    
+    public func displayName(language: GameLanguage) -> String {
+        switch language {
+        case .zhHans:
+            return rawValue
+        case .en:
+            switch self {
+            case .starter: return "Starter"
+            case .common: return "Common"
+            case .uncommon: return "Uncommon"
+            case .rare: return "Rare"
+            case .boss: return "Boss"
+            case .event: return "Event"
+            }
+        }
+    }
 }
 
 /// 遗物定义协议（Hook）
@@ -17,10 +33,10 @@ public protocol RelicDefinition: Sendable {
     static var id: RelicID { get }
     
     /// 显示名称（用于 UI）
-    static var name: String { get }
+    static var name: LocalizedText { get }
     
     /// 描述文本
-    static var description: String { get }
+    static var description: LocalizedText { get }
     
     /// 稀有度
     static var rarity: RelicRarity { get }

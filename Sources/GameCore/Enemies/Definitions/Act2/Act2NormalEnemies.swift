@@ -12,13 +12,13 @@
 /// - P2 新增：20% 概率使用精神冲击（伤害 + 疯狂）
 public struct ShadowStalker: EnemyDefinition {
     public static let id: EnemyID = "shadow_stalker"
-    public static let name = "虚影猎手"
+    public static let name = LocalizedText("虚影猎手", "Shadow Stalker")
     public static let hpRange: ClosedRange<Int> = 32...36
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {
         if snapshot.turn == 1 {
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "🌀", text: "扰乱：虚弱 2"),
+                intent: EnemyIntentDisplay(icon: "🌀", text: LocalizedText("扰乱：虚弱 2", "Disrupt: Weak 2")),
                 effects: [
                     .applyStatus(target: .player, statusId: "weak", stacks: 2)
                 ]
@@ -29,7 +29,7 @@ public struct ShadowStalker: EnemyDefinition {
         if roll < 45 {
             // 普通攻击
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "⚔️", text: "刺杀 10", previewDamage: 10),
+                intent: EnemyIntentDisplay(icon: "⚔️", text: LocalizedText("刺杀 10", "Assassinate 10"), previewDamage: 10),
                 effects: [
                     .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 10)
                 ]
@@ -37,7 +37,7 @@ public struct ShadowStalker: EnemyDefinition {
         } else if roll < 65 {
             // P2 新增：精神冲击 - 伤害 + 给予疯狂
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "👁️", text: "精神冲击 8", previewDamage: 8),
+                intent: EnemyIntentDisplay(icon: "👁️", text: LocalizedText("精神冲击 8", "Psychic Shock 8"), previewDamage: 8),
                 effects: [
                     .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 8),
                     .applyStatus(target: .player, statusId: Madness.id, stacks: 2)
@@ -46,7 +46,7 @@ public struct ShadowStalker: EnemyDefinition {
         } else {
             // 防御
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "🛡️", text: "潜行：格挡 12"),
+                intent: EnemyIntentDisplay(icon: "🛡️", text: LocalizedText("潜行：格挡 12", "Stealth: Block 12")),
                 effects: [
                     .gainBlock(target: .enemy(index: selfIndex), base: 12)
                 ]
@@ -66,7 +66,7 @@ public struct ShadowStalker: EnemyDefinition {
 /// - 偶尔自我强化（力量+1）
 public struct ClockworkSentinel: EnemyDefinition {
     public static let id: EnemyID = "clockwork_sentinel"
-    public static let name = "铭文傀儡"
+    public static let name = LocalizedText("铭文傀儡", "Clockwork Sentinel")
     public static let hpRange: ClosedRange<Int> = 36...40
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {
@@ -74,7 +74,7 @@ public struct ClockworkSentinel: EnemyDefinition {
         
         if roll < 60 {
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "⚔️⚔️", text: "连射 6×2", previewDamage: 12),
+                intent: EnemyIntentDisplay(icon: "⚔️⚔️", text: LocalizedText("连射 6×2", "Rapid Shot 6×2"), previewDamage: 12),
                 effects: [
                     .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 6),
                     .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 6),
@@ -82,14 +82,14 @@ public struct ClockworkSentinel: EnemyDefinition {
             )
         } else if roll < 85 {
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "🛡️", text: "装甲：格挡 10"),
+                intent: EnemyIntentDisplay(icon: "🛡️", text: LocalizedText("装甲：格挡 10", "Armor: Block 10")),
                 effects: [
                     .gainBlock(target: .enemy(index: selfIndex), base: 10)
                 ]
             )
         } else {
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "💪", text: "过载：力量 +1"),
+                intent: EnemyIntentDisplay(icon: "💪", text: LocalizedText("过载：力量 +1", "Overload: Strength +1")),
                 effects: [
                     .applyStatus(target: .enemy(index: selfIndex), statusId: "strength", stacks: 1)
                 ]
@@ -97,5 +97,3 @@ public struct ClockworkSentinel: EnemyDefinition {
         }
     }
 }
-
-

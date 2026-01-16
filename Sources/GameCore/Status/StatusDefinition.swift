@@ -19,7 +19,7 @@ public protocol StatusDefinition: Sendable {
     static var id: StatusID { get }
     
     /// 显示名称（用于 UI）
-    static var name: String { get }
+    static var name: LocalizedText { get }
     
     /// 图标（用于 UI）
     static var icon: String { get }

@@ -7,7 +7,7 @@
 /// 易伤：受到伤害增加 50%
 public struct Vulnerable: StatusDefinition {
     public static let id: StatusID = "vulnerable"
-    public static let name = "易伤"
+    public static let name = LocalizedText("易伤", "Vulnerable")
     public static let icon = "💔"
     public static let isPositive = false
     public static let decay: StatusDecay = .turnEnd(decreaseBy: 1)
@@ -28,7 +28,7 @@ public struct Vulnerable: StatusDefinition {
 /// 虚弱：造成伤害减少 25%
 public struct Weak: StatusDefinition {
     public static let id: StatusID = "weak"
-    public static let name = "虚弱"
+    public static let name = LocalizedText("虚弱", "Weak")
     public static let icon = "😵"
     public static let isPositive = false
     public static let decay: StatusDecay = .turnEnd(decreaseBy: 1)
@@ -49,7 +49,7 @@ public struct Weak: StatusDefinition {
 /// 脆弱：获得格挡减少 25%
 public struct Frail: StatusDefinition {
     public static let id: StatusID = "frail"
-    public static let name = "脆弱"
+    public static let name = LocalizedText("脆弱", "Frail")
     public static let icon = "🥀"
     public static let isPositive = false
     public static let decay: StatusDecay = .turnEnd(decreaseBy: 1)
@@ -70,7 +70,7 @@ public struct Frail: StatusDefinition {
 /// 中毒：回合结束时造成伤害，然后递减
 public struct Poison: StatusDefinition {
     public static let id: StatusID = "poison"
-    public static let name = "中毒"
+    public static let name = LocalizedText("中毒", "Poison")
     public static let icon = "☠️"
     public static let isPositive = false
     public static let decay: StatusDecay = .turnEnd(decreaseBy: 1)
@@ -101,7 +101,7 @@ public struct Poison: StatusDefinition {
 /// 与状态触发同时发生，时机不对。
 public struct Madness: StatusDefinition {
     public static let id: StatusID = "madness"
-    public static let name = "疯狂"
+    public static let name = LocalizedText("疯狂", "Madness")
     public static let icon = "🌀"
     public static let isPositive = false
     public static let decay: StatusDecay = .none  // 由 BattleEngine 在回合结束时手动 -1

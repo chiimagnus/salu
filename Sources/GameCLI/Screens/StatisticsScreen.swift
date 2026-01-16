@@ -12,37 +12,37 @@ enum StatisticsScreen {
         print("""
         \(Terminal.bold)\(Terminal.cyan)
         ╔═══════════════════════════════════════════════════════╗
-        ║                   📊 战绩统计                         ║
+        ║                   📊 \(L10n.text("战绩统计", "Statistics"))                         ║
         ╚═══════════════════════════════════════════════════════╝
         \(Terminal.reset)
         """)
         
         if stats.totalBattles == 0 {
-            print("        \(Terminal.dim)暂无战斗数据\(Terminal.reset)")
+            print("        \(Terminal.dim)\(L10n.text("暂无战斗数据", "No battle data yet"))\(Terminal.reset)")
         } else {
             // 胜负统计
-            print("        \(Terminal.yellow)▸ 战斗统计\(Terminal.reset)")
-            print("          总场次: \(stats.totalBattles)")
-            print("          胜利: \(Terminal.green)\(stats.wins)\(Terminal.reset)  失败: \(Terminal.red)\(stats.losses)\(Terminal.reset)  胜率: \(String(format: "%.1f", stats.winRate))%")
+            print("        \(Terminal.yellow)▸ \(L10n.text("战斗统计", "Battle Stats"))\(Terminal.reset)")
+            print("          \(L10n.text("总场次", "Total battles")): \(stats.totalBattles)")
+            print("          \(L10n.text("胜利", "Wins")): \(Terminal.green)\(stats.wins)\(Terminal.reset)  \(L10n.text("失败", "Losses")): \(Terminal.red)\(stats.losses)\(Terminal.reset)  \(L10n.text("胜率", "Win rate")): \(String(format: "%.1f", stats.winRate))%")
             print()
             
             // 回合统计
-            print("        \(Terminal.yellow)▸ 回合统计\(Terminal.reset)")
-            print("          平均回合: \(String(format: "%.1f", stats.averageTurns))")
+            print("        \(Terminal.yellow)▸ \(L10n.text("回合统计", "Turn Stats"))\(Terminal.reset)")
+            print("          \(L10n.text("平均回合", "Average turns")): \(String(format: "%.1f", stats.averageTurns))")
             if let fastest = stats.fastestWin {
-                print("          最快胜利: \(fastest) 回合")
+                print("          \(L10n.text("最快胜利", "Fastest win")): \(fastest) \(L10n.text("回合", "turns"))")
             }
             if let longest = stats.longestBattle {
-                print("          最长战斗: \(longest) 回合")
+                print("          \(L10n.text("最长战斗", "Longest battle")): \(longest) \(L10n.text("回合", "turns"))")
             }
             print()
             
             // 战斗数据
-            print("        \(Terminal.yellow)▸ 累计数据\(Terminal.reset)")
-            print("          使用卡牌: \(stats.totalCardsPlayed)")
-            print("          造成伤害: \(stats.totalDamageDealt)")
-            print("          受到伤害: \(stats.totalDamageTaken)")
-            print("          获得格挡: \(stats.totalBlockGained)")
+            print("        \(Terminal.yellow)▸ \(L10n.text("累计数据", "Totals"))\(Terminal.reset)")
+            print("          \(L10n.text("使用卡牌", "Cards played")): \(stats.totalCardsPlayed)")
+            print("          \(L10n.text("造成伤害", "Damage dealt")): \(stats.totalDamageDealt)")
+            print("          \(L10n.text("受到伤害", "Damage taken")): \(stats.totalDamageTaken)")
+            print("          \(L10n.text("获得格挡", "Block gained")): \(stats.totalBlockGained)")
         }
         
         print()
@@ -50,4 +50,3 @@ enum StatisticsScreen {
         NavigationBar.waitForBack()
     }
 }
-

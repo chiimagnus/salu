@@ -1,4 +1,5 @@
 import Foundation
+import GameCore
 
 /// 游戏设置存储
 /// 使用 JSON 格式保存用户设置到本地文件
@@ -10,6 +11,7 @@ final class SettingsStore {
     /// 设置数据模型
     struct Settings: Codable {
         var showLog: Bool = false
+        var language: GameLanguage = .zhHans
     }
     
     init() {
@@ -43,4 +45,3 @@ final class SettingsStore {
         }
     }
 }
-

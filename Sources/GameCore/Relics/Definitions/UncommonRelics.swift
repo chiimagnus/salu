@@ -8,8 +8,11 @@
 /// 效果：来自无名之鸟。战斗开始时获得 1 点敏捷
 public struct FeatherCloakRelic: RelicDefinition {
     public static let id: RelicID = "feather_cloak"
-    public static let name = "夜鸦羽翼"
-    public static let description = "来自无名之鸟。战斗开始时获得 1 点敏捷。"
+    public static let name = LocalizedText("夜鸦羽翼", "Night Crow Feather")
+    public static let description = LocalizedText(
+        "来自无名之鸟。战斗开始时获得 1 点敏捷。",
+        "From a nameless bird. Gain 1 Dexterity at battle start."
+    )
     public static let rarity: RelicRarity = .uncommon
     public static let icon = "🪶"
     
@@ -18,5 +21,4 @@ public struct FeatherCloakRelic: RelicDefinition {
         return [.applyStatus(target: .player, statusId: "dexterity", stacks: 1)]
     }
 }
-
 

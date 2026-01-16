@@ -6,6 +6,20 @@ public enum CardType: String, Sendable {
     case skill = "技能"
     case power = "能力"
     case consumable = "消耗性"
+    
+    public func displayName(language: GameLanguage) -> String {
+        switch language {
+        case .zhHans:
+            return rawValue
+        case .en:
+            switch self {
+            case .attack: return "Attack"
+            case .skill: return "Skill"
+            case .power: return "Power"
+            case .consumable: return "Consumable"
+            }
+        }
+    }
 }
 
 /// 卡牌稀有度
@@ -14,6 +28,20 @@ public enum CardRarity: String, Sendable {
     case common = "普通"
     case uncommon = "罕见"
     case rare = "稀有"
+    
+    public func displayName(language: GameLanguage) -> String {
+        switch language {
+        case .zhHans:
+            return rawValue
+        case .en:
+            switch self {
+            case .starter: return "Starter"
+            case .common: return "Common"
+            case .uncommon: return "Uncommon"
+            case .rare: return "Rare"
+            }
+        }
+    }
 }
 
 // MARK: - Card Definition Protocol
@@ -48,7 +76,7 @@ public protocol CardDefinition: Sendable {
     static var id: CardID { get }
     
     /// 显示名称（用于 UI）
-    static var name: String { get }
+    static var name: LocalizedText { get }
     
     /// 卡牌类型
     static var type: CardType { get }
@@ -60,7 +88,7 @@ public protocol CardDefinition: Sendable {
     static var cost: Int { get }
     
     /// 规则文本（UI 展示文本，替代 BattleScreen 的 switch）
-    static var rulesText: String { get }
+    static var rulesText: LocalizedText { get }
     
     /// 升级版 ID（如果有升级版）
     static var upgradedId: CardID? { get }

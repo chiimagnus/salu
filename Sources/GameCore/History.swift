@@ -144,7 +144,7 @@ public struct BattleRecordBuilder {
             EnemyBattleRecord(
                 entityId: enemy.id,
                 enemyId: enemy.enemyId?.rawValue,
-                name: enemy.name,
+                name: enemy.name.zhHans,
                 maxHP: enemy.maxHP,
                 finalHP: enemy.currentHP
             )
@@ -154,7 +154,7 @@ public struct BattleRecordBuilder {
             seed: seed,
             won: state.playerWon ?? false,
             turnsPlayed: state.turn,
-            playerName: state.player.name,
+            playerName: state.player.name.zhHans,
             playerMaxHP: state.player.maxHP,
             playerFinalHP: state.player.currentHP,
             enemies: enemies,
@@ -167,4 +167,3 @@ public struct BattleRecordBuilder {
         )
     }
 }
-

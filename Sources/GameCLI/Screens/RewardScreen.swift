@@ -9,15 +9,15 @@ enum RewardScreen {
         
         print("""
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
-        \(Terminal.bold)\(Terminal.cyan)  🎁 战斗奖励\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.cyan)  🎁 \(L10n.text("战斗奖励", "Battle Rewards"))\(Terminal.reset)
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
         
-        \(goldEarned.map { "  \(Terminal.yellow)💰 获得 \($0) 金币\(Terminal.reset)\n" } ?? "")
-        \(Terminal.bold)选择一张卡牌加入牌组（或跳过）：\(Terminal.reset)
+        \(goldEarned.map { "  \(Terminal.yellow)💰 \(L10n.text("获得", "Gain")) \($0) \(L10n.text("金币", "gold"))\(Terminal.reset)\n" } ?? "")
+        \(Terminal.bold)\(L10n.text("选择一张卡牌加入牌组（或跳过）", "Choose a card to add to your deck (or skip)"))：\(Terminal.reset)
         """)
         
         if offer.choices.isEmpty {
-            print("\(Terminal.dim)  （当前没有可用的奖励卡牌）\(Terminal.reset)\n")
+            print("\(Terminal.dim)  （\(L10n.text("当前没有可用的奖励卡牌", "No reward cards available"))）\(Terminal.reset)\n")
         } else {
             for (index, cardId) in offer.choices.enumerated() {
                 let def = CardRegistry.require(cardId)
@@ -29,22 +29,22 @@ enum RewardScreen {
                 case .consumable: typeIcon = "🧪"
                 }
                 
-                print("  \(Terminal.cyan)[\(index + 1)]\(Terminal.reset) \(Terminal.bold)\(def.name)\(Terminal.reset)  \(Terminal.yellow)◆\(def.cost)\(Terminal.reset)  \(typeIcon) \(def.rulesText)")
+                print("  \(Terminal.cyan)[\(index + 1)]\(Terminal.reset) \(Terminal.bold)\(L10n.resolve(def.name))\(Terminal.reset)  \(Terminal.yellow)◆\(def.cost)\(Terminal.reset)  \(typeIcon) \(L10n.resolve(def.rulesText))")
             }
             print("")
         }
         
         if offer.canSkip {
-            print("  \(Terminal.dim)\(Terminal.cyan)[0]\(Terminal.reset)\(Terminal.dim) 跳过\(Terminal.reset)")
+            print("  \(Terminal.dim)\(Terminal.cyan)[0]\(Terminal.reset)\(Terminal.dim) \(L10n.text("跳过", "Skip"))\(Terminal.reset)")
             print("")
         }
         
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(max(offer.choices.count, 1))]\(Terminal.reset) 选择  \(Terminal.cyan)[0]\(Terminal.reset) 跳过")
+        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(max(offer.choices.count, 1))]\(Terminal.reset) \(L10n.text("选择", "Select"))  \(Terminal.cyan)[0]\(Terminal.reset) \(L10n.text("跳过", "Skip"))")
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
         
         while true {
-            print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
+            print("\(Terminal.yellow)\(L10n.text("请选择", "Select")) > \(Terminal.reset)", terminator: "")
             Terminal.flush()
             
             // EOF（管道输入结束）默认跳过，避免测试/脚本卡死
@@ -73,4 +73,3 @@ enum RewardScreen {
         }
     }
 }
-

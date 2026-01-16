@@ -8,16 +8,15 @@ public protocol EventDefinition: Sendable {
     static var id: EventID { get }
     
     /// 事件名称（玩家可见）
-    static var name: String { get }
+    static var name: LocalizedText { get }
     
     /// 事件图标（玩家可见）
     static var icon: String { get }
     
     /// 事件描述（玩家可见）
-    static var description: String { get }
+    static var description: LocalizedText { get }
     
     /// 生成本次事件实例（含确定性的选项与效果）
     static func generate(context: EventContext, rng: inout SeededRNG) -> EventOffer
 }
-
 

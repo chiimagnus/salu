@@ -75,7 +75,7 @@ struct ShopRoomHandler: RoomHandling {
             
             // 购买卡牌 (1, 2, 3...)
             guard let choice = Int(input), choice >= 1, choice <= inventory.cardOffers.count else {
-                message = "\(Terminal.red)⚠️ 无效选择，请输入对应编号\(Terminal.reset)"
+                message = "\(Terminal.red)⚠️ \(L10n.text("无效选择，请输入对应编号", "Invalid choice, enter the corresponding number"))\(Terminal.reset)"
                 continue
             }
             
@@ -103,20 +103,20 @@ struct ShopRoomHandler: RoomHandling {
     ) -> ShopInventory {
         let offer = inventory.cardOffers[choice - 1]
         if runState.gold < offer.price {
-            message = "\(Terminal.red)金币不足，无法购买该卡牌\(Terminal.reset)"
+            message = "\(Terminal.red)\(L10n.text("金币不足，无法购买该卡牌", "Not enough gold to buy this card"))\(Terminal.reset)"
             return inventory
         }
         
         runState.gold -= offer.price
         runState.addCardToDeck(cardId: offer.cardId)
         let boughtName = CardRegistry.require(offer.cardId).name
-        context.logLine("\(Terminal.yellow)商店购买：\(boughtName)（-\(offer.price) 金币）\(Terminal.reset)")
+        context.logLine("\(Terminal.yellow)\(L10n.text("商店购买", "Shop purchase"))：\(L10n.resolve(boughtName))（-\(offer.price) \(L10n.text("金币", "gold"))）\(Terminal.reset)")
         
         // 从库存移除已购买的卡牌
         let newCardOffers = inventory.cardOffers.enumerated().compactMap { index, cardOffer in
             index == choice - 1 ? nil : cardOffer
         }
-        message = "\(Terminal.green)购买成功，已加入牌组\(Terminal.reset)"
+        message = "\(Terminal.green)\(L10n.text("购买成功，已加入牌组", "Purchase successful, added to deck"))\(Terminal.reset)"
         
         return ShopInventory(
             cardOffers: newCardOffers,
@@ -136,26 +136,26 @@ struct ShopRoomHandler: RoomHandling {
         message: inout String?
     ) -> ShopInventory {
         guard index >= 1, index <= inventory.relicOffers.count else {
-            message = "\(Terminal.red)⚠️ 无效的遗物编号\(Terminal.reset)"
+            message = "\(Terminal.red)⚠️ \(L10n.text("无效的遗物编号", "Invalid relic number"))\(Terminal.reset)"
             return inventory
         }
         
         let offer = inventory.relicOffers[index - 1]
         if runState.gold < offer.price {
-            message = "\(Terminal.red)金币不足，无法购买该遗物\(Terminal.reset)"
+            message = "\(Terminal.red)\(L10n.text("金币不足，无法购买该遗物", "Not enough gold to buy this relic"))\(Terminal.reset)"
             return inventory
         }
         
         runState.gold -= offer.price
         runState.relicManager.add(offer.relicId)
         let def = RelicRegistry.require(offer.relicId)
-        context.logLine("\(Terminal.yellow)商店购买：\(def.icon) \(def.name)（-\(offer.price) 金币）\(Terminal.reset)")
+        context.logLine("\(Terminal.yellow)\(L10n.text("商店购买", "Shop purchase"))：\(def.icon) \(L10n.resolve(def.name))（-\(offer.price) \(L10n.text("金币", "gold"))）\(Terminal.reset)")
         
         // 从库存移除已购买的遗物
         let newRelicOffers = inventory.relicOffers.enumerated().compactMap { idx, relicOffer in
             idx == index - 1 ? nil : relicOffer
         }
-        message = "\(Terminal.green)购买成功，获得遗物【\(def.name)】\(Terminal.reset)"
+        message = "\(Terminal.green)\(L10n.text("购买成功，获得遗物", "Purchase successful, gained relic"))【\(L10n.resolve(def.name))】\(Terminal.reset)"
         
         return ShopInventory(
             cardOffers: inventory.cardOffers,
@@ -175,27 +175,27 @@ struct ShopRoomHandler: RoomHandling {
         message: inout String?
     ) -> ShopInventory {
         guard index >= 1, index <= inventory.consumableOffers.count else {
-            message = "\(Terminal.red)⚠️ 无效的消耗性卡牌编号\(Terminal.reset)"
+            message = "\(Terminal.red)⚠️ \(L10n.text("无效的消耗性卡牌编号", "Invalid consumable number"))\(Terminal.reset)"
             return inventory
         }
         
         let offer = inventory.consumableOffers[index - 1]
         if runState.gold < offer.price {
-            message = "\(Terminal.red)金币不足，无法购买该消耗性卡牌\(Terminal.reset)"
+            message = "\(Terminal.red)\(L10n.text("金币不足，无法购买该消耗性卡牌", "Not enough gold to buy this consumable"))\(Terminal.reset)"
             return inventory
         }
         
         guard runState.addConsumableCardToDeck(cardId: offer.cardId) else {
-            message = "\(Terminal.red)消耗性卡牌槽位已满（最多 \(RunState.maxConsumableCardSlots) 个），无法购买\(Terminal.reset)"
+            message = "\(Terminal.red)\(L10n.text("消耗性卡牌槽位已满", "Consumable slots full"))（\(L10n.text("最多", "max")) \(RunState.maxConsumableCardSlots)）\(L10n.text("，无法购买", ", cannot purchase"))\(Terminal.reset)"
             return inventory
         }
         
         runState.gold -= offer.price
         let def = CardRegistry.require(offer.cardId)
-        context.logLine("\(Terminal.yellow)商店购买：🧪 \(def.name)（-\(offer.price) 金币）\(Terminal.reset)")
+        context.logLine("\(Terminal.yellow)\(L10n.text("商店购买", "Shop purchase"))：🧪 \(L10n.resolve(def.name))（-\(offer.price) \(L10n.text("金币", "gold"))）\(Terminal.reset)")
         
         // 消耗性卡牌可重复购买，不从库存移除
-        message = "\(Terminal.green)购买成功，获得消耗性卡牌【\(def.name)】\(Terminal.reset)"
+        message = "\(Terminal.green)\(L10n.text("购买成功，获得消耗性卡牌", "Purchase successful, gained consumable"))【\(L10n.resolve(def.name))】\(Terminal.reset)"
         
         return inventory
     }
@@ -210,7 +210,7 @@ struct ShopRoomHandler: RoomHandling {
         inputProvider: () -> String?
     ) {
         if runState.gold < inventory.removeCardPrice {
-            message = "\(Terminal.red)金币不足，无法删牌\(Terminal.reset)"
+            message = "\(Terminal.red)\(L10n.text("金币不足，无法删牌", "Not enough gold to remove a card"))\(Terminal.reset)"
             return
         }
         
@@ -228,7 +228,7 @@ struct ShopRoomHandler: RoomHandling {
             }
             
             guard let choice = Int(input), choice >= 1, choice <= runState.deck.count else {
-                removeMessage = "\(Terminal.red)⚠️ 请选择有效的卡牌编号\(Terminal.reset)"
+                removeMessage = "\(Terminal.red)⚠️ \(L10n.text("请选择有效的卡牌编号", "Please choose a valid card number"))\(Terminal.reset)"
                 continue
             }
             
@@ -236,8 +236,8 @@ struct ShopRoomHandler: RoomHandling {
             let removedName = CardRegistry.require(removed.cardId).name
             runState.removeCardFromDeck(at: choice - 1)
             runState.gold -= inventory.removeCardPrice
-            message = "\(Terminal.green)删牌成功\(Terminal.reset)"
-            context.logLine("\(Terminal.yellow)商店删牌：\(removedName)（-\(inventory.removeCardPrice) 金币）\(Terminal.reset)")
+            message = "\(Terminal.green)\(L10n.text("删牌成功", "Card removed"))\(Terminal.reset)"
+            context.logLine("\(Terminal.yellow)\(L10n.text("商店删牌", "Shop remove"))：\(L10n.resolve(removedName))（-\(inventory.removeCardPrice) \(L10n.text("金币", "gold"))）\(Terminal.reset)")
             return
         }
     }
