@@ -172,11 +172,6 @@ struct GameCLI {
                 NavigationBar.waitForBack()
 
             case "8":
-                // 事件种子工具（开发者/验收辅助）
-                Screens.showEventSeedTool()
-                NavigationBar.waitForBack()
-
-            case "9":
                 // 切换语言
                 language = (language == .zhHans) ? .en : .zhHans
                 L10n.language = language

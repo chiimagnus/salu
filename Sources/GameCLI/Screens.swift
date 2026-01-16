@@ -78,11 +78,6 @@ enum Screens {
         DataDirectoryScreen.show()
     }
 
-    // MARK: - 事件种子工具（开发者工具）
-
-    static func showEventSeedTool() {
-        EventSeedToolScreen.show()
-    }
     
     // MARK: - 退出屏幕
     
