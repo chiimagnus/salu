@@ -90,38 +90,122 @@ enum MapScreen {
         
         lines.append("\(Terminal.bold)─────────────────── \(L10n.text("地图", "Map")) ───────────────────\(Terminal.reset)")
         lines.append("")
-        
-        // 按层从高到低显示（Boss 在顶部）
-        let maxRow = runState.map.maxRow
-        
-        for row in stride(from: maxRow, through: 0, by: -1) {
-            let rowNodes = runState.map.nodes(atRow: row)
-            var rowLine = "  "
-            
-            // 检查这一层是否有可选择的节点
-            let hasAccessibleNode = rowNodes.contains { $0.isAccessible }
-            
-            // 添加层数标记（统一8个字符宽度）
-            if hasAccessibleNode {
-                // 当前可选择的层 - 黄色
-                rowLine += "\(Terminal.yellow)  \(L10n.text("当前", "Now"))→\(Terminal.reset) "
-            } else if row == maxRow {
-                rowLine += "\(Terminal.dim)  \(L10n.text("Boss", "Boss"))→\(Terminal.reset) "
-            } else if row == 0 {
-                rowLine += "\(Terminal.dim)  \(L10n.text("起点", "Start"))→\(Terminal.reset) "
-            } else {
-                rowLine += "        "
-            }
-            
-            // 显示该层的所有节点
-            var nodeStrings: [String] = []
+
+        let mapNodes = runState.map
+        let maxRow = mapNodes.maxRow
+        let mapSpacing = 6
+        let mapNodeWidth = 3
+        let mapPrefixWidth = 8
+        let maxNodesPerRow = (0...maxRow).map { mapNodes.nodes(atRow: $0).count }.max() ?? 1
+        let mapWidth = max(1, (maxNodesPerRow - 1) * mapSpacing + mapNodeWidth)
+        let mapHeight = maxRow * 2 + 1
+        var canvas = Array(repeating: Array(repeating: " ", count: mapWidth), count: mapHeight)
+        var nodePositions: [String: (x: Int, y: Int)] = [:]
+        var rowNodesByPosition: [Int: [Int: MapNode]] = [:]
+        var rowNodesByRow: [Int: [MapNode]] = [:]
+
+        for row in 0...maxRow {
+            let rowNodes = mapNodes.nodes(atRow: row).sorted { $0.column < $1.column }
+            rowNodesByRow[row] = rowNodes
+            guard !rowNodes.isEmpty else { continue }
+            let rowWidth = (rowNodes.count - 1) * mapSpacing + mapNodeWidth
+            let offset = max(0, (mapWidth - rowWidth) / 2)
+            let rowY = (maxRow - row) * 2
             for node in rowNodes {
-                let nodeStr = formatNode(node)
-                nodeStrings.append(nodeStr)
+                let nodeX = offset + node.column * mapSpacing
+                nodePositions[node.id] = (nodeX, rowY)
+                rowNodesByPosition[row, default: [:]][nodeX] = node
             }
-            
-            rowLine += nodeStrings.joined(separator: "  ")
-            lines.append(rowLine)
+        }
+
+        func drawLine(from: (x: Int, y: Int), to: (x: Int, y: Int)) {
+            var x0 = from.x
+            var y0 = from.y
+            let x1 = to.x
+            let y1 = to.y
+            let dx = abs(x1 - x0)
+            let sx = x0 < x1 ? 1 : -1
+            let dy = -abs(y1 - y0)
+            let sy = y0 < y1 ? 1 : -1
+            var err = dx + dy
+
+            while !(x0 == x1 && y0 == y1) {
+                let prevX = x0
+                let prevY = y0
+                let e2 = 2 * err
+                if e2 >= dy {
+                    err += dy
+                    x0 += sx
+                }
+                if e2 <= dx {
+                    err += dx
+                    y0 += sy
+                }
+                if x0 == x1 && y0 == y1 { break }
+                guard y0 >= 0, y0 < mapHeight, x0 >= 0, x0 < mapWidth else { continue }
+                let stepX = x0 - prevX
+                let stepY = y0 - prevY
+                let lineChar: Character
+                if stepX == 0 {
+                    lineChar = "│"
+                } else if stepY == 0 {
+                    lineChar = "─"
+                } else if (stepX > 0 && stepY > 0) || (stepX < 0 && stepY < 0) {
+                    lineChar = "╲"
+                } else {
+                    lineChar = "╱"
+                }
+                if canvas[y0][x0] == " " {
+                    canvas[y0][x0] = lineChar
+                }
+            }
+        }
+
+        for node in mapNodes {
+            guard let fromPosition = nodePositions[node.id] else { continue }
+            for targetId in node.connections {
+                guard let toPosition = nodePositions[targetId] else { continue }
+                drawLine(from: fromPosition, to: toPosition)
+            }
+        }
+
+        func rowPrefix(row: Int, hasAccessibleNode: Bool) -> String {
+            if hasAccessibleNode {
+                return "\(Terminal.yellow)  \(L10n.text("当前", "Now"))→\(Terminal.reset) "
+            }
+            if row == maxRow {
+                return "\(Terminal.dim)  \(L10n.text("Boss", "Boss"))→\(Terminal.reset) "
+            }
+            if row == 0 {
+                return "\(Terminal.dim)  \(L10n.text("起点", "Start"))→\(Terminal.reset) "
+            }
+            return String(repeating: " ", count: mapPrefixWidth)
+        }
+
+        for y in 0..<mapHeight {
+            let isNodeRow = y % 2 == 0
+            if isNodeRow {
+                let row = maxRow - y / 2
+                let rowNodes = rowNodesByRow[row] ?? []
+                let nodesByPosition = rowNodesByPosition[row] ?? [:]
+                var line = ""
+                var index = 0
+                while index < mapWidth {
+                    if let node = nodesByPosition[index] {
+                        line += formatNode(node)
+                        index += mapNodeWidth
+                    } else {
+                        line.append(canvas[y][index])
+                        index += 1
+                    }
+                }
+                let prefix = rowPrefix(row: row, hasAccessibleNode: rowNodes.contains { $0.isAccessible })
+                lines.append(prefix + line)
+            } else {
+                let prefix = String(repeating: " ", count: mapPrefixWidth)
+                let line = String(canvas[y])
+                lines.append(prefix + "\(Terminal.dim)\(line)\(Terminal.reset)")
+            }
         }
         
         lines.append("")
