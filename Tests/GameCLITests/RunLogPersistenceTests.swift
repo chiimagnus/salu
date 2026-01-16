@@ -2,6 +2,10 @@ import Foundation
 import XCTest
 @testable import GameCLI
 
+#if os(Windows)
+import WinSDK
+#endif
+
 final class RunLogPersistenceTests: XCTestCase {
     func testRunLogService_stripsANSIAndAddsTimestamp() {
         print("🧪 测试：testRunLogService_stripsANSIAndAddsTimestamp")
@@ -39,6 +43,13 @@ final class RunLogPersistenceTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: tmp) }
         
         let key = "SALU_DATA_DIR"
+#if os(Windows)
+        let old = ProcessInfo.processInfo.environment[key]
+        defer {
+            setEnvironmentVariable(key, old)
+        }
+        setEnvironmentVariable(key, tmp.path)
+#else
         let old = getenv(key).flatMap { String(cString: $0) }
         defer {
             if let old {
@@ -48,6 +59,7 @@ final class RunLogPersistenceTests: XCTestCase {
             }
         }
         setenv(key, tmp.path, 1)
+#endif
         
         let store = FileRunLogStore()
         store.appendLine("line1\n")
@@ -91,3 +103,17 @@ private final class InMemoryRunLogStore: RunLogStore, @unchecked Sendable {
         clearCount += 1
     }
 }
+
+#if os(Windows)
+private func setEnvironmentVariable(_ key: String, _ value: String?) {
+    let result: Bool = key.withCString(encodedAs: UTF16.self) { keyPtr in
+        if let value {
+            return value.withCString(encodedAs: UTF16.self) { valuePtr in
+                SetEnvironmentVariableW(keyPtr, valuePtr)
+            }
+        }
+        return SetEnvironmentVariableW(keyPtr, nil)
+    }
+    XCTAssertTrue(result, "Failed to set environment variable \(key)")
+}
+#endif
