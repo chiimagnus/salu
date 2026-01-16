@@ -7,7 +7,7 @@
 /// 力量：攻击伤害增加（永久效果）
 public struct Strength: StatusDefinition {
     public static let id: StatusID = "strength"
-    public static let name = "力量"
+    public static let name = LocalizedText("力量", "Strength")
     public static let icon = "💪"
     public static let isPositive = true
     public static let decay: StatusDecay = .none  // 力量不递减
@@ -28,7 +28,7 @@ public struct Strength: StatusDefinition {
 /// 敏捷：获得格挡增加（永久效果）
 public struct Dexterity: StatusDefinition {
     public static let id: StatusID = "dexterity"
-    public static let name = "敏捷"
+    public static let name = LocalizedText("敏捷", "Dexterity")
     public static let icon = "⚡"
     public static let isPositive = true
     public static let decay: StatusDecay = .none  // 敏捷不递减
@@ -55,7 +55,7 @@ public struct Dexterity: StatusDefinition {
 /// - 该状态不直接修正伤害/格挡，而是由 `BattleEngine.applyForesight()` 在预知结算后触发。
 public struct SequenceResonanceEffect: StatusDefinition {
     public static let id: StatusID = "sequence_resonance_effect"
-    public static let name = "序列共鸣"
+    public static let name = LocalizedText("序列共鸣", "Sequence Resonance")
     public static let icon = "〰️"
     public static let isPositive = true
     public static let decay: StatusDecay = .none

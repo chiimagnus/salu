@@ -12,17 +12,17 @@ enum EventSeedToolScreen {
         
         print("""
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
-        \(Terminal.bold)\(Terminal.cyan)  🧭 事件种子工具（开发者）\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.cyan)  🧭 \(L10n.text("事件种子工具（开发者）", "Event Seed Tool (Dev)"))\(Terminal.reset)
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
         
-        说明：
-        - 事件的出现由 seed + floor + row + nodeId 派生，保证可复现。
-        - 这个工具会在给定 seed 范围内，扫描并列出“每个事件”的可命中 seeds。
+        \(L10n.text("说明：", "Notes:"))
+        - \(L10n.text("事件的出现由 seed + floor + row + nodeId 派生，保证可复现。", "Events are derived from seed + floor + row + nodeId for determinism."))
+        - \(L10n.text("这个工具会在给定 seed 范围内，扫描并列出“每个事件”的可命中 seeds。", "This tool scans a seed range and lists matching seeds for each event."))
         
-        默认上下文（匹配测试地图 SALU_TEST_MAP=event）：
+        \(L10n.text("默认上下文（匹配测试地图 SALU_TEST_MAP=event）：", "Default context (matches SALU_TEST_MAP=event):"))
         - floor=1, row=1, nodeId=1_0
         
-        直接回车使用默认值。
+        \(L10n.text("直接回车使用默认值。", "Press Enter to use defaults."))
         """)
         
         // Defaults
@@ -33,12 +33,12 @@ enum EventSeedToolScreen {
         let defaultRangeEnd: UInt64 = 2000
         let defaultPerEventLimit = 5
         
-        let floor = readInt(prompt: "floor", defaultValue: defaultFloor)
-        let row = readInt(prompt: "row", defaultValue: defaultRow)
-        let nodeId = readString(prompt: "nodeId", defaultValue: defaultNodeId)
-        let rangeStart = readUInt64(prompt: "seed 起始", defaultValue: defaultRangeStart)
-        let rangeEnd = readUInt64(prompt: "seed 结束", defaultValue: defaultRangeEnd)
-        let perEventLimit = readInt(prompt: "每个事件展示多少个 seed", defaultValue: defaultPerEventLimit)
+        let floor = readInt(prompt: L10n.text("楼层 floor", "Floor"), defaultValue: defaultFloor)
+        let row = readInt(prompt: L10n.text("层内序号 row", "Row"), defaultValue: defaultRow)
+        let nodeId = readString(prompt: L10n.text("节点 ID", "Node ID"), defaultValue: defaultNodeId)
+        let rangeStart = readUInt64(prompt: L10n.text("seed 起始", "seed start"), defaultValue: defaultRangeStart)
+        let rangeEnd = readUInt64(prompt: L10n.text("seed 结束", "seed end"), defaultValue: defaultRangeEnd)
+        let perEventLimit = readInt(prompt: L10n.text("每个事件展示多少个 seed", "Seeds shown per event"), defaultValue: defaultPerEventLimit)
         
         let start = min(rangeStart, rangeEnd)
         let end = max(rangeStart, rangeEnd)
@@ -47,12 +47,12 @@ enum EventSeedToolScreen {
         Terminal.clear()
         print("""
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
-        \(Terminal.bold)\(Terminal.cyan)  🧭 事件种子工具（结果）\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.cyan)  🧭 \(L10n.text("事件种子工具（结果）", "Event Seed Tool (Results)"))\(Terminal.reset)
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
         
-        上下文：floor=\(floor)  row=\(row)  nodeId=\(nodeId)
-        扫描范围：seed \(start) .. \(end)
-        每个事件最多展示：\(limit) 个
+        \(L10n.text("上下文", "Context"))：floor=\(floor)  row=\(row)  nodeId=\(nodeId)
+        \(L10n.text("扫描范围", "Range"))：seed \(start) .. \(end)
+        \(L10n.text("每个事件最多展示", "Max per event"))：\(limit) \(L10n.text("个", "entries"))
         """)
         
         let results = findSeeds(
@@ -70,17 +70,17 @@ enum EventSeedToolScreen {
             let seeds = results[eventId] ?? []
             let seedText: String
             if seeds.isEmpty {
-                seedText = "\(Terminal.dim)（未在范围内找到）\(Terminal.reset)"
+                seedText = "\(Terminal.dim)（\(L10n.text("未在范围内找到", "not found in range"))）\(Terminal.reset)"
             } else {
                 seedText = seeds.map { String($0) }.joined(separator: ", ")
             }
-            print("\n\(Terminal.bold)\(def.icon)\(def.name)\(Terminal.reset)  \(Terminal.dim)(\(eventId.rawValue))\(Terminal.reset)")
+            print("\n\(Terminal.bold)\(def.icon)\(L10n.resolve(def.name))\(Terminal.reset)  \(Terminal.dim)(\(eventId.rawValue))\(Terminal.reset)")
             print("  \(seedText)")
         }
         
         print("""
         
-        \(Terminal.dim)验证示例：\(Terminal.reset)
+        \(Terminal.dim)\(L10n.text("验证示例", "Example"))：\(Terminal.reset)
           \(Terminal.cyan)SALU_TEST_MODE=1 SALU_TEST_MAP=event swift run GameCLI --seed <seed>\(Terminal.reset)
         """)
         
@@ -147,7 +147,7 @@ enum EventSeedToolScreen {
     // MARK: - Input Helpers
     
     private static func readString(prompt: String, defaultValue: String) -> String {
-        print("\(Terminal.yellow)\(prompt)\(Terminal.reset)（默认：\(defaultValue)）> ", terminator: "")
+        print("\(Terminal.yellow)\(prompt)\(Terminal.reset)（\(L10n.text("默认", "default"))：\(defaultValue)）> ", terminator: "")
         guard let input = readLine()?.trimmingCharacters(in: .whitespacesAndNewlines) else { return defaultValue }
         return input.isEmpty ? defaultValue : input
     }
@@ -162,4 +162,3 @@ enum EventSeedToolScreen {
         return UInt64(text) ?? defaultValue
     }
 }
-

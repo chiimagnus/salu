@@ -28,9 +28,10 @@ final class ConsumablesAndRunStateTests: XCTestCase {
         let effects = PurificationRune.play(snapshot: BattleSnapshot(
             turn: 1,
             player: createDefaultPlayer(),
-            enemies: [Entity(id: "e0", name: "测试敌人", maxHP: 10, enemyId: "shadow_stalker")],
+            enemies: [Entity(id: "e0", name: LocalizedText("测试敌人", "测试敌人"), maxHP: 10, enemyId: "shadow_stalker")],
             energy: 3
         ), targetEnemyIndex: nil)
-        XCTAssertEqual(effects, [.clearMadness(amount: 0)])
+        let expected: [BattleEffect] = [.clearMadness(amount: 0)]
+        XCTAssertEqual(effects, expected)
     }
 }

@@ -46,8 +46,8 @@ final class EnemyDeterminismTests: XCTestCase {
         print("🧪 测试：testJawWorm_chooseMove_isDeterministic_givenSameSeedAndSnapshot")
         let snapshot = BattleSnapshot(
             turn: 2,
-            player: Entity(id: "p", name: "玩家", maxHP: 10),
-            enemies: [Entity(id: "e", name: "下颚虫", maxHP: 10, enemyId: "jaw_worm")],
+            player: Entity(id: "p", name: LocalizedText("玩家", "玩家"), maxHP: 10),
+            enemies: [Entity(id: "e", name: LocalizedText("下颚虫", "下颚虫"), maxHP: 10, enemyId: "jaw_worm")],
             energy: 3
         )
         
@@ -64,8 +64,8 @@ final class EnemyDeterminismTests: XCTestCase {
         print("🧪 测试：testClockworkSentinel_chooseMove_isDeterministic_givenSameSeedAndSnapshot")
         let snapshot = BattleSnapshot(
             turn: 2,
-            player: Entity(id: "p", name: "玩家", maxHP: 10),
-            enemies: [Entity(id: "e", name: "机械哨兵", maxHP: 10, enemyId: "clockwork_sentinel")],
+            player: Entity(id: "p", name: LocalizedText("玩家", "玩家"), maxHP: 10),
+            enemies: [Entity(id: "e", name: LocalizedText("机械哨兵", "机械哨兵"), maxHP: 10, enemyId: "clockwork_sentinel")],
             energy: 3
         )
         

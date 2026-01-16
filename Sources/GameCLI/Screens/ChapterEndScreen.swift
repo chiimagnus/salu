@@ -23,7 +23,7 @@ public struct ChapterEndScreen {
         """)
         
         // 逐行显示文本（带格式）
-        let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
+        let lines = L10n.resolve(text).split(separator: "\n", omittingEmptySubsequences: false)
         for line in lines {
             let lineStr = String(line)
             // 判断是否为章节标题行
@@ -45,14 +45,13 @@ public struct ChapterEndScreen {
         
         // 等待用户按键继续
         if isVictory {
-            print("\n\(Terminal.bold)\(Terminal.green)恭喜通关！\(Terminal.reset)")
+            print("\n\(Terminal.bold)\(Terminal.green)\(L10n.text("恭喜通关！", "Congratulations!"))\(Terminal.reset)")
             NavigationBar.render(items: [.backToMenu])
         } else {
-            print("\n\(Terminal.dim)即将进入下一章…\(Terminal.reset)")
+            print("\n\(Terminal.dim)\(L10n.text("即将进入下一章…", "Proceeding to the next chapter..."))\(Terminal.reset)")
             NavigationBar.render(items: [.continueNext])
         }
         
         NavigationBar.waitForBack()
     }
 }
-

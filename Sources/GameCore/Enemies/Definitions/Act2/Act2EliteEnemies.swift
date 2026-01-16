@@ -16,7 +16,7 @@
 /// - 循环：精神冲击 / 防御 / 精神冲击
 public struct MadProphet: EnemyDefinition {
     public static let id: EnemyID = "mad_prophet"
-    public static let name = "疯狂预言者"
+    public static let name = LocalizedText("疯狂预言者", "Mad Prophet")
     public static let hpRange: ClosedRange<Int> = 50...60
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {
@@ -28,7 +28,7 @@ public struct MadProphet: EnemyDefinition {
         if snapshot.turn == 1 {
             // 开局：预言（力量 +2）+ 被动疯狂
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "🔮", text: "预言：力量 +2"),
+                intent: EnemyIntentDisplay(icon: "🔮", text: LocalizedText("预言：力量 +2", "Prophecy: Strength +2")),
                 effects: [
                     .applyStatus(target: .enemy(index: selfIndex), statusId: Strength.id, stacks: 2)
                 ] + passiveMadness
@@ -41,7 +41,7 @@ public struct MadProphet: EnemyDefinition {
         case 0:
             // 精神冲击
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "👁️", text: "精神冲击 10", previewDamage: 10),
+                intent: EnemyIntentDisplay(icon: "👁️", text: LocalizedText("精神冲击 10", "Psychic Shock 10"), previewDamage: 10),
                 effects: [
                     .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 10),
                     .applyStatus(target: .player, statusId: Madness.id, stacks: 2)
@@ -50,7 +50,7 @@ public struct MadProphet: EnemyDefinition {
         case 1:
             // 防御
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "🛡️", text: "冥想：格挡 15"),
+                intent: EnemyIntentDisplay(icon: "🛡️", text: LocalizedText("冥想：格挡 15", "Meditation: Block 15")),
                 effects: [
                     .gainBlock(target: .enemy(index: selfIndex), base: 15)
                 ] + passiveMadness
@@ -58,7 +58,7 @@ public struct MadProphet: EnemyDefinition {
         default:
             // 强精神冲击
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "👁️💥", text: "深渊低语 14", previewDamage: 14),
+                intent: EnemyIntentDisplay(icon: "👁️💥", text: LocalizedText("深渊低语 14", "Abyss Whisper 14"), previewDamage: 14),
                 effects: [
                     .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 14),
                     .applyStatus(target: .player, statusId: Madness.id, stacks: 3)
@@ -83,14 +83,14 @@ public struct MadProphet: EnemyDefinition {
 /// - 循环：攻击 / 时间加速（力量+1）/ 强攻
 public struct TimeGuardian: EnemyDefinition {
     public static let id: EnemyID = "time_guardian"
-    public static let name = "时间守卫"
+    public static let name = LocalizedText("时间守卫", "Time Guardian")
     public static let hpRange: ClosedRange<Int> = 65...75
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {
         if snapshot.turn == 1 {
             // 开局：时间凝滞（脆弱 2）
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "⏳", text: "时间凝滞：脆弱 2"),
+                intent: EnemyIntentDisplay(icon: "⏳", text: LocalizedText("时间凝滞：脆弱 2", "Time Stasis: Frail 2")),
                 effects: [
                     .applyStatus(target: .player, statusId: Frail.id, stacks: 2)
                 ]
@@ -102,7 +102,7 @@ public struct TimeGuardian: EnemyDefinition {
         case 0:
             // 普通攻击
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "⚔️", text: "时间切割 12", previewDamage: 12),
+                intent: EnemyIntentDisplay(icon: "⚔️", text: LocalizedText("时间切割 12", "Time Slash 12"), previewDamage: 12),
                 effects: [
                     .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 12)
                 ]
@@ -110,7 +110,7 @@ public struct TimeGuardian: EnemyDefinition {
         case 1:
             // 时间加速（力量 +1 + 格挡 10）
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "⏰", text: "时间加速：力量 +1 + 格挡 10"),
+                intent: EnemyIntentDisplay(icon: "⏰", text: LocalizedText("时间加速：力量 +1 + 格挡 10", "Time Acceleration: Strength +1 + Block 10")),
                 effects: [
                     .applyStatus(target: .enemy(index: selfIndex), statusId: Strength.id, stacks: 1),
                     .gainBlock(target: .enemy(index: selfIndex), base: 10)
@@ -119,7 +119,7 @@ public struct TimeGuardian: EnemyDefinition {
         default:
             // 强攻
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "⚔️💥", text: "时间崩坏 18", previewDamage: 18),
+                intent: EnemyIntentDisplay(icon: "⚔️💥", text: LocalizedText("时间崩坏 18", "Time Collapse 18"), previewDamage: 18),
                 effects: [
                     .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 18)
                 ]
@@ -139,13 +139,13 @@ public struct TimeGuardian: EnemyDefinition {
 /// - 轮换：重击 / 叠甲 / 多段
 public struct RuneGuardian: EnemyDefinition {
     public static let id: EnemyID = "rune_guardian"
-    public static let name = "符文执行者"
+    public static let name = LocalizedText("符文执行者", "Rune Guardian")
     public static let hpRange: ClosedRange<Int> = 70...76
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {
         if snapshot.turn == 1 {
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "💥", text: "破甲：易伤 2"),
+                intent: EnemyIntentDisplay(icon: "💥", text: LocalizedText("破甲：易伤 2", "Sunder: Vulnerable 2")),
                 effects: [
                     .applyStatus(target: .player, statusId: "vulnerable", stacks: 2)
                 ]
@@ -156,21 +156,21 @@ public struct RuneGuardian: EnemyDefinition {
         switch cycle {
         case 0:
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "⚔️", text: "符文重击 18", previewDamage: 18),
+                intent: EnemyIntentDisplay(icon: "⚔️", text: LocalizedText("符文重击 18", "Rune Smash 18"), previewDamage: 18),
                 effects: [
                     .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 18)
                 ]
             )
         case 1:
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "🛡️", text: "符文护盾：格挡 20"),
+                intent: EnemyIntentDisplay(icon: "🛡️", text: LocalizedText("符文护盾：格挡 20", "Rune Shield: Block 20")),
                 effects: [
                     .gainBlock(target: .enemy(index: selfIndex), base: 20)
                 ]
             )
         default:
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "⚔️⚔️", text: "符文连斩 9×2", previewDamage: 18),
+                intent: EnemyIntentDisplay(icon: "⚔️⚔️", text: LocalizedText("符文连斩 9×2", "Rune Flurry 9×2"), previewDamage: 18),
                 effects: [
                     .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 9),
                     .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 9),
@@ -179,5 +179,3 @@ public struct RuneGuardian: EnemyDefinition {
         }
     }
 }
-
-

@@ -4,10 +4,10 @@
 /// 注意：意图不是执行逻辑，执行逻辑靠 effects
 public struct EnemyIntentDisplay: Sendable, Equatable {
     public let icon: String
-    public let text: String
+    public let text: LocalizedText
     public let previewDamage: Int?
     
-    public init(icon: String, text: String, previewDamage: Int? = nil) {
+    public init(icon: String, text: LocalizedText, previewDamage: Int? = nil) {
         self.icon = icon
         self.text = text
         self.previewDamage = previewDamage

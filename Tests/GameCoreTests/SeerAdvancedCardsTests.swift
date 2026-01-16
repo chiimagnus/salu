@@ -8,7 +8,7 @@ final class SeerAdvancedCardsTests: XCTestCase {
         var player = createDefaultPlayer()
         player.statuses.set(Madness.id, stacks: 5)
 
-        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 80, enemyId: "shadow_stalker")
+        let enemy = Entity(id: "e0", name: LocalizedText("测试敌人", "测试敌人"), maxHP: 80, enemyId: "shadow_stalker")
 
         // deck=5：回合开始手里一定包含净化仪式与可弃置的其他牌
         let deck: [Card] = [
@@ -37,13 +37,19 @@ final class SeerAdvancedCardsTests: XCTestCase {
         }
 
         engine.clearEvents()
-        _ = engine.handleAction(.playCard(handIndex: idx, targetEnemyIndex: nil))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: idx, targetEnemyIndex: nil))
 
         XCTAssertEqual(engine.state.player.statuses.stacks(of: Madness.id), 0)
         XCTAssertEqual(engine.state.hand.count, handCountBefore - 2) // 打出 1 张 + 随机弃 1 张
         XCTAssertEqual(engine.state.discardPile.count, discardCountBefore + 2)
-        XCTAssertTrue(engine.events.contains(.madnessCleared(amount: 5)))
-        XCTAssertTrue(engine.events.contains(.handDiscarded(count: 1)))
+        XCTAssertTrue(engine.events.contains { event in
+            if case .madnessCleared(let amount) = event { return amount == 5 }
+            return false
+        })
+        XCTAssertTrue(engine.events.contains { event in
+            if case .handDiscarded(let count) = event { return count == 1 }
+            return false
+        })
     }
 
     func testPurificationRitualPlus_clearsAllMadness_withoutDiscard() {
@@ -52,7 +58,7 @@ final class SeerAdvancedCardsTests: XCTestCase {
         var player = createDefaultPlayer()
         player.statuses.set(Madness.id, stacks: 3)
 
-        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 80, enemyId: "shadow_stalker")
+        let enemy = Entity(id: "e0", name: LocalizedText("测试敌人", "测试敌人"), maxHP: 80, enemyId: "shadow_stalker")
 
         let deck: [Card] = [
             .init(id: "p1", cardId: PurificationRitualPlus.id),
@@ -79,20 +85,26 @@ final class SeerAdvancedCardsTests: XCTestCase {
         }
 
         engine.clearEvents()
-        _ = engine.handleAction(.playCard(handIndex: idx, targetEnemyIndex: nil))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: idx, targetEnemyIndex: nil))
 
         XCTAssertEqual(engine.state.player.statuses.stacks(of: Madness.id), 0)
         XCTAssertEqual(engine.state.hand.count, handCountBefore - 1) // 仅打出自身
         XCTAssertEqual(engine.state.discardPile.count, discardCountBefore + 1)
-        XCTAssertTrue(engine.events.contains(.madnessCleared(amount: 3)))
-        XCTAssertFalse(engine.events.contains(.handDiscarded(count: 1)))
+        XCTAssertTrue(engine.events.contains { event in
+            if case .madnessCleared(let amount) = event { return amount == 3 }
+            return false
+        })
+        XCTAssertFalse(engine.events.contains { event in
+            if case .handDiscarded(let count) = event { return count == 1 }
+            return false
+        })
     }
 
     func testProphecyEcho_dealsDamageBasedOnForesightCountThisTurn() {
         let seed: UInt64 = 3
 
         let player = createDefaultPlayer()
-        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 200, enemyId: "shadow_stalker")
+        let enemy = Entity(id: "e0", name: LocalizedText("测试敌人", "测试敌人"), maxHP: 200, enemyId: "shadow_stalker")
 
         // deck=7：回合开始抽 5，抽牌堆仍剩 2 张，保证同回合能进行 2 次预知（第 2 次可能只有 1 张可看）
         // 组合保证：回合开始手里至少有 2 张灵视 + 1 张预言回响
@@ -120,7 +132,7 @@ final class SeerAdvancedCardsTests: XCTestCase {
             guard let idx = engine.state.hand.firstIndex(where: { $0.cardId == SpiritSight.id }) else {
                 return XCTFail("同回合未能找到 灵视 用于预知次数堆叠")
             }
-            _ = engine.handleAction(.playCard(handIndex: idx, targetEnemyIndex: nil))
+            _ = engine.handleAction(PlayerAction.playCard(handIndex: idx, targetEnemyIndex: nil))
             // 预知需要完成选择后才能继续出牌
             if case .some(.foresight) = engine.pendingInput {
                 _ = engine.submitForesightChoice(index: 0)
@@ -133,7 +145,7 @@ final class SeerAdvancedCardsTests: XCTestCase {
 
         let hpBefore = engine.state.enemies[0].currentHP
         engine.clearEvents()
-        _ = engine.handleAction(.playCard(handIndex: echoIdx, targetEnemyIndex: 0))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: echoIdx, targetEnemyIndex: 0))
         let hpAfter = engine.state.enemies[0].currentHP
 
         XCTAssertEqual(hpBefore - hpAfter, 6) // 3 × 本回合预知次数(2)
@@ -143,7 +155,7 @@ final class SeerAdvancedCardsTests: XCTestCase {
         let seed: UInt64 = 4
 
         let player = createDefaultPlayer()
-        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 80, enemyId: "shadow_stalker")
+        let enemy = Entity(id: "e0", name: LocalizedText("测试敌人", "测试敌人"), maxHP: 80, enemyId: "shadow_stalker")
 
         // deck=6：回合开始抽 5，抽牌堆仍剩 1 张，保证预知至少能触发一次
         let deck: [Card] = [
@@ -169,12 +181,12 @@ final class SeerAdvancedCardsTests: XCTestCase {
         guard let srIdx = engine.state.hand.firstIndex(where: { $0.cardId == SequenceResonanceCard.id }) else {
             return XCTFail("回合开始未抽到 序列共鸣")
         }
-        _ = engine.handleAction(.playCard(handIndex: srIdx, targetEnemyIndex: nil))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: srIdx, targetEnemyIndex: nil))
 
         guard let ssIdx = engine.state.hand.firstIndex(where: { $0.cardId == SpiritSight.id }) else {
             return XCTFail("回合开始未抽到 灵视（用于触发预知）")
         }
-        _ = engine.handleAction(.playCard(handIndex: ssIdx, targetEnemyIndex: nil))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: ssIdx, targetEnemyIndex: nil))
 
         if case .some(.foresight) = engine.pendingInput {
             _ = engine.submitForesightChoice(index: 0)
@@ -186,7 +198,7 @@ final class SeerAdvancedCardsTests: XCTestCase {
         let seed: UInt64 = 5
 
         let player = createDefaultPlayer()
-        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 80, enemyId: "shadow_stalker")
+        let enemy = Entity(id: "e0", name: LocalizedText("测试敌人", "测试敌人"), maxHP: 80, enemyId: "shadow_stalker")
 
         let deck: [Card] = [
             .init(id: "sr1", cardId: SequenceResonanceCardPlus.id),
@@ -209,12 +221,12 @@ final class SeerAdvancedCardsTests: XCTestCase {
         guard let srIdx = engine.state.hand.firstIndex(where: { $0.cardId == SequenceResonanceCardPlus.id }) else {
             return XCTFail("回合开始未抽到 序列共鸣+")
         }
-        _ = engine.handleAction(.playCard(handIndex: srIdx, targetEnemyIndex: nil))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: srIdx, targetEnemyIndex: nil))
 
         guard let ssIdx = engine.state.hand.firstIndex(where: { $0.cardId == SpiritSight.id }) else {
             return XCTFail("回合开始未抽到 灵视（用于触发预知）")
         }
-        _ = engine.handleAction(.playCard(handIndex: ssIdx, targetEnemyIndex: nil))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: ssIdx, targetEnemyIndex: nil))
 
         if case .some(.foresight) = engine.pendingInput {
             _ = engine.submitForesightChoice(index: 0)
@@ -226,7 +238,7 @@ final class SeerAdvancedCardsTests: XCTestCase {
         let seed: UInt64 = 6
 
         let player = createDefaultPlayer()
-        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 200, enemyId: "shadow_stalker")
+        let enemy = Entity(id: "e0", name: LocalizedText("测试敌人", "测试敌人"), maxHP: 200, enemyId: "shadow_stalker")
 
         // deck=6：每回合抽 5，抽牌堆保证至少剩 1 张，让预知必定可触发
         // 使用 3×序列共鸣 + 3×灵视，避免因洗牌导致缺牌（无论遗漏哪一张，手牌都必含 SR 与 SS）
@@ -252,13 +264,13 @@ final class SeerAdvancedCardsTests: XCTestCase {
         guard let sr1 = engine.state.hand.firstIndex(where: { $0.cardId == SequenceResonanceCard.id }) else {
             return XCTFail("回合开始未抽到 序列共鸣")
         }
-        _ = engine.handleAction(.playCard(handIndex: sr1, targetEnemyIndex: nil))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: sr1, targetEnemyIndex: nil))
 
         guard let ss1 = engine.state.hand.firstIndex(where: { $0.cardId == SpiritSight.id }) else {
             return XCTFail("回合开始未抽到 灵视（用于触发预知）")
         }
         let blockBefore1 = engine.state.player.block
-        _ = engine.handleAction(.playCard(handIndex: ss1, targetEnemyIndex: nil))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: ss1, targetEnemyIndex: nil))
         if case .some(.foresight) = engine.pendingInput {
             _ = engine.submitForesightChoice(index: 0)
         }
@@ -272,13 +284,13 @@ final class SeerAdvancedCardsTests: XCTestCase {
         guard let sr2 = engine.state.hand.firstIndex(where: { $0.cardId == SequenceResonanceCard.id }) else {
             return XCTFail("第 2 回合未抽到 序列共鸣")
         }
-        _ = engine.handleAction(.playCard(handIndex: sr2, targetEnemyIndex: nil))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: sr2, targetEnemyIndex: nil))
 
         guard let ss2 = engine.state.hand.firstIndex(where: { $0.cardId == SpiritSight.id }) else {
             return XCTFail("第 2 回合未抽到 灵视（用于触发预知）")
         }
         let blockBefore2 = engine.state.player.block
-        _ = engine.handleAction(.playCard(handIndex: ss2, targetEnemyIndex: nil))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: ss2, targetEnemyIndex: nil))
         if case .some(.foresight) = engine.pendingInput {
             _ = engine.submitForesightChoice(index: 0)
         }
@@ -286,4 +298,3 @@ final class SeerAdvancedCardsTests: XCTestCase {
         XCTAssertEqual(gained2, 2)
     }
 }
-

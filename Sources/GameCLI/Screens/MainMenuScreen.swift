@@ -11,9 +11,9 @@ enum MainMenuScreen {
         let stats = historyService.getStatistics()
         let statsLine: String
         if stats.totalBattles > 0 {
-            statsLine = "📈 \(stats.wins)胜 \(stats.losses)负 (胜率 \(String(format: "%.1f", stats.winRate))%)"
+            statsLine = "📈 \(stats.wins)\(L10n.text("胜", "W")) \(stats.losses)\(L10n.text("负", "L")) (\(L10n.text("胜率", "Win rate")) \(String(format: "%.1f", stats.winRate))%)"
         } else {
-            statsLine = "📈 暂无战绩"
+            statsLine = "📈 \(L10n.text("暂无战绩", "No record yet"))"
         }
         
         // 根据是否有存档显示不同的菜单
@@ -33,10 +33,10 @@ enum MainMenuScreen {
             ║                                                       ║
             ╠═══════════════════════════════════════════════════════╣
             ║                                                       ║
-            ║  \(Terminal.reset)\(Terminal.green)[1]\(Terminal.cyan) 🔄 继续上次冒险                                  ║
-            ║  \(Terminal.reset)\(Terminal.green)[2]\(Terminal.cyan) 🗺️  开始新冒险                                    ║
-            ║  \(Terminal.reset)\(Terminal.green)[3]\(Terminal.cyan) ⚙️  设置                                          ║
-            ║  \(Terminal.reset)\(Terminal.red)[4]\(Terminal.cyan) 🚪 退出游戏                                      ║
+            ║  \(Terminal.reset)\(Terminal.green)[1]\(Terminal.cyan) 🔄 \(L10n.text("继续上次冒险", "Continue"))                                  ║
+            ║  \(Terminal.reset)\(Terminal.green)[2]\(Terminal.cyan) 🗺️  \(L10n.text("开始新冒险", "New Run"))                                    ║
+            ║  \(Terminal.reset)\(Terminal.green)[3]\(Terminal.cyan) ⚙️  \(L10n.text("设置", "Settings"))                                          ║
+            ║  \(Terminal.reset)\(Terminal.red)[4]\(Terminal.cyan) 🚪 \(L10n.text("退出游戏", "Exit"))                                      ║
             ║                                                       ║
             ╠═══════════════════════════════════════════════════════╣
             ║  \(Terminal.reset)\(Terminal.dim)\(statsLine)\(Terminal.bold)\(Terminal.cyan)\(String(repeating: " ", count: max(0, 40 - statsLine.count)))        ║
@@ -59,9 +59,9 @@ enum MainMenuScreen {
             ║                                                       ║
             ╠═══════════════════════════════════════════════════════╣
             ║                                                       ║
-            ║  \(Terminal.reset)\(Terminal.green)[1]\(Terminal.cyan) 🗺️  开始冒险                                      ║
-            ║  \(Terminal.reset)\(Terminal.green)[2]\(Terminal.cyan) ⚙️  设置                                          ║
-            ║  \(Terminal.reset)\(Terminal.red)[3]\(Terminal.cyan) 🚪 退出游戏                                      ║
+            ║  \(Terminal.reset)\(Terminal.green)[1]\(Terminal.cyan) 🗺️  \(L10n.text("开始冒险", "Start Run"))                                      ║
+            ║  \(Terminal.reset)\(Terminal.green)[2]\(Terminal.cyan) ⚙️  \(L10n.text("设置", "Settings"))                                          ║
+            ║  \(Terminal.reset)\(Terminal.red)[3]\(Terminal.cyan) 🚪 \(L10n.text("退出游戏", "Exit"))                                      ║
             ║                                                       ║
             ╠═══════════════════════════════════════════════════════╣
             ║  \(Terminal.reset)\(Terminal.dim)\(statsLine)\(Terminal.bold)\(Terminal.cyan)\(String(repeating: " ", count: max(0, 40 - statsLine.count)))        ║
@@ -70,7 +70,6 @@ enum MainMenuScreen {
             """)
         }
         
-        print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
+        print("\(Terminal.yellow)\(L10n.text("请选择", "Select")) > \(Terminal.reset)", terminator: "")
     }
 }
-

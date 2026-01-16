@@ -9,27 +9,27 @@ enum EventScreen {
         
         print("""
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
-        \(Terminal.bold)\(Terminal.cyan)  \(offer.icon) 事件：\(offer.name)\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.cyan)  \(offer.icon) \(L10n.text("事件", "Event"))：\(L10n.resolve(offer.name))\(Terminal.reset)
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
         
-        \(offer.description)
+        \(L10n.resolve(offer.description))
         
-        \(Terminal.bold)请选择一个选项：\(Terminal.reset)
+        \(Terminal.bold)\(L10n.text("请选择一个选项", "Choose an option"))：\(Terminal.reset)
         """)
         
         for (index, option) in offer.options.enumerated() {
-            let preview = option.preview.map { " \(Terminal.dim)(\($0))\(Terminal.reset)" } ?? ""
-            print("  \(Terminal.cyan)[\(index + 1)]\(Terminal.reset) \(option.title)\(preview)")
+            let preview = option.preview.map { " \(Terminal.dim)(\(L10n.resolve($0)))\(Terminal.reset)" } ?? ""
+            print("  \(Terminal.cyan)[\(index + 1)]\(Terminal.reset) \(L10n.resolve(option.title))\(preview)")
         }
-        print("  \(Terminal.cyan)[0]\(Terminal.reset) 离开")
+        print("  \(Terminal.cyan)[0]\(Terminal.reset) \(L10n.text("离开", "Leave"))")
         
         print("")
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(max(offer.options.count, 1))]\(Terminal.reset) 选择  \(Terminal.cyan)[0]\(Terminal.reset) 离开")
+        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(max(offer.options.count, 1))]\(Terminal.reset) \(L10n.text("选择", "Select"))  \(Terminal.cyan)[0]\(Terminal.reset) \(L10n.text("离开", "Leave"))")
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
         
         while true {
-            print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
+            print("\(Terminal.yellow)\(L10n.text("请选择", "Select")) > \(Terminal.reset)", terminator: "")
             Terminal.flush()
             
             // EOF：默认不选择，避免测试/脚本卡死
@@ -57,7 +57,7 @@ enum EventScreen {
         
         print("""
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
-        \(Terminal.bold)\(Terminal.cyan)  ✅ 事件结算\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.cyan)  ✅ \(L10n.text("事件结算", "Event Result"))\(Terminal.reset)
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
         
         \(Terminal.bold)\(title)\(Terminal.reset)
@@ -77,10 +77,10 @@ enum EventScreen {
         
         print("""
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
-        \(Terminal.bold)\(Terminal.cyan)  ？ 选择要升级的卡牌\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.cyan)  ？ \(L10n.text("选择要升级的卡牌", "Choose a card to upgrade"))\(Terminal.reset)
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
         
-        \(Terminal.bold)从可升级卡中选择 1 张：\(Terminal.reset)
+        \(Terminal.bold)\(L10n.text("从可升级卡中选择 1 张", "Choose 1 upgradable card"))：\(Terminal.reset)
         """)
         
         for (index, deckIndex) in upgradeableIndices.enumerated() {
@@ -88,16 +88,16 @@ enum EventScreen {
             let def = CardRegistry.require(card.cardId)
             guard let upgradedId = def.upgradedId else { continue }
             let upgradedDef = CardRegistry.require(upgradedId)
-            print("  \(Terminal.cyan)[\(index + 1)]\(Terminal.reset) \(Terminal.bold)\(def.name)\(Terminal.reset) → \(Terminal.green)\(upgradedDef.name)\(Terminal.reset)")
+            print("  \(Terminal.cyan)[\(index + 1)]\(Terminal.reset) \(Terminal.bold)\(L10n.resolve(def.name))\(Terminal.reset) → \(Terminal.green)\(L10n.resolve(upgradedDef.name))\(Terminal.reset)")
         }
         
         print("")
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(max(1, upgradeableIndices.count))]\(Terminal.reset) 选择  \(Terminal.cyan)[0]\(Terminal.reset) 取消")
+        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(max(1, upgradeableIndices.count))]\(Terminal.reset) \(L10n.text("选择", "Select"))  \(Terminal.cyan)[0]\(Terminal.reset) \(L10n.text("取消", "Cancel"))")
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
         
         while true {
-            print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
+            print("\(Terminal.yellow)\(L10n.text("请选择", "Select")) > \(Terminal.reset)", terminator: "")
             Terminal.flush()
             
             guard let raw = readLine() else {
@@ -119,5 +119,4 @@ enum EventScreen {
         }
     }
 }
-
 

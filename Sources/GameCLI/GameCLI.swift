@@ -16,6 +16,9 @@ struct GameCLI {
     
     /// 是否显示日志面板
     private nonisolated(unsafe) static var showLog: Bool = false
+
+    /// 当前语言
+    private nonisolated(unsafe) static var language: GameLanguage = .zhHans
     
     /// 历史记录服务（依赖注入，替代单例）
     private nonisolated(unsafe) static var historyService: HistoryService!
@@ -47,6 +50,8 @@ struct GameCLI {
         settingsStore = SettingsStore()
         let settings = settingsStore.load()
         showLog = settings.showLog
+        language = settings.language
+        L10n.language = language
         
         // 检查命令行快捷参数
         if CommandLine.arguments.contains("--history") || CommandLine.arguments.contains("-H") {
@@ -123,7 +128,7 @@ struct GameCLI {
     
     static func settingsMenuLoop() {
         while true {
-            Screens.showSettingsMenu(historyService: historyService, showLog: showLog)
+            Screens.showSettingsMenu(historyService: historyService, showLog: showLog, language: language)
             
             guard let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased() else {
                 // EOF 或输入关闭，退出设置菜单
@@ -170,6 +175,14 @@ struct GameCLI {
                 // 事件种子工具（开发者/验收辅助）
                 Screens.showEventSeedTool()
                 NavigationBar.waitForBack()
+
+            case "9":
+                // 切换语言
+                language = (language == .zhHans) ? .en : .zhHans
+                L10n.language = language
+                var settings = settingsStore.load()
+                settings.language = language
+                settingsStore.save(settings)
                 
             case "q":
                 // 返回主菜单
@@ -186,15 +199,15 @@ struct GameCLI {
         print("""
         \(Terminal.bold)\(Terminal.red)
         ╔═══════════════════════════════════════════════════════╗
-        ║              ⚠️  确认清除历史记录？                   ║
+        ║              ⚠️  \(L10n.text("确认清除历史记录？", "Clear history?"))                   ║
         ╠═══════════════════════════════════════════════════════╣
         ║                                                       ║
-        ║  此操作不可恢复！                                     ║
+        ║  \(L10n.text("此操作不可恢复！", "This cannot be undone!"))                                     ║
         ║                                                       ║
-        ║  当前共有 \(String(format: "%3d", historyService.recordCount)) 条记录                                ║
+        ║  \(L10n.text("当前共有", "Total")) \(String(format: "%3d", historyService.recordCount)) \(L10n.text("条记录", "records"))                                ║
         ║                                                       ║
         ╠═══════════════════════════════════════════════════════╣
-        ║  输入 \(Terminal.reset)yes\(Terminal.bold)\(Terminal.red) 确认删除，其他任意键取消                     ║
+        ║  \(L10n.text("输入", "Type")) \(Terminal.reset)yes\(Terminal.bold)\(Terminal.red) \(L10n.text("确认删除，其他任意键取消", "to confirm, any other key to cancel"))                     ║
         ╚═══════════════════════════════════════════════════════╝
         \(Terminal.reset)
         """)
@@ -203,7 +216,7 @@ struct GameCLI {
         if let input = readLine()?.trimmingCharacters(in: .whitespaces).lowercased(), input == "yes" {
             historyService.clearHistory()
             Terminal.clear()
-            print("\n        \(Terminal.green)✓ 历史记录已清除\(Terminal.reset)\n")
+            print("\n        \(Terminal.green)✓ \(L10n.text("历史记录已清除", "History cleared"))\(Terminal.reset)\n")
             NavigationBar.render(items: [.back])
             NavigationBar.waitForBack()
         }
@@ -219,7 +232,7 @@ struct GameCLI {
 
         // 新冒险：清空内存日志，并在文件日志写入分隔线
         recentLogs.removeAll()
-        runLogService.appendSystem("开始新冒险（seed=\(seed)）")
+        runLogService.appendSystem("\(L10n.text("开始新冒险", "Start new run"))（seed=\(seed)）")
         
         // 创建新冒险
         if TestMode.useTestMap {
@@ -236,7 +249,7 @@ struct GameCLI {
         do {
             // 尝试加载存档
             guard let runState = try saveService.loadRun() else {
-                print("\(Terminal.red)没有找到存档！\(Terminal.reset)")
+                print("\(Terminal.red)\(L10n.text("没有找到存档！", "No save found!"))\(Terminal.reset)")
                 NavigationBar.render(items: [.back])
                 NavigationBar.waitForBack()
                 return
@@ -245,22 +258,22 @@ struct GameCLI {
             // 恢复冒险
             currentRunState = runState
             recentLogs.removeAll()
-            runLogService.appendSystem("继续冒险（seed=\(runState.seed)）")
-            print("\(Terminal.green)存档加载成功！\(Terminal.reset)")
-            print("\(Terminal.dim)正在继续冒险...\(Terminal.reset)")
+            runLogService.appendSystem("\(L10n.text("继续冒险", "Continue run"))（seed=\(runState.seed)）")
+            print("\(Terminal.green)\(L10n.text("存档加载成功！", "Save loaded!"))\(Terminal.reset)")
+            print("\(Terminal.dim)\(L10n.text("正在继续冒险...", "Continuing..."))\(Terminal.reset)")
             Thread.sleep(forTimeInterval: 1.0)
             
             // 进入冒险循环
             runLoop()
             
         } catch SaveError.incompatibleVersion(let saved, let current) {
-            print("\(Terminal.red)存档版本不兼容！\(Terminal.reset)")
-            print("\(Terminal.dim)存档版本: \(saved), 当前版本: \(current)\(Terminal.reset)")
-            print("\(Terminal.yellow)请开始新的冒险。\(Terminal.reset)")
+            print("\(Terminal.red)\(L10n.text("存档版本不兼容！", "Save version incompatible!"))\(Terminal.reset)")
+            print("\(Terminal.dim)\(L10n.text("存档版本", "Save version")): \(saved), \(L10n.text("当前版本", "current")): \(current)\(Terminal.reset)")
+            print("\(Terminal.yellow)\(L10n.text("请开始新的冒险。", "Please start a new run."))\(Terminal.reset)")
             NavigationBar.render(items: [.back])
             NavigationBar.waitForBack()
         } catch {
-            print("\(Terminal.red)加载存档失败: \(error)\(Terminal.reset)")
+            print("\(Terminal.red)\(L10n.text("加载存档失败", "Failed to load save")): \(error)\(Terminal.reset)")
             NavigationBar.render(items: [.back])
             NavigationBar.waitForBack()
         }
@@ -341,7 +354,7 @@ struct GameCLI {
             }
 
             // 记录进入房间（统一日志）
-            context.logLine("\(Terminal.dim)进入：\(selectedNode.roomType.icon) \(selectedNode.roomType.displayName)\(Terminal.reset)")
+            context.logLine("\(Terminal.dim)\(L10n.text("进入", "Enter"))：\(selectedNode.roomType.icon) \(selectedNode.roomType.displayName(language: L10n.language))\(Terminal.reset)")
             
             // 使用 handler 处理房间（消除 switch 分支）
             guard let handler = registry.handler(for: selectedNode.roomType) else {
@@ -392,13 +405,13 @@ struct GameCLI {
             \(Terminal.bold)\(Terminal.green)
             ╔═══════════════════════════════════════════════════════╗
             ║                                                       ║
-            ║               🎉 恭喜通关！🎉                          ║
+            ║               🎉 \(L10n.text("恭喜通关！", "Victory!")) 🎉                          ║
             ║                                                       ║
             ╠═══════════════════════════════════════════════════════╣
             ║                                                       ║
-            ║   你成功击败了所有敌人，完成了冒险！                   ║
+            ║   \(L10n.text("你成功击败了所有敌人，完成了冒险！", "You defeated every enemy and completed the adventure!"))                   ║
             ║                                                       ║
-            ║   最终 HP: \(runState.player.currentHP)/\(runState.player.maxHP)                                    ║
+            ║   \(L10n.text("最终 HP", "Final HP")): \(runState.player.currentHP)/\(runState.player.maxHP)                                    ║
             ║                                                       ║
             ╚═══════════════════════════════════════════════════════╝
             \(Terminal.reset)
@@ -408,13 +421,13 @@ struct GameCLI {
             \(Terminal.bold)\(Terminal.red)
             ╔═══════════════════════════════════════════════════════╗
             ║                                                       ║
-            ║               💀 冒险失败 💀                           ║
+            ║               💀 \(L10n.text("冒险失败", "Adventure Failed")) 💀                           ║
             ║                                                       ║
             ╠═══════════════════════════════════════════════════════╣
             ║                                                       ║
-            ║   你倒在了冒险途中...                                  ║
+            ║   \(L10n.text("你倒在了冒险途中...", "You fell during the journey..."))                                  ║
             ║                                                       ║
-            ║   进度: 第 \(runState.currentRow) 层                                        ║
+            ║   \(L10n.text("进度", "Progress")): \(L10n.text("第", "Floor")) \(runState.currentRow)                                        ║
             ║                                                       ║
             ╚═══════════════════════════════════════════════════════╝
             \(Terminal.reset)
@@ -497,7 +510,7 @@ struct GameCLI {
                     }
 
                     guard let n = Int(input), n >= 1, n <= options.count else {
-                        currentMessage = "\(Terminal.red)⚠️ 无效选择：1-\(options.count)\(Terminal.reset)"
+                        currentMessage = "\(Terminal.red)⚠️ \(L10n.text("无效选择", "Invalid choice"))：1-\(options.count)\(Terminal.reset)"
                         continue
                     }
 
@@ -539,7 +552,7 @@ struct GameCLI {
 
             let parts = input.split { $0 == " " || $0 == "\t" }
             guard !parts.isEmpty else {
-                currentMessage = "\(Terminal.red)⚠️ 请输入有效指令\(Terminal.reset)"
+                currentMessage = "\(Terminal.red)⚠️ \(L10n.text("请输入有效指令", "Please enter a valid command"))\(Terminal.reset)"
                 continue
             }
             
@@ -557,7 +570,7 @@ struct GameCLI {
                   cardNumber >= 1,
                   cardNumber <= engine.state.hand.count
             else {
-                currentMessage = "\(Terminal.red)⚠️ 无效选择: 1-\(engine.state.hand.count) / 0\(Terminal.reset)"
+                currentMessage = "\(Terminal.red)⚠️ \(L10n.text("无效选择", "Invalid choice")): 1-\(engine.state.hand.count) / 0\(Terminal.reset)"
                 continue
             }
             
@@ -568,11 +581,11 @@ struct GameCLI {
             if parts.count >= 2, let targetNumber = Int(parts[1]) {
                 let idx = targetNumber - 1
                 guard idx >= 0, idx < engine.state.enemies.count else {
-                    currentMessage = "\(Terminal.red)⚠️ 无效目标：1-\(engine.state.enemies.count)\(Terminal.reset)"
+                    currentMessage = "\(Terminal.red)⚠️ \(L10n.text("无效目标", "Invalid target"))：1-\(engine.state.enemies.count)\(Terminal.reset)"
                     continue
                 }
                 guard engine.state.enemies[idx].isAlive else {
-                    currentMessage = "\(Terminal.red)⚠️ 目标已死亡，请选择存活敌人\(Terminal.reset)"
+                    currentMessage = "\(Terminal.red)⚠️ \(L10n.text("目标已死亡，请选择存活敌人", "Target is dead, choose a living enemy"))\(Terminal.reset)"
                     continue
                 }
                 targetEnemyIndex = idx
@@ -585,7 +598,7 @@ struct GameCLI {
                     if alive.count <= 1 {
                         targetEnemyIndex = alive.first
                     } else {
-                        currentMessage = "\(Terminal.red)⚠️ 该牌需要选择目标，请输入：卡牌序号 目标序号（例如：1 2）\(Terminal.reset)"
+                        currentMessage = "\(Terminal.red)⚠️ \(L10n.text("该牌需要选择目标，请输入：卡牌序号 目标序号（例如：1 2）", "This card requires a target. Enter: card index target index (e.g. 1 2)"))\(Terminal.reset)"
                         continue
                     }
                 }

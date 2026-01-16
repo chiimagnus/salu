@@ -37,7 +37,9 @@ enum BattleScreen {
         lines.append("")
         
         // 牌堆信息
-        lines.append("\(Terminal.dim)  📚 抽牌堆: \(engine.state.drawPile.count)张    🗑️ 弃牌堆: \(engine.state.discardPile.count)张    💨 消耗堆: \(engine.state.exhaustPile.count)张\(Terminal.reset)")
+        lines.append(
+            "\(Terminal.dim)  📚 \(L10n.text("抽牌堆", "Draw")): \(engine.state.drawPile.count)\(L10n.text("张", " cards"))    🗑️ \(L10n.text("弃牌堆", "Discard")): \(engine.state.discardPile.count)\(L10n.text("张", " cards"))    💨 \(L10n.text("消耗堆", "Exhaust")): \(engine.state.exhaustPile.count)\(L10n.text("张", " cards"))\(Terminal.reset)"
+        )
         lines.append("")
         
         // 事件日志区域（可折叠）
@@ -62,17 +64,18 @@ enum BattleScreen {
         for line in lines {
             print(line)
         }
-        print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
+        print("\(Terminal.yellow)\(L10n.text("请选择", "Select")) > \(Terminal.reset)", terminator: "")
         Terminal.flush()
     }
     
     // MARK: - 组件构建
     
     private static func buildHeader(turn: Int, seed: UInt64) -> [String] {
-        let testModeTag = TestMode.isEnabled ? "  🧪测试模式" : ""
+        let testModeTag = TestMode.isEnabled ? "  🧪\(L10n.text("测试模式", "Test Mode"))" : ""
+        let turnText = L10n.text("第\(turn)回合", "Turn \(turn)")
         return [
             "\(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)",
-            "\(Terminal.bold)\(Terminal.cyan)  🔥 Salu the Fire   \(Terminal.dim)第 \(turn) 回合  🎲 \(seed)\(testModeTag)\(Terminal.reset)",
+            "\(Terminal.bold)\(Terminal.cyan)  🔥 Salu the Fire   \(Terminal.dim)\(turnText)  🎲 \(seed)\(testModeTag)\(Terminal.reset)",
             "\(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)"
         ]
     }
@@ -81,7 +84,7 @@ enum BattleScreen {
         var lines: [String] = []
         
         guard !enemies.isEmpty else {
-            lines.append("  \(Terminal.bold)\(Terminal.red)👹 敌人：无\(Terminal.reset)")
+            lines.append("  \(Terminal.bold)\(Terminal.red)👹 \(L10n.text("敌人", "Enemies"))：\(L10n.text("无", "None"))\(Terminal.reset)")
             return lines
         }
         
@@ -102,12 +105,12 @@ enum BattleScreen {
         let hpBar = Terminal.healthBar(percent: hpPercent)
         let hpColor = Terminal.colorForPercent(hpPercent)
         
-        let deadText = enemy.isAlive ? "" : " \(Terminal.dim)(已死亡)\(Terminal.reset)"
-        lines.append("  \(Terminal.bold)\(Terminal.red)👹 [\(index + 1)] \(enemy.name)\(Terminal.reset)\(deadText)")
+        let deadText = enemy.isAlive ? "" : " \(Terminal.dim)(\(L10n.text("已死亡", "Dead")))\(Terminal.reset)"
+        lines.append("  \(Terminal.bold)\(Terminal.red)👹 [\(index + 1)] \(L10n.resolve(enemy.name))\(Terminal.reset)\(deadText)")
         lines.append("     \(hpColor)\(hpBar)\(Terminal.reset) \(enemy.currentHP)/\(enemy.maxHP) HP")
         
         if enemy.block > 0 {
-            lines.append("     \(Terminal.cyan)🛡️ \(enemy.block) 格挡\(Terminal.reset)")
+            lines.append("     \(Terminal.cyan)🛡️ \(enemy.block) \(L10n.text("格挡", "Block"))\(Terminal.reset)")
         }
         
         // 显示状态效果
@@ -119,10 +122,10 @@ enum BattleScreen {
         // 显示敌人意图（P3: 从 Entity.plannedMove 读取）
         if let move = enemy.plannedMove {
             let intentIcon = move.intent.icon
-            let intentText = move.intent.text
-            lines.append("     \(Terminal.yellow)📢 意图: \(intentIcon) \(intentText)\(Terminal.reset)")
+            let intentText = L10n.resolve(move.intent.text)
+            lines.append("     \(Terminal.yellow)📢 \(L10n.text("意图", "Intent")): \(intentIcon) \(intentText)\(Terminal.reset)")
         } else {
-            lines.append("     \(Terminal.yellow)📢 意图: ❓ 未知\(Terminal.reset)")
+            lines.append("     \(Terminal.yellow)📢 \(L10n.text("意图", "Intent")): ❓ \(L10n.text("未知", "Unknown"))\(Terminal.reset)")
         }
         
         return lines
@@ -135,11 +138,11 @@ enum BattleScreen {
         let hpBar = Terminal.healthBar(percent: hpPercent)
         let hpColor = Terminal.colorForPercent(hpPercent)
         
-        lines.append("  \(Terminal.bold)\(Terminal.blue)🧑 \(state.player.name)\(Terminal.reset)")
+        lines.append("  \(Terminal.bold)\(Terminal.blue)🧑 \(L10n.resolve(state.player.name))\(Terminal.reset)")
         lines.append("     \(hpColor)\(hpBar)\(Terminal.reset) \(state.player.currentHP)/\(state.player.maxHP) HP")
         
         if state.player.block > 0 {
-            lines.append("     \(Terminal.cyan)🛡️ \(state.player.block) 格挡\(Terminal.reset)")
+            lines.append("     \(Terminal.cyan)🛡️ \(state.player.block) \(L10n.text("格挡", "Block"))\(Terminal.reset)")
         }
         
         // 显示状态效果
@@ -156,13 +159,13 @@ enum BattleScreen {
 
         // P4：遗物展示（至少 icon + 名称）
         if relicIds.isEmpty {
-            lines.append("     \(Terminal.dim)🏺 遗物：暂无\(Terminal.reset)")
+            lines.append("     \(Terminal.dim)🏺 \(L10n.text("遗物", "Relics"))：\(L10n.text("暂无", "None"))\(Terminal.reset)")
         } else {
             let relicText = relicIds.compactMap { relicId -> String? in
                 guard let def = RelicRegistry.get(relicId) else { return nil }
-                return "\(def.icon)\(def.name)"
+                return "\(def.icon)\(L10n.resolve(def.name))"
             }.joined(separator: "  ")
-            lines.append("     \(Terminal.dim)🏺 遗物：\(Terminal.reset)\(relicText)")
+            lines.append("     \(Terminal.dim)🏺 \(L10n.text("遗物", "Relics"))：\(Terminal.reset)\(relicText)")
         }
 
         return lines
@@ -172,7 +175,7 @@ enum BattleScreen {
         var lines: [String] = []
         
         let state = engine.state
-        lines.append("  \(Terminal.bold)🃏 手牌 (\(state.hand.count)张)\(Terminal.reset)")
+        lines.append("  \(Terminal.bold)🃏 \(L10n.text("手牌", "Hand")) (\(state.hand.count)\(L10n.text("张", " cards")))\(Terminal.reset)")
         
         for (index, card) in state.hand.enumerated() {
             let def = CardRegistry.require(card.cardId)
@@ -195,9 +198,13 @@ enum BattleScreen {
                 effectIcon = "🧪"
             }
 
-            let costText = cost == baseCost ? "◆\(cost)" : "◆\(cost)（原\(baseCost)）"
+            let costText = cost == baseCost
+                ? "◆\(cost)"
+                : "◆\(cost)\(L10n.text("（原", " (base "))\(baseCost)\(L10n.text("）", ")"))"
             
-            lines.append("     \(statusIcon) \(cardColor)[\(index + 1)] \(def.name)\(Terminal.reset)  \(Terminal.yellow)\(costText)\(Terminal.reset)  \(effectIcon) \(def.rulesText)")
+            lines.append(
+                "     \(statusIcon) \(cardColor)[\(index + 1)] \(L10n.resolve(def.name))\(Terminal.reset)  \(Terminal.yellow)\(costText)\(Terminal.reset)  \(effectIcon) \(L10n.resolve(def.rulesText))"
+            )
         }
         
         return lines
@@ -206,7 +213,7 @@ enum BattleScreen {
     private static func buildEventLog(_ events: [String], maxEvents: Int = 6) -> [String] {
         var lines: [String] = []
         
-        lines.append("\(Terminal.bold)───────────── 日志 ─────────────\(Terminal.reset)")
+        lines.append("\(Terminal.bold)───────────── \(L10n.text("日志", "Log")) ─────────────\(Terminal.reset)")
         
         let displayEvents = events.suffix(maxEvents)
         for event in displayEvents {
@@ -226,11 +233,11 @@ enum BattleScreen {
     
     private static func buildInputPrompt(handCount: Int, enemyCount: Int, showLog: Bool = false) -> [String] {
         let targetHint = enemyCount > 1
-            ? "  \(Terminal.cyan)输入「卡牌 目标」\(Terminal.reset) 选择目标（目标 1-\(enemyCount)）"
-            : "  \(Terminal.dim)（单敌人：可直接输入卡牌序号）\(Terminal.reset)"
+            ? "  \(Terminal.cyan)\(L10n.text("输入「卡牌 目标」", "Enter \"card target\""))\(Terminal.reset) \(L10n.text("选择目标", "to choose a target"))（\(L10n.text("目标", "targets")) 1-\(enemyCount)）"
+            : "  \(Terminal.dim)（\(L10n.text("单敌人：可直接输入卡牌序号", "Single enemy: enter card number directly"))）\(Terminal.reset)"
         return [
             "\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)",
-            "\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(handCount)]\(Terminal.reset) 出牌  \(Terminal.cyan)[0]\(Terminal.reset) 结束  \(Terminal.cyan)[q]\(Terminal.reset) 返回主菜单\(targetHint)",
+            "\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(handCount)]\(Terminal.reset) \(L10n.text("出牌", "Play"))  \(Terminal.cyan)[0]\(Terminal.reset) \(L10n.text("结束", "End"))  \(Terminal.cyan)[q]\(Terminal.reset) \(L10n.text("返回主菜单", "Back to Menu"))\(targetHint)",
             "\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)"
         ]
     }
@@ -263,7 +270,7 @@ enum BattleScreen {
                 stackDisplay = "\(stacks)"
             }
             
-            parts.append("\(color)\(def.icon)\(def.name)\(stackDisplay)\(Terminal.reset)")
+            parts.append("\(color)\(def.icon)\(L10n.resolve(def.name))\(stackDisplay)\(Terminal.reset)")
         }
         
         return parts.joined(separator: " ")

@@ -47,7 +47,7 @@ enum MapScreen {
         for line in lines {
             print(line)
         }
-        print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
+        print("\(Terminal.yellow)\(L10n.text("请选择", "Select")) > \(Terminal.reset)", terminator: "")
         Terminal.flush()
     }
     
@@ -56,7 +56,7 @@ enum MapScreen {
     private static func buildHeader(runState: RunState) -> [String] {
         return [
             "\(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)",
-            "\(Terminal.bold)\(Terminal.cyan)  🗺️ 第 \(runState.floor) 层地图   \(Terminal.dim)🎲 种子: \(runState.seed)\(Terminal.reset)",
+            "\(Terminal.bold)\(Terminal.cyan)  🗺️ \(L10n.text("第", "Floor")) \(runState.floor) \(L10n.text("层地图", "Map"))   \(Terminal.dim)🎲 \(L10n.text("种子", "Seed")): \(runState.seed)\(Terminal.reset)",
             "\(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)"
         ]
     }
@@ -68,18 +68,18 @@ enum MapScreen {
         let hpColor = Terminal.colorForPercent(hpPercent)
         
         var lines: [String] = [
-            "  \(Terminal.bold)\(Terminal.blue)🧑 \(player.name)\(Terminal.reset)  \(hpColor)\(hpBar)\(Terminal.reset) \(player.currentHP)/\(player.maxHP) HP  \(Terminal.dim)📚 \(runState.deck.count)张牌  \(Terminal.yellow)💰 \(runState.gold)金币\(Terminal.reset)"
+            "  \(Terminal.bold)\(Terminal.blue)🧑 \(L10n.resolve(player.name))\(Terminal.reset)  \(hpColor)\(hpBar)\(Terminal.reset) \(player.currentHP)/\(player.maxHP) HP  \(Terminal.dim)📚 \(runState.deck.count)\(L10n.text("张牌", " cards"))  \(Terminal.yellow)💰 \(runState.gold)\(L10n.text("金币", " gold"))\(Terminal.reset)"
         ]
         
         let relicIds = runState.relicManager.all
         if relicIds.isEmpty {
-            lines.append("  \(Terminal.dim)🏺 遗物：暂无\(Terminal.reset)")
+            lines.append("  \(Terminal.dim)🏺 \(L10n.text("遗物", "Relics"))：\(L10n.text("暂无", "None"))\(Terminal.reset)")
         } else {
             let relicText = relicIds.compactMap { relicId -> String? in
                 guard let def = RelicRegistry.get(relicId) else { return nil }
-                return "\(def.icon)\(def.name)"
+                return "\(def.icon)\(L10n.resolve(def.name))"
             }.joined(separator: "  ")
-            lines.append("  \(Terminal.dim)🏺 遗物：\(Terminal.reset)\(relicText)")
+            lines.append("  \(Terminal.dim)🏺 \(L10n.text("遗物", "Relics"))：\(Terminal.reset)\(relicText)")
         }
         
         return lines
@@ -88,7 +88,7 @@ enum MapScreen {
     private static func buildMapDisplay(runState: RunState) -> [String] {
         var lines: [String] = []
         
-        lines.append("\(Terminal.bold)─────────────────── 地图 ───────────────────\(Terminal.reset)")
+        lines.append("\(Terminal.bold)─────────────────── \(L10n.text("地图", "Map")) ───────────────────\(Terminal.reset)")
         lines.append("")
         
         // 按层从高到低显示（Boss 在顶部）
@@ -104,11 +104,11 @@ enum MapScreen {
             // 添加层数标记（统一8个字符宽度）
             if hasAccessibleNode {
                 // 当前可选择的层 - 黄色
-                rowLine += "\(Terminal.yellow)  当前→\(Terminal.reset) "
+                rowLine += "\(Terminal.yellow)  \(L10n.text("当前", "Now"))→\(Terminal.reset) "
             } else if row == maxRow {
-                rowLine += "\(Terminal.dim)  Boss→\(Terminal.reset) "
+                rowLine += "\(Terminal.dim)  \(L10n.text("Boss", "Boss"))→\(Terminal.reset) "
             } else if row == 0 {
-                rowLine += "\(Terminal.dim)  起点→\(Terminal.reset) "
+                rowLine += "\(Terminal.dim)  \(L10n.text("起点", "Start"))→\(Terminal.reset) "
             } else {
                 rowLine += "        "
             }
@@ -153,30 +153,30 @@ enum MapScreen {
         if accessibleNodes.isEmpty {
             if runState.isOver {
                 if runState.won {
-                    lines.append("\(Terminal.bold)\(Terminal.green)🎉 恭喜通关！\(Terminal.reset)")
-                } else {
-                    lines.append("\(Terminal.bold)\(Terminal.red)💀 冒险结束\(Terminal.reset)")
-                }
-                lines.append("")
-                lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-                lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[q]\(Terminal.reset) 返回主菜单")
-                lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-            } else {
-                lines.append("\(Terminal.dim)没有可选择的节点\(Terminal.reset)")
-            }
+            lines.append("\(Terminal.bold)\(Terminal.green)🎉 \(L10n.text("恭喜通关！", "Congratulations!"))\(Terminal.reset)")
         } else {
-            lines.append("\(Terminal.bold)选择下一个节点：\(Terminal.reset)")
-            lines.append("")
-            
-            for (index, node) in accessibleNodes.enumerated() {
-                let icon = node.roomType.icon
-                let name = node.roomType.displayName
-                lines.append("  \(Terminal.cyan)[\(index + 1)]\(Terminal.reset) \(icon) \(name)")
-            }
+            lines.append("\(Terminal.bold)\(Terminal.red)💀 \(L10n.text("冒险结束", "Adventure ended"))\(Terminal.reset)")
+        }
+        lines.append("")
+        lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+        lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[q]\(Terminal.reset) \(L10n.text("返回主菜单", "Back to Menu"))")
+        lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
+    } else {
+        lines.append("\(Terminal.dim)\(L10n.text("没有可选择的节点", "No selectable nodes"))\(Terminal.reset)")
+    }
+} else {
+    lines.append("\(Terminal.bold)\(L10n.text("选择下一个节点", "Choose the next node"))：\(Terminal.reset)")
+    lines.append("")
+    
+    for (index, node) in accessibleNodes.enumerated() {
+        let icon = node.roomType.icon
+        let name = node.roomType.displayName(language: L10n.language)
+        lines.append("  \(Terminal.cyan)[\(index + 1)]\(Terminal.reset) \(icon) \(name)")
+    }
             
             lines.append("")
             lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-            lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(accessibleNodes.count)]\(Terminal.reset) 选择节点  \(Terminal.cyan)[q]\(Terminal.reset) 返回  \(Terminal.red)[abandon]\(Terminal.reset) 放弃冒险")
+    lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(accessibleNodes.count)]\(Terminal.reset) \(L10n.text("选择节点", "Select node"))  \(Terminal.cyan)[q]\(Terminal.reset) \(L10n.text("返回", "Back"))  \(Terminal.red)[abandon]\(Terminal.reset) \(L10n.text("放弃冒险", "Abandon run"))")
             lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
         }
         
@@ -185,7 +185,7 @@ enum MapScreen {
 
     private static func buildRunLog(_ logs: [String], maxLines: Int = 6) -> [String] {
         var lines: [String] = []
-        lines.append("\(Terminal.bold)───────────── 日志 ─────────────\(Terminal.reset)")
+        lines.append("\(Terminal.bold)───────────── \(L10n.text("日志", "Log")) ─────────────\(Terminal.reset)")
         
         let display = logs.suffix(maxLines)
         for line in display {
@@ -216,26 +216,26 @@ enum MapScreen {
         
         print("""
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
-        \(Terminal.bold)\(Terminal.cyan)  🏠 灰烬营地\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.cyan)  🏠 \(L10n.text("灰烬营地", "Ash Camp"))\(Terminal.reset)
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
         
-          \(Terminal.dim)艾拉在营地中等待着你的归来。\(Terminal.reset)
+          \(Terminal.dim)\(L10n.text("艾拉在营地中等待着你的归来。", "Aira waits for your return at the camp."))\(Terminal.reset)
           
-          当前 HP: \(Terminal.yellow)\(player.currentHP)/\(player.maxHP)\(Terminal.reset)
+          \(L10n.text("当前 HP", "Current HP")): \(Terminal.yellow)\(player.currentHP)/\(player.maxHP)\(Terminal.reset)
           
-          \(Terminal.green)[1] 休息\(Terminal.reset) - 恢复 \(healAmount) HP (→ \(newHP) HP)
-          \(upgradeableCount > 0 ? "\(Terminal.blue)[2] 升级卡牌\(Terminal.reset) - 可升级 \(upgradeableCount) 张" : "\(Terminal.dim)[2] 升级卡牌 - 当前无可升级卡牌\(Terminal.reset)")
-          \(Terminal.magenta)[3] 与艾拉对话\(Terminal.reset) - 听听她想说的话
+          \(Terminal.green)[1] \(L10n.text("休息", "Rest"))\(Terminal.reset) - \(L10n.text("恢复", "Recover")) \(healAmount) HP (→ \(newHP) HP)
+          \(upgradeableCount > 0 ? "\(Terminal.blue)[2] \(L10n.text("升级卡牌", "Upgrade Card"))\(Terminal.reset) - \(L10n.text("可升级", "Upgradable")) \(upgradeableCount) \(L10n.text("张", "cards"))" : "\(Terminal.dim)[2] \(L10n.text("升级卡牌", "Upgrade Card")) - \(L10n.text("当前无可升级卡牌", "No upgradable cards"))\(Terminal.reset)")
+          \(Terminal.magenta)[3] \(L10n.text("与艾拉对话", "Talk to Aira"))\(Terminal.reset) - \(L10n.text("听听她想说的话", "Hear what she has to say"))
           
         \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)
-        \(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1]\(Terminal.reset) 休息  \(Terminal.cyan)[2]\(Terminal.reset) 升级  \(Terminal.cyan)[3]\(Terminal.reset) 对话
+        \(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1]\(Terminal.reset) \(L10n.text("休息", "Rest"))  \(Terminal.cyan)[2]\(Terminal.reset) \(L10n.text("升级", "Upgrade"))  \(Terminal.cyan)[3]\(Terminal.reset) \(L10n.text("对话", "Talk"))
         \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)
         """)
         if let message {
             print(message)
             print("")
         }
-        print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
+        print("\(Terminal.yellow)\(L10n.text("请选择", "Select")) > \(Terminal.reset)", terminator: "")
         Terminal.flush()
     }
     
@@ -249,10 +249,10 @@ enum MapScreen {
         
         print("""
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
-        \(Terminal.bold)\(Terminal.cyan)  🔧 升级卡牌\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.cyan)  🔧 \(L10n.text("升级卡牌", "Upgrade Card"))\(Terminal.reset)
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
         
-        \(Terminal.bold)选择一张卡牌进行升级：\(Terminal.reset)
+        \(Terminal.bold)\(L10n.text("选择一张卡牌进行升级", "Choose a card to upgrade"))：\(Terminal.reset)
         """)
         
         for (index, deckIndex) in upgradeableIndices.enumerated() {
@@ -260,7 +260,7 @@ enum MapScreen {
             let def = CardRegistry.require(card.cardId)
             guard let upgradedId = def.upgradedId else { continue }
             let upgradedDef = CardRegistry.require(upgradedId)
-            print("  \(Terminal.cyan)[\(index + 1)]\(Terminal.reset) \(Terminal.bold)\(def.name)\(Terminal.reset) → \(Terminal.green)\(upgradedDef.name)\(Terminal.reset)")
+            print("  \(Terminal.cyan)[\(index + 1)]\(Terminal.reset) \(Terminal.bold)\(L10n.resolve(def.name))\(Terminal.reset) → \(Terminal.green)\(L10n.resolve(upgradedDef.name))\(Terminal.reset)")
         }
         
         print("")
@@ -271,9 +271,9 @@ enum MapScreen {
         }
         
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(max(1, upgradeableIndices.count))]\(Terminal.reset) 选择卡牌  \(Terminal.cyan)[q]\(Terminal.reset) 返回")
+        print("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(max(1, upgradeableIndices.count))]\(Terminal.reset) \(L10n.text("选择卡牌", "Select card"))  \(Terminal.cyan)[q]\(Terminal.reset) \(L10n.text("返回", "Back"))")
         print("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-        print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
+        print("\(Terminal.yellow)\(L10n.text("请选择", "Select")) > \(Terminal.reset)", terminator: "")
         Terminal.flush()
     }
 
@@ -283,10 +283,10 @@ enum MapScreen {
         
         print("""
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
-        \(Terminal.bold)\(Terminal.cyan)  🔧 升级完成\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.cyan)  🔧 \(L10n.text("升级完成", "Upgrade Complete"))\(Terminal.reset)
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
         
-          \(Terminal.green)已升级：\(Terminal.reset)\(Terminal.bold)\(originalName)\(Terminal.reset) → \(Terminal.bold)\(upgradedName)\(Terminal.reset)
+          \(Terminal.green)\(L10n.text("已升级", "Upgraded"))：\(Terminal.reset)\(Terminal.bold)\(originalName)\(Terminal.reset) → \(Terminal.bold)\(upgradedName)\(Terminal.reset)
           
         """)
         NavigationBar.render(items: [.continueNext])
@@ -298,12 +298,12 @@ enum MapScreen {
         
         print("""
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
-        \(Terminal.bold)\(Terminal.cyan)  💤 休息完成\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.cyan)  💤 \(L10n.text("休息完成", "Rest Complete"))\(Terminal.reset)
         \(Terminal.bold)\(Terminal.cyan)═══════════════════════════════════════════════\(Terminal.reset)
         
-          \(Terminal.green)恢复了 \(healedAmount) HP\(Terminal.reset)
+          \(Terminal.green)\(L10n.text("恢复了", "Recovered")) \(healedAmount) HP\(Terminal.reset)
           
-          当前 HP: \(Terminal.yellow)\(newHP)/\(maxHP)\(Terminal.reset)
+          \(L10n.text("当前 HP", "Current HP")): \(Terminal.yellow)\(newHP)/\(maxHP)\(Terminal.reset)
           
         """)
         NavigationBar.render(items: [.continueNext])
@@ -344,18 +344,18 @@ enum MapScreen {
         
         print("""
         \(Terminal.bold)\(Terminal.red)═══════════════════════════════════════════════\(Terminal.reset)
-        \(Terminal.bold)\(Terminal.red)  ⚠️ 放弃冒险确认\(Terminal.reset)
+        \(Terminal.bold)\(Terminal.red)  ⚠️ \(L10n.text("放弃冒险确认", "Confirm Abandon"))\(Terminal.reset)
         \(Terminal.bold)\(Terminal.red)═══════════════════════════════════════════════\(Terminal.reset)
         
-          \(Terminal.yellow)你确定要放弃当前冒险吗？\(Terminal.reset)
+          \(Terminal.yellow)\(L10n.text("你确定要放弃当前冒险吗？", "Are you sure you want to abandon this run?"))\(Terminal.reset)
           
-          \(Terminal.dim)放弃后存档将被清除，无法恢复。\(Terminal.reset)
+          \(Terminal.dim)\(L10n.text("放弃后存档将被清除，无法恢复。", "The save will be cleared and cannot be restored."))\(Terminal.reset)
           
         \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)
-        \(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.red)[y]\(Terminal.reset) 确认放弃  \(Terminal.cyan)[n]\(Terminal.reset) 取消
+        \(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.red)[y]\(Terminal.reset) \(L10n.text("确认放弃", "Confirm"))  \(Terminal.cyan)[n]\(Terminal.reset) \(L10n.text("取消", "Cancel"))
         \(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)
         """)
-        print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
+        print("\(Terminal.yellow)\(L10n.text("请选择", "Select")) > \(Terminal.reset)", terminator: "")
         Terminal.flush()
         
         while true {
@@ -369,10 +369,10 @@ enum MapScreen {
             case "n", "no", "q":
                 return false
             default:
-                print("\(Terminal.red)请输入 y 或 n\(Terminal.reset)")
-                print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
-                Terminal.flush()
-            }
+            print("\(Terminal.red)\(L10n.text("请输入 y 或 n", "Please enter y or n"))\(Terminal.reset)")
+            print("\(Terminal.yellow)\(L10n.text("请选择", "Select")) > \(Terminal.reset)", terminator: "")
+            Terminal.flush()
         }
     }
+}
 }

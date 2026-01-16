@@ -12,7 +12,7 @@
 /// - 每轮开始会获得力量，形成渐进压迫感
 public struct ToxicColossus: EnemyDefinition {
     public static let id: EnemyID = "toxic_colossus"
-    public static let name = "瘴气之主"
+    public static let name = LocalizedText("瘴气之主", "Lord of Miasma")
     public static let hpRange: ClosedRange<Int> = 95...105
     
     public static func chooseMove(selfIndex: Int, snapshot: BattleSnapshot, rng: inout SeededRNG) -> EnemyMove {
@@ -23,7 +23,10 @@ public struct ToxicColossus: EnemyDefinition {
         case 0:
             // 毒雾蓄势：格挡 + 中毒 + 每轮力量增长
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "☠️", text: "毒雾：中毒 3 + 格挡 8 + 力量 +1"),
+                intent: EnemyIntentDisplay(
+                    icon: "☠️",
+                    text: LocalizedText("毒雾：中毒 3 + 格挡 8 + 力量 +1", "Toxic Mist: Poison 3 + Block 8 + Strength +1")
+                ),
                 effects: [
                     .applyStatus(target: .enemy(index: selfIndex), statusId: "strength", stacks: 1),
                     .gainBlock(target: .enemy(index: selfIndex), base: 8),
@@ -34,7 +37,7 @@ public struct ToxicColossus: EnemyDefinition {
         case 1:
             // 践踏：高额单体伤害
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "⚔️", text: "践踏 14", previewDamage: 14),
+                intent: EnemyIntentDisplay(icon: "⚔️", text: LocalizedText("践踏 14", "Trample 14"), previewDamage: 14),
                 effects: [
                     .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 14)
                 ]
@@ -43,7 +46,11 @@ public struct ToxicColossus: EnemyDefinition {
         case 2:
             // 腐蚀打击：伤害 + 虚弱，降低反击能力
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "⚔️🌀", text: "腐蚀打击 8 + 虚弱 2", previewDamage: 8),
+                intent: EnemyIntentDisplay(
+                    icon: "⚔️🌀",
+                    text: LocalizedText("腐蚀打击 8 + 虚弱 2", "Corrosive Strike 8 + Weak 2"),
+                    previewDamage: 8
+                ),
                 effects: [
                     .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 8),
                     .applyStatus(target: .player, statusId: "weak", stacks: 2),
@@ -53,7 +60,11 @@ public struct ToxicColossus: EnemyDefinition {
         default:
             // 连击：多段伤害 + 脆弱，放大后续伤害压力
             return EnemyMove(
-                intent: EnemyIntentDisplay(icon: "⚔️⚔️", text: "连击 6×2 + 脆弱 1", previewDamage: 12),
+                intent: EnemyIntentDisplay(
+                    icon: "⚔️⚔️",
+                    text: LocalizedText("连击 6×2 + 脆弱 1", "Combo 6×2 + Frail 1"),
+                    previewDamage: 12
+                ),
                 effects: [
                     .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 6),
                     .dealDamage(source: .enemy(index: selfIndex), target: .player, base: 6),
@@ -63,5 +74,3 @@ public struct ToxicColossus: EnemyDefinition {
         }
     }
 }
-
-

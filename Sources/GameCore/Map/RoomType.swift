@@ -10,15 +10,28 @@ public enum RoomType: String, Sendable, Equatable, CaseIterable {
     case boss = "boss"          // Boss
     
     /// 显示名称
-    public var displayName: String {
-        switch self {
-        case .start: return "起点"
-        case .battle: return "战斗"
-        case .elite: return "精英"
-        case .rest: return "休息"
-        case .shop: return "商店"
-        case .event: return "未知事件"
-        case .boss: return "Boss"
+    public func displayName(language: GameLanguage) -> String {
+        switch language {
+        case .zhHans:
+            switch self {
+            case .start: return "起点"
+            case .battle: return "战斗"
+            case .elite: return "精英"
+            case .rest: return "休息"
+            case .shop: return "商店"
+            case .event: return "未知事件"
+            case .boss: return "Boss"
+            }
+        case .en:
+            switch self {
+            case .start: return "Start"
+            case .battle: return "Battle"
+            case .elite: return "Elite"
+            case .rest: return "Rest"
+            case .shop: return "Shop"
+            case .event: return "Event"
+            case .boss: return "Boss"
+            }
         }
     }
     

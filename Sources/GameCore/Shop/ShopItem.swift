@@ -64,16 +64,21 @@ public struct ShopItem: Sendable, Equatable {
     }
     
     /// 获取条目显示名称
-    public var displayName: String {
+    public func displayName(language: GameLanguage) -> String {
         switch kind {
         case .card(let offer):
-            return CardRegistry.require(offer.cardId).name
+            return CardRegistry.require(offer.cardId).name.resolved(for: language)
         case .relic(let offer):
-            return RelicRegistry.require(offer.relicId).name
+            return RelicRegistry.require(offer.relicId).name.resolved(for: language)
         case .consumable(let offer):
-            return CardRegistry.require(offer.cardId).name
+            return CardRegistry.require(offer.cardId).name.resolved(for: language)
         case .removeCard:
-            return "删除卡牌"
+            switch language {
+            case .zhHans:
+                return "删除卡牌"
+            case .en:
+                return "Remove Card"
+            }
         }
     }
     

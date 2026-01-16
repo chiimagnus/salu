@@ -116,18 +116,18 @@ public final class BattleEngine: @unchecked Sendable {
     @discardableResult
     public func handleAction(_ action: PlayerAction) -> Bool {
         guard !state.isOver else {
-            emit(.invalidAction(reason: "战斗已结束"))
+            emit(.invalidAction(reason: LocalizedText("战斗已结束", "The battle is already over")))
             return false
         }
         
         guard state.isPlayerTurn else {
-            emit(.invalidAction(reason: "不是玩家回合"))
+            emit(.invalidAction(reason: LocalizedText("不是玩家回合", "It is not the player's turn")))
             return false
         }
 
         // 当有待处理输入（如预知选牌）时，必须先完成输入再继续战斗。
         if pendingInput != nil {
-            emit(.invalidAction(reason: "请先完成当前选择（预知）"))
+            emit(.invalidAction(reason: LocalizedText("请先完成当前选择（预知）", "Please finish the current choice (Foresee) first")))
             return false
         }
         
@@ -172,11 +172,11 @@ public final class BattleEngine: @unchecked Sendable {
     @discardableResult
     public func submitForesightChoice(index: Int) -> Bool {
         guard case .some(.foresight) = pendingInput else {
-            emit(.invalidAction(reason: "当前没有需要处理的预知选择"))
+            emit(.invalidAction(reason: LocalizedText("当前没有需要处理的预知选择", "There is no Foresee choice to resolve")))
             return false
         }
         guard let pending = pendingForesight else {
-            emit(.invalidAction(reason: "预知上下文丢失"))
+            emit(.invalidAction(reason: LocalizedText("预知上下文丢失", "Foresee context is missing")))
             pendingInput = nil
             return false
         }
@@ -241,7 +241,7 @@ public final class BattleEngine: @unchecked Sendable {
 
     /// 将 EffectTarget 解析为用于事件/日志的展示名
     ///
-    private func resolveDisplayName(for target: EffectTarget) -> String {
+    private func resolveDisplayName(for target: EffectTarget) -> LocalizedText {
         switch target {
         case .player:
             return state.player.name
@@ -249,7 +249,7 @@ public final class BattleEngine: @unchecked Sendable {
             if index >= 0, index < state.enemies.count {
                 return state.enemies[index].name
             }
-            return state.enemies.first?.name ?? "敌人"
+            return state.enemies.first?.name ?? LocalizedText("敌人", "Enemy")
         }
     }
 
@@ -316,10 +316,10 @@ public final class BattleEngine: @unchecked Sendable {
             guard let enemyId = state.enemies[index].enemyId else {
                 // 如果没有 enemyId（不应该发生），使用默认行动
                 state.enemies[index].plannedMove = EnemyMove(
-                    intent: EnemyIntentDisplay(icon: "❓", text: "未知"),
+                    intent: EnemyIntentDisplay(icon: "❓", text: LocalizedText("未知", "Unknown")),
                     effects: []
                 )
-                emit(.enemyIntent(enemyId: state.enemies[index].id, action: "未知", damage: 0))
+                emit(.enemyIntent(enemyId: state.enemies[index].id, action: LocalizedText("未知", "Unknown"), damage: 0))
                 continue
             }
             
@@ -388,7 +388,7 @@ public final class BattleEngine: @unchecked Sendable {
             // 执行敌人的计划行动（通过 BattleEffect）
             guard let move = state.enemies[index].plannedMove else {
                 // 没有计划行动（不应该发生）
-                emit(.enemyAction(enemyId: state.enemies[index].id, action: "跳过"))
+                emit(.enemyAction(enemyId: state.enemies[index].id, action: LocalizedText("跳过", "Skip")))
                 processStatusesAtTurnEnd(for: .enemy(index: index))
                 checkBattleEnd()
                 continue
@@ -415,7 +415,7 @@ public final class BattleEngine: @unchecked Sendable {
     private func playCard(at handIndex: Int, targetEnemyIndex: Int?) -> Bool {
         // 验证索引
         guard handIndex >= 0, handIndex < state.hand.count else {
-            emit(.invalidAction(reason: "无效的卡牌索引"))
+            emit(.invalidAction(reason: LocalizedText("无效的卡牌索引", "Invalid card index")))
             return false
         }
         
@@ -443,11 +443,11 @@ public final class BattleEngine: @unchecked Sendable {
         case .singleEnemy:
             if let targetEnemyIndex {
                 guard targetEnemyIndex >= 0, targetEnemyIndex < state.enemies.count else {
-                    emit(.invalidAction(reason: "无效的敌人目标"))
+                    emit(.invalidAction(reason: LocalizedText("无效的敌人目标", "Invalid enemy target")))
                     return false
                 }
                 guard state.enemies[targetEnemyIndex].isAlive else {
-                    emit(.invalidAction(reason: "目标已死亡"))
+                    emit(.invalidAction(reason: LocalizedText("目标已死亡", "Target is already dead")))
                     return false
                 }
                 resolvedTargetEnemyIndex = targetEnemyIndex
@@ -456,10 +456,10 @@ public final class BattleEngine: @unchecked Sendable {
                 if aliveIndices.count == 1 {
                     resolvedTargetEnemyIndex = aliveIndices[0]
                 } else if aliveIndices.isEmpty {
-                    emit(.invalidAction(reason: "没有可选目标"))
+                    emit(.invalidAction(reason: LocalizedText("没有可选目标", "No available targets")))
                     return false
                 } else {
-                    emit(.invalidAction(reason: "该牌需要选择目标"))
+                    emit(.invalidAction(reason: LocalizedText("该牌需要选择目标", "This card requires a target")))
                     return false
                 }
             }
@@ -608,7 +608,7 @@ public final class BattleEngine: @unchecked Sendable {
             battleStats.totalDamageTaken += damageResult.dealt
         case .enemy(index: let enemyIndex):
             guard enemyIndex >= 0, enemyIndex < state.enemies.count else {
-                emit(.invalidAction(reason: "无效的敌人索引"))
+                emit(.invalidAction(reason: LocalizedText("无效的敌人索引", "Invalid enemy index")))
                 return
             }
             
@@ -654,7 +654,7 @@ public final class BattleEngine: @unchecked Sendable {
             triggerRelics(.blockGained(amount: block))
         case .enemy(index: let enemyIndex):
             guard enemyIndex >= 0, enemyIndex < state.enemies.count else {
-                emit(.invalidAction(reason: "无效的敌人索引"))
+                emit(.invalidAction(reason: LocalizedText("无效的敌人索引", "Invalid enemy index")))
                 return
             }
             state.enemies[enemyIndex].gainBlock(block)
@@ -676,7 +676,11 @@ public final class BattleEngine: @unchecked Sendable {
         // P3: 预言者手札遗物 - 首次改写后跳过疯狂添加
         if statusId == Madness.id && target == .player && stacks > 0 && shouldSkipNextMadnessFromRewrite {
             shouldSkipNextMadnessFromRewrite = false
-            emit(.statusApplied(target: state.player.name, effect: "（预言者手札抵消疯狂）", stacks: 0))
+            emit(.statusApplied(
+                target: state.player.name,
+                effect: LocalizedText("（预言者手札抵消疯狂）", "(Prophet Notes negated Madness)"),
+                stacks: 0
+            ))
             return
         }
         
@@ -686,7 +690,7 @@ public final class BattleEngine: @unchecked Sendable {
             emit(.statusApplied(target: state.player.name, effect: def.name, stacks: stacks))
         case .enemy(index: let enemyIndex):
             guard enemyIndex >= 0, enemyIndex < state.enemies.count else {
-                emit(.invalidAction(reason: "无效的敌人索引"))
+                emit(.invalidAction(reason: LocalizedText("无效的敌人索引", "Invalid enemy index")))
                 return
             }
             state.enemies[enemyIndex].statuses.apply(statusId, stacks: stacks)
@@ -702,7 +706,7 @@ public final class BattleEngine: @unchecked Sendable {
             // 治疗事件（目前没有对应的 BattleEvent，暂不 emit）
         case .enemy(index: let enemyIndex):
             guard enemyIndex >= 0, enemyIndex < state.enemies.count else {
-                emit(.invalidAction(reason: "无效的敌人索引"))
+                emit(.invalidAction(reason: LocalizedText("无效的敌人索引", "Invalid enemy index")))
                 return
             }
             state.enemies[enemyIndex].currentHP = min(state.enemies[enemyIndex].currentHP + amount, state.enemies[enemyIndex].maxHP)
@@ -785,7 +789,7 @@ public final class BattleEngine: @unchecked Sendable {
                     state.player.statuses.set(statusId, stacks: newStacks)
                 case .enemy(index: let enemyIndex):
                     guard enemyIndex >= 0, enemyIndex < state.enemies.count else {
-                        emit(.invalidAction(reason: "无效的敌人索引"))
+                        emit(.invalidAction(reason: LocalizedText("无效的敌人索引", "Invalid enemy index")))
                         return
                     }
                     state.enemies[enemyIndex].statuses.set(statusId, stacks: newStacks)
@@ -855,19 +859,19 @@ public final class BattleEngine: @unchecked Sendable {
             let discardedCard = state.hand.remove(at: discardIndex)
             state.discardPile.append(discardedCard)
             emit(.madnessDiscard(cardId: discardedCard.cardId))
-            emit(.madnessThreshold(level: 1, effect: "随机弃 1 张牌"))
+            emit(.madnessThreshold(level: 1, effect: LocalizedText("随机弃 1 张牌", "Randomly discard 1 card")))
         }
         
         // 阈值 2（≥6 层，或理智之锚时 ≥9 层）：获得虚弱 1
         if madnessStacks >= effectiveThreshold2 {
             applyStatusEffect(target: .player, statusId: Weak.id, stacks: 1)
-            emit(.madnessThreshold(level: 2, effect: "获得虚弱 1"))
+            emit(.madnessThreshold(level: 2, effect: LocalizedText("获得虚弱 1", "Gain Weak 1")))
         }
         
         // 阈值 3（≥10 层，或理智之锚时 ≥13 层）的"受到伤害 +50%"由 Madness.modifyIncomingDamage 处理
         // 这里只发出提示事件
         if madnessStacks >= effectiveThreshold3 {
-            emit(.madnessThreshold(level: 3, effect: "受到伤害 +50%"))
+            emit(.madnessThreshold(level: 3, effect: LocalizedText("受到伤害 +50%", "Take +50% damage")))
         }
     }
     
@@ -1002,12 +1006,12 @@ public final class BattleEngine: @unchecked Sendable {
         switch newIntent {
         case .defend(let block):
             newMove = EnemyMove(
-                intent: EnemyIntentDisplay(icon: "🛡️", text: "防御（被改写）"),
+                intent: EnemyIntentDisplay(icon: "🛡️", text: LocalizedText("防御（被改写）", "Defend (Rewritten)")),
                 effects: [.gainBlock(target: .enemy(index: enemyIndex), base: block)]
             )
         case .skip:
             newMove = EnemyMove(
-                intent: EnemyIntentDisplay(icon: "💫", text: "眩晕（被改写）"),
+                intent: EnemyIntentDisplay(icon: "💫", text: LocalizedText("眩晕（被改写）", "Stunned (Rewritten)")),
                 effects: []
             )
         }

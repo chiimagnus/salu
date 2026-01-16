@@ -124,10 +124,10 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
     func testResultScreen_showFinal_withRecord_rendersVictoryAndStatsPanel() {
     
         print("🧪 测试：testResultScreen_showFinal_withRecord_rendersVictoryAndStatsPanel")
-        var player = Entity(id: "player", name: "玩家", maxHP: 80)
+        var player = Entity(id: "player", name: LocalizedText("玩家", "玩家"), maxHP: 80)
         player.currentHP = 55
         
-        let enemy = Entity(id: "enemy", name: "敌人", maxHP: 40, enemyId: "jaw_worm")
+        let enemy = Entity(id: "enemy", name: LocalizedText("敌人", "敌人"), maxHP: 40, enemyId: "jaw_worm")
         var state = BattleState(player: player, enemies: [enemy])
         state.turn = 3
         state.playerWon = true
@@ -178,11 +178,11 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
             logLine: { _ in },
             battleLoop: { engine, _, _ in
                 // 让战斗在测试里"稳定且快速"结束：打一张 Strike（敌人 HP=1）
-                _ = engine.handleAction(.playCard(handIndex: 0, targetEnemyIndex: 0))
+                _ = engine.handleAction(PlayerAction.playCard(handIndex: 0, targetEnemyIndex: 0))
                 return .finished
             },
             createEnemy: { enemyId, instanceIndex, _ in
-                Entity(id: "\(enemyId.rawValue)#\(instanceIndex)", name: "Boss", maxHP: 1, enemyId: enemyId)
+                Entity(id: "\(enemyId.rawValue)#\(instanceIndex)", name: LocalizedText("Boss", "Boss"), maxHP: 1, enemyId: enemyId)
             },
             historyService: historyService
         )

@@ -9,12 +9,12 @@ enum ForesightSelectionScreen {
         var lines: [String] = []
 
         lines.append("\(Terminal.bold)\(Terminal.magenta)═══════════════════════════════════════════════\(Terminal.reset)")
-        lines.append("\(Terminal.bold)\(Terminal.magenta)  👁️ 预知（查看 \(fromCount) 张，选择 1 张入手）\(Terminal.reset)")
+        lines.append("\(Terminal.bold)\(Terminal.magenta)  👁️ \(L10n.text("预知", "Foresee"))（\(L10n.text("查看", "View")) \(fromCount) \(L10n.text("张", "cards"))，\(L10n.text("选择 1 张入手", "choose 1"))）\(Terminal.reset)")
         lines.append("\(Terminal.bold)\(Terminal.magenta)═══════════════════════════════════════════════\(Terminal.reset)")
         lines.append("")
 
         if options.isEmpty {
-            lines.append("\(Terminal.dim)（没有可选卡牌）\(Terminal.reset)")
+            lines.append("\(Terminal.dim)（\(L10n.text("没有可选卡牌", "No cards available"))）\(Terminal.reset)")
         } else {
             for (idx, card) in options.enumerated() {
                 let def = CardRegistry.require(card.cardId)
@@ -23,18 +23,18 @@ enum ForesightSelectionScreen {
                 switch def.type {
                 case .attack:
                     typeIcon = "⚔️"
-                    typeLabel = "攻击"
+                    typeLabel = L10n.text("攻击", "Attack")
                 case .skill:
                     typeIcon = "🛡️"
-                    typeLabel = "技能"
+                    typeLabel = L10n.text("技能", "Skill")
                 case .power:
                     typeIcon = "💪"
-                    typeLabel = "能力"
+                    typeLabel = L10n.text("能力", "Power")
                 case .consumable:
                     typeIcon = "🧪"
-                    typeLabel = "消耗性"
+                    typeLabel = L10n.text("消耗性", "Consumable")
                 }
-                lines.append("  \(Terminal.cyan)[\(idx + 1)]\(Terminal.reset) \(Terminal.bold)\(def.name)\(Terminal.reset)  \(Terminal.yellow)◆\(def.cost)\(Terminal.reset)  \(typeIcon)\(Terminal.dim)【\(typeLabel)】\(Terminal.reset) \(Terminal.dim)\(def.rulesText)\(Terminal.reset)")
+                lines.append("  \(Terminal.cyan)[\(idx + 1)]\(Terminal.reset) \(Terminal.bold)\(L10n.resolve(def.name))\(Terminal.reset)  \(Terminal.yellow)◆\(def.cost)\(Terminal.reset)  \(typeIcon)\(Terminal.dim)【\(typeLabel)】\(Terminal.reset) \(Terminal.dim)\(L10n.resolve(def.rulesText))\(Terminal.reset)")
             }
         }
 
@@ -45,14 +45,14 @@ enum ForesightSelectionScreen {
         }
 
         lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
-        lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(max(1, options.count))]\(Terminal.reset) 选择  \(Terminal.cyan)[q]\(Terminal.reset) 返回主菜单（保留存档）")
+        lines.append("\(Terminal.yellow)⌨️\(Terminal.reset) \(Terminal.cyan)[1-\(max(1, options.count))]\(Terminal.reset) \(L10n.text("选择", "Select"))  \(Terminal.cyan)[q]\(Terminal.reset) \(L10n.text("返回主菜单（保留存档）", "Back to Menu (keep save)"))")
         lines.append("\(Terminal.bold)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\(Terminal.reset)")
 
         for line in lines {
             print(line)
         }
 
-        print("\(Terminal.yellow)请选择 > \(Terminal.reset)", terminator: "")
+        print("\(Terminal.yellow)\(L10n.text("请选择", "Select")) > \(Terminal.reset)", terminator: "")
         Terminal.flush()
     }
 }

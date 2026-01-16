@@ -7,7 +7,7 @@ public protocol EnemyDefinition: Sendable {
     static var id: EnemyID { get }
     
     /// 显示名称（用于 UI）
-    static var name: String { get }
+    static var name: LocalizedText { get }
     
     /// 生命值范围（生成实例时使用）
     static var hpRange: ClosedRange<Int> { get }

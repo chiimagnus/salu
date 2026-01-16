@@ -4,19 +4,19 @@ import XCTest
 final class EntityTests: XCTestCase {
     func testInit_playerAndEnemy() {
         print("🧪 测试：testInit_playerAndEnemy")
-        let player = Entity(id: "p", name: "玩家", maxHP: 80)
+        let player = Entity(id: "p", name: LocalizedText("玩家", "玩家"), maxHP: 80)
         XCTAssertEqual(player.currentHP, 80)
         XCTAssertNil(player.enemyId)
         XCTAssertNil(player.plannedMove)
         
-        let enemy = Entity(id: "e", name: "敌人", maxHP: 10, enemyId: "jaw_worm")
+        let enemy = Entity(id: "e", name: LocalizedText("敌人", "敌人"), maxHP: 10, enemyId: "jaw_worm")
         XCTAssertEqual(enemy.currentHP, 10)
         XCTAssertEqual(enemy.enemyId, EnemyID("jaw_worm"))
     }
     
     func testTakeDamage_blockAndHP() {
         print("🧪 测试：testTakeDamage_blockAndHP")
-        var e = Entity(id: "p", name: "玩家", maxHP: 10)
+        var e = Entity(id: "p", name: LocalizedText("玩家", "玩家"), maxHP: 10)
         
         // 非正数不生效
         XCTAssertEqual(e.takeDamage(0).dealt, 0)
@@ -47,7 +47,7 @@ final class EntityTests: XCTestCase {
     
     func testGainAndClearBlock() {
         print("🧪 测试：testGainAndClearBlock")
-        var e = Entity(id: "p", name: "玩家", maxHP: 10)
+        var e = Entity(id: "p", name: LocalizedText("玩家", "玩家"), maxHP: 10)
         e.gainBlock(0)
         e.gainBlock(-1)
         XCTAssertEqual(e.block, 0)
@@ -61,10 +61,9 @@ final class EntityTests: XCTestCase {
         print("🧪 测试：testCreateDefaultPlayer")
         let p = createDefaultPlayer()
         XCTAssertEqual(p.id, "player")
-        XCTAssertEqual(p.name, "安德")
+        XCTAssertEqual(p.name.zhHans, "安德")
         XCTAssertEqual(p.maxHP, 80)
         XCTAssertEqual(p.currentHP, 80)
     }
 }
-
 

@@ -21,12 +21,12 @@ enum ResultScreen {
         ║      ╚████╔╝ ██║╚██████╗   ██║   ╚██████╔╝██║  ██║██╗ ║
         ║       ╚═══╝  ╚═╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚═╝ ║
         ║                                                       ║
-        ║                  🏆 战 斗 胜 利 🏆                    ║
+        ║                  🏆 \(L10n.text("战 斗 胜 利", "VICTORY")) 🏆                    ║
         ║                                                       ║
         ╠═══════════════════════════════════════════════════════╣
         ║                                                       ║
-        ║         剩余 HP：\(String(format: "%3d", state.player.currentHP))/\(state.player.maxHP)                            ║
-        ║         战斗回合：\(String(format: "%3d", state.turn))                              ║
+        ║         \(L10n.text("剩余 HP", "HP Left"))：\(String(format: "%3d", state.player.currentHP))/\(state.player.maxHP)                            ║
+        ║         \(L10n.text("战斗回合", "Turns"))：\(String(format: "%3d", state.turn))                              ║
         ║                                                       ║
         ╚═══════════════════════════════════════════════════════╝
         \(Terminal.reset)
@@ -50,13 +50,13 @@ enum ResultScreen {
         ║      ██████╔╝███████╗██║     ███████╗██║  ██║   ██║   ║
         ║      ╚═════╝ ╚══════╝╚═╝     ╚══════╝╚═╝  ╚═╝   ╚═╝   ║
         ║                                                       ║
-        ║                  💀 战 斗 失 败 💀                    ║
+        ║                  💀 \(L10n.text("战 斗 失 败", "DEFEAT")) 💀                    ║
         ║                                                       ║
         ╠═══════════════════════════════════════════════════════╣
         ║                                                       ║
-        ║         坚持回合：\(String(format: "%3d", state.turn))                              ║
+        ║         \(L10n.text("坚持回合", "Turns Survived"))：\(String(format: "%3d", state.turn))                              ║
         ║                                                       ║
-        ║              再接再厉！下次一定！                     ║
+        ║              \(L10n.text("再接再厉！下次一定！", "You'll get it next time!"))                     ║
         ║                                                       ║
         ╚═══════════════════════════════════════════════════════╝
         \(Terminal.reset)
@@ -76,11 +76,11 @@ enum ResultScreen {
         if let record = record {
             print()
             print("        \(Terminal.dim)╭──────────────────────────────────────╮\(Terminal.reset)")
-            print("        \(Terminal.dim)│ 📊 本局统计                          │\(Terminal.reset)")
+            print("        \(Terminal.dim)│ 📊 \(L10n.text("本局统计", "Run Stats"))                          │\(Terminal.reset)")
             print("        \(Terminal.dim)├──────────────────────────────────────┤\(Terminal.reset)")
-            print("        \(Terminal.dim)│ 打出卡牌: \(String(format: "%-3d", record.cardsPlayed))                          │\(Terminal.reset)")
-            print("        \(Terminal.dim)│ 造成伤害: \(String(format: "%-3d", record.totalDamageDealt))  获得格挡: \(String(format: "%-3d", record.totalBlockGained))        │\(Terminal.reset)")
-            print("        \(Terminal.dim)│ 受到伤害: \(String(format: "%-3d", record.totalDamageTaken))                          │\(Terminal.reset)")
+            print("        \(Terminal.dim)│ \(L10n.text("打出卡牌", "Cards Played")): \(String(format: "%-3d", record.cardsPlayed))                          │\(Terminal.reset)")
+            print("        \(Terminal.dim)│ \(L10n.text("造成伤害", "Damage Dealt")): \(String(format: "%-3d", record.totalDamageDealt))  \(L10n.text("获得格挡", "Block Gained")): \(String(format: "%-3d", record.totalBlockGained))        │\(Terminal.reset)")
+            print("        \(Terminal.dim)│ \(L10n.text("受到伤害", "Damage Taken")): \(String(format: "%-3d", record.totalDamageTaken))                          │\(Terminal.reset)")
             print("        \(Terminal.dim)╰──────────────────────────────────────╯\(Terminal.reset)")
         }
         
@@ -92,8 +92,8 @@ enum ResultScreen {
         // }
         
         print()
-        print("        \(Terminal.dim)使用 --history 查看历史记录\(Terminal.reset)")
-        print("        \(Terminal.dim)使用 --stats 查看详细统计\(Terminal.reset)")
+        print("        \(Terminal.dim)\(L10n.text("使用 --history 查看历史记录", "Use --history to view history"))\(Terminal.reset)")
+        print("        \(Terminal.dim)\(L10n.text("使用 --stats 查看详细统计", "Use --stats to view statistics"))\(Terminal.reset)")
     }
     
     // MARK: - 退出界面
@@ -104,13 +104,12 @@ enum ResultScreen {
         \(Terminal.magenta)
         ╔═══════════════════════════════════════════════════════╗
         ║                                                       ║
-        ║           👋 感谢游玩 SALU！                          ║
+        ║           👋 \(L10n.text("感谢游玩 SALU！", "Thanks for playing SALU!"))                          ║
         ║                                                       ║
-        ║              期待下次再见！                           ║
+        ║              \(L10n.text("期待下次再见！", "See you next time!"))                           ║
         ║                                                       ║
         ╚═══════════════════════════════════════════════════════╝
         \(Terminal.reset)
         """)
     }
 }
-

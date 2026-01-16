@@ -20,7 +20,7 @@ struct RestRoomHandler: RoomHandling {
             if input == "1" {
                 // 执行休息
                 let healed = runState.restAtNode()
-                context.logLine("\(Terminal.green)休息：恢复 \(healed) HP\(Terminal.reset)")
+                context.logLine("\(Terminal.green)\(L10n.text("休息", "Rest"))：\(L10n.text("恢复", "Recover")) \(healed) HP\(Terminal.reset)")
                 
                 // 显示结果
                 Screens.showRestResult(
@@ -36,7 +36,7 @@ struct RestRoomHandler: RoomHandling {
             if input == "2" {
                 let upgradeableIndices = runState.upgradeableCardIndices
                 if upgradeableIndices.isEmpty {
-                    message = "\(Terminal.red)当前没有可升级的卡牌\(Terminal.reset)"
+                    message = "\(Terminal.red)\(L10n.text("当前没有可升级的卡牌", "No upgradable cards available"))\(Terminal.reset)"
                     continue
                 }
                 
@@ -52,14 +52,14 @@ struct RestRoomHandler: RoomHandling {
                 // 与艾拉对话（可多次对话，但内容相同）
                 let dialogue = RestPointDialogues.getAiraDialogue(floor: runState.floor)
                 Screens.showAiraDialogue(
-                    title: dialogue.title,
-                    content: dialogue.content,
-                    effect: dialogue.effect
+                    title: L10n.resolve(dialogue.title),
+                    content: L10n.resolve(dialogue.content),
+                    effect: dialogue.effect.map(L10n.resolve)
                 )
                 _ = readLine()
                 
                 if !hasSpokenToAira {
-                    context.logLine("\(Terminal.magenta)与艾拉进行了一次对话\(Terminal.reset)")
+                    context.logLine("\(Terminal.magenta)\(L10n.text("与艾拉进行了一次对话", "Chatted with Aira"))\(Terminal.reset)")
                     hasSpokenToAira = true
                 }
                 
@@ -67,7 +67,7 @@ struct RestRoomHandler: RoomHandling {
                 continue
             }
             
-            message = "\(Terminal.red)⚠️ 请输入有效的选项（1、2 或 3）\(Terminal.reset)"
+            message = "\(Terminal.red)⚠️ \(L10n.text("请输入有效的选项（1、2 或 3）", "Please enter a valid option (1, 2, or 3)"))\(Terminal.reset)"
         }
         
         // 完成节点
@@ -95,7 +95,7 @@ struct RestRoomHandler: RoomHandling {
             }
             
             guard let choice = Int(input), choice >= 1, choice <= upgradeableIndices.count else {
-                message = "\(Terminal.red)⚠️ 请选择有效的卡牌编号\(Terminal.reset)"
+                message = "\(Terminal.red)⚠️ \(L10n.text("请选择有效的卡牌编号", "Please choose a valid card number"))\(Terminal.reset)"
                 continue
             }
             
@@ -104,15 +104,15 @@ struct RestRoomHandler: RoomHandling {
             
             guard let def = CardRegistry.get(card.cardId),
                   let upgradedId = def.upgradedId else {
-                message = "\(Terminal.red)⚠️ 该卡牌无法升级\(Terminal.reset)"
+                message = "\(Terminal.red)⚠️ \(L10n.text("该卡牌无法升级", "This card cannot be upgraded"))\(Terminal.reset)"
                 continue
             }
             
             let upgradedDef = CardRegistry.require(upgradedId)
             _ = runState.upgradeCard(at: deckIndex)
-            context.logLine("\(Terminal.cyan)升级：\(def.name) → \(upgradedDef.name)\(Terminal.reset)")
+            context.logLine("\(Terminal.cyan)\(L10n.text("升级", "Upgraded"))：\(L10n.resolve(def.name)) → \(L10n.resolve(upgradedDef.name))\(Terminal.reset)")
             
-            Screens.showRestUpgradeResult(originalName: def.name, upgradedName: upgradedDef.name)
+            Screens.showRestUpgradeResult(originalName: L10n.resolve(def.name), upgradedName: L10n.resolve(upgradedDef.name))
             _ = readLine()
             return true
         }

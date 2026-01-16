@@ -53,7 +53,7 @@ final class GameCLIRelicRewardUITests: XCTestCase {
         
         // 先验证：遗物确实出现在战斗界面的「遗物列表」里（证明持久化与展示链路正常）
         if let relicId = earnedRelic, let def = RelicRegistry.get(RelicID(relicId)) {
-            XCTAssertTrue(output.contains("\(def.icon)\(def.name)"), "期望继续冒险后遗物仍显示在战斗界面中")
+            XCTAssertTrue(output.contains("\(def.icon)\(def.name.zhHans)"), "期望继续冒险后遗物仍显示在战斗界面中")
         }
         
         // 再验证（尽力）：对“战斗开始立即可观察”的遗物效果做断言

@@ -2,7 +2,7 @@
 /// 包含生命值、格挡、状态效果等属性
 public struct Entity: Sendable {
     public let id: String
-    public let name: String
+    public let name: LocalizedText
     public let maxHP: Int
     public var currentHP: Int
     public var block: Int
@@ -26,7 +26,7 @@ public struct Entity: Sendable {
     }
     
     /// 创建玩家实体
-    public init(id: String, name: String, maxHP: Int) {
+    public init(id: String, name: LocalizedText, maxHP: Int) {
         self.id = id
         self.name = name
         self.maxHP = maxHP
@@ -37,7 +37,7 @@ public struct Entity: Sendable {
     }
     
     /// 创建敌人实体 (P3: 使用 EnemyID)
-    public init(id: String, name: String, maxHP: Int, enemyId: EnemyID) {
+    public init(id: String, name: LocalizedText, maxHP: Int, enemyId: EnemyID) {
         self.id = id
         self.name = name
         self.maxHP = maxHP
@@ -77,6 +77,5 @@ public struct Entity: Sendable {
 
 /// 创建默认玩家
 public func createDefaultPlayer() -> Entity {
-    Entity(id: "player", name: "安德", maxHP: 80)
+    Entity(id: "player", name: LocalizedText("安德", "Ander"), maxHP: 80)
 }
-

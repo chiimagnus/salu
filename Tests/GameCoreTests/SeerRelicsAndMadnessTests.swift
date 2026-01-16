@@ -5,7 +5,7 @@ final class SeerRelicsAndMadnessTests: XCTestCase {
     func testThirdEye_triggersOnBattleStart_emitsForesightChosen() {
         let seed: UInt64 = 7
         let player = createDefaultPlayer()
-        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 40, enemyId: "shadow_stalker")
+        let enemy = Entity(id: "e0", name: LocalizedText("测试敌人", "测试敌人"), maxHP: 40, enemyId: "shadow_stalker")
         
         var relics = RelicManager()
         relics.add("third_eye")
@@ -42,7 +42,7 @@ final class SeerRelicsAndMadnessTests: XCTestCase {
     func testAbyssalEye_triggersForesightAndMadnessOnBattleStart() {
         let seed: UInt64 = 8
         let player = createDefaultPlayer()
-        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 40, enemyId: "shadow_stalker")
+        let enemy = Entity(id: "e0", name: LocalizedText("测试敌人", "测试敌人"), maxHP: 40, enemyId: "shadow_stalker")
 
         var relics = RelicManager()
         relics.add("abyssal_eye")
@@ -81,7 +81,7 @@ final class SeerRelicsAndMadnessTests: XCTestCase {
         var player = createDefaultPlayer()
         player.statuses.set("madness", stacks: 6) // 没有理智之锚时，阈值2应触发虚弱
         
-        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 40, enemyId: "shadow_stalker")
+        let enemy = Entity(id: "e0", name: LocalizedText("测试敌人", "测试敌人"), maxHP: 40, enemyId: "shadow_stalker")
         
         var relics = RelicManager()
         relics.add("sanity_anchor")
@@ -111,7 +111,7 @@ final class SeerRelicsAndMadnessTests: XCTestCase {
         var playerWithHighMadness = createDefaultPlayer()
         playerWithHighMadness.statuses.set("madness", stacks: 6)
         
-        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 200, enemyId: "shadow_stalker")
+        let enemy = Entity(id: "e0", name: LocalizedText("测试敌人", "测试敌人"), maxHP: 200, enemyId: "shadow_stalker")
         
         var relicsWithMask = RelicManager()
         relicsWithMask.add("madness_mask")
@@ -144,7 +144,7 @@ final class SeerRelicsAndMadnessTests: XCTestCase {
             return XCTFail("回合开始未抽到 Strike（无面具），seed/牌组不稳定")
         }
         let hpBeforeA = engineWithoutMask.state.enemies[0].currentHP
-        _ = engineWithoutMask.handleAction(.playCard(handIndex: idxA, targetEnemyIndex: 0))
+        _ = engineWithoutMask.handleAction(PlayerAction.playCard(handIndex: idxA, targetEnemyIndex: 0))
         let dmgWithoutMask = hpBeforeA - engineWithoutMask.state.enemies[0].currentHP
         
         // 重新构造一份 player（避免复用导致状态/手牌被污染）
@@ -164,7 +164,7 @@ final class SeerRelicsAndMadnessTests: XCTestCase {
             return XCTFail("回合开始未抽到 Strike（有面具），seed/牌组不稳定")
         }
         let hpBeforeB = engineWithMask.state.enemies[0].currentHP
-        _ = engineWithMask.handleAction(.playCard(handIndex: idxB, targetEnemyIndex: 0))
+        _ = engineWithMask.handleAction(PlayerAction.playCard(handIndex: idxB, targetEnemyIndex: 0))
         let dmgWithMask = hpBeforeB - engineWithMask.state.enemies[0].currentHP
         
         XCTAssertEqual(dmgWithoutMask, 4)
@@ -174,7 +174,7 @@ final class SeerRelicsAndMadnessTests: XCTestCase {
     func testProphetNotes_skipsFirstRewriteMadness() {
         let seed: UInt64 = 12
         let player = createDefaultPlayer()
-        let enemy = Entity(id: "e0", name: "测试敌人", maxHP: 40, enemyId: "shadow_stalker")
+        let enemy = Entity(id: "e0", name: LocalizedText("测试敌人", "测试敌人"), maxHP: 40, enemyId: "shadow_stalker")
 
         var relics = RelicManager()
         relics.add("prophet_notes")
@@ -195,12 +195,12 @@ final class SeerRelicsAndMadnessTests: XCTestCase {
         }
 
         engine.clearEvents()
-        _ = engine.handleAction(.playCard(handIndex: rewriteIndex, targetEnemyIndex: 0))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: rewriteIndex, targetEnemyIndex: 0))
 
         XCTAssertEqual(engine.state.player.statuses.stacks(of: "madness"), 0)
         XCTAssertTrue(engine.events.contains(where: {
             if case .statusApplied(_, let effect, let stacks) = $0 {
-                return effect.contains("预言者手札") && stacks == 0
+                return effect.zhHans.contains("预言者手札") && stacks == 0
             }
             return false
         }))

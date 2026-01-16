@@ -14,8 +14,8 @@ final class RelicIntegrationTests: XCTestCase {
         var relics = RelicManager()
         relics.add("lantern")
         
-        let player = Entity(id: "player", name: "玩家", maxHP: 80)
-        let enemy = Entity(id: "jaw_worm", name: "下颚虫", maxHP: 1, enemyId: "jaw_worm")
+        let player = Entity(id: "player", name: LocalizedText("玩家", "玩家"), maxHP: 80)
+        let enemy = Entity(id: "jaw_worm", name: LocalizedText("下颚虫", "下颚虫"), maxHP: 1, enemyId: "jaw_worm")
         let deck = [Card(id: "strike_1", cardId: "strike")]
         
         let engine = BattleEngine(player: player, enemies: [enemy], deck: deck, relicManager: relics, seed: 1)
@@ -31,17 +31,17 @@ final class RelicIntegrationTests: XCTestCase {
         var relics = RelicManager()
         relics.add("burning_blood")
         
-        var player = Entity(id: "player", name: "玩家", maxHP: 80)
+        var player = Entity(id: "player", name: LocalizedText("玩家", "玩家"), maxHP: 80)
         player.currentHP = 50
         
-        let enemy = Entity(id: "jaw_worm", name: "下颚虫", maxHP: 1, enemyId: "jaw_worm")
+        let enemy = Entity(id: "jaw_worm", name: LocalizedText("下颚虫", "下颚虫"), maxHP: 1, enemyId: "jaw_worm")
         let deck = [Card(id: "strike_1", cardId: "strike")]
         
         let engine = BattleEngine(player: player, enemies: [enemy], deck: deck, relicManager: relics, seed: 1)
         engine.startBattle()
         
         // 打出 Strike 直接击杀
-        _ = engine.handleAction(.playCard(handIndex: 0, targetEnemyIndex: 0))
+        _ = engine.handleAction(PlayerAction.playCard(handIndex: 0, targetEnemyIndex: 0))
         
         XCTAssertTrue(engine.state.isOver)
         XCTAssertEqual(engine.state.playerWon, true)
