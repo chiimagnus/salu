@@ -3,6 +3,13 @@ import XCTest
 @testable import GameCLI
 import GameCore
 
+#if os(Windows)
+final class ScreenAndRoomCoverageTests: XCTestCase {
+    func testWindowsSkip() throws {
+        throw XCTSkip("Screen output capture uses POSIX APIs that are unavailable on Windows.")
+    }
+}
+#else
 #if canImport(Darwin)
 @preconcurrency import Darwin
 #else
@@ -199,6 +206,7 @@ final class ScreenAndRoomCoverageTests: XCTestCase {
         XCTAssertEqual(store.records.first?.won, true)
     }
 }
+#endif
 
 private extension String {
     func strippingANSICodes() -> String {
