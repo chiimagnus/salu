@@ -239,5 +239,5 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
 - ❌ 猜测 API - 遇到不确定的类型/属性，先查看 GameCore 源码
 
 ## 参考文档
-- [总体方案](<../../.codex/plans/visionOS + macOS GUI 原生实现方案（SwiftUI）.md>)
+- [总体方案](<../../.giithub/plans/visionOS + macOS GUI 原生实现方案（SwiftUI）.md>)
 - [GameCore 规范](../../Sources/GameCore/AGENTS.md)

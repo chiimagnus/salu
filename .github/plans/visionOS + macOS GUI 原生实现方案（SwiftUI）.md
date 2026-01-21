@@ -20,7 +20,7 @@ architecture: Multiplatform App + 条件编译
 ### 核心决策
 
 1. **CLI 与 Native Apps 视为独立产品线**
-   - CLI 继续沿用 JSON 落盘（见 `.codex/docs/本地存储说明.md`）
+   - CLI 继续沿用 JSON 落盘（见 `.giithub/docs/本地存储说明.md`）
    - Native Apps 采用 Apple 原生持久化（首选 SwiftData；必要时混合 `@AppStorage`）
    - 默认不做存档互通（后续可选：通过 `RunSnapshot` 作为“交换格式”实现导入/导出）
 
@@ -96,8 +96,8 @@ architecture: Multiplatform App + 条件编译
 - `Sources/GameCLI/Flow/RoomHandlerRegistry.swift`
 - `Sources/GameCLI/Rooms/Handlers/BattleRoomHandler.swift`（参考战斗房间：遭遇/奖励/日志/节点完成）
 - `Sources/GameCLI/Rooms/Handlers/RestRoomHandler.swift`（参考休息房间：升级/对话/节点完成）
-- `.codex/docs/本地存储说明.md`
-- `.codex/docs/Salu游戏业务说明（玩法系统与触发规则）.md`
+- `.giithub/docs/本地存储说明.md`
+- `.giithub/docs/Salu游戏业务说明（玩法系统与触发规则）.md`
 
 ---
 
