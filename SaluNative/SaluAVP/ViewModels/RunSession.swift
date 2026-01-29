@@ -1,10 +1,3 @@
-//
-//  RunSession.swift
-//  SaluAVP
-//
-//  Created by chii_magnus on 2026/1/29.
-//
-
 import Foundation
 import SwiftUI
 import GameCore
@@ -77,5 +70,11 @@ final class RunSession {
 
     private static func generateSeed() -> UInt64 {
         UInt64(Date().timeIntervalSince1970 * 1000)
+    }
+
+    func resetToControlPanel() {
+        runState = nil
+        route = .map
+        lastError = nil
     }
 }

@@ -71,9 +71,12 @@ struct ImmersiveRootView: View {
             }
         } attachments: {
             Attachment(id: roomPanelAttachmentId) {
-                RoomPanel(route: runSession.route) {
-                    runSession.completeCurrentRoomAndReturnToMap()
-                }
+                RoomPanel(
+                    route: runSession.route,
+                    onCompleteRoom: { runSession.completeCurrentRoomAndReturnToMap() },
+                    onNewRun: { runSession.startNewRun() },
+                    onClose: { runSession.resetToControlPanel() }
+                )
             }
         }
         .gesture(
@@ -247,7 +250,9 @@ struct ImmersiveRootView: View {
 
 private struct RoomPanel: View {
     let route: RunSession.Route
-    let onComplete: () -> Void
+    let onCompleteRoom: () -> Void
+    let onNewRun: () -> Void
+    let onClose: () -> Void
 
     var body: some View {
         Group {
@@ -265,7 +270,7 @@ private struct RoomPanel: View {
                         .foregroundStyle(.secondary)
 
                     Button("Complete") {
-                        onComplete()
+                        onCompleteRoom()
                     }
                     .buttonStyle(.borderedProminent)
                 }
@@ -279,10 +284,17 @@ private struct RoomPanel: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
-                    Button("Back to Map") {
-                        onComplete()
+                    HStack(spacing: 10) {
+                        Button("New Run") {
+                            onNewRun()
+                        }
+                        .buttonStyle(.borderedProminent)
+
+                        Button("Close") {
+                            onClose()
+                        }
+                        .buttonStyle(.bordered)
                     }
-                    .buttonStyle(.borderedProminent)
                 }
             }
         }
