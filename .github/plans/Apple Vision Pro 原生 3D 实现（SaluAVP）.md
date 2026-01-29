@@ -30,8 +30,8 @@ target: SaluAVP
 
 ### 核心决策（Decisions）
 
-1. **拆分产品线：SaluCRH（macOS）与 SaluAVP（visionOS）**
-   - 输入模型与呈现形态长期分叉，拆 Target 避免 `#if os()` 泛滥与耦合。
+1. **原生 App 仅保留 `SaluAVP`（visionOS）**
+   - 主玩法与输入模型以沉浸式 3D 为中心；桌面端（macOS）如需体验优先使用 `GameCLI`，避免双 UI 维护成本。
 2. **RealityKit 必选，但只存在于 `SaluNative/`**
    - `Sources/` 仍然保持纯逻辑、可跨平台构建。
 3. **共享层只共享“状态/桥接”，不共享“渲染实现”**
@@ -72,7 +72,7 @@ swift test
   - UI 层不得用“系统时间/系统随机数”影响战斗与地图结果。
 - 多平台约束：
   - 不在 SwiftPM `Sources/` 内使用 Apple-only API；AVP 的 UI 代码全部留在 `SaluNative/`。
-  - 若需要“跨 Target 共享”，请放到 `SaluNative/Shared/`，并保持 **不引入 RealityKit**（使其可被 macOS target 复用）。
+  - 若需要“跨 Target 共享”，请放到 `SaluNative/Shared/`，并保持 **不引入 RealityKit**（避免把渲染实现传播到共享层）。
 
 ---
 
