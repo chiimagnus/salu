@@ -1,6 +1,5 @@
 import SwiftUI
 import RealityKit
-
 import UIKit
 import GameCore
 
@@ -71,10 +70,7 @@ struct ImmersiveRootView: View {
     }
 
     private func addFloor(to root: RealityKit.Entity) {
-        let floor = ModelEntity(
-            mesh: .generatePlane(width: 2.8, depth: 4.2),
-            materials: [SimpleMaterial(color: .gray.withAlphaComponent(0.18), isMetallic: false)]
-        )
+        let floor = RealityKit.Entity()
         floor.name = "floor"
         floor.components.set(CollisionComponent(shapes: [.generateBox(size: [2.8, 0.01, 4.2])]))
         floor.components.set(InputTargetComponent())
