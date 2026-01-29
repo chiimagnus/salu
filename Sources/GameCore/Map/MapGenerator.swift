@@ -5,7 +5,11 @@ public enum MapGenerator {
     // MARK: - 地图生成配置
     
     /// 默认地图层数（包含起点和Boss）
+    #if os(visionOS)
+    public static let defaultRowCount = 3
+    #else
     public static let defaultRowCount = 15
+    #endif
     
     /// 每层最少节点数
     public static let minNodesPerRow = 2
@@ -18,7 +22,7 @@ public enum MapGenerator {
     /// 生成分支地图
     /// - Parameters:
     ///   - seed: 随机种子
-    ///   - rows: 层数（默认15层）
+    ///   - rows: 层数（默认 `defaultRowCount`）
     /// - Returns: 地图节点数组
     public static func generateBranching(seed: UInt64, rows: Int = defaultRowCount) -> [MapNode] {
         var rng = SeededRNG(seed: seed)
