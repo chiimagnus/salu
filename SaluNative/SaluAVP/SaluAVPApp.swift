@@ -11,17 +11,20 @@ import SwiftUI
 struct SaluAVPApp: App {
 
     @State private var appModel = AppModel()
+    @State private var runSession = RunSession()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environment(appModel)
+                .environment(runSession)
         }
         .windowStyle(.volumetric)
 
         ImmersiveSpace(id: appModel.immersiveSpaceID) {
             ImmersiveView()
                 .environment(appModel)
+                .environment(runSession)
                 .onAppear {
                     appModel.immersiveSpaceState = .open
                 }
