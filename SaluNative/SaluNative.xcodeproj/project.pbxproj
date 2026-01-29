@@ -7,14 +7,35 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D84785632F2AE7AF00B5018E /* RealityKitContent in Frameworks */ = {isa = PBXBuildFile; productRef = D84785622F2AE7AF00B5018E /* RealityKitContent */; };
 		D8A515242F16C8AA005EBB40 /* GameCore in Frameworks */ = {isa = PBXBuildFile; productRef = D8A515232F16C8AA005EBB40 /* GameCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		D847855E2F2AE7AF00B5018E /* SaluAVP.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SaluAVP.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D84785612F2AE7AF00B5018E /* RealityKitContent */ = {isa = PBXFileReference; lastKnownFileType = folder; path = RealityKitContent; sourceTree = "<group>"; };
 		D8A515172F16C856005EBB40 /* SaluCRH.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SaluCRH.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		D847856F2F2AE7B000B5018E /* Exceptions for "SaluAVP" folder in "SaluAVP" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = D847855D2F2AE7AF00B5018E /* SaluAVP */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		D847855F2F2AE7AF00B5018E /* SaluAVP */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D847856F2F2AE7B000B5018E /* Exceptions for "SaluAVP" folder in "SaluAVP" target */,
+			);
+			path = SaluAVP;
+			sourceTree = "<group>";
+		};
 		D8A515182F16C856005EBB40 /* SaluCRH */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = SaluCRH;
@@ -23,6 +44,14 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		D847855B2F2AE7AF00B5018E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D84785632F2AE7AF00B5018E /* RealityKitContent in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D8A515142F16C856005EBB40 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -34,10 +63,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		D84785602F2AE7AF00B5018E /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				D84785612F2AE7AF00B5018E /* RealityKitContent */,
+			);
+			path = Packages;
+			sourceTree = "<group>";
+		};
 		D8A514962F16BA92005EBB40 = {
 			isa = PBXGroup;
 			children = (
 				D8A515182F16C856005EBB40 /* SaluCRH */,
+				D847855F2F2AE7AF00B5018E /* SaluAVP */,
+				D84785602F2AE7AF00B5018E /* Packages */,
 				D8A514A02F16BA92005EBB40 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -46,6 +85,7 @@
 			isa = PBXGroup;
 			children = (
 				D8A515172F16C856005EBB40 /* SaluCRH.app */,
+				D847855E2F2AE7AF00B5018E /* SaluAVP.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -53,6 +93,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		D847855D2F2AE7AF00B5018E /* SaluAVP */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D84785702F2AE7B000B5018E /* Build configuration list for PBXNativeTarget "SaluAVP" */;
+			buildPhases = (
+				D847855A2F2AE7AF00B5018E /* Sources */,
+				D847855B2F2AE7AF00B5018E /* Frameworks */,
+				D847855C2F2AE7AF00B5018E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				D847855F2F2AE7AF00B5018E /* SaluAVP */,
+			);
+			name = SaluAVP;
+			packageProductDependencies = (
+				D84785622F2AE7AF00B5018E /* RealityKitContent */,
+			);
+			productName = SaluAVP;
+			productReference = D847855E2F2AE7AF00B5018E /* SaluAVP.app */;
+			productType = "com.apple.product-type.application";
+		};
 		D8A515162F16C856005EBB40 /* SaluCRH */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = D8A5151F2F16C857005EBB40 /* Build configuration list for PBXNativeTarget "SaluCRH" */;
@@ -86,6 +149,9 @@
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
+					D847855D2F2AE7AF00B5018E = {
+						CreatedOnToolsVersion = 26.0;
+					};
 					D8A515162F16C856005EBB40 = {
 						CreatedOnToolsVersion = 26.0;
 					};
@@ -109,11 +175,19 @@
 			projectRoot = "";
 			targets = (
 				D8A515162F16C856005EBB40 /* SaluCRH */,
+				D847855D2F2AE7AF00B5018E /* SaluAVP */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		D847855C2F2AE7AF00B5018E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D8A515152F16C856005EBB40 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -124,6 +198,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		D847855A2F2AE7AF00B5018E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D8A515132F16C856005EBB40 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -134,6 +215,69 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		D847856D2F2AE7B000B5018E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RDQHYSDFFG;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "$(TARGET_NAME)/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiimagnus.SaluAVP;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = xros;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 7;
+				XROS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		D847856E2F2AE7B000B5018E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RDQHYSDFFG;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "$(TARGET_NAME)/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chiimagnus.SaluAVP;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = xros;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 7;
+				VALIDATE_PRODUCT = YES;
+				XROS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
 		D8A514AA2F16BA93005EBB40 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -335,6 +479,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		D84785702F2AE7B000B5018E /* Build configuration list for PBXNativeTarget "SaluAVP" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D847856D2F2AE7B000B5018E /* Debug */,
+				D847856E2F2AE7B000B5018E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		D8A5149A2F16BA92005EBB40 /* Build configuration list for PBXProject "SaluNative" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -363,6 +516,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		D84785622F2AE7AF00B5018E /* RealityKitContent */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RealityKitContent;
+		};
 		D8A515232F16C8AA005EBB40 /* GameCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = D8A5150B2F16C179005EBB40 /* XCLocalSwiftPackageReference "../../salu" */;
