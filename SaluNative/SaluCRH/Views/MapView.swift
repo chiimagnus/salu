@@ -5,6 +5,8 @@ import GameCore
 struct MapView: View {
     @Environment(GameSession.self) private var session
     
+    private var language: GameLanguage { .zhHans }
+    
     var body: some View {
         if let run = session.runState {
             HStack(spacing: 0) {
@@ -66,7 +68,7 @@ struct MapView: View {
             } else {
                 ForEach(run.relicManager.all, id: \.rawValue) { relicId in
                     let def = RelicRegistry.require(relicId)
-                    Text(def.name)
+                    Text(def.name.resolved(for: language))
                         .font(.caption)
                 }
             }
@@ -177,14 +179,19 @@ struct MapView: View {
             
             Text("消耗品")
                 .font(.headline)
-            
-            if run.consumables.isEmpty {
+
+            let consumableCards = run.deck.filter { card in
+                guard let def = CardRegistry.get(card.cardId) else { return false }
+                return def.type == .consumable
+            }
+
+            if consumableCards.isEmpty {
                 Text("无")
                     .foregroundStyle(.secondary)
             } else {
-                ForEach(Array(run.consumables.enumerated()), id: \.offset) { _, consumableId in
-                    let def = ConsumableRegistry.require(consumableId)
-                    Text(def.name)
+                ForEach(consumableCards, id: \.id) { card in
+                    let def = CardRegistry.require(card.cardId)
+                    Text(def.name.resolved(for: language))
                         .font(.caption)
                 }
             }
