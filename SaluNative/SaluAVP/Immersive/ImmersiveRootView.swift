@@ -8,73 +8,79 @@ struct ImmersiveRootView: View {
     @Environment(RunSession.self) private var runSession
 
     private let nodeNamePrefix = "node:"
+    private let roomPanelAttachmentId = "roomPanel"
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            RealityView { content in
-                let root = RealityKit.Entity()
-                root.name = "root"
-                content.add(root)
-            } update: { content in
-                guard let root = content.entities.first else { return }
-                root.children.forEach { $0.removeFromParent() }
+        RealityView { content, attachments in
+            let mapRoot = RealityKit.Entity()
+            mapRoot.name = "mapRoot"
+            content.add(mapRoot)
 
-                addFloor(to: root)
-
-                guard let run = runSession.runState else { return }
-                renderMap(run: run, into: root)
+            let uiAnchor: RealityKit.Entity
+            if let headAnchor = tryMakeHeadAnchor() {
+                uiAnchor = headAnchor
+            } else {
+                let fallback = RealityKit.Entity()
+                // Fallback: place a UI anchor near the map origin (more reliable than a high Y position).
+                fallback.position = [0, 0.2, 0.0]
+                uiAnchor = fallback
             }
-            .gesture(
-                SpatialTapGesture()
-                    .targetedToAnyEntity()
-                    .onEnded { value in
-                        guard runSession.route == .map else { return }
-                        guard value.entity.name.hasPrefix(nodeNamePrefix) else { return }
-                        let nodeId = String(value.entity.name.dropFirst(nodeNamePrefix.count))
-                        runSession.selectAccessibleNode(nodeId)
-                    }
-            )
+            uiAnchor.name = "uiAnchor"
+            content.add(uiAnchor)
+        } update: { content, attachments in
+            guard let mapRoot = content.entities.first(where: { $0.name == "mapRoot" }),
+                  let uiAnchor = content.entities.first(where: { $0.name == "uiAnchor" })
+            else { return }
 
-            switch runSession.route {
-            case .map:
-                if runSession.runState == nil {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("No run started")
-                            .font(.headline)
-                        Text("Start a run from the Control Panel.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(12)
-                    .background(.regularMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .padding(16)
+            mapRoot.children.forEach { $0.removeFromParent() }
+            addFloor(to: mapRoot)
+
+            if let run = runSession.runState {
+                renderMap(run: run, into: mapRoot)
+            }
+
+            uiAnchor.children.forEach { $0.removeFromParent() }
+            if let panel = attachments.entity(for: roomPanelAttachmentId) {
+                panel.name = roomPanelAttachmentId
+                panel.components.set(BillboardComponent())
+                panel.components.set(InputTargetComponent())
+                panel.position = roomPanelPositionRelativeToAnchor()
+                panel.isEnabled = runSession.route.isRoom
+                uiAnchor.addChild(panel)
+            }
+        } attachments: {
+            Attachment(id: roomPanelAttachmentId) {
+                RoomPanel(route: runSession.route) {
+                    runSession.completeCurrentRoomAndReturnToMap()
                 }
-
-            case .room(let nodeId, let roomType):
-                roomOverlay(nodeId: nodeId, roomType: roomType)
             }
         }
+        .gesture(
+            SpatialTapGesture()
+                .targetedToAnyEntity()
+                .onEnded { value in
+                    guard runSession.route == .map else { return }
+                    guard value.entity.name.hasPrefix(nodeNamePrefix) else { return }
+                    let nodeId = String(value.entity.name.dropFirst(nodeNamePrefix.count))
+                    runSession.selectAccessibleNode(nodeId)
+                }
+        )
     }
 
-    private func roomOverlay(nodeId: String, roomType: RoomType) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("\(roomType.icon) \(roomType.displayName(language: .zhHans))")
-                .font(.headline)
+    private func roomPanelPositionRelativeToAnchor() -> SIMD3<Float> {
+        // If anchored to head, this is relative to the user's head pose.
+        // If anchored to world (fallback), this is relative to that world position.
+        [0, 0.0, -0.55]
+    }
 
-            Text("Node: \(nodeId)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Button("Complete") {
-                runSession.completeCurrentRoomAndReturnToMap()
-            }
-            .buttonStyle(.borderedProminent)
-        }
-        .padding(12)
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .padding(16)
+    private func tryMakeHeadAnchor() -> RealityKit.Entity? {
+        // `AnchorEntity(.head)` exists on visionOS but isn't available on all platforms/configs.
+        // We keep a fallback to a world-space entity for safety.
+        #if os(visionOS)
+        return AnchorEntity(.head)
+        #else
+        return nil
+        #endif
     }
 
     private func addFloor(to root: RealityKit.Entity) {
@@ -192,5 +198,44 @@ struct ImmersiveRootView: View {
         case .boss:
             return (.generateBox(size: 0.14), .systemRed, true)
         }
+    }
+}
+
+private struct RoomPanel: View {
+    let route: RunSession.Route
+    let onComplete: () -> Void
+
+    var body: some View {
+        Group {
+            switch route {
+            case .map:
+                EmptyView()
+
+            case .room(let nodeId, let roomType):
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("\(roomType.icon) \(roomType.displayName(language: .zhHans))")
+                        .font(.headline)
+
+                    Text("Node: \(nodeId)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Button("Complete") {
+                        onComplete()
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            }
+        }
+        .padding(12)
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+private extension RunSession.Route {
+    var isRoom: Bool {
+        if case .room = self { return true }
+        return false
     }
 }

@@ -32,6 +32,9 @@ struct ControlPanelView: View {
             } else if let run = runSession.runState {
                 Text("Run: Act \(run.floor)/\(run.maxFloor)  HP \(run.player.currentHP)/\(run.player.maxHP)")
                     .font(.caption)
+                Text("Route: \(routeLabel(runSession.route))  Current: \(run.currentNodeId ?? "-")")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             } else {
                 Text("No run started.")
                     .font(.caption)
@@ -50,6 +53,15 @@ struct ControlPanelView: View {
         }
         .padding(24)
     }
+
+    private func routeLabel(_ route: RunSession.Route) -> String {
+        switch route {
+        case .map:
+            return "map"
+        case .room(_, let roomType):
+            return "room(\(roomType.rawValue))"
+        }
+    }
 }
 
 #Preview(windowStyle: .volumetric) {
@@ -57,4 +69,3 @@ struct ControlPanelView: View {
         .environment(AppModel())
         .environment(RunSession())
 }
-
