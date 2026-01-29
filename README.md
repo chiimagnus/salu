@@ -11,9 +11,7 @@
 使用 Xcode 打开 `SaluNative/SaluNative.xcodeproj` 并运行 `SaluAVP`。
 
 支持平台：
-- **visionOS** 2+（开发中 🚧）
-
-> 要求：Xcode 16+ / macOS 14+
+- **visionOS** 26.0+（开发中 🚧）
 
 ### 方式二：命令行版本（CLI）
 
