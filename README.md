@@ -6,14 +6,14 @@
 
 ## 📥 下载安装
 
-### 方式一：原生 App（开发中 🚧）
+### Apple Vision Pro版本
 
 使用 Xcode 打开 `SaluNative/SaluNative.xcodeproj` 并运行 `SaluAVP`。
 
 支持平台：
 - **visionOS** 26.0+（开发中 🚧）
 
-### 方式二：命令行版本（CLI）
+### 命令行版本（CLI）
 
 > 需要 Swift 6.2+，可从 [swift.org](https://www.swift.org/install/) 下载
 
@@ -25,16 +25,6 @@ cd salu
 # 运行游戏（随机种子）
 swift run
 ```
-
-### 方式三：直接下载
-
-前往 [Releases](https://github.com/chiimagnus/salu/releases) 页面下载最新版本：
-
-| 平台 | 下载文件 |
-|------|----------|
-| **macOS** | `salu-macos.tar.gz` |
-| **Linux** | `salu-linux-x86_64.tar.gz` |
-| **Windows** | `salu-windows-x86_64.zip` |
 
 #### macOS / Linux 使用方法
 

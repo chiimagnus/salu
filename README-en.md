@@ -4,16 +4,14 @@ A cross-platform (macOS/Linux/Windows) turn-based card-battle game inspired by *
 
 ## 📥  Download & Install
 
-### Option 1: Native App (in development 🚧)
+### Apple Vision Pro app (in development 🚧)
 
 Open `SaluNative/SaluNative.xcodeproj` in Xcode and run `SaluAVP`.
 
 Supported platforms:
-- **visionOS** 2+ (in development 🚧)
+- **visionOS** 26.0+ (in development 🚧)
 
-> Requirements: Xcode 16+ / macOS 14+
-
-### Option 2: Command-Line Version (CLI)
+### Command-Line Version (CLI)
 
 > Requires Swift 6.2+, available from [swift.org](https://www.swift.org/install/)
 
@@ -25,31 +23,6 @@ cd salu
 # Run the game (random seed)
 swift run
 ```
-
-### Option 3: Direct Download
-
-Download the latest release from the [Releases](https://github.com/chiimagnus/salu/releases) page:
-
-| Platform | Package |
-|------|----------|
-| **macOS** | `salu-macos.tar.gz` |
-| **Linux** | `salu-linux-x86_64.tar.gz` |
-| **Windows** | `salu-windows-x86_64.zip` |
-
-#### macOS / Linux usage
-
-```bash
-# Extract (macOS example)
-tar -xzf salu-macos.tar.gz
-
-# Run
-./salu-macos
-```
-
-#### Windows usage
-
-1. Extract `salu-windows-x86_64.zip`
-2. Double-click `salu-windows-x86_64.exe` or run it in Command Prompt
 
 ## 🤝  Contributing
 
