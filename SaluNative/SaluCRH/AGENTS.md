@@ -1,13 +1,13 @@
 # SaluCRH 模块开发规范
 
-SaluCRH 是 Salu 的原生 App 前端，采用 Multiplatform SwiftUI 架构，同时支持 macOS 和 visionOS。
+SaluCRH 是 Salu 的 **macOS** 原生 App 前端（2D SwiftUI）。Apple Vision Pro（visionOS）的原生 3D 实现由 `SaluAVP` Target 承担，本模块不包含 RealityKit/ImmersiveSpace 主流程。
 
 ## 模块职责
 
 - **UI 层**：SwiftUI 视图、动画、用户交互
 - **状态管理**：GameSession 状态机、AppRoute 路由
 - **持久化**：SwiftData 存档、战斗历史
-- **平台适配**：通过 `#if os()` 处理 macOS/visionOS 差异
+- **macOS 适配**：窗口布局、键鼠交互、快捷键（可选）
 
 ## 依赖关系
 
@@ -22,18 +22,8 @@ GameCLI ↔ SaluCRH ❌（互不依赖）
 ## 平台支持
 
 - **macOS** 14.0+（当前支持 ✅）
-- **visionOS** 2.0+（配置中）
 
-使用条件编译处理平台差异：
-
-```swift
-#if os(visionOS)
-import RealityKit
-// visionOS 特有代码（如 ImmersiveSpace）
-#elseif os(macOS)
-// macOS 特有代码
-#endif
-```
+> visionOS：请在 `SaluNative/SaluAVP/`（`SaluAVP` scheme）实现原生 3D 体验，不要在本模块引入 RealityKit。
 
 ## 目录结构
 
@@ -55,9 +45,6 @@ SaluCRH/
 ├── Persistence/               # SwiftData 模型
 │   ├── RunSaveEntity.swift
 │   └── BattleRecordEntity.swift
-├── Platform/                  # 平台特有代码
-│   └── visionOS/
-│       └── ImmersiveView.swift
 └── Assets.xcassets
 ```
 
@@ -120,7 +107,7 @@ import GameCore
 let strike = CardRegistry.require("strike")
 
 // 创建冒险状态
-let runState = RunState(seed: 12345)
+let runState = RunState.newRun(seed: 12345)
 
 // 创建战斗引擎
 let engine = BattleEngine(...)
@@ -189,15 +176,9 @@ final class RunSaveEntity {
 
 ```swift
 var body: some View {
-    #if os(visionOS)
-    // visionOS: 更大的点击目标
-    CardView()
-        .frame(width: 200, height: 300)
-    #else
     // macOS: 更紧凑的布局
     CardView()
         .frame(width: 120, height: 180)
-    #endif
 }
 ```
 
@@ -211,12 +192,6 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
   -scheme SaluCRH \
   -destination 'platform=macOS' \
   build
-
-# visionOS (配置 Supported Destinations 后)
-xcodebuild -project SaluNative/SaluNative.xcodeproj \
-  -scheme SaluCRH \
-  -destination 'platform=visionOS Simulator,name=Apple Vision Pro' \
-  build
 ```
 
 ## 构建失败排查指南
@@ -229,7 +204,7 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
    - `Entity.currentHP` / `Entity.maxHP` - 注意大小写
    - `MapNode.roomType` - 不是 `type`
    - `RelicManager.all` - 获取所有遗物 ID（不是 `relics`）
-   - `ConsumableID` 是 ID 类型，通过 `ConsumableRegistry.require()` 获取定义
+   - “消耗品”已是 **Consumable Cards**：通过 `CardRegistry` 判断 `CardDefinition.type == .consumable`，并作为实例存在于 `RunState.deck`
 3. **技术文档**：完整的 GameCore API 参考见 [GameCore 规范](../../Sources/GameCore/AGENTS.md)
 ## 禁止事项
 
@@ -241,5 +216,4 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
 - ❌ 猜测 API - 遇到不确定的类型/属性，先查看 GameCore 源码
 
 ## 参考文档
-- [总体方案](<../../.giithub/plans/visionOS + macOS GUI 原生实现方案（SwiftUI）.md>)
 - [GameCore 规范](../../Sources/GameCore/AGENTS.md)
