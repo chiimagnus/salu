@@ -8,30 +8,66 @@ struct ImmersiveRootView: View {
 
     private let nodeNamePrefix = "node:"
     private let roomPanelAttachmentId = "roomPanel"
+    private let mapLayerPrefix = "mapLayer_floor_"
+    private let uiLayerName = "uiLayer"
 
     var body: some View {
         RealityView { content, attachments in
             let mapRoot = RealityKit.Entity()
             mapRoot.name = "mapRoot"
+
+            let mapLayer = RealityKit.Entity()
+            mapLayer.name = "\(mapLayerPrefix)0"
+            mapRoot.addChild(mapLayer)
+
+            let uiLayer = RealityKit.Entity()
+            uiLayer.name = uiLayerName
+            mapRoot.addChild(uiLayer)
+
             content.add(mapRoot)
         } update: { content, attachments in
             guard let mapRoot = content.entities.first(where: { $0.name == "mapRoot" }) else { return }
 
-            mapRoot.children.forEach { $0.removeFromParent() }
-            addFloor(to: mapRoot)
+            let uiLayer = mapRoot.findEntity(named: uiLayerName) ?? {
+                let uiLayer = RealityKit.Entity()
+                uiLayer.name = uiLayerName
+                mapRoot.addChild(uiLayer)
+                return uiLayer
+            }()
 
-            if let run = runSession.runState {
-                renderMap(run: run, into: mapRoot)
+            uiLayer.children.forEach { $0.removeFromParent() }
+
+            guard let run = runSession.runState else {
+                mapRoot.children.first(where: { $0.name.hasPrefix(mapLayerPrefix) })?.removeFromParent()
+                return
+            }
+
+            // Only rebuild the map when entering a new floor/act.
+            let desiredMapLayerName = "\(mapLayerPrefix)\(run.floor)"
+            let existingMapLayer = mapRoot.children.first(where: { $0.name.hasPrefix(mapLayerPrefix) })
+            let mapLayer: RealityKit.Entity
+
+            if existingMapLayer?.name == desiredMapLayerName {
+                mapLayer = existingMapLayer!
+                updateMapState(run: run, in: mapLayer)
+            } else {
+                existingMapLayer?.removeFromParent()
+                let newLayer = RealityKit.Entity()
+                newLayer.name = desiredMapLayerName
+                mapRoot.addChild(newLayer)
+                addFloor(to: newLayer)
+                renderMap(run: run, into: newLayer)
+                mapLayer = newLayer
             }
 
             if let panel = attachments.entity(for: roomPanelAttachmentId) {
                 panel.name = roomPanelAttachmentId
                 panel.components.set(BillboardComponent())
                 panel.components.set(InputTargetComponent())
-                let (isVisible, position) = roomPanelPlacement(mapRoot: mapRoot, route: runSession.route)
+                let (isVisible, position) = roomPanelPlacement(mapRoot: mapLayer, route: runSession.route)
                 panel.isEnabled = isVisible
                 panel.position = position
-                mapRoot.addChild(panel)
+                uiLayer.addChild(panel)
             }
         } attachments: {
             Attachment(id: roomPanelAttachmentId) {
@@ -75,6 +111,14 @@ struct ImmersiveRootView: View {
         floor.components.set(CollisionComponent(shapes: [.generateBox(size: [2.8, 0.01, 4.2])]))
         floor.components.set(InputTargetComponent())
         root.addChild(floor)
+    }
+
+    private func updateMapState(run: RunState, in mapLayer: RealityKit.Entity) {
+        // Map topology within the same floor doesn't change; only node state changes.
+        for node in run.map {
+            guard let entity = mapLayer.findEntity(named: "\(nodeNamePrefix)\(node.id)") as? ModelEntity else { continue }
+            applyNodeAppearance(entity: entity, node: node, isCurrent: run.currentNodeId == node.id)
+        }
     }
 
     private func renderMap(run: RunState, into root: RealityKit.Entity) {
@@ -133,7 +177,18 @@ struct ImmersiveRootView: View {
     }
 
     private func makeNodeEntity(node: MapNode, isCurrent: Bool) -> ModelEntity {
-        let (mesh, baseColor, metallic) = nodeStyle(roomType: node.roomType)
+        let (mesh, _, _) = nodeStyle(roomType: node.roomType)
+        let entity = ModelEntity(mesh: mesh, materials: [])
+        entity.name = "\(nodeNamePrefix)\(node.id)"
+        entity.components.set(CollisionComponent(shapes: [.generateBox(size: [0.18, 0.18, 0.18])]))
+        entity.components.set(InputTargetComponent())
+        applyNodeAppearance(entity: entity, node: node, isCurrent: isCurrent)
+
+        return entity
+    }
+
+    private func applyNodeAppearance(entity: ModelEntity, node: MapNode, isCurrent: Bool) {
+        let (_, baseColor, metallic) = nodeStyle(roomType: node.roomType)
 
         let color: UIColor
         if node.isCompleted {
@@ -146,22 +201,23 @@ struct ImmersiveRootView: View {
             color = baseColor.withAlphaComponent(0.25)
         }
 
-        let material = SimpleMaterial(color: color, isMetallic: metallic)
-        let entity = ModelEntity(mesh: mesh, materials: [material])
-        entity.name = "\(nodeNamePrefix)\(node.id)"
-        entity.components.set(CollisionComponent(shapes: [.generateBox(size: [0.18, 0.18, 0.18])]))
-        entity.components.set(InputTargetComponent())
+        entity.model?.materials = [SimpleMaterial(color: color, isMetallic: metallic)]
 
-        if node.isAccessible {
-            let halo = ModelEntity(
-                mesh: .generateCylinder(height: 0.004, radius: 0.085),
-                materials: [SimpleMaterial(color: .white.withAlphaComponent(0.2), isMetallic: false)]
-            )
-            halo.position = [0, -0.06, 0]
-            entity.addChild(halo)
+        let shouldShowHalo = node.isAccessible && !node.isCompleted
+        let existingHalo = entity.children.first(where: { $0.name == "halo" })
+        if shouldShowHalo {
+            if existingHalo == nil {
+                let halo = ModelEntity(
+                    mesh: .generateCylinder(height: 0.004, radius: 0.085),
+                    materials: [SimpleMaterial(color: .white.withAlphaComponent(0.2), isMetallic: false)]
+                )
+                halo.name = "halo"
+                halo.position = [0, -0.06, 0]
+                entity.addChild(halo)
+            }
+        } else {
+            existingHalo?.removeFromParent()
         }
-
-        return entity
     }
 
     private func nodeStyle(roomType: RoomType) -> (mesh: MeshResource, color: UIColor, metallic: Bool) {
