@@ -15,22 +15,8 @@ struct ImmersiveRootView: View {
             let mapRoot = RealityKit.Entity()
             mapRoot.name = "mapRoot"
             content.add(mapRoot)
-
-            let uiAnchor: RealityKit.Entity
-            if let headAnchor = tryMakeHeadAnchor() {
-                uiAnchor = headAnchor
-            } else {
-                let fallback = RealityKit.Entity()
-                // Fallback: place a UI anchor near the map origin (more reliable than a high Y position).
-                fallback.position = [0, 0.2, 0.0]
-                uiAnchor = fallback
-            }
-            uiAnchor.name = "uiAnchor"
-            content.add(uiAnchor)
         } update: { content, attachments in
-            guard let mapRoot = content.entities.first(where: { $0.name == "mapRoot" }),
-                  let uiAnchor = content.entities.first(where: { $0.name == "uiAnchor" })
-            else { return }
+            guard let mapRoot = content.entities.first(where: { $0.name == "mapRoot" }) else { return }
 
             mapRoot.children.forEach { $0.removeFromParent() }
             addFloor(to: mapRoot)
@@ -39,14 +25,14 @@ struct ImmersiveRootView: View {
                 renderMap(run: run, into: mapRoot)
             }
 
-            uiAnchor.children.forEach { $0.removeFromParent() }
             if let panel = attachments.entity(for: roomPanelAttachmentId) {
                 panel.name = roomPanelAttachmentId
                 panel.components.set(BillboardComponent())
                 panel.components.set(InputTargetComponent())
-                panel.position = roomPanelPositionRelativeToAnchor()
-                panel.isEnabled = runSession.route.isRoom
-                uiAnchor.addChild(panel)
+                let (isVisible, position) = roomPanelPlacement(mapRoot: mapRoot, route: runSession.route)
+                panel.isEnabled = isVisible
+                panel.position = position
+                mapRoot.addChild(panel)
             }
         } attachments: {
             Attachment(id: roomPanelAttachmentId) {
@@ -67,20 +53,21 @@ struct ImmersiveRootView: View {
         )
     }
 
-    private func roomPanelPositionRelativeToAnchor() -> SIMD3<Float> {
-        // If anchored to head, this is relative to the user's head pose.
-        // If anchored to world (fallback), this is relative to that world position.
-        [0, 0.0, -0.55]
-    }
+    private func roomPanelPlacement(mapRoot: RealityKit.Entity, route: RunSession.Route) -> (isVisible: Bool, position: SIMD3<Float>) {
+        switch route {
+        case .map:
+            return (false, .zero)
 
-    private func tryMakeHeadAnchor() -> RealityKit.Entity? {
-        // `AnchorEntity(.head)` exists on visionOS but isn't available on all platforms/configs.
-        // We keep a fallback to a world-space entity for safety.
-        #if os(visionOS)
-        return AnchorEntity(.head)
-        #else
-        return nil
-        #endif
+        case .room(let nodeId, _):
+            let nodeName = "\(nodeNamePrefix)\(nodeId)"
+            if let node = mapRoot.findEntity(named: nodeName) {
+                // Place the panel above the selected node; billboard will face the user.
+                return (true, node.position + [0, 0.18, 0])
+            }
+
+            // Fallback: place in front of the map origin.
+            return (true, [0, 0.25, -0.55])
+        }
     }
 
     private func addFloor(to root: RealityKit.Entity) {
