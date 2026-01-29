@@ -1,5 +1,5 @@
 ---
-title: Plan AVP - Apple Vision Pro 原生 3D 实现（SaluAVP）
+title: Apple Vision Pro 原生 3D 实现（SaluAVP）
 date: 2026-01-29
 updated: 2026-01-29
 architecture: visionOS-only App + Immersive-first (RealityKit)
