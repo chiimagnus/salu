@@ -1,6 +1,6 @@
 # 仓库指南
 
-Salu 是一个跨平台（macOS/Linux/Windows）的回合制卡牌战斗游戏，基于 Swift Package Manager（Swift 6.2+）。贡献代码前请先跑通本地构建与测试，并按模块规范修改对应目录下的代码。
+Salu 是一个跨平台（macOS/Linux/Windows）的回合制卡牌战斗游戏，基于 Swift Package Manager（Swift 6.2+）。贡献代码前请按本次改动范围跑通对应的构建与测试，并按模块规范修改对应目录下的代码。
 
 ## 项目结构与模块组织
 
@@ -19,6 +19,11 @@ Salu 是一个跨平台（macOS/Linux/Windows）的回合制卡牌战斗游戏�
 swift build          # 编译
 swift test           # 跑全部测试
 swift run            # 本地运行（GameCLI）
+
+# 说明：
+# - 修改了 `Sources/**/*.swift` 或 `Package.swift`：需要跑 `swift test`
+# - 仅修改 `SaluNative/`（原生 App）：优先跑 `xcodebuild ... build`，可不跑 `swift test`
+# - 仅修改文档/CI 配置：通常可跳过构建与测试（但建议至少保证相关命令不明显失效）
 ```
 
 ### Xcode（原生 App：macOS / visionOS）
@@ -66,7 +71,7 @@ swift test --filter GameCLITests
 ## 开发流程建议
 
 - 修改前先定位模块边界：规则与状态放 `GameCore`，文件读写与终端渲染放 `GameCLI`（避免反向依赖）。
-- 提交前至少跑一次 `swift test`；CI（`.github/workflows/test.yml`）默认使用 Swift 6.2 在 macOS 上执行。
+- 提交前按影响范围验证：修改 `Sources/**/*.swift` 或 `Package.swift` 时至少跑一次 `swift test`；仅改 `SaluNative/` 时至少跑一次 `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluCRH -destination 'platform=macOS' build`。
 - 文档/剧情/玩法规则的变更优先同步到 `.giithub/docs/`，并在 PR 描述里注明对应章节。
 
 ## 提交与 Pull Request 规范

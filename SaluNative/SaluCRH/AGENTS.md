@@ -203,6 +203,8 @@ var body: some View {
 
 ## 构建与验证
 
+验证原则：只改 `SaluNative/`（SwiftUI/SwiftData/UI）时，至少跑一次 `xcodebuild ... build`；无需强制跑 `swift test`（除非同时改了 `Sources/**/*.swift` 或 `Package.swift`）。
+
 ```bash
 # macOS
 xcodebuild -project SaluNative/SaluNative.xcodeproj \
