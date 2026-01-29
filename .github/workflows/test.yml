@@ -3,8 +3,12 @@ name: Tests
 on:
   push:
     branches: [main, develop]
+    paths:
+      - "Sources/**/*.swift"
   pull_request:
     branches: [main, develop]
+    paths:
+      - "Sources/**/*.swift"
 
 permissions:
   contents: read
