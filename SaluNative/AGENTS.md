@@ -19,13 +19,18 @@
 - `SaluNative/SaluAVP/ViewModels/`：只给 `SaluAVP` 用的 ViewModels / Session（**当前阶段统一放这里**）。
 - `SaluNative/Shared/`：**当前不创建/不使用**。只有当未来需要跨 Target 复用时才引入；引入后也必须禁止 `import RealityKit`，避免把渲染实现扩散到共享层。
 
+#### ViewModels 目录约束
+
+`SaluNative/SaluAVP/ViewModels/` 用于存放 `SaluAVP` 专用的 ViewModels / Session（与 `GameCore` 对接的纯状态层）。
+
+- ✅ 允许依赖 `GameCore`
+- ✅ 建议保持“纯状态/纯桥接”：尽量不依赖 `RealityKit`（让状态层更容易测试/复用）
+
 ### 可复现性（Determinism）
 
 - 影响玩法结果的随机性必须由 `seed` 驱动，并通过 `GameCore`（或明确注入的 RNG）提供。
 - UI 层不得用“系统时间/系统随机数”参与战斗/地图/奖励等决策。
 - UI 层可以做“表现层随机”（例如抖动动画的相位），但必须不影响任何可回放/可测试的核心结果。
-
-
 
 ## 1. 目标 App：SaluAVP（Immersive-first）
 
@@ -73,8 +78,6 @@ SaluNative/Shared/
 - `SaluNative/Packages/RealityKitContent/` 用于承载 `.reality/.usdz/纹理/材质` 等内容资源（可从 Xcode 的 visionOS 模板演进）。
 - 资源加载失败时必须有降级路径（占位几何体 + 可读错误），避免沉浸空间白屏。
 
-
-
 ## 3. 与 GameCore 对接（建议做法）
 
 ### 最小可用闭环（MVP 顺序）
@@ -108,7 +111,6 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
   -destination 'platform=visionOS Simulator,name=Apple Vision Pro' \
   build
 ```
-
 
 ## 5. 常见坑（优先规避）
 
