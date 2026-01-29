@@ -4,8 +4,6 @@
 
 > 仓库总规范见根目录 `AGENTS.md`。逻辑层约束见 `Sources/GameCore/AGENTS.md`（强制遵守）。
 
----
-
 ## 0. 模块定位与边界（必须遵守）
 
 ### 依赖方向（硬约束）
@@ -27,7 +25,7 @@
 - UI 层不得用“系统时间/系统随机数”参与战斗/地图/奖励等决策。
 - UI 层可以做“表现层随机”（例如抖动动画的相位），但必须不影响任何可回放/可测试的核心结果。
 
----
+
 
 ## 1. 目标 App：SaluAVP（Immersive-first）
 
@@ -44,7 +42,8 @@
 SaluNative/SaluAVP/
 ├── SaluAVPApp.swift
 ├── AppModel.swift                 # App 级状态（路由/沉浸开关）
-├── ControlPanel/                  # 2D：入口/seed/存档/设置
+├── ControlPanel/                  # 2D：入口/seed/存档/设置/历史
+├── ViewModels/                    # App 会话/桥接（优先不依赖 RealityKit）
 └── Immersive/                     # 3D：地图/战斗/房间
 ```
 
@@ -55,8 +54,6 @@ SaluNative/Shared/
 ├── AppRoute.swift                 # 路由/状态机
 └── GameSession.swift              # 封装 RunState / BattleEngine 等（不依赖 RealityKit）
 ```
-
----
 
 ## 2. RealityKit / SwiftUI 编码约定
 
@@ -76,7 +73,7 @@ SaluNative/Shared/
 - `SaluNative/Packages/RealityKitContent/` 用于承载 `.reality/.usdz/纹理/材质` 等内容资源（可从 Xcode 的 visionOS 模板演进）。
 - 资源加载失败时必须有降级路径（占位几何体 + 可读错误），避免沉浸空间白屏。
 
----
+
 
 ## 3. 与 GameCore 对接（建议做法）
 
@@ -99,8 +96,6 @@ SaluNative/Shared/
 - App/UI 不直接散落持有 `RunState/BattleState` 的多个副本：保持一个“Source of Truth”（可放 `Shared/GameSession`）。
 - UI 的输入只产出“用户选择”（节点选择、出牌索引、目标索引等），其余都交给 `GameCore` 推进。
 
----
-
 ## 4. 构建与验证（按改动范围执行）
 
 ### visionOS 编译（必须）
@@ -114,15 +109,6 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
   build
 ```
 
-### SwiftPM 测试（按需）
-
-- 若改动涉及 `Package.swift` 或 `Sources/**`（例如 `GameCore`）：必须补跑
-
-```bash
-swift test
-```
-
----
 
 ## 5. 常见坑（优先规避）
 
