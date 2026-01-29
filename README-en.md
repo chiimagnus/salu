@@ -13,7 +13,7 @@ Supported platforms:
 
 ### Command-Line Version (CLI)
 
-> Requires Swift 6.2+, available from [swift.org](https://www.swift.org/install/)
+> Requires Swift 6.2+, available from [swift.org](https://www.swift.org/install/)，supporting macOS, Linux and Windows.
 
 ```bash
 # Clone the repository

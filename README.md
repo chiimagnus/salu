@@ -15,7 +15,7 @@
 
 ### 命令行版本（CLI）
 
-> 需要 Swift 6.2+，可从 [swift.org](https://www.swift.org/install/) 下载
+> 需要 Swift 6.2+，可从 [swift.org](https://www.swift.org/install/) 下载，支持macOS、Linux和Windows。
 
 ```bash
 # 克隆仓库
@@ -25,21 +25,6 @@ cd salu
 # 运行游戏（随机种子）
 swift run
 ```
-
-#### macOS / Linux 使用方法
-
-```bash
-# 解压（以 macOS 为例）
-tar -xzf salu-macos.tar.gz
-
-# 运行
-./salu-macos
-```
-
-#### Windows 使用方法
-
-1. 解压 `salu-windows-x86_64.zip`
-2. 双击 `salu-windows-x86_64.exe` 或在命令提示符中运行
 
 ## 🤝 参与贡献
 
