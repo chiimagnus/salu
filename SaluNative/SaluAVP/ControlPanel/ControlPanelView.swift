@@ -60,6 +60,8 @@ struct ControlPanelView: View {
             return "map"
         case .room(_, let roomType):
             return "room(\(roomType.rawValue))"
+        case .runOver(_, let won, let floor):
+            return "runOver(won:\(won), floor:\(floor))"
         }
     }
 }

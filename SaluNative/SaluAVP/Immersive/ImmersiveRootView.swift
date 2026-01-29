@@ -102,6 +102,11 @@ struct ImmersiveRootView: View {
 
             // Fallback: place in front of the map origin.
             return (true, [0, 0.25, -0.55])
+
+        case .runOver(let lastNodeId, _, _):
+            // End-of-run panel should be easy to find: keep it near the map origin instead of far away at the Boss node.
+            _ = lastNodeId
+            return (true, [0, 0.25, -0.55])
         }
     }
 
@@ -260,6 +265,21 @@ private struct RoomPanel: View {
                         .foregroundStyle(.secondary)
 
                     Button("Complete") {
+                        onComplete()
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+
+            case .runOver(_, let won, let floor):
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(won ? "🎉 Victory" : "💀 Defeat")
+                        .font(.headline)
+
+                    Text("Run ended at Act \(floor)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Button("Back to Map") {
                         onComplete()
                     }
                     .buttonStyle(.borderedProminent)
