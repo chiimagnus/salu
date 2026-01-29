@@ -86,16 +86,11 @@ SaluNative/
 ├── SaluAVP/                         # ✅ visionOS-only App（RealityKit 在此处）
 │   ├── SaluAVPApp.swift
 │   ├── ControlPanel/                # 2D 控制面板（入口/seed/设置/历史）
+│   ├── ViewModels/                  # 会话/路由/桥接（当前阶段放在 Target 内）
 │   └── Immersive/                   # 3D 体验主体（ImmersiveSpace）
 │       ├── ImmersiveRootView.swift
-│       ├── MapScene.swift
-│       └── BattleScene.swift
-└── Shared/                          # 可选：跨 Target 共享（禁止 RealityKit）
-    ├── AppRoute.swift
-    ├── GameSession.swift
-    └── ViewModels/
-        ├── RunSession.swift
-        └── BattleSession.swift
+│       └── (P2) Battle 相关视图/场景
+└── Shared/                          # 可选：跨 Target 共享（禁止 RealityKit；目前不启用）
 ```
 
 ### 状态机（建议）
@@ -159,20 +154,30 @@ SaluNative/
 - DoD：
   - Simulator 可运行；能在 2D 界面控制 ImmersiveSpace 打开/关闭，不崩溃。
 
-### P1（必须）：3D 地图闭环（Map Loop）
+### ✅P1（必须）：3D 地图闭环（Map Loop）
 
 - 产出：
   - ImmersiveSpace 中渲染地图节点（占位几何体即可）。
   - 节点状态：可达/已完成/当前节点（至少用三态材质/颜色区分）。
   - 选择节点 → `RunState.enterNode(_:)` → 路由到对应房间（先占位房间）→ `completeCurrentNode()` 返回地图。
 - DoD：
-  - 能从 Act1 开始一路点击推进到 Boss，并触发“run over/won”。
+  - ✅（功能已实现）能从 Act1 开始一路点击推进到 Boss，并触发“run over/won”（请按下述步骤回归确认）。
+
+当前 P1 的手动验收步骤（Simulator）：
+
+1. 打开 `SaluAVP`，在 2D 控制面板点击 `New Run`。
+2. 点击 `Show Immersive` 进入沉浸空间。
+3. 在地图上点选高亮（可达）的节点，出现房间面板（含 `Complete` 按钮）。
+4. 点击 `Complete` 返回地图，观察：
+   - 当前节点变为已完成
+   - 下一层节点被解锁为可达（高亮）
+5. 重复推进，直到进入 Boss，并最终触发 run 结束状态（`RunState.isOver/won`）。
 
 ### P2（重要）：3D 战斗闭环（Battle Loop）
 
 - 产出：
   - ImmersiveSpace 中渲染：玩家/敌人/手牌/能量/日志（形式不限，先可读可用）。
-  - Session 桥接 `GameCore` 的战斗推进（建议放在 `SaluNative/Shared/`，以便未来与 macOS 复用）。
+  - Session 桥接 `GameCore` 的战斗推进（当前阶段优先放在 `SaluNative/SaluAVP/ViewModels/`；需要跨 Target 复用时再引入 `SaluNative/Shared/`）。
   - 战斗结束后：更新 `RunState`（例如 `updateFromBattle(playerHP:)`）→ 应用奖励/推进地图（奖励可先最小化）。
 - DoD：
   - 战斗可完整结束（胜/负），并能回到地图继续推进。

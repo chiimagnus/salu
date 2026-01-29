@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		D84785632F2AE7AF00B5018E /* RealityKitContent in Frameworks */ = {isa = PBXBuildFile; productRef = D84785622F2AE7AF00B5018E /* RealityKitContent */; };
+		E3BF49706FE636B4CE377B3C /* GameCore in Frameworks */ = {isa = PBXBuildFile; productRef = 8C0358095917BA5785195E11 /* GameCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -42,6 +43,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D84785632F2AE7AF00B5018E /* RealityKitContent in Frameworks */,
+				E3BF49706FE636B4CE377B3C /* GameCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -93,6 +95,7 @@
 			);
 			name = SaluAVP;
 			packageProductDependencies = (
+				8C0358095917BA5785195E11 /* GameCore */,
 				D84785622F2AE7AF00B5018E /* RealityKitContent */,
 			);
 			productName = SaluAVP;
@@ -371,6 +374,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		8C0358095917BA5785195E11 /* GameCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = GameCore;
+		};
 		D84785622F2AE7AF00B5018E /* RealityKitContent */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RealityKitContent;
