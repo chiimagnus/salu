@@ -6,11 +6,10 @@ A cross-platform (macOS/Linux/Windows) turn-based card-battle game inspired by *
 
 ### Option 1: Native App (in development 🚧)
 
-Open `SaluNative/SaluNative.xcodeproj` in Xcode and run `SaluCRH`.
+Open `SaluNative/SaluNative.xcodeproj` in Xcode and run `SaluAVP`.
 
 Supported platforms:
-- **macOS** 14+ (supported ✅)
-- **visionOS** 2+ (in progress ⏳)
+- **visionOS** 2+ (in development 🚧)
 
 > Requirements: Xcode 16+ / macOS 14+
 
@@ -60,4 +59,4 @@ This project is layered by architecture, and each module follows its own guideli
 
 - `GameCore`: pure logic layer (rules/state/battle/cards/enemies/map/save snapshot models), see [GameCore guidelines](Sources/GameCore/AGENTS.md)
 - `GameCLI`: CLI/TUI presentation layer (terminal rendering/input/room flow/persistence), see [GameCLI guidelines](Sources/GameCLI/AGENTS.md)
-- `SaluNative/SaluCRH`: native app (Multiplatform SwiftUI + SwiftData, macOS/visionOS), see [SaluCRH guidelines](SaluNative/SaluCRH/AGENTS.md)
+- `SaluNative/SaluAVP`: native app (visionOS, ImmersiveSpace + RealityKit), see `.github/plans/Plan AVP - Apple Vision Pro 原生 3D 实现（SaluAVP）.md`

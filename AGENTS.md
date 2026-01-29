@@ -6,10 +6,12 @@ Salu 是一个跨平台（macOS/Linux/Windows）的回合制卡牌战斗游戏�
 
 - `Sources/GameCore/`：纯逻辑层（规则/状态/战斗/卡牌/敌人/地图/存档快照模型）。禁止 I/O、禁止 UI；详细约束见 `Sources/GameCore/AGENTS.md`。
 - `Sources/GameCLI/`：CLI/TUI 表现层（终端渲染/输入/房间流程/持久化落盘）。详细约束见 `Sources/GameCLI/AGENTS.md`。
-- `SaluNative/SaluCRH/`：原生 App（Multiplatform SwiftUI + SwiftData，支持 macOS/visionOS）。通过 Xcode 项目管理，依赖 `GameCore`。采用单一 Target + 条件编译 (`#if os()`) 处理平台差异。详见 `SaluNative/SaluCRH/AGENTS.md`。
+- `SaluNative/`：原生 App（Xcode 管理，依赖 `GameCore`，不依赖 `GameCLI`）
+  - `SaluNative/SaluAVP/`：Apple Vision Pro（visionOS）App（原生 3D：ImmersiveSpace + RealityKit，主线）
+  - （可选）`SaluNative/Shared/`：跨 Target 共享的状态机/桥接层（禁止引入 RealityKit）
 - `Tests/`：`GameCoreTests`、`GameCLITests`、`GameCLIUITests`。
-- `.giithub/docs/`：设定、剧情与玩法规则说明（写内容/做 UI 时优先对齐这里）。
-- `.giithub/plans/`：技术方案与执行计划。
+- `.github/docs/`：设定、剧情与玩法规则说明（写内容/做 UI 时优先对齐这里）。
+- `.github/plans/`：技术方案与执行计划。
 
 ## 构建、测试和开发命令
 
@@ -26,28 +28,22 @@ swift run            # 本地运行（GameCLI）
 # - 仅修改文档/CI 配置：通常可跳过构建与测试（但建议至少保证相关命令不明显失效）
 ```
 
-### Xcode（原生 App：macOS / visionOS）
+### Xcode（原生 App：visionOS）
 
 ```bash
 # 或直接双击 SaluNative/SaluNative.xcodeproj
 open SaluNative/SaluNative.xcodeproj
 
-# 命令行编译（macOS）
-xcodebuild -project SaluNative/SaluNative.xcodeproj \
-  -scheme SaluCRH \
-  -destination 'platform=macOS' \
-  build
-
 # 命令行编译（visionOS Simulator）
 xcodebuild -project SaluNative/SaluNative.xcodeproj \
-  -scheme SaluCRH \
+  -scheme SaluAVP \
   -destination 'platform=visionOS Simulator,name=Apple Vision Pro' \
   build
 ```
 
 ## 本地存储与配置
 
-- 本地存储默认位置与文件结构见 `.giithub/docs/本地存储说明.md`（run 存档、战斗历史、设置、调试日志）。
+- 本地存储默认位置与文件结构见 `.github/docs/本地存储说明.md`（run 存档、战斗历史、设置、调试日志）。
 - 需要隔离数据（测试/调试/复现 bug）时，优先用环境变量覆盖数据目录：`SALU_DATA_DIR=/tmp/salu-test`。
 - 复现战斗/地图行为时建议固定随机种子：`swift run GameCLI --seed 1`（也可用 `--seed=1`）。
 
@@ -71,8 +67,8 @@ swift test --filter GameCLITests
 ## 开发流程建议
 
 - 修改前先定位模块边界：规则与状态放 `GameCore`，文件读写与终端渲染放 `GameCLI`（避免反向依赖）。
-- 提交前按影响范围验证：修改 `Sources/**/*.swift` 或 `Package.swift` 时至少跑一次 `swift test`；仅改 `SaluNative/` 时至少跑一次 `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluCRH -destination 'platform=macOS' build`。
-- 文档/剧情/玩法规则的变更优先同步到 `.giithub/docs/`，并在 PR 描述里注明对应章节。
+- 提交前按影响范围验证：修改 `Sources/**/*.swift` 或 `Package.swift` 时至少跑一次 `swift test`；仅改 `SaluNative/` 时至少跑一次 `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluAVP -destination 'platform=visionOS Simulator,name=Apple Vision Pro' build`。
+- 文档/剧情/玩法规则的变更优先同步到 `.github/docs/`，并在 PR 描述里注明对应章节。
 
 ## 提交与 Pull Request 规范
 
