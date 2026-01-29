@@ -6,7 +6,10 @@ Salu 是一个跨平台（macOS/Linux/Windows）的回合制卡牌战斗游戏�
 
 - `Sources/GameCore/`：纯逻辑层（规则/状态/战斗/卡牌/敌人/地图/存档快照模型）。禁止 I/O、禁止 UI；详细约束见 `Sources/GameCore/AGENTS.md`。
 - `Sources/GameCLI/`：CLI/TUI 表现层（终端渲染/输入/房间流程/持久化落盘）。详细约束见 `Sources/GameCLI/AGENTS.md`。
-- `SaluNative/SaluCRH/`：原生 App（Multiplatform SwiftUI + SwiftData，支持 macOS/visionOS）。通过 Xcode 项目管理，依赖 `GameCore`。采用单一 Target + 条件编译 (`#if os()`) 处理平台差异。详见 `SaluNative/SaluCRH/AGENTS.md`。
+- `SaluNative/`：原生 App（Xcode 管理，依赖 `GameCore`，不依赖 `GameCLI`）
+  - `SaluNative/SaluCRH/`：macOS App（2D SwiftUI，可选/不阻塞）
+  - `SaluNative/SaluAVP/`：Apple Vision Pro（visionOS）App（原生 3D：ImmersiveSpace + RealityKit，主线）
+  - （可选）`SaluNative/Shared/`：跨 Target 共享的状态机/桥接层（禁止引入 RealityKit）
 - `Tests/`：`GameCoreTests`、`GameCLITests`、`GameCLIUITests`。
 - `.giithub/docs/`：设定、剧情与玩法规则说明（写内容/做 UI 时优先对齐这里）。
 - `.giithub/plans/`：技术方案与执行计划。
@@ -40,7 +43,7 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
 
 # 命令行编译（visionOS Simulator）
 xcodebuild -project SaluNative/SaluNative.xcodeproj \
-  -scheme SaluCRH \
+  -scheme SaluAVP \
   -destination 'platform=visionOS Simulator,name=Apple Vision Pro' \
   build
 ```
