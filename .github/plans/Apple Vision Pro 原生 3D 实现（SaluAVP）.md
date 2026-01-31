@@ -1,7 +1,7 @@
 ---
 title: Apple Vision Pro 原生 3D 实现（SaluAVP）
 date: 2026-01-29
-updated: 2026-01-29
+updated: 2026-01-31
 architecture: visionOS-only App + Immersive-first (RealityKit)
 target: SaluAVP
 ---
@@ -129,30 +129,30 @@ SaluNative/
 
 ### 交互映射（MVP）
 
-- 地图：指向/点选节点 → 进入节点 → 触发房间 → 完成节点 → 回到地图。
+- ✅ 地图：指向/点选节点 → 进入节点 → 触发房间 → 完成节点 → 回到地图。
 - 战斗：选卡 →（若需要）选目标 → 出牌 → 结束回合。
 - 强制反馈（所有 MVP 交互都要有）：
-  - 可交互/不可交互（灰度/高亮）
+  - ✅ 可交互/不可交互（灰度/高亮）
   - 选中态（描边/发光/抬升）
   - 结果反馈（数值飘字/简易日志/状态图标均可）
 
 ### 2D 控制面板（MVP）
 
-- New Run：输入 seed（或随机生成后展示）并开始。
+- ✅ New Run：输入 seed（或随机生成后展示）并开始。
 - Continue：从 App 层持久化恢复（如果 P3 之前未做存档，可先隐藏/置灰）。
-- Immersive 控制：进入/退出 ImmersiveSpace，显示当前 run 的关键摘要（楼层/金币/HP）。
+- ✅ Immersive 控制：进入/退出 ImmersiveSpace，显示当前 run 的关键摘要（楼层/金币/HP）。
 
 ---
 
 ## 5. 执行计划（以 AVP 为主）
 
-### P0（必须）：工程打通（SaluAVP Skeleton）
+### ✅P0（必须）：工程打通（SaluAVP Skeleton）
 
 - 产出：
-  - `SaluAVP` 目标可编译；能 `import GameCore`。
-  - 2D 控制面板 + 可进入的 ImmersiveSpace（占位场景：1 个地板 + 1 个可点击物体）。
+  - ✅ `SaluAVP` 目标可编译；能 `import GameCore`。
+  - ✅ 2D 控制面板 + 可进入的 ImmersiveSpace（占位场景：地板 + 可点击节点）。
 - DoD：
-  - Simulator 可运行；能在 2D 界面控制 ImmersiveSpace 打开/关闭，不崩溃。
+  - ✅ Simulator 可运行；能在 2D 界面控制 ImmersiveSpace 打开/关闭，不崩溃。
 
 ### ✅P1（必须）：3D 地图闭环（Map Loop）
 
