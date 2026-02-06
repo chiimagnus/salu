@@ -5,14 +5,18 @@ import GameCore
 
 struct ImmersiveRootView: View {
     @Environment(RunSession.self) private var runSession
+    @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
+    @Environment(\.openWindow) private var openWindow
 
     private let nodeNamePrefix = "node:"
     private let cardNamePrefix = "card:"
     private let roomPanelAttachmentId = "roomPanel"
     private let battleHudAttachmentId = "battleHUD"
+    private let mapHudAttachmentId = "mapHUD"
     private let mapLayerPrefix = "mapLayer_floor_"
     private let uiLayerName = "uiLayer"
     private let battleLayerName = "battleLayer"
+    private let hudAnchorName = "hudAnchor"
     private let battleHeadAnchorName = "battleHeadAnchor"
     private let battleHandRootName = "battleHandRoot"
     private let battleEnemyRootName = "battleEnemyRoot"
@@ -29,6 +33,12 @@ struct ImmersiveRootView: View {
             let uiLayer = RealityKit.Entity()
             uiLayer.name = uiLayerName
             mapRoot.addChild(uiLayer)
+
+            // Always-on head anchor for 2D attachments (HUDs). Must NOT live under battleLayer,
+            // otherwise it will be disabled when we hide battleLayer.
+            let hudAnchor = AnchorEntity(.head)
+            hudAnchor.name = hudAnchorName
+            mapRoot.addChild(hudAnchor)
 
             let battleLayer = RealityKit.Entity()
             battleLayer.name = battleLayerName
@@ -63,6 +73,13 @@ struct ImmersiveRootView: View {
             }()
 
             uiLayer.children.forEach { $0.removeFromParent() }
+
+            let hudAnchor = mapRoot.findEntity(named: hudAnchorName) ?? {
+                let hudAnchor = AnchorEntity(.head)
+                hudAnchor.name = hudAnchorName
+                mapRoot.addChild(hudAnchor)
+                return hudAnchor
+            }()
 
             guard let run = runSession.runState else {
                 mapRoot.children.first(where: { $0.name.hasPrefix(mapLayerPrefix) })?.removeFromParent()
@@ -144,16 +161,21 @@ struct ImmersiveRootView: View {
                 hud.components.set(InputTargetComponent())
                 hud.isEnabled = isInBattle
 
-                if let headAnchor = battleLayer.findEntity(named: battleHeadAnchorName) {
-                    headAnchor.children.first(where: { $0.name == battleHudAttachmentId })?.removeFromParent()
-                    // Place HUD near the top-right in the user's view.
-                    hud.position = [0.26, 0.20, -0.38]
-                    headAnchor.addChild(hud)
-                } else {
-                    uiLayer.children.first(where: { $0.name == battleHudAttachmentId })?.removeFromParent()
-                    hud.position = [0, 0.25, -0.55]
-                    uiLayer.addChild(hud)
-                }
+                hudAnchor.children.first(where: { $0.name == battleHudAttachmentId })?.removeFromParent()
+                    // Place HUD near the top-right in the user's view (avoid clipping on Simulator).
+                    hud.position = [0.18, 0.15, -0.50]
+                hudAnchor.addChild(hud)
+            }
+
+            if let hud = attachments.entity(for: mapHudAttachmentId) {
+                hud.name = mapHudAttachmentId
+                hud.components.set(BillboardComponent())
+                hud.components.set(InputTargetComponent())
+                hud.isEnabled = !isInBattle
+
+                hudAnchor.children.first(where: { $0.name == mapHudAttachmentId })?.removeFromParent()
+                    hud.position = [0.18, 0.17, -0.50]
+                hudAnchor.addChild(hud)
             }
         } attachments: {
             Attachment(id: roomPanelAttachmentId) {
@@ -161,12 +183,22 @@ struct ImmersiveRootView: View {
                     route: runSession.route,
                     onCompleteRoom: { runSession.completeCurrentRoomAndReturnToMap() },
                     onNewRun: { runSession.startNewRun() },
-                    onClose: { runSession.resetToControlPanel() }
+                    onClose: {
+                        Task { @MainActor in
+                            runSession.resetToControlPanel()
+                            await dismissImmersiveSpace()
+                            openWindow(id: AppModel.controlPanelWindowID)
+                        }
+                    }
                 )
             }
 
             Attachment(id: battleHudAttachmentId) {
                 BattleHUDPanel()
+            }
+
+            Attachment(id: mapHudAttachmentId) {
+                MapHUDPanel()
             }
         }
         .gesture(

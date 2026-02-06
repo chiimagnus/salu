@@ -108,6 +108,7 @@ final class RunSession {
         guard var runState else { return }
 
         let nodeId = battleNodeId ?? runState.currentNodeId ?? "unknown"
+        let roomTypeForRewards = battleRoomType ?? .battle
         runState.updateFromBattle(playerHP: battleEngine.state.player.currentHP)
         self.runState = runState
 
@@ -119,6 +120,16 @@ final class RunSession {
         }
 
         if battleEngine.state.playerWon == true {
+            let rewardContext = RewardContext(
+                seed: runState.seed,
+                floor: runState.floor,
+                currentRow: runState.currentRow,
+                nodeId: nodeId,
+                roomType: roomTypeForRewards
+            )
+            let goldEarned = GoldRewardStrategy.generateGoldReward(context: rewardContext)
+            runState.gold += goldEarned
+
             runState.completeCurrentNode()
             self.runState = runState
             if runState.isOver {
