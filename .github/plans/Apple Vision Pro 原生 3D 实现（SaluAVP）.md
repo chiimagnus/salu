@@ -173,7 +173,7 @@ SaluNative/
    - 下一层节点被解锁为可达（高亮）
 5. 重复推进，直到进入 Boss，并最终触发 run 结束状态（`RunState.isOver/won`）。
 
-### P2（重要）：3D 战斗闭环（Battle Loop）
+### ✅P2（重要）：3D 战斗闭环（Battle Loop）
 
 - 产出：
   - ImmersiveSpace 中渲染：玩家/敌人/手牌/能量/日志（形式不限，先可读可用）。
