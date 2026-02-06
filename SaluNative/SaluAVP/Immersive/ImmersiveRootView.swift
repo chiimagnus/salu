@@ -7,9 +7,15 @@ struct ImmersiveRootView: View {
     @Environment(RunSession.self) private var runSession
 
     private let nodeNamePrefix = "node:"
+    private let cardNamePrefix = "card:"
     private let roomPanelAttachmentId = "roomPanel"
+    private let battleHudAttachmentId = "battleHUD"
     private let mapLayerPrefix = "mapLayer_floor_"
     private let uiLayerName = "uiLayer"
+    private let battleLayerName = "battleLayer"
+    private let battleHeadAnchorName = "battleHeadAnchor"
+    private let battleHandRootName = "battleHandRoot"
+    private let battleEnemyRootName = "battleEnemyRoot"
 
     var body: some View {
         RealityView { content, attachments in
@@ -24,6 +30,27 @@ struct ImmersiveRootView: View {
             uiLayer.name = uiLayerName
             mapRoot.addChild(uiLayer)
 
+            let battleLayer = RealityKit.Entity()
+            battleLayer.name = battleLayerName
+            battleLayer.isEnabled = false
+
+            addBattleFloor(to: battleLayer)
+
+            let enemyRoot = RealityKit.Entity()
+            enemyRoot.name = battleEnemyRootName
+            enemyRoot.position = [0, 0.14, -1.0]
+            battleLayer.addChild(enemyRoot)
+
+            let headAnchor = AnchorEntity(.head)
+            headAnchor.name = battleHeadAnchorName
+            battleLayer.addChild(headAnchor)
+
+            let handRoot = RealityKit.Entity()
+            handRoot.name = battleHandRootName
+            handRoot.position = [0, -0.12, -0.35]
+            headAnchor.addChild(handRoot)
+
+            mapRoot.addChild(battleLayer)
             content.add(mapRoot)
         } update: { content, attachments in
             guard let mapRoot = content.entities.first(where: { $0.name == "mapRoot" }) else { return }
@@ -39,6 +66,7 @@ struct ImmersiveRootView: View {
 
             guard let run = runSession.runState else {
                 mapRoot.children.first(where: { $0.name.hasPrefix(mapLayerPrefix) })?.removeFromParent()
+                mapRoot.findEntity(named: battleLayerName)?.isEnabled = false
                 return
             }
 
@@ -60,6 +88,46 @@ struct ImmersiveRootView: View {
                 mapLayer = newLayer
             }
 
+            let battleLayer = mapRoot.findEntity(named: battleLayerName) ?? {
+                let battleLayer = RealityKit.Entity()
+                battleLayer.name = battleLayerName
+                battleLayer.isEnabled = false
+                addBattleFloor(to: battleLayer)
+
+                let enemyRoot = RealityKit.Entity()
+                enemyRoot.name = battleEnemyRootName
+                enemyRoot.position = [0, 0.14, -1.0]
+                battleLayer.addChild(enemyRoot)
+
+                let headAnchor = AnchorEntity(.head)
+                headAnchor.name = battleHeadAnchorName
+                battleLayer.addChild(headAnchor)
+
+                let handRoot = RealityKit.Entity()
+                handRoot.name = battleHandRootName
+                handRoot.position = [0, -0.12, -0.35]
+                headAnchor.addChild(handRoot)
+
+                mapRoot.addChild(battleLayer)
+                return battleLayer
+            }()
+
+            let isInBattle: Bool
+            if case .battle = runSession.route {
+                isInBattle = true
+            } else {
+                isInBattle = false
+            }
+
+            mapLayer.isEnabled = !isInBattle
+            battleLayer.isEnabled = isInBattle
+
+            if isInBattle, let engine = runSession.battleEngine {
+                renderBattle(engine: engine, in: battleLayer)
+            } else {
+                clearBattle(in: battleLayer)
+            }
+
             if let panel = attachments.entity(for: roomPanelAttachmentId) {
                 panel.name = roomPanelAttachmentId
                 panel.components.set(BillboardComponent())
@@ -68,6 +136,23 @@ struct ImmersiveRootView: View {
                 panel.isEnabled = isVisible
                 panel.position = position
                 uiLayer.addChild(panel)
+            }
+
+            if let hud = attachments.entity(for: battleHudAttachmentId) {
+                hud.name = battleHudAttachmentId
+                hud.components.set(BillboardComponent())
+                hud.components.set(InputTargetComponent())
+                hud.isEnabled = isInBattle
+
+                if let headAnchor = battleLayer.findEntity(named: battleHeadAnchorName) {
+                    headAnchor.children.first(where: { $0.name == battleHudAttachmentId })?.removeFromParent()
+                    hud.position = [0, 0.12, -0.22]
+                    headAnchor.addChild(hud)
+                } else {
+                    uiLayer.children.first(where: { $0.name == battleHudAttachmentId })?.removeFromParent()
+                    hud.position = [0, 0.25, -0.55]
+                    uiLayer.addChild(hud)
+                }
             }
         } attachments: {
             Attachment(id: roomPanelAttachmentId) {
@@ -78,15 +163,30 @@ struct ImmersiveRootView: View {
                     onClose: { runSession.resetToControlPanel() }
                 )
             }
+
+            Attachment(id: battleHudAttachmentId) {
+                BattleHUDPanel()
+            }
         }
         .gesture(
             SpatialTapGesture()
                 .targetedToAnyEntity()
                 .onEnded { value in
-                    guard runSession.route == .map else { return }
-                    guard value.entity.name.hasPrefix(nodeNamePrefix) else { return }
-                    let nodeId = String(value.entity.name.dropFirst(nodeNamePrefix.count))
-                    runSession.selectAccessibleNode(nodeId)
+                    switch runSession.route {
+                    case .map:
+                        guard value.entity.name.hasPrefix(nodeNamePrefix) else { return }
+                        let nodeId = String(value.entity.name.dropFirst(nodeNamePrefix.count))
+                        runSession.selectAccessibleNode(nodeId)
+
+                    case .battle:
+                        guard value.entity.name.hasPrefix(cardNamePrefix) else { return }
+                        let suffix = value.entity.name.dropFirst(cardNamePrefix.count)
+                        guard let handIndex = Int(suffix) else { return }
+                        runSession.playCard(handIndex: handIndex)
+
+                    case .room, .runOver:
+                        break
+                    }
                 }
         )
     }
@@ -122,6 +222,115 @@ struct ImmersiveRootView: View {
         floor.components.set(CollisionComponent(shapes: [.generateBox(size: [2.8, 0.01, 4.2])]))
         floor.components.set(InputTargetComponent())
         root.addChild(floor)
+    }
+
+    private func addBattleFloor(to root: RealityKit.Entity) {
+        let floorEntity = ModelEntity(
+            mesh: .generateBox(size: [2.8, 0.01, 2.8]),
+            materials: [SimpleMaterial(color: .black.withAlphaComponent(0.15), isMetallic: false)]
+        )
+        floorEntity.name = "battleFloor"
+        floorEntity.position = [0, -0.01, -1.0]
+        root.addChild(floorEntity)
+    }
+
+    private func clearBattle(in battleLayer: RealityKit.Entity) {
+        battleLayer.findEntity(named: battleEnemyRootName)?.children.forEach { $0.removeFromParent() }
+        battleLayer.findEntity(named: battleHeadAnchorName)?
+            .findEntity(named: battleHandRootName)?
+            .children
+            .forEach { $0.removeFromParent() }
+    }
+
+    private func renderBattle(engine: BattleEngine, in battleLayer: RealityKit.Entity) {
+        let enemyRoot = battleLayer.findEntity(named: battleEnemyRootName) ?? {
+            let root = RealityKit.Entity()
+            root.name = battleEnemyRootName
+            root.position = [0, 0.14, -1.0]
+            battleLayer.addChild(root)
+            return root
+        }()
+
+        enemyRoot.children.forEach { $0.removeFromParent() }
+
+        if let enemy = engine.state.enemies.first {
+            let enemyEntity = makeEnemyEntity(enemy: enemy)
+            enemyEntity.position = .zero
+            enemyRoot.addChild(enemyEntity)
+        }
+
+        let headAnchor = battleLayer.findEntity(named: battleHeadAnchorName) ?? {
+            let anchor = AnchorEntity(.head)
+            anchor.name = battleHeadAnchorName
+            battleLayer.addChild(anchor)
+            return anchor
+        }()
+
+        let handRoot = headAnchor.findEntity(named: battleHandRootName) ?? {
+            let root = RealityKit.Entity()
+            root.name = battleHandRootName
+            root.position = [0, -0.12, -0.35]
+            headAnchor.addChild(root)
+            return root
+        }()
+
+        handRoot.children.forEach { $0.removeFromParent() }
+
+        let hand = engine.state.hand
+        guard !hand.isEmpty else { return }
+
+        let playable = Set(engine.playableCardIndices)
+        let count = hand.count
+        let center = Float(count - 1) / 2.0
+
+        for (index, card) in hand.enumerated() {
+            let isPlayable = playable.contains(index)
+            let entity = makeCardEntity(card: card, isPlayable: isPlayable)
+            entity.name = "\(cardNamePrefix)\(index)"
+
+            let dx = Float(index) - center
+            let x = dx * 0.07
+            let z = -abs(dx) * 0.02
+            entity.position = [x, 0, z]
+
+            let yaw = dx * 0.12
+            let pitch: Float = -0.18
+            entity.orientation = simd_quatf(angle: yaw, axis: [0, 1, 0]) * simd_quatf(angle: pitch, axis: [1, 0, 0])
+
+            handRoot.addChild(entity)
+        }
+    }
+
+    private func makeEnemyEntity(enemy: GameCore.Entity) -> ModelEntity {
+        let material = SimpleMaterial(color: UIColor.systemRed.withAlphaComponent(0.85), isMetallic: true)
+        let mesh = MeshResource.generateSphere(radius: 0.14)
+        let entity = ModelEntity(mesh: mesh, materials: [material])
+        entity.name = "enemy:0"
+        entity.components.set(CollisionComponent(shapes: [.generateSphere(radius: 0.14)]))
+        entity.components.set(InputTargetComponent())
+        return entity
+    }
+
+    private func makeCardEntity(card: Card, isPlayable: Bool) -> ModelEntity {
+        let def = CardRegistry.require(card.cardId)
+        let baseColor: UIColor
+        switch def.type {
+        case .attack:
+            baseColor = .systemRed
+        case .skill:
+            baseColor = .systemBlue
+        case .power:
+            baseColor = .systemPurple
+        case .consumable:
+            baseColor = .systemGreen
+        }
+
+        let color = isPlayable ? baseColor.withAlphaComponent(0.9) : baseColor.withAlphaComponent(0.25)
+        let material = SimpleMaterial(color: color, isMetallic: false)
+        let entity = ModelEntity(mesh: .generateBox(size: [0.06, 0.002, 0.09]), materials: [material])
+        entity.components.set(CollisionComponent(shapes: [.generateBox(size: [0.065, 0.02, 0.095])]))
+        entity.components.set(InputTargetComponent())
+        return entity
     }
 
     private func updateMapState(run: RunState, in mapLayer: RealityKit.Entity) {
