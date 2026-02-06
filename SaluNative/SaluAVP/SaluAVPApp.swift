@@ -12,7 +12,6 @@ struct SaluAVPApp: App {
                 .environment(appModel)
                 .environment(runSession)
         }
-        .windowStyle(.volumetric)
 
         ImmersiveSpace(id: appModel.immersiveSpaceID) {
             ImmersiveRootView()

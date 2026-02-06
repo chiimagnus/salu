@@ -68,7 +68,7 @@ struct ControlPanelView: View {
     }
 }
 
-#Preview(windowStyle: .volumetric) {
+#Preview {
     ControlPanelView()
         .environment(AppModel())
         .environment(RunSession())
