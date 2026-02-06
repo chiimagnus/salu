@@ -27,7 +27,7 @@
 
 ### P2.0：记录 deferred（避免遗忘/范围漂移）
 
-### Task 0: 把“甩牌命中”和“多敌人”记录为后续里程碑
+### ✅Task 0: 把“甩牌命中”和“多敌人”记录为后续里程碑
 
 **Files:**
 -Create: `.github/plans/2026-02-06-SaluAVP-P2-3D-battle-loop-implementation-plan.md`
@@ -42,7 +42,7 @@ Verify: 无（文档变更）。
 
 ### P2.1：稳定派生 seed（可测试，避免 UI 层随意拼）
 
-### Task 1: 在 GameCore 增加稳定字符串哈希 + seed 派生工具
+### ✅Task 1: 在 GameCore 增加稳定字符串哈希 + seed 派生工具
 
 **Files:**
 -Create: `Sources/GameCore/Kernel/StableHash.swift`
@@ -70,7 +70,7 @@ Expected: PASS
 
 ### P2.2：RunSession 增加战斗路由与引擎生命周期
 
-### Task 2: 扩展 RunSession 支持 `.battle` route + BattleEngine
+### ✅Task 2: 扩展 RunSession 支持 `.battle` route + BattleEngine
 
 **Files:**
 -Modify: `SaluNative/SaluAVP/ViewModels/RunSession.swift`
