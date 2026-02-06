@@ -51,6 +51,27 @@ struct BattleHUDPanel: View {
                     .foregroundStyle(.secondary)
             }
 
+            if let engine, case .foresight(let options, let fromCount) = engine.pendingInput {
+                Divider()
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Foresight \(fromCount) → pick 1")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    ForEach(Array(options.prefix(6).enumerated()), id: \.offset) { index, card in
+                        let def = CardRegistry.require(card.cardId)
+                        Button {
+                            runSession.submitForesightChoice(index: index)
+                        } label: {
+                            Text(def.name.resolved(for: .zhHans))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                }
+            }
+
             HStack(spacing: 10) {
                 Button("End Turn") {
                     runSession.endTurn()

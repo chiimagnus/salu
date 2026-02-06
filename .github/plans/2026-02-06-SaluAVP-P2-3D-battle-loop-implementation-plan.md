@@ -125,6 +125,7 @@ Verify: `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluAVP -de
 - UX 小改（来自截图反馈）：
   - HUD 缩小，默认收起日志（`Log` 按钮展开）
   - 提供 `Exit`（退出 Immersive 并打开控制面板窗口）
+  - 支持最小 `BattlePendingInput.foresight` 选牌（避免战斗卡死）
 
 **Step 2: 在 `ImmersiveRootView` 中新增 attachment**
 - 仅当 `route == .battle` 时显示

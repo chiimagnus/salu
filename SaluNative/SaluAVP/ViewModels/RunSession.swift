@@ -22,8 +22,6 @@ final class RunSession {
     private(set) var battleState: BattleState?
     private var battleNodeId: String?
     private var battleRoomType: RoomType?
-    private var pendingGoldEarned: Int?
-    private var pendingCardOffer: CardRewardOffer?
 
     func startNewRun() {
         let seed: UInt64
@@ -44,8 +42,6 @@ final class RunSession {
         battleState = nil
         battleNodeId = nil
         battleRoomType = nil
-        pendingGoldEarned = nil
-        pendingCardOffer = nil
         route = .map
     }
 
@@ -90,6 +86,7 @@ final class RunSession {
     func playCard(handIndex: Int) {
         guard routeIsBattle else { return }
         guard let battleEngine else { return }
+        guard battleEngine.pendingInput == nil else { return }
         _ = battleEngine.handleAction(.playCard(handIndex: handIndex, targetEnemyIndex: nil))
         battleState = battleEngine.state
         finishBattleIfNeeded()
@@ -98,6 +95,7 @@ final class RunSession {
     func endTurn() {
         guard routeIsBattle else { return }
         guard let battleEngine else { return }
+        guard battleEngine.pendingInput == nil else { return }
         _ = battleEngine.handleAction(.endTurn)
         battleState = battleEngine.state
         finishBattleIfNeeded()
@@ -106,6 +104,14 @@ final class RunSession {
     private var routeIsBattle: Bool {
         if case .battle = route { return true }
         return false
+    }
+
+    func submitForesightChoice(index: Int) {
+        guard routeIsBattle else { return }
+        guard let battleEngine else { return }
+        _ = battleEngine.submitForesightChoice(index: index)
+        battleState = battleEngine.state
+        finishBattleIfNeeded()
     }
 
     func chooseCardReward(_ cardId: CardID?) {
@@ -122,8 +128,6 @@ final class RunSession {
         runState.completeCurrentNode()
         self.runState = runState
 
-        pendingGoldEarned = nil
-        pendingCardOffer = nil
         battleState = nil
         battleNodeId = nil
         battleRoomType = nil
@@ -162,15 +166,11 @@ final class RunSession {
             self.runState = runState
 
             let offer = RewardGenerator.generateCardReward(context: rewardContext)
-            pendingGoldEarned = goldEarned
-            pendingCardOffer = offer
             route = .cardReward(nodeId: nodeId, roomType: roomTypeForRewards, offer: offer, goldEarned: goldEarned)
         } else {
             self.battleState = nil
             self.battleNodeId = nil
             self.battleRoomType = nil
-            pendingGoldEarned = nil
-            pendingCardOffer = nil
             route = .runOver(lastNodeId: nodeId, won: false, floor: runState.floor)
         }
     }
@@ -249,7 +249,5 @@ final class RunSession {
         battleState = nil
         battleNodeId = nil
         battleRoomType = nil
-        pendingGoldEarned = nil
-        pendingCardOffer = nil
     }
 }
