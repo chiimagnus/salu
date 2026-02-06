@@ -20,6 +20,8 @@
 - `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluAVP -destination 'platform=visionOS Simulator,name=Apple Vision Pro' build` 通过。
 - Simulator：从地图进入战斗（单敌人）后能通过点选 3D 卡牌进行出牌、结束回合，直至胜/负；胜利后回地图继续推进；失败后进入 run over。
 - 同 seed + 同节点选择路径：每次进入同一节点战斗的敌人类型/初始 HP 可复现（由派生 seed 决定）。
+- Immersive 期间控制面板窗口默认隐藏（避免“初始页面挡视线”），但在 Immersive 内提供 `Panel/Exit` 入口可随时返回。
+  - Update：按反馈移除 `Panel`，仅保留 `Exit`（退出 Immersive 并打开控制面板窗口）。
 
 ---
 
@@ -110,7 +112,7 @@ Verify: `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluAVP -de
 
 ### P2.3：Battle HUD（先可用/可调试，后再美化）
 
-### Task 3: 添加 Battle HUD Attachment（End Turn + 状态展示）
+### ✅Task 3: 添加 Battle HUD Attachment（End Turn + 状态展示）
 
 **Files:**
 -Create: `SaluNative/SaluAVP/Immersive/BattleHUDPanel.swift`
@@ -119,11 +121,14 @@ Verify: `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluAVP -de
 **Step 1: 新建 `BattleHUDPanel`（SwiftUI）**
 - 展示：玩家 HP、能量、回合数、手牌数量
 - 按钮：`End Turn`
-- （可选）展示：最近 5 条 `BattleEvent` 文本（用于快速定位流程）
+- （可选）展示：最近若干条 `BattleEvent` 文本（用于快速定位流程）
+- UX 小改（来自截图反馈）：
+  - HUD 缩小，默认收起日志（`Log` 按钮展开）
+  - 提供 `Exit`（退出 Immersive 并打开控制面板窗口）
 
 **Step 2: 在 `ImmersiveRootView` 中新增 attachment**
 - 仅当 `route == .battle` 时显示
-- 放置：用 `BillboardComponent()` 让面板面向用户；位置先固定在战斗区域前上方
+- 放置：用 `BillboardComponent()` 让面板面向用户；位置固定在视野右上角附近（head anchor 偏移）
 
 Verify: `xcodebuild ... build`
 
@@ -131,7 +136,7 @@ Verify: `xcodebuild ... build`
 
 ### P2.4：3D 战斗场景渲染（单敌人 + 3D 手牌）
 
-### Task 4: 在 ImmersiveRootView 增加 `battleLayer` 并按 route 切换
+### ✅Task 4: 在 ImmersiveRootView 增加 `battleLayer` 并按 route 切换
 
 **Files:**
 -Modify: `SaluNative/SaluAVP/Immersive/ImmersiveRootView.swift`
@@ -145,12 +150,14 @@ Verify: `xcodebuild ... build`
 - 从 `runSession.battleEngine?.state.enemies.first` 读数据
 - 用 `ModelEntity`（球/胶囊/盒子）占位，并在实体 `name` 中写入稳定前缀（例如 `enemy:0`）
 - 材质/颜色按敌人类型简单区分（后续替换为真实模型）
+  - Note：当前实现使用 `Sphere`（`MeshResource.generateCapsule` 在目标 SDK 不可用）
 
 **Step 3: 渲染 3D 手牌（占位卡牌）**
 - 将“手牌 anchor”绑定到头部（建议：`AnchorEntity(.head)` + 固定 offset），实现“像拿在眼前的一叠牌”
 - 为每张 `engine.state.hand` 创建 `ModelEntity`（薄盒子），弧形/扇形排布
 - `entity.name = "card:<handIndex>"`，并加 `CollisionComponent` + `InputTargetComponent`
 - 外观：可打出（能量足够）高亮；不可打出变暗
+  - UX 小改（来自截图反馈）：修正扇形朝向（圆心朝向用户），并让外侧卡牌略靠近用户
 
 **Step 4: 交互：点选卡牌出牌**
 - `SpatialTapGesture().targetedToAnyEntity()`：
@@ -169,7 +176,7 @@ Verify:
 
 ### P2.5：从地图房间接入战斗（用户路径）
 
-### Task 5: 房间面板对 battle 节点的行为对齐
+### ✅Task 5: 房间面板对 battle 节点的行为对齐
 
 **Files:**
 -Modify: `SaluNative/SaluAVP/Immersive/ImmersiveRootView.swift`
@@ -180,8 +187,26 @@ Verify:
 
 **Step 2: run over 的 UI**
 - `route == .runOver` 时：HUD/面板提供 `New Run` 与 `Close`（回控制面板）即可
+  - Note：当前实现中 `Close` 会退出 Immersive 并打开控制面板窗口
 
 Verify: Simulator 手动走通 “地图 → 战斗 → 回地图/RunOver”
+
+---
+
+### P2.6：战斗胜利最小奖励（Gold only）
+
+### ✅Task 6: 战斗胜利发放可复现金币奖励（不做卡牌选择）
+
+**Files:**
+-Modify: `SaluNative/SaluAVP/ViewModels/RunSession.swift`
+
+**Step 1: 在战斗胜利分支生成 `RewardContext` 并累加金币**
+- 使用 `GoldRewardStrategy.generateGoldReward(context:)`
+- `currentRow` 使用 `RunState.currentRow`（在 `completeCurrentNode()` 之前读取，保持与该节点一致）
+
+Verify:
+- `xcodebuild ... build`
+- Simulator：赢一场战斗后 `run.gold` 增加（MapHUD/ControlPanel 可见）
 
 ---
 
@@ -205,4 +230,3 @@ Verify: Simulator 手动走通 “地图 → 战斗 → 回地图/RunOver”
 ### B3：真实 3D 模型资产（RealityKitContent）
 - 将敌人与卡牌外观替换为 `.usdz/.reality` 资产
 - 需要：资源加载失败降级为占位几何体，避免沉浸空间白屏
-
