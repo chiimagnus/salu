@@ -1,7 +1,7 @@
 ---
 title: Apple Vision Pro 原生 3D 实现（SaluAVP）
 date: 2026-01-29
-updated: 2026-01-31
+updated: 2026-02-06
 architecture: visionOS-only App + Immersive-first (RealityKit)
 target: SaluAVP
 ---
@@ -179,6 +179,11 @@ SaluNative/
   - ImmersiveSpace 中渲染：玩家/敌人/手牌/能量/日志（形式不限，先可读可用）。
   - Session 桥接 `GameCore` 的战斗推进（当前阶段优先放在 `SaluNative/SaluAVP/ViewModels/`；需要跨 Target 复用时再引入 `SaluNative/Shared/`）。
   - 战斗结束后：更新 `RunState`（例如 `updateFromBattle(playerHP:)`）→ 应用奖励/推进地图（奖励可先最小化）。
+- 已选实现方向（MVP）：
+  - 同一个 `ImmersiveSpace` 内切换 `map` ↔ `battle`（地图隐藏/移除，战斗结束再回地图）。
+  - 手牌使用 RealityKit 3D 实体（`ModelEntity`）呈现与交互（先点选出牌；后续再做“甩牌命中”）。
+  - 先支持单敌人（多敌人 + 目标选择 deferred）。
+  - 详细任务拆分见：`.github/plans/2026-02-06-SaluAVP-P2-3D-battle-loop-implementation-plan.md`
 - DoD：
   - 战斗可完整结束（胜/负），并能回到地图继续推进。
 
