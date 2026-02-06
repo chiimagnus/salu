@@ -3,6 +3,10 @@ import GameCore
 
 struct BattleHUDPanel: View {
     @Environment(RunSession.self) private var runSession
+    @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
+    @Environment(\.openWindow) private var openWindow
+
+    @State private var isLogExpanded: Bool = false
 
     var body: some View {
         @Bindable var runSession = runSession
@@ -14,11 +18,14 @@ struct BattleHUDPanel: View {
             HStack(spacing: 8) {
                 Text("Battle")
                     .font(.headline)
-                if let pending = engine?.pendingInput {
-                    Text("Pending: \(pendingLabel(pending))")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+
+                Spacer(minLength: 0)
+
+                Button(isLogExpanded ? "Hide" : "Log") {
+                    isLogExpanded.toggle()
                 }
+                .font(.caption2)
+                .buttonStyle(.bordered)
             }
 
             if let state = battleState {
@@ -31,6 +38,12 @@ struct BattleHUDPanel: View {
                     Text("Turn \(state.turn)  Energy \(state.energy)/\(state.maxEnergy)  \(state.isPlayerTurn ? "Player" : "Enemy")")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+
+                    if let pending = engine?.pendingInput {
+                        Text("Pending: \(pendingLabel(pending))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             } else {
                 Text("No battle state.")
@@ -45,14 +58,16 @@ struct BattleHUDPanel: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(!(battleState?.isPlayerTurn ?? false) || (engine?.pendingInput != nil))
 
-                Button("Clear Log") {
-                    engine?.clearEvents()
+                Button("Exit") {
+                    Task { @MainActor in
+                        await dismissImmersiveSpace()
+                        openWindow(id: AppModel.controlPanelWindowID)
+                    }
                 }
                 .buttonStyle(.bordered)
-                .disabled(engine?.events.isEmpty != false)
             }
 
-            if let events = engine?.events, !events.isEmpty {
+            if isLogExpanded, let events = engine?.events, !events.isEmpty {
                 Divider()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 6) {
@@ -64,13 +79,13 @@ struct BattleHUDPanel: View {
                         }
                     }
                 }
-                .frame(maxHeight: 160)
+                .frame(maxHeight: 120)
             }
         }
         .padding(12)
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .frame(width: 340)
+        .frame(width: 260)
     }
 
     private func pendingLabel(_ pending: BattlePendingInput) -> String {
@@ -80,4 +95,3 @@ struct BattleHUDPanel: View {
         }
     }
 }
-

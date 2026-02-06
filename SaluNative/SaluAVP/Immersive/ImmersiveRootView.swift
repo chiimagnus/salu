@@ -146,7 +146,8 @@ struct ImmersiveRootView: View {
 
                 if let headAnchor = battleLayer.findEntity(named: battleHeadAnchorName) {
                     headAnchor.children.first(where: { $0.name == battleHudAttachmentId })?.removeFromParent()
-                    hud.position = [0, 0.12, -0.22]
+                    // Place HUD near the top-right in the user's view.
+                    hud.position = [0.26, 0.20, -0.38]
                     headAnchor.addChild(hud)
                 } else {
                     uiLayer.children.first(where: { $0.name == battleHudAttachmentId })?.removeFromParent()
@@ -290,11 +291,13 @@ struct ImmersiveRootView: View {
 
             let dx = Float(index) - center
             let x = dx * 0.07
-            let z = -abs(dx) * 0.02
+            // Outer cards should come slightly closer to the user.
+            let z = abs(dx) * 0.02
             entity.position = [x, 0, z]
 
-            let yaw = dx * 0.12
-            let pitch: Float = -0.18
+            // Fan the cards toward the user (arc center facing the player).
+            let yaw = -dx * 0.22
+            let pitch: Float = 0.18
             entity.orientation = simd_quatf(angle: yaw, axis: [0, 1, 0]) * simd_quatf(angle: pitch, axis: [1, 0, 0])
 
             handRoot.addChild(entity)
