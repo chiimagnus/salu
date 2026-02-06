@@ -1,7 +1,7 @@
 ---
 title: Apple Vision Pro 原生 3D 实现（SaluAVP）
 date: 2026-01-29
-updated: 2026-01-31
+updated: 2026-02-06
 architecture: visionOS-only App + Immersive-first (RealityKit)
 target: SaluAVP
 ---
@@ -179,8 +179,50 @@ SaluNative/
   - ImmersiveSpace 中渲染：玩家/敌人/手牌/能量/日志（形式不限，先可读可用）。
   - Session 桥接 `GameCore` 的战斗推进（当前阶段优先放在 `SaluNative/SaluAVP/ViewModels/`；需要跨 Target 复用时再引入 `SaluNative/Shared/`）。
   - 战斗结束后：更新 `RunState`（例如 `updateFromBattle(playerHP:)`）→ 应用奖励/推进地图（奖励可先最小化）。
+- 已选实现方向（MVP）：
+  - 同一个 `ImmersiveSpace` 内切换 `map` ↔ `battle`（地图隐藏/移除，战斗结束再回地图）。
+  - 手牌使用 RealityKit 3D 实体（`ModelEntity`）呈现与交互（先点选出牌；后续再做“甩牌命中”）。
+  - 先支持单敌人（多敌人 + 目标选择 deferred）。
 - DoD：
   - 战斗可完整结束（胜/负），并能回到地图继续推进。
+
+P2 实施细化（✅ 已完成，2026-02-06）：
+
+- ✅ 可复现 battle seed：`Sources/GameCore/Kernel/StableHash.swift`、`Sources/GameCore/Kernel/SeedDerivation.swift`、`Tests/GameCoreTests/SeedDerivationTests.swift`
+- ✅ `RunSession` 打通 battle → reward → map：`SaluNative/SaluAVP/ViewModels/RunSession.swift`
+  - 路由：`.battle(...)`、`.cardReward(...)`、`.runOver(...)`
+  - 胜利奖励：金币（可复现）+ 卡牌奖励 3 选 1（可跳过）
+- ✅ Immersive 内战斗渲染与交互：`SaluNative/SaluAVP/Immersive/ImmersiveRootView.swift`
+  - `mapLayer` ↔ `battleLayer` 切换
+  - 单敌人占位体 + 3D 手牌扇形排布（点选卡牌出牌）
+  - HUD / Reward 以 Attachment 形式呈现，并有独立的 head anchor（避免被 battleLayer 开关误伤）
+- ✅ Battle HUD（含最小 pendingInput 支持）：`SaluNative/SaluAVP/Immersive/BattleHUDPanel.swift`
+  - 支持 `BattlePendingInput.foresight` 选牌（避免战斗卡死）
+- ✅ Map HUD：`SaluNative/SaluAVP/Immersive/MapHUDPanel.swift`
+- ✅ 卡牌奖励面板：`SaluNative/SaluAVP/Immersive/CardRewardPanel.swift`
+- ✅ Window/role 对齐（控制面板为 2D window，Immersive 期间默认隐藏）：`SaluNative/SaluAVP/SaluAVPApp.swift`、`SaluNative/SaluAVP/ControlPanel/ImmersiveSpaceToggleButton.swift`、`SaluNative/SaluAVP/Info.plist`
+
+### P2 后续 Backlog（未做）：
+
+#### B1：甩牌 / 投掷命中敌人（真机增强 + Simulator 退化）
+- 真机：抓起 3D 卡牌 → 释放时根据速度/方向投射 → 命中敌人触发出牌动画与结算
+- Simulator：拖拽卡牌 → 放到敌人身上判定命中（命中后播放飞行动画）
+- 需要引入：
+  - “抓取/拖拽”手势（targeted drag）
+  - 命中判定（碰撞体 + 接触回调或射线检测）
+  - 卡牌回收与失败落点处理
+
+#### B2：多敌人（2–3 敌人）与目标选择
+- 敌人布局：战斗场景内左右排布
+- 目标选择：
+  - 点选敌人锁定目标；或拖拽/投掷命中指定敌人
+  - `PlayerAction.playCard(targetEnemyIndex: selectedIndex)`
+- 注意：`BattleEngine` 在多敌人时对 `.singleEnemy` 卡牌要求显式目标（否则会报 “该牌需要选择目标”）
+
+#### B3：真实 3D 模型资产（RealityKitContent）
+- 将敌人与卡牌外观替换为 `.usdz/.reality` 资产
+- 需要：资源加载失败降级为占位几何体，避免沉浸空间白屏
+
 
 ### P3（后续）：持久化（SwiftData / JSON Blob）
 

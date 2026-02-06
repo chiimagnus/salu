@@ -5,6 +5,8 @@ struct ImmersiveSpaceToggleButton: View {
 
     @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
     @Environment(\.openImmersiveSpace) private var openImmersiveSpace
+    @Environment(\.dismissWindow) private var dismissWindow
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         Button {
@@ -13,11 +15,13 @@ struct ImmersiveSpaceToggleButton: View {
                 case .open:
                     appModel.immersiveSpaceState = .inTransition
                     await dismissImmersiveSpace()
+                    openWindow(id: AppModel.controlPanelWindowID)
 
                 case .closed:
                     appModel.immersiveSpaceState = .inTransition
                     switch await openImmersiveSpace(id: appModel.immersiveSpaceID) {
                     case .opened:
+                        dismissWindow(id: AppModel.controlPanelWindowID)
                         break
                     case .userCancelled, .error:
                         fallthrough
@@ -37,4 +41,3 @@ struct ImmersiveSpaceToggleButton: View {
         .animation(.none, value: 0)
     }
 }
-

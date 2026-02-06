@@ -7,12 +7,11 @@ struct SaluAVPApp: App {
     @State private var runSession = RunSession()
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(id: AppModel.controlPanelWindowID) {
             ControlPanelView()
                 .environment(appModel)
                 .environment(runSession)
         }
-        .windowStyle(.volumetric)
 
         ImmersiveSpace(id: appModel.immersiveSpaceID) {
             ImmersiveRootView()

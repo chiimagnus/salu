@@ -4,6 +4,7 @@ import SwiftUI
 @MainActor
 @Observable
 class AppModel {
+    static let controlPanelWindowID = "controlPanel"
     let immersiveSpaceID = "ImmersiveSpace"
     enum ImmersiveSpaceState {
         case closed
