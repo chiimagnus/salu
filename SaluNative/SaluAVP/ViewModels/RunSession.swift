@@ -9,6 +9,7 @@ final class RunSession {
         case map
         case room(nodeId: String, roomType: RoomType)
         case battle(nodeId: String, roomType: RoomType)
+        case cardReward(nodeId: String, roomType: RoomType, offer: CardRewardOffer, goldEarned: Int)
         case runOver(lastNodeId: String, won: Bool, floor: Int)
     }
 
@@ -21,6 +22,8 @@ final class RunSession {
     private(set) var battleState: BattleState?
     private var battleNodeId: String?
     private var battleRoomType: RoomType?
+    private var pendingGoldEarned: Int?
+    private var pendingCardOffer: CardRewardOffer?
 
     func startNewRun() {
         let seed: UInt64
@@ -41,6 +44,8 @@ final class RunSession {
         battleState = nil
         battleNodeId = nil
         battleRoomType = nil
+        pendingGoldEarned = nil
+        pendingCardOffer = nil
         route = .map
     }
 
@@ -103,6 +108,35 @@ final class RunSession {
         return false
     }
 
+    func chooseCardReward(_ cardId: CardID?) {
+        guard case .cardReward(let nodeId, let roomType, let offer, let goldEarned) = route else { return }
+        guard var runState else { return }
+
+        if let cardId {
+            guard offer.choices.contains(cardId) else { return }
+            runState.addCardToDeck(cardId: cardId)
+        } else {
+            guard offer.canSkip else { return }
+        }
+
+        runState.completeCurrentNode()
+        self.runState = runState
+
+        pendingGoldEarned = nil
+        pendingCardOffer = nil
+        battleState = nil
+        battleNodeId = nil
+        battleRoomType = nil
+
+        if runState.isOver {
+            route = .runOver(lastNodeId: nodeId, won: runState.won, floor: runState.floor)
+        } else {
+            _ = roomType
+            _ = goldEarned
+            route = .map
+        }
+    }
+
     private func finishBattleIfNeeded() {
         guard let battleEngine, battleEngine.state.isOver else { return }
         guard var runState else { return }
@@ -112,12 +146,8 @@ final class RunSession {
         runState.updateFromBattle(playerHP: battleEngine.state.player.currentHP)
         self.runState = runState
 
-        defer {
-            self.battleEngine = nil
-            self.battleState = nil
-            self.battleNodeId = nil
-            self.battleRoomType = nil
-        }
+        // Freeze the final battle state for UI (reward panel), but release the engine.
+        self.battleEngine = nil
 
         if battleEngine.state.playerWon == true {
             let rewardContext = RewardContext(
@@ -129,15 +159,18 @@ final class RunSession {
             )
             let goldEarned = GoldRewardStrategy.generateGoldReward(context: rewardContext)
             runState.gold += goldEarned
-
-            runState.completeCurrentNode()
             self.runState = runState
-            if runState.isOver {
-                route = .runOver(lastNodeId: nodeId, won: runState.won, floor: runState.floor)
-            } else {
-                route = .map
-            }
+
+            let offer = RewardGenerator.generateCardReward(context: rewardContext)
+            pendingGoldEarned = goldEarned
+            pendingCardOffer = offer
+            route = .cardReward(nodeId: nodeId, roomType: roomTypeForRewards, offer: offer, goldEarned: goldEarned)
         } else {
+            self.battleState = nil
+            self.battleNodeId = nil
+            self.battleRoomType = nil
+            pendingGoldEarned = nil
+            pendingCardOffer = nil
             route = .runOver(lastNodeId: nodeId, won: false, floor: runState.floor)
         }
     }
@@ -216,5 +249,7 @@ final class RunSession {
         battleState = nil
         battleNodeId = nil
         battleRoomType = nil
+        pendingGoldEarned = nil
+        pendingCardOffer = nil
     }
 }

@@ -210,6 +210,37 @@ Verify:
 
 ---
 
+### P2.7：卡牌奖励（3 选 1，可跳过）
+
+### ✅Task 7: 战斗胜利弹出卡牌奖励面板（Attachment）
+
+**Files:**
+-Create: `SaluNative/SaluAVP/Immersive/CardRewardPanel.swift`
+-Modify: `SaluNative/SaluAVP/ViewModels/RunSession.swift`
+-Modify: `SaluNative/SaluAVP/Immersive/ImmersiveRootView.swift`
+
+**Step 1: 在 `RunSession.Route` 增加 `cardReward(...)`**
+- 进入胜利奖励态：保存 `CardRewardOffer` + `goldEarned`，先不 `completeCurrentNode()`（等选择后再推进）
+
+**Step 2: 在胜利分支生成 `CardRewardOffer`**
+- 使用 `RewardGenerator.generateCardReward(context:)`
+
+**Step 3: 实现选择接口**
+- `chooseCardReward(_ cardId: CardID?)`
+  - 选中：`runState.addCardToDeck(cardId:)`
+  - 跳过：若 `offer.canSkip == true` 则允许
+  - 完成后：`runState.completeCurrentNode()` → 回到 `.map`（或 `runOver`）
+
+**Step 4: 在 `ImmersiveRootView` 增加奖励 attachment**
+- `route == .cardReward` 时显示奖励面板（HUD anchor）
+- 同时隐藏战斗 HUD 与手牌（保留敌人占位体可选）
+
+Verify:
+- `xcodebuild ... build`
+- Simulator：赢一场战斗后出现 3 张卡牌按钮 + Skip；选择后牌组增加并回到地图
+
+---
+
 ## Backlog（已记录，后续增强）
 
 ### B1：甩牌 / 投掷命中敌人（真机增强 + Simulator 退化）

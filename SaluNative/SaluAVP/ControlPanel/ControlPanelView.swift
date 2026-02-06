@@ -62,6 +62,8 @@ struct ControlPanelView: View {
             return "room(\(roomType.rawValue))"
         case .battle(_, let roomType):
             return "battle(\(roomType.rawValue))"
+        case .cardReward(_, let roomType, _, _):
+            return "cardReward(\(roomType.rawValue))"
         case .runOver(_, let won, let floor):
             return "runOver(won:\(won), floor:\(floor))"
         }

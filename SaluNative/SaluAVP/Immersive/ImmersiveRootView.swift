@@ -13,6 +13,7 @@ struct ImmersiveRootView: View {
     private let roomPanelAttachmentId = "roomPanel"
     private let battleHudAttachmentId = "battleHUD"
     private let mapHudAttachmentId = "mapHUD"
+    private let cardRewardAttachmentId = "cardReward"
     private let mapLayerPrefix = "mapLayer_floor_"
     private let uiLayerName = "uiLayer"
     private let battleLayerName = "battleLayer"
@@ -129,19 +130,34 @@ struct ImmersiveRootView: View {
                 return battleLayer
             }()
 
-            let isInBattle: Bool
-            if case .battle = runSession.route {
-                isInBattle = true
-            } else {
-                isInBattle = false
-            }
+            let isInBattle: Bool = {
+                switch runSession.route {
+                case .battle, .cardReward:
+                    return true
+                case .map, .room, .runOver:
+                    return false
+                }
+            }()
 
             mapLayer.isEnabled = !isInBattle
             battleLayer.isEnabled = isInBattle
 
-            if isInBattle, let engine = runSession.battleEngine {
-                renderBattle(engine: engine, in: battleLayer)
-            } else {
+            switch runSession.route {
+            case .battle:
+                if let engine = runSession.battleEngine {
+                    renderBattle(engine: engine, in: battleLayer)
+                } else {
+                    clearBattle(in: battleLayer)
+                }
+
+            case .cardReward:
+                if let state = runSession.battleState {
+                    renderBattleReward(state: state, in: battleLayer)
+                } else {
+                    clearBattle(in: battleLayer)
+                }
+
+            case .map, .room, .runOver:
                 clearBattle(in: battleLayer)
             }
 
@@ -159,11 +175,15 @@ struct ImmersiveRootView: View {
                 hud.name = battleHudAttachmentId
                 hud.components.set(BillboardComponent())
                 hud.components.set(InputTargetComponent())
-                hud.isEnabled = isInBattle
+                if case .battle = runSession.route {
+                    hud.isEnabled = true
+                } else {
+                    hud.isEnabled = false
+                }
 
                 hudAnchor.children.first(where: { $0.name == battleHudAttachmentId })?.removeFromParent()
-                    // Place HUD near the top-right in the user's view (avoid clipping on Simulator).
-                    hud.position = [0.18, 0.15, -0.50]
+                // Place HUD near the top-right in the user's view (avoid clipping on Simulator).
+                hud.position = [0.18, 0.15, -0.50]
                 hudAnchor.addChild(hud)
             }
 
@@ -174,8 +194,23 @@ struct ImmersiveRootView: View {
                 hud.isEnabled = !isInBattle
 
                 hudAnchor.children.first(where: { $0.name == mapHudAttachmentId })?.removeFromParent()
-                    hud.position = [0.18, 0.17, -0.50]
+                hud.position = [0.18, 0.17, -0.50]
                 hudAnchor.addChild(hud)
+            }
+
+            if let panel = attachments.entity(for: cardRewardAttachmentId) {
+                panel.name = cardRewardAttachmentId
+                panel.components.set(BillboardComponent())
+                panel.components.set(InputTargetComponent())
+                if case .cardReward = runSession.route {
+                    panel.isEnabled = true
+                } else {
+                    panel.isEnabled = false
+                }
+
+                hudAnchor.children.first(where: { $0.name == cardRewardAttachmentId })?.removeFromParent()
+                panel.position = [0, 0.02, -0.62]
+                hudAnchor.addChild(panel)
             }
         } attachments: {
             Attachment(id: roomPanelAttachmentId) {
@@ -200,6 +235,10 @@ struct ImmersiveRootView: View {
             Attachment(id: mapHudAttachmentId) {
                 MapHUDPanel()
             }
+
+            Attachment(id: cardRewardAttachmentId) {
+                CardRewardAttachment()
+            }
         }
         .gesture(
             SpatialTapGesture()
@@ -217,7 +256,7 @@ struct ImmersiveRootView: View {
                         guard let handIndex = Int(suffix) else { return }
                         runSession.playCard(handIndex: handIndex)
 
-                    case .room, .runOver:
+                    case .cardReward, .room, .runOver:
                         break
                     }
                 }
@@ -240,6 +279,9 @@ struct ImmersiveRootView: View {
             return (true, [0, 0.25, -0.55])
 
         case .battle:
+            return (false, .zero)
+
+        case .cardReward:
             return (false, .zero)
 
         case .runOver(let lastNodeId, _, _):
@@ -334,6 +376,28 @@ struct ImmersiveRootView: View {
 
             handRoot.addChild(entity)
         }
+    }
+
+    private func renderBattleReward(state: BattleState, in battleLayer: RealityKit.Entity) {
+        let enemyRoot = battleLayer.findEntity(named: battleEnemyRootName) ?? {
+            let root = RealityKit.Entity()
+            root.name = battleEnemyRootName
+            root.position = [0, 0.14, -1.0]
+            battleLayer.addChild(root)
+            return root
+        }()
+
+        enemyRoot.children.forEach { $0.removeFromParent() }
+        if let enemy = state.enemies.first {
+            let enemyEntity = makeEnemyEntity(enemy: enemy)
+            enemyEntity.position = .zero
+            enemyRoot.addChild(enemyEntity)
+        }
+
+        battleLayer.findEntity(named: battleHeadAnchorName)?
+            .findEntity(named: battleHandRootName)?
+            .children
+            .forEach { $0.removeFromParent() }
     }
 
     private func makeEnemyEntity(enemy: GameCore.Entity) -> ModelEntity {
@@ -525,6 +589,9 @@ private struct RoomPanel: View {
             case .battle:
                 EmptyView()
 
+            case .cardReward:
+                EmptyView()
+
             case .runOver(_, let won, let floor):
                 VStack(alignment: .leading, spacing: 10) {
                     Text(won ? "🎉 Victory" : "💀 Defeat")
@@ -551,6 +618,20 @@ private struct RoomPanel: View {
         .padding(12)
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+private struct CardRewardAttachment: View {
+    @Environment(RunSession.self) private var runSession
+
+    var body: some View {
+        switch runSession.route {
+        case .cardReward(let nodeId, let roomType, let offer, let goldEarned):
+            CardRewardPanel(nodeId: nodeId, roomType: roomType, offer: offer, goldEarned: goldEarned)
+
+        default:
+            EmptyView()
+        }
     }
 }
 
