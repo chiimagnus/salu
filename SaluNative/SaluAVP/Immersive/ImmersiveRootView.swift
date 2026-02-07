@@ -66,7 +66,9 @@ struct ImmersiveRootView: View {
                 }
             }
 
-        let longPressPeekGesture = LongPressGesture(minimumDuration: 0.15)
+        // NOTE: In Simulator, click press duration can be ambiguous; keep this long enough so a normal click
+        // still plays the card, while a deliberate hold triggers peek.
+        let longPressPeekGesture = LongPressGesture(minimumDuration: 0.45, maximumDistance: 12)
             .targetedToAnyEntity()
             .onChanged { value in
                 guard case .battle = runSession.route else { return }
