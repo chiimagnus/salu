@@ -34,7 +34,71 @@ struct ImmersiveRootView: View {
     private let battlePilesRootName = "battlePilesRoot"
 
     var body: some View {
-        RealityView { content, attachments in
+        let isBattleRoute: Bool = {
+            if case .battle = runSession.route {
+                return true
+            }
+            return false
+        }()
+
+        let tapGesture = SpatialTapGesture()
+            .targetedToAnyEntity()
+            .onEnded { value in
+                // Long-press peek uses `suppressNextTap` to avoid accidental plays. Only relevant in battle.
+                if isBattleRoute, suppressNextTap {
+                    suppressNextTap = false
+                    return
+                }
+                switch runSession.route {
+                case .map:
+                    guard value.entity.name.hasPrefix(nodeNamePrefix) else { return }
+                    let nodeId = String(value.entity.name.dropFirst(nodeNamePrefix.count))
+                    runSession.selectAccessibleNode(nodeId)
+
+                case .battle:
+                    guard value.entity.name.hasPrefix(cardNamePrefix) else { return }
+                    let suffix = value.entity.name.dropFirst(cardNamePrefix.count)
+                    guard let handIndex = Int(suffix) else { return }
+                    runSession.playCard(handIndex: handIndex)
+
+                case .cardReward, .room, .runOver:
+                    break
+                }
+            }
+
+        let longPressPeekGesture = LongPressGesture(minimumDuration: 0.15)
+            .targetedToAnyEntity()
+            .onChanged { value in
+                guard case .battle = runSession.route else { return }
+                let name = value.entity.name
+
+                if name.hasPrefix(cardNamePrefix) {
+                    let suffix = name.dropFirst(cardNamePrefix.count)
+                    guard let handIndex = Int(suffix) else { return }
+                    didPeekInCurrentPress = true
+                    peekedPile = nil
+                    peekedHandIndex = handIndex
+                    return
+                }
+
+                if name.hasPrefix(pileNamePrefix) {
+                    let suffix = String(name.dropFirst(pileNamePrefix.count))
+                    guard let kind = PileKind(rawValue: suffix) else { return }
+                    didPeekInCurrentPress = true
+                    peekedHandIndex = nil
+                    peekedPile = kind
+                }
+            }
+            .onEnded { _ in
+                if didPeekInCurrentPress {
+                    suppressNextTap = true
+                }
+                didPeekInCurrentPress = false
+                peekedHandIndex = nil
+                peekedPile = nil
+            }
+
+        return RealityView { content, attachments in
             let mapRoot = RealityKit.Entity()
             mapRoot.name = "mapRoot"
 
@@ -269,63 +333,19 @@ struct ImmersiveRootView: View {
             }
         }
         .gesture(
-            SpatialTapGesture()
-                .targetedToAnyEntity()
-                .onEnded { value in
-                    if suppressNextTap {
-                        suppressNextTap = false
-                        return
-                    }
-                    switch runSession.route {
-                    case .map:
-                        guard value.entity.name.hasPrefix(nodeNamePrefix) else { return }
-                        let nodeId = String(value.entity.name.dropFirst(nodeNamePrefix.count))
-                        runSession.selectAccessibleNode(nodeId)
-
-                    case .battle:
-                        guard value.entity.name.hasPrefix(cardNamePrefix) else { return }
-                        let suffix = value.entity.name.dropFirst(cardNamePrefix.count)
-                        guard let handIndex = Int(suffix) else { return }
-                        runSession.playCard(handIndex: handIndex)
-
-                    case .cardReward, .room, .runOver:
-                        break
-                    }
-                }
+            tapGesture
         )
-        .highPriorityGesture(
-            LongPressGesture(minimumDuration: 0.15)
-                .targetedToAnyEntity()
-                .onChanged { value in
-                    guard case .battle = runSession.route else { return }
-                    let name = value.entity.name
-
-                    if name.hasPrefix(cardNamePrefix) {
-                        let suffix = name.dropFirst(cardNamePrefix.count)
-                        guard let handIndex = Int(suffix) else { return }
-                        didPeekInCurrentPress = true
-                        peekedPile = nil
-                        peekedHandIndex = handIndex
-                        return
-                    }
-
-                    if name.hasPrefix(pileNamePrefix) {
-                        let suffix = String(name.dropFirst(pileNamePrefix.count))
-                        guard let kind = PileKind(rawValue: suffix) else { return }
-                        didPeekInCurrentPress = true
-                        peekedHandIndex = nil
-                        peekedPile = kind
-                    }
-                }
-                .onEnded { _ in
-                    if didPeekInCurrentPress {
-                        suppressNextTap = true
-                    }
-                    didPeekInCurrentPress = false
-                    peekedHandIndex = nil
-                    peekedPile = nil
-                }
-        )
+        .applyIf(isBattleRoute) { view in
+            view.highPriorityGesture(longPressPeekGesture)
+        }
+        .onChange(of: isBattleRoute) { newValue in
+            if !newValue {
+                suppressNextTap = false
+                didPeekInCurrentPress = false
+                peekedHandIndex = nil
+                peekedPile = nil
+            }
+        }
     }
 
     private func roomPanelPlacement(mapRoot: RealityKit.Entity, route: RunSession.Route) -> (isVisible: Bool, position: SIMD3<Float>) {
@@ -725,6 +745,17 @@ struct ImmersiveRootView: View {
             return (.generateSphere(radius: 0.055), .systemPurple, false)
         case .boss:
             return (.generateBox(size: 0.14), .systemRed, true)
+        }
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func applyIf<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
         }
     }
 }
