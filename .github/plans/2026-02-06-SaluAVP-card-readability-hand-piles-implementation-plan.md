@@ -18,13 +18,13 @@
 **Approach（方案 / Plan A）**
 - 卡面文本渲染：用 `UIGraphicsImageRenderer`（或 CoreGraphics）把 `CardDefinition` 的文本渲染成 `CGImage`，再用 `TextureResource` 生成纹理并贴到卡牌正面材质上。
 - 性能：做 texture cache（key 包含 `cardId + language + displayMode`），并避免 `RealityView.update` 每帧重复重建手牌。
-- 端详交互：Simulator 先做 `press-and-hold`（按住进入端详，松开退出），保留 `tap` 作为“出牌”。
+- 端详交互：Simulator 使用“点住并向上拖一点（drag up）进入端详，松开退出”，保留 `tap` 作为“出牌”（避免 Simulator 上 long press 误触）。
 - 牌堆 UX：先 HUD 计数（P3.1），再加 3D 牌堆实体与交互（P3.2+）。
 
 **Acceptance（验收）**
 1. ✅ 控制面板可切换 DisplayMode（A/B/C/D），战斗手牌卡面文字随之变化。
 2. ✅ DisplayMode 默认是 **C**：卡名 + 费用 + 类型 + 简短描述（1–2 行）。
-3. ✅ 按住卡牌会进入端详（卡牌靠近并放大），松开回到手牌；端详时仍遵循当前 DisplayMode。
+3. ✅ Simulator：点住卡牌并向上拖一点进入端详（卡牌靠近并放大），松开回到手牌；端详时仍遵循当前 DisplayMode。
 4. ✅ Battle HUD 至少显示：`Draw/Discard/Exhaust` 三个计数。
 5. ✅ 场景内出现 3 个 3D 牌堆实体，位置稳定、可读、计数正确。
 
@@ -103,17 +103,18 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
 
 ### P2：端详/Peek（按住吸到眼前，松开返回）
 
-#### ✅ Task 4：为卡牌添加 “press-and-hold peek” 手势（Simulator 可用）
+#### ✅ Task 4：为卡牌添加 “peek” 交互（Simulator 可用）
 
 **Files:**
 - Modify: `SaluNative/SaluAVP/Immersive/ImmersiveRootView.swift`
 
 **Design:**
 - `tap`：保持现状（出牌）
-- `press-and-hold`：
+- `peek`（Simulator 版本）：
+  - 触发：点住并向上拖动一定距离（drag up）
   - begin：把目标卡牌复制/临时移动到 head-relative 的 inspect anchor（更靠近相机 + 放大）
-  - end：还原回手牌
-  - 端详期间禁止触发出牌（避免长按被识别成点击）
+  - end：松开关闭并回到手牌
+  - 端详期间不触发出牌（避免拖拽被识别成点击）
 
 **Implementation notes:**
 - 优先使用 targeted gesture（能拿到 `value.entity`），并只对 `name` 以 `card:` 开头的实体生效。
@@ -122,9 +123,9 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
 **Verify:**
 - Build: `xcodebuild ... build`
 - Manual（Simulator）：
-  - 按住某张卡：卡牌吸到眼前放大并保持可读
+  - 点住并向上拖动：卡牌吸到眼前放大并保持可读
   - 松开：卡牌回到手牌位置
-  - 单击：仍然能正常出牌
+  - 快速单击：仍然能正常出牌
 
 ---
 
@@ -154,7 +155,7 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
 - 3 个堆：Draw / Discard / Exhaust
 - 位置：靠近手牌但不遮挡（例如手牌左右两侧 + 稍远）
 - 外观：简易“卡堆”盒体或叠卡，顶部有计数贴图
-- 交互（第一版）：可点选高亮（后续可扩展为长按端详堆内容）
+- 交互（第一版）：可 “drag up” 端详堆内容（见 Task 7）
 
 **Verify:**
 - Build: `xcodebuild ... build`
@@ -167,12 +168,12 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
 - Modify/Create: `SaluNative/SaluAVP/Immersive/PilePeekPanel.swift`（Attachment 或纹理卡片）
 
 **Scope (MVP):**
-- 按住 draw/discard/exhaust 堆 → 弹出一个小面板（或吸到眼前）显示前 N 张卡名（N=5/10）
+- Simulator：点住并向上拖动 draw/discard/exhaust 堆 → 弹出一个小面板显示前 N 张卡名（N=10）
 - 仍遵循当前 DisplayMode（只显示允许的信息密度）
 
 **Verify:**
 - Build: `xcodebuild ... build`
-- Manual：按住牌堆能看到列表，松开关闭，不影响出牌。
+- Manual：点住并向上拖动牌堆能看到列表，松开关闭，不影响出牌。
 
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: Apple Vision Pro 原生 3D 实现（SaluAVP）
 date: 2026-01-29
-updated: 2026-02-06
+updated: 2026-02-07
 architecture: visionOS-only App + Immersive-first (RealityKit)
 target: SaluAVP
 ---
@@ -218,6 +218,16 @@ P2 实施细化（✅ 已完成，2026-02-06）：
   - 点选敌人锁定目标；或拖拽/投掷命中指定敌人
   - `PlayerAction.playCard(targetEnemyIndex: selectedIndex)`
 - 注意：`BattleEngine` 在多敌人时对 `.singleEnemy` 卡牌要求显式目标（否则会报 “该牌需要选择目标”）
+
+### ✅P2.1（已完成）：卡牌可读性 + 端详（peek）+ 牌堆 UX（2026-02-07）
+
+> 目标：让战斗体验更接近“现实卡牌”，并补齐抽牌/弃牌/消耗堆的可见性与基础交互。
+
+- ✅ 控制面板新增 `DisplayMode(A/B/C/D)` 切换（默认 C），动态影响 3D 卡面显示内容。
+- ✅ 3D 卡牌正面贴字：由文本渲染成纹理并贴到卡面（非 HUD 列表），含 texture cache。
+- ✅ Simulator 端详交互：点住并向上拖动（drag up）进入端详；松开退出；快速单击仍是出牌。
+- ✅ Battle HUD 显示 `Draw/Discard/Exhaust` 计数。
+- ✅ 3D 牌堆实体固定在“牌桌/世界坐标”上（不是头部 HUD），并支持 drag up 查看 Top-N 列表面板。
 
 #### B3：真实 3D 模型资产（RealityKitContent）
 - 将敌人与卡牌外观替换为 `.usdz/.reality` 资产
