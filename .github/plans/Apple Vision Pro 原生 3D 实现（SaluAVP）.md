@@ -1,7 +1,7 @@
 ---
 title: Apple Vision Pro 原生 3D 实现（SaluAVP）
 date: 2026-01-29
-updated: 2026-02-06
+updated: 2026-02-07
 architecture: visionOS-only App + Immersive-first (RealityKit)
 target: SaluAVP
 ---
@@ -173,7 +173,7 @@ SaluNative/
    - 下一层节点被解锁为可达（高亮）
 5. 重复推进，直到进入 Boss，并最终触发 run 结束状态（`RunState.isOver/won`）。
 
-### P2（重要）：3D 战斗闭环（Battle Loop）
+### ✅P2（重要）：3D 战斗闭环（Battle Loop）
 
 - 产出：
   - ImmersiveSpace 中渲染：玩家/敌人/手牌/能量/日志（形式不限，先可读可用）。
@@ -202,7 +202,7 @@ P2 实施细化（✅ 已完成，2026-02-06）：
 - ✅ 卡牌奖励面板：`SaluNative/SaluAVP/Immersive/CardRewardPanel.swift`
 - ✅ Window/role 对齐（控制面板为 2D window，Immersive 期间默认隐藏）：`SaluNative/SaluAVP/SaluAVPApp.swift`、`SaluNative/SaluAVP/ControlPanel/ImmersiveSpaceToggleButton.swift`、`SaluNative/SaluAVP/Info.plist`
 
-### P2 后续 Backlog（未做）：
+### P2.x 后续 Backlog（未做）：
 
 #### B1：甩牌 / 投掷命中敌人（真机增强 + Simulator 退化）
 - 真机：抓起 3D 卡牌 → 释放时根据速度/方向投射 → 命中敌人触发出牌动画与结算
@@ -219,10 +219,20 @@ P2 实施细化（✅ 已完成，2026-02-06）：
   - `PlayerAction.playCard(targetEnemyIndex: selectedIndex)`
 - 注意：`BattleEngine` 在多敌人时对 `.singleEnemy` 卡牌要求显式目标（否则会报 “该牌需要选择目标”）
 
+
 #### B3：真实 3D 模型资产（RealityKitContent）
 - 将敌人与卡牌外观替换为 `.usdz/.reality` 资产
 - 需要：资源加载失败降级为占位几何体，避免沉浸空间白屏
 
+### ✅P2.1（已完成）：卡牌可读性 + 端详（peek）+ 牌堆 UX（2026-02-07）
+
+> 目标：让战斗体验更接近“现实卡牌”，并补齐抽牌/弃牌/消耗堆的可见性与基础交互。
+
+- ✅ 控制面板新增 `DisplayMode(A/B/C/D)` 切换（默认 C），动态影响 3D 卡面显示内容。
+- ✅ 3D 卡牌正面贴字：由文本渲染成纹理并贴到卡面（非 HUD 列表），含 texture cache。
+- ✅ Simulator 端详交互：点住并向上拖动（drag up）进入端详；松开退出；快速单击仍是出牌。
+- ✅ Battle HUD 显示 `Draw/Discard/Exhaust` 计数。
+- ✅ 3D 牌堆实体固定在“牌桌/世界坐标”上（不是头部 HUD），并支持 drag up 查看 Top-N 列表面板。
 
 ### P3（后续）：持久化（SwiftData / JSON Blob）
 

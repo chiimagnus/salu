@@ -38,6 +38,9 @@ struct BattleHUDPanel: View {
                     Text("Turn \(state.turn)  Energy \(state.energy)/\(state.maxEnergy)  \(state.isPlayerTurn ? "Player" : "Enemy")")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+                    Text("Draw \(state.drawPile.count)  Discard \(state.discardPile.count)  Exhaust \(state.exhaustPile.count)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
 
                     if let pending = engine?.pendingInput {
                         Text("Pending: \(pendingLabel(pending))")

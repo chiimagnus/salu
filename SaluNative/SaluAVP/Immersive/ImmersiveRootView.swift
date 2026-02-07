@@ -4,16 +4,25 @@ import UIKit
 import GameCore
 
 struct ImmersiveRootView: View {
+    @Environment(AppModel.self) private var appModel
     @Environment(RunSession.self) private var runSession
     @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
     @Environment(\.openWindow) private var openWindow
 
+    @State private var cardFaceTextureCache = CardFaceTextureCache()
+    @State private var peekedHandIndex: Int? = nil
+    @State private var peekedPile: PileKind? = nil
+    @State private var didPeekInCurrentPress: Bool = false
+    @State private var suppressNextTap: Bool = false
+
     private let nodeNamePrefix = "node:"
     private let cardNamePrefix = "card:"
+    private let pileNamePrefix = "pile:"
     private let roomPanelAttachmentId = "roomPanel"
     private let battleHudAttachmentId = "battleHUD"
     private let mapHudAttachmentId = "mapHUD"
     private let cardRewardAttachmentId = "cardReward"
+    private let pilePeekAttachmentId = "pilePeek"
     private let mapLayerPrefix = "mapLayer_floor_"
     private let uiLayerName = "uiLayer"
     private let battleLayerName = "battleLayer"
@@ -21,9 +30,78 @@ struct ImmersiveRootView: View {
     private let battleHeadAnchorName = "battleHeadAnchor"
     private let battleHandRootName = "battleHandRoot"
     private let battleEnemyRootName = "battleEnemyRoot"
+    private let battleInspectRootName = "battleInspectRoot"
+    private let battlePilesRootName = "battlePilesRoot"
 
     var body: some View {
-        RealityView { content, attachments in
+        let isBattleRoute: Bool = {
+            if case .battle = runSession.route {
+                return true
+            }
+            return false
+        }()
+
+        let tapGesture = SpatialTapGesture()
+            .targetedToAnyEntity()
+            .onEnded { value in
+                // Long-press peek uses `suppressNextTap` to avoid accidental plays. Only relevant in battle.
+                if isBattleRoute, suppressNextTap {
+                    suppressNextTap = false
+                    return
+                }
+                switch runSession.route {
+                case .map:
+                    guard value.entity.name.hasPrefix(nodeNamePrefix) else { return }
+                    let nodeId = String(value.entity.name.dropFirst(nodeNamePrefix.count))
+                    runSession.selectAccessibleNode(nodeId)
+
+                case .battle:
+                    guard value.entity.name.hasPrefix(cardNamePrefix) else { return }
+                    let suffix = value.entity.name.dropFirst(cardNamePrefix.count)
+                    guard let handIndex = Int(suffix) else { return }
+                    runSession.playCard(handIndex: handIndex)
+
+                case .cardReward, .room, .runOver:
+                    break
+                }
+            }
+
+        // Simulator-friendly "peek": click-drag a card upward a bit to inspect; release to return.
+        // This avoids the unreliable long-press recognition on Simulator, and doesn't interfere with tap-to-play.
+        let dragPeekGesture = DragGesture(minimumDistance: 12)
+            .targetedToAnyEntity()
+            .onChanged { value in
+                guard case .battle = runSession.route else { return }
+                // Require a deliberate upward move to trigger peek.
+                let translation = value.translation
+                guard translation.height < -22 else { return }
+
+                let name = value.entity.name
+                if name.hasPrefix(cardNamePrefix) {
+                    let suffix = name.dropFirst(cardNamePrefix.count)
+                    guard let handIndex = Int(suffix) else { return }
+                    didPeekInCurrentPress = true
+                    peekedPile = nil
+                    peekedHandIndex = handIndex
+                    return
+                }
+
+                if name.hasPrefix(pileNamePrefix) {
+                    let suffix = String(name.dropFirst(pileNamePrefix.count))
+                    guard let kind = PileKind(rawValue: suffix) else { return }
+                    didPeekInCurrentPress = true
+                    peekedHandIndex = nil
+                    peekedPile = kind
+                }
+            }
+            .onEnded { _ in
+                suppressNextTap = didPeekInCurrentPress
+                didPeekInCurrentPress = false
+                peekedHandIndex = nil
+                peekedPile = nil
+            }
+
+        return RealityView { content, attachments in
             let mapRoot = RealityKit.Entity()
             mapRoot.name = "mapRoot"
 
@@ -212,6 +290,19 @@ struct ImmersiveRootView: View {
                 panel.position = [0, 0.02, -0.62]
                 hudAnchor.addChild(panel)
             }
+
+            if let panel = attachments.entity(for: pilePeekAttachmentId) {
+                panel.name = pilePeekAttachmentId
+                panel.components.set(BillboardComponent())
+                panel.components.set(InputTargetComponent())
+
+                let isVisible = (peekedPile != nil) && { if case .battle = runSession.route { return true } else { return false } }()
+                panel.isEnabled = isVisible
+
+                hudAnchor.children.first(where: { $0.name == pilePeekAttachmentId })?.removeFromParent()
+                panel.position = [-0.18, 0.12, -0.50]
+                hudAnchor.addChild(panel)
+            }
         } attachments: {
             Attachment(id: roomPanelAttachmentId) {
                 RoomPanel(
@@ -239,28 +330,25 @@ struct ImmersiveRootView: View {
             Attachment(id: cardRewardAttachmentId) {
                 CardRewardAttachment()
             }
+
+            Attachment(id: pilePeekAttachmentId) {
+                PilePeekAttachment(activePile: peekedPile)
+            }
         }
         .gesture(
-            SpatialTapGesture()
-                .targetedToAnyEntity()
-                .onEnded { value in
-                    switch runSession.route {
-                    case .map:
-                        guard value.entity.name.hasPrefix(nodeNamePrefix) else { return }
-                        let nodeId = String(value.entity.name.dropFirst(nodeNamePrefix.count))
-                        runSession.selectAccessibleNode(nodeId)
-
-                    case .battle:
-                        guard value.entity.name.hasPrefix(cardNamePrefix) else { return }
-                        let suffix = value.entity.name.dropFirst(cardNamePrefix.count)
-                        guard let handIndex = Int(suffix) else { return }
-                        runSession.playCard(handIndex: handIndex)
-
-                    case .cardReward, .room, .runOver:
-                        break
-                    }
-                }
+            tapGesture
         )
+        .applyIf(isBattleRoute) { view in
+            view.highPriorityGesture(dragPeekGesture)
+        }
+        .onChange(of: isBattleRoute) { newValue in
+            if !newValue {
+                suppressNextTap = false
+                didPeekInCurrentPress = false
+                peekedHandIndex = nil
+                peekedPile = nil
+            }
+        }
     }
 
     private func roomPanelPlacement(mapRoot: RealityKit.Entity, route: RunSession.Route) -> (isVisible: Bool, position: SIMD3<Float>) {
@@ -311,10 +399,11 @@ struct ImmersiveRootView: View {
 
     private func clearBattle(in battleLayer: RealityKit.Entity) {
         battleLayer.findEntity(named: battleEnemyRootName)?.children.forEach { $0.removeFromParent() }
-        battleLayer.findEntity(named: battleHeadAnchorName)?
-            .findEntity(named: battleHandRootName)?
-            .children
-            .forEach { $0.removeFromParent() }
+        if let headAnchor = battleLayer.findEntity(named: battleHeadAnchorName) {
+            headAnchor.findEntity(named: battleHandRootName)?.children.forEach { $0.removeFromParent() }
+            headAnchor.findEntity(named: battleInspectRootName)?.children.forEach { $0.removeFromParent() }
+        }
+        battleLayer.findEntity(named: battlePilesRootName)?.children.forEach { $0.removeFromParent() }
     }
 
     private func renderBattle(engine: BattleEngine, in battleLayer: RealityKit.Entity) {
@@ -349,33 +438,124 @@ struct ImmersiveRootView: View {
             return root
         }()
 
-        handRoot.children.forEach { $0.removeFromParent() }
-
         let hand = engine.state.hand
-        guard !hand.isEmpty else { return }
-
-        let playable = Set(engine.playableCardIndices)
-        let count = hand.count
-        let center = Float(count - 1) / 2.0
-
-        for (index, card) in hand.enumerated() {
-            let isPlayable = playable.contains(index)
-            let entity = makeCardEntity(card: card, isPlayable: isPlayable)
-            entity.name = "\(cardNamePrefix)\(index)"
-
-            let dx = Float(index) - center
-            let x = dx * 0.07
-            // Outer cards should come slightly closer to the user.
-            let z = abs(dx) * 0.02
-            entity.position = [x, 0, z]
-
-            // Fan the cards toward the user (arc center facing the player).
-            let yaw = -dx * 0.22
-            let pitch: Float = 0.18
-            entity.orientation = simd_quatf(angle: yaw, axis: [0, 1, 0]) * simd_quatf(angle: pitch, axis: [1, 0, 0])
-
-            handRoot.addChild(entity)
+        guard !hand.isEmpty else {
+            clearPeek(in: headAnchor)
+            return
         }
+
+        let displayMode = appModel.cardDisplayMode
+        let language: GameLanguage = .zhHans
+        let playable = Set(engine.playableCardIndices)
+        let signature = StableHash.fnv1a64(
+            hand.map(\.cardId.rawValue).joined(separator: "|")
+                + "#"
+                + playable.sorted().map(String.init).joined(separator: ",")
+                + "#"
+                + displayMode.rawValue
+                + "#"
+                + language.rawValue
+        )
+
+        let needsHandRebuild = (handRoot.components[HandRenderStateComponent.self]?.signature != signature)
+        if needsHandRebuild {
+            handRoot.components.set(HandRenderStateComponent(signature: signature))
+            handRoot.children.forEach { $0.removeFromParent() }
+
+            let count = hand.count
+            let center = Float(count - 1) / 2.0
+
+            for (index, card) in hand.enumerated() {
+                let isPlayable = playable.contains(index)
+                let entity = makeCardEntity(card: card, isPlayable: isPlayable, displayMode: displayMode, language: language)
+                entity.name = "\(cardNamePrefix)\(index)"
+
+                let dx = Float(index) - center
+                let x = dx * 0.07
+                // Outer cards should come slightly closer to the user.
+                let z = abs(dx) * 0.02
+                entity.position = [x, 0, z]
+
+                // Fan the cards toward the user (arc center facing the player).
+                let yaw = -dx * 0.22
+                let pitch: Float = 0.18
+                entity.orientation = simd_quatf(angle: yaw, axis: [0, 1, 0]) * simd_quatf(angle: pitch, axis: [1, 0, 0])
+
+                handRoot.addChild(entity)
+            }
+        }
+
+        renderPeek(handRoot: handRoot, in: headAnchor)
+        renderPiles(state: engine.state, in: battleLayer)
+    }
+
+    private func renderPeek(handRoot: RealityKit.Entity, in headAnchor: RealityKit.Entity) {
+        let inspectRoot = headAnchor.findEntity(named: battleInspectRootName) ?? {
+            let root = RealityKit.Entity()
+            root.name = battleInspectRootName
+            root.position = [0, 0.02, -0.22]
+            headAnchor.addChild(root)
+            return root
+        }()
+
+        guard let peekedHandIndex else {
+            inspectRoot.children.forEach { $0.removeFromParent() }
+            return
+        }
+
+        let signature = StableHash.fnv1a64("peek#\(peekedHandIndex)")
+        if let state = inspectRoot.components[PileRenderStateComponent.self], state.signature == signature, !inspectRoot.children.isEmpty {
+            return
+        }
+        inspectRoot.components.set(PileRenderStateComponent(signature: signature))
+        inspectRoot.children.forEach { $0.removeFromParent() }
+
+        guard let cardEntity = handRoot.findEntity(named: "\(cardNamePrefix)\(peekedHandIndex)") else { return }
+        let clone = cardEntity.clone(recursive: true)
+        clone.components.remove(InputTargetComponent.self)
+        clone.components.remove(CollisionComponent.self)
+        clone.name = "peekCard"
+        clone.position = .zero
+        clone.scale = [3.2, 3.2, 3.2]
+        clone.orientation = simd_quatf(angle: 0.35, axis: [1, 0, 0])
+        inspectRoot.addChild(clone)
+    }
+
+    private func clearPeek(in headAnchor: RealityKit.Entity) {
+        guard let inspectRoot = headAnchor.findEntity(named: battleInspectRootName) else { return }
+        inspectRoot.children.forEach { $0.removeFromParent() }
+    }
+
+    private func renderPiles(state: BattleState, in battleLayer: RealityKit.Entity) {
+        let pilesRoot = battleLayer.findEntity(named: battlePilesRootName) ?? {
+            let root = RealityKit.Entity()
+            root.name = battlePilesRootName
+            // Keep piles fixed on the "table" (world space), not attached to the user's head.
+            // Position is relative to battleLayer.
+            root.position = [0, 0.045, -0.72]
+            root.orientation = simd_quatf(angle: -0.55, axis: [1, 0, 0])
+            battleLayer.addChild(root)
+            return root
+        }()
+
+        let signature = StableHash.fnv1a64("piles#\(state.drawPile.count)#\(state.discardPile.count)#\(state.exhaustPile.count)")
+        if let stateComponent = pilesRoot.components[PileRenderStateComponent.self], stateComponent.signature == signature {
+            return
+        }
+        pilesRoot.components.set(PileRenderStateComponent(signature: signature))
+        pilesRoot.children.forEach { $0.removeFromParent() }
+
+        let draw = PileEntityFactory.makePileEntity(kind: .draw, count: state.drawPile.count)
+        draw.position = [-0.22, 0, 0]
+        pilesRoot.addChild(draw)
+
+        let exhaust = PileEntityFactory.makePileEntity(kind: .exhaust, count: state.exhaustPile.count)
+        exhaust.position = [0.0, 0, 0]
+        pilesRoot.addChild(exhaust)
+
+        let discard = PileEntityFactory.makePileEntity(kind: .discard, count: state.discardPile.count)
+        discard.position = [0.22, 0, 0]
+        pilesRoot.addChild(discard)
     }
 
     private func renderBattleReward(state: BattleState, in battleLayer: RealityKit.Entity) {
@@ -410,7 +590,7 @@ struct ImmersiveRootView: View {
         return entity
     }
 
-    private func makeCardEntity(card: Card, isPlayable: Bool) -> ModelEntity {
+    private func makeCardEntity(card: Card, isPlayable: Bool, displayMode: CardDisplayMode, language: GameLanguage) -> ModelEntity {
         let def = CardRegistry.require(card.cardId)
         let baseColor: UIColor
         switch def.type {
@@ -429,6 +609,22 @@ struct ImmersiveRootView: View {
         let entity = ModelEntity(mesh: .generateBox(size: [0.06, 0.002, 0.09]), materials: [material])
         entity.components.set(CollisionComponent(shapes: [.generateBox(size: [0.065, 0.02, 0.095])]))
         entity.components.set(InputTargetComponent())
+
+        if let texture = cardFaceTextureCache.texture(for: card.cardId, displayMode: displayMode, language: language) {
+            let faceWidth: Float = 0.056
+            let faceHeight: Float = 0.086
+            let faceMesh = MeshResource.generatePlane(width: faceWidth, height: faceHeight)
+
+            var faceMaterial = UnlitMaterial()
+            faceMaterial.color = .init(tint: .white)
+            faceMaterial.color.texture = .init(texture)
+
+            let face = ModelEntity(mesh: faceMesh, materials: [faceMaterial])
+            face.name = "cardFace"
+            face.position = [0, 0.0012, 0]
+            entity.addChild(face)
+        }
+
         return entity
     }
 
@@ -555,6 +751,17 @@ struct ImmersiveRootView: View {
             return (.generateSphere(radius: 0.055), .systemPurple, false)
         case .boss:
             return (.generateBox(size: 0.14), .systemRed, true)
+        }
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func applyIf<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
         }
     }
 }

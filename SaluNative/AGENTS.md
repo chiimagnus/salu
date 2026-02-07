@@ -13,6 +13,13 @@
 - `SaluAVP → GameCLI` ❌ 禁止（不要把 CLI 的 I/O/渲染/持久化带进来）
 - `GameCore → SwiftUI/RealityKit/SwiftData/*App` ❌ 永远禁止（保持 SwiftPM 可跨平台构建）
 
+### 业务一致性（Salu vs SaluAVP，硬约束）
+
+- `Salu` 与 `SaluAVP` 的**玩法业务规则必须一致**（战斗结算、地图推进、奖励发放、商店/休息点效果、状态衰减等）。
+- `SaluAVP` 的差异应仅限于**表现层与交互层**（3D 沉浸场景、空间手势、UI 布局、动效与反馈形式）。
+- 任何会影响玩法结果的逻辑都必须走 `GameCore`；禁止在 `SaluAVP` 内新增“另一套结算规则”。
+- 如确需调整玩法规则：先更新 `GameCore` 与 `.github/docs/Salu游戏业务说明.md`，再在 `SaluAVP` 对齐接入。
+
 ### 3D 与 ViewModels 的分工（当前不使用 Shared）
 
 - `SaluNative/SaluAVP/`：**RealityKit + ImmersiveSpace**（所有 3D 场景构建、实体/材质/动画、沉浸输入手势都在这里）。
@@ -37,7 +44,14 @@
 ### 体验定位
 
 - 2D Window：只做“控制面板”（入口 / seed / 存档选择 / 设置 / 历史 / 调试）。
-- 3D ImmersiveSpace：主体验（至少先打通“地图闭环”，再打通“战斗闭环”）。
+- 3D ImmersiveSpace：主体验（承载地图/战斗/奖励等核心流程）。
+
+### 当前基线能力（以代码为准）
+
+- 已具备 `ControlPanel → ImmersiveSpace` 的双场景切换。
+- 已具备 `地图选择 → 房间/战斗 → 结算/奖励 → 回地图` 主流程。
+- 已具备战斗失败/通关的 run over 路由收束。
+- 后续新增功能应在不破坏上述闭环的前提下迭代。
 
 ### 推荐目录组织（不强制，但强烈建议）
 
@@ -80,17 +94,17 @@ SaluNative/Shared/
 
 ## 3. 与 GameCore 对接（建议做法）
 
-### 最小可用闭环（MVP 顺序）
+### 主流程技术基线（当前）
 
-1. **P0：工程打通**
-   - 2D 控制面板可打开/关闭 `ImmersiveSpace`
-   - Immersive 里出现占位场景（地板 + 一个可点击物体）
-2. **P1：地图闭环（优先）**
-   - 以 `RunState.newRun(seed:)` 生成 run
-   - 在 Immersive 渲染可达节点；点选节点 → `enterNode` → 进入占位房间 → `completeCurrentNode` 回地图
-3. **P2：战斗闭环**
-   - 用 `BattleEngine`（或等价入口）推进回合：出牌/选目标/结束回合
-   - 战斗结束 → 更新 run → 回地图继续推进
+1. **Run 会话**
+   - 使用 `RunSession` 作为 AVP 侧主流程的唯一业务会话入口（run、battle、route）。
+   - `AppModel` 只承载 App 级状态（窗口/沉浸空间状态、纯表现偏好）。
+2. **地图与房间**
+   - `RunState.newRun(seed:)` 建立 run。
+   - 节点交互通过 `enterNode` / `completeCurrentNode` 推进地图状态。
+3. **战斗与奖励**
+   - 战斗推进使用 `BattleEngine`（出牌/结束回合/输入分支）。
+   - 战斗结束后更新 run，再进入奖励或终局路由。
 
 > 具体架构与里程碑以 `.github/plans/Apple Vision Pro 原生 3D 实现（SaluAVP）.md` 为准。
 
@@ -98,6 +112,12 @@ SaluNative/Shared/
 
 - App/UI 不直接散落持有 `RunState/BattleState` 的多个副本：保持一个“Source of Truth”（可放 `Shared/GameSession`）。
 - UI 的输入只产出“用户选择”（节点选择、出牌索引、目标索引等），其余都交给 `GameCore` 推进。
+- 优先采用“路由驱动渲染”模式：UI 根据 `RunSession.Route` 决定显示地图/房间/战斗/奖励/终局，而不是分散维护多个布尔状态。
+
+### Seed 与可复现（补充约束）
+
+- 允许在“用户未输入 seed”时生成默认 seed，但必须回填并展示给用户，保证可复制与可重放。
+- battle seed 必须由 run seed 派生（例如通过 `SeedDerivation`），禁止直接使用系统随机数。
 
 ## 4. 构建与验证（按改动范围执行）
 
