@@ -66,14 +66,17 @@ struct ImmersiveRootView: View {
                 }
             }
 
-        // NOTE: In Simulator, click press duration can be ambiguous; keep this long enough so a normal click
-        // still plays the card, while a deliberate hold triggers peek.
-        let longPressPeekGesture = LongPressGesture(minimumDuration: 0.45, maximumDistance: 12)
+        // Simulator-friendly "peek": click-drag a card upward a bit to inspect; release to return.
+        // This avoids the unreliable long-press recognition on Simulator, and doesn't interfere with tap-to-play.
+        let dragPeekGesture = DragGesture(minimumDistance: 12)
             .targetedToAnyEntity()
             .onChanged { value in
                 guard case .battle = runSession.route else { return }
-                let name = value.entity.name
+                // Require a deliberate upward move to trigger peek.
+                let translation = value.translation
+                guard translation.height < -22 else { return }
 
+                let name = value.entity.name
                 if name.hasPrefix(cardNamePrefix) {
                     let suffix = name.dropFirst(cardNamePrefix.count)
                     guard let handIndex = Int(suffix) else { return }
@@ -92,9 +95,7 @@ struct ImmersiveRootView: View {
                 }
             }
             .onEnded { _ in
-                if didPeekInCurrentPress {
-                    suppressNextTap = true
-                }
+                suppressNextTap = didPeekInCurrentPress
                 didPeekInCurrentPress = false
                 peekedHandIndex = nil
                 peekedPile = nil
@@ -338,7 +339,7 @@ struct ImmersiveRootView: View {
             tapGesture
         )
         .applyIf(isBattleRoute) { view in
-            view.highPriorityGesture(longPressPeekGesture)
+            view.highPriorityGesture(dragPeekGesture)
         }
         .onChange(of: isBattleRoute) { newValue in
             if !newValue {
