@@ -401,8 +401,8 @@ struct ImmersiveRootView: View {
         if let headAnchor = battleLayer.findEntity(named: battleHeadAnchorName) {
             headAnchor.findEntity(named: battleHandRootName)?.children.forEach { $0.removeFromParent() }
             headAnchor.findEntity(named: battleInspectRootName)?.children.forEach { $0.removeFromParent() }
-            headAnchor.findEntity(named: battlePilesRootName)?.children.forEach { $0.removeFromParent() }
         }
+        battleLayer.findEntity(named: battlePilesRootName)?.children.forEach { $0.removeFromParent() }
     }
 
     private func renderBattle(engine: BattleEngine, in battleLayer: RealityKit.Entity) {
@@ -485,7 +485,7 @@ struct ImmersiveRootView: View {
         }
 
         renderPeek(handRoot: handRoot, in: headAnchor)
-        renderPiles(state: engine.state, in: headAnchor)
+        renderPiles(state: engine.state, in: battleLayer)
     }
 
     private func renderPeek(handRoot: RealityKit.Entity, in headAnchor: RealityKit.Entity) {
@@ -525,12 +525,15 @@ struct ImmersiveRootView: View {
         inspectRoot.children.forEach { $0.removeFromParent() }
     }
 
-    private func renderPiles(state: BattleState, in headAnchor: RealityKit.Entity) {
-        let pilesRoot = headAnchor.findEntity(named: battlePilesRootName) ?? {
+    private func renderPiles(state: BattleState, in battleLayer: RealityKit.Entity) {
+        let pilesRoot = battleLayer.findEntity(named: battlePilesRootName) ?? {
             let root = RealityKit.Entity()
             root.name = battlePilesRootName
-            root.position = [0, -0.18, -0.54]
-            headAnchor.addChild(root)
+            // Keep piles fixed on the "table" (world space), not attached to the user's head.
+            // Position is relative to battleLayer.
+            root.position = [0, 0.045, -0.72]
+            root.orientation = simd_quatf(angle: -0.55, axis: [1, 0, 0])
+            battleLayer.addChild(root)
             return root
         }()
 
