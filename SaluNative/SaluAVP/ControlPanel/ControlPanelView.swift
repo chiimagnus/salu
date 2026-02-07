@@ -8,6 +8,7 @@ struct ControlPanelView: View {
 
     var body: some View {
         @Bindable var runSession = runSession
+        @Bindable var appModel = appModel
 
         VStack(alignment: .center, spacing: 14) {
             Text("SaluAVP")
@@ -49,6 +50,26 @@ struct ControlPanelView: View {
                 Text("Immersive: \(String(describing: appModel.immersiveSpaceState))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Card Display Mode")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Picker("Card Display Mode", selection: $appModel.cardDisplayMode) {
+                    ForEach(CardDisplayMode.allCases) { mode in
+                        Text(mode.shortLabel).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+
+                Text(appModel.cardDisplayMode.description)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .padding(24)

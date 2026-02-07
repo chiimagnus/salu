@@ -12,4 +12,6 @@ class AppModel {
         case open
     }
     var immersiveSpaceState = ImmersiveSpaceState.closed
+
+    var cardDisplayMode: CardDisplayMode = .modeC
 }

@@ -2,6 +2,9 @@
 
 > 执行方式：建议使用 `executing-plans` 按批次实现与验收（每批 2–4 个 task）。
 
+**Status**
+- ✅ 已实现并通过 `xcodebuild ... build`（2026-02-07）
+
 **Goal（目标）**
 - 在 visionOS Simulator 上，战斗时的 3D 手牌像“现实卡牌”一样可读：卡面直接显示文字（非 HUD 列表）。
 - 提供一个仅包含 `DisplayMode(A/B/C/D)` 的设置入口（2D 控制面板），动态影响卡面显示内容，默认 **C**。
@@ -19,11 +22,11 @@
 - 牌堆 UX：先 HUD 计数（P3.1），再加 3D 牌堆实体与交互（P3.2+）。
 
 **Acceptance（验收）**
-1. 控制面板可切换 DisplayMode（A/B/C/D），战斗手牌卡面文字随之变化。
-2. DisplayMode 默认是 **C**：卡名 + 费用 + 类型 + 简短描述（1–2 行）。
-3. 按住卡牌会进入端详（卡牌靠近并放大），松开回到手牌；端详时仍遵循当前 DisplayMode。
-4. Battle HUD 至少显示：`Draw/Discard/Exhaust` 三个计数。
-5.（P3.2 完成后）场景内出现 3 个 3D 牌堆实体，位置稳定、可读、计数正确。
+1. ✅ 控制面板可切换 DisplayMode（A/B/C/D），战斗手牌卡面文字随之变化。
+2. ✅ DisplayMode 默认是 **C**：卡名 + 费用 + 类型 + 简短描述（1–2 行）。
+3. ✅ 按住卡牌会进入端详（卡牌靠近并放大），松开回到手牌；端详时仍遵循当前 DisplayMode。
+4. ✅ Battle HUD 至少显示：`Draw/Discard/Exhaust` 三个计数。
+5. ✅ 场景内出现 3 个 3D 牌堆实体，位置稳定、可读、计数正确。
 
 **Build / Verify（每批至少一次）**
 ```bash
@@ -39,7 +42,7 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
 
 ### P1：卡面可读（DisplayMode + 卡面纹理渲染）
 
-#### Task 1：接入 DisplayMode（控制面板 → Immersive）
+#### ✅ Task 1：接入 DisplayMode（控制面板 → Immersive）
 
 **Files:**
 - Modify: `SaluNative/SaluAVP/AppModel.swift`（新增 `cardDisplayMode`，默认 `.modeC`）
@@ -55,9 +58,7 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
 - Build: `xcodebuild ... build`
 - Manual（Simulator）：切换 DisplayMode 后进入战斗，观察手牌显示内容变化（后续 Task 2/3 完成后可验证）。
 
-> 注：如果此 Task 已在当前分支实现，可标记为 ✅ Done 并直接进入 Task 2。
-
-#### Task 2：实现 CardFace 渲染器（文本 → CGImage）
+#### ✅ Task 2：实现 CardFace 渲染器（文本 → CGImage）
 
 **Files:**
 - Create: `SaluNative/SaluAVP/Immersive/CardFaceRenderer.swift`（或 `.../Rendering/CardFaceRenderer.swift`）
@@ -76,7 +77,7 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
 - Build: `xcodebuild ... build`
 - Manual：进入战斗时，至少能看到 Mode A/B 的卡名/费用正确显示。
 
-#### Task 3：卡面纹理缓存 + 贴图到 3D 卡牌正面
+#### ✅ Task 3：卡面纹理缓存 + 贴图到 3D 卡牌正面
 
 **Files:**
 - Create: `SaluNative/SaluAVP/Immersive/CardFaceTextureCache.swift`（cache：key → `TextureResource`）
@@ -102,7 +103,7 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
 
 ### P2：端详/Peek（按住吸到眼前，松开返回）
 
-#### Task 4：为卡牌添加 “press-and-hold peek” 手势（Simulator 可用）
+#### ✅ Task 4：为卡牌添加 “press-and-hold peek” 手势（Simulator 可用）
 
 **Files:**
 - Modify: `SaluNative/SaluAVP/Immersive/ImmersiveRootView.swift`
@@ -129,7 +130,7 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
 
 ### P3：抽牌堆/弃牌堆/消耗堆（信息可见 + 3D 牌堆）
 
-#### Task 5：Battle HUD 显示 draw/discard/exhaust 计数（最小闭环）
+#### ✅ Task 5：Battle HUD 显示 draw/discard/exhaust 计数（最小闭环）
 
 **Files:**
 - Modify: `SaluNative/SaluAVP/Immersive/BattleHUDPanel.swift`
@@ -143,7 +144,7 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
 - Build: `xcodebuild ... build`
 - Manual：战斗中计数随抽牌/弃牌/消耗变化（至少在出牌/结束回合后有变化）。
 
-#### Task 6：添加 3D 牌堆实体（3 个堆 + 可读计数）
+#### ✅ Task 6：添加 3D 牌堆实体（3 个堆 + 可读计数）
 
 **Files:**
 - Modify: `SaluNative/SaluAVP/Immersive/ImmersiveRootView.swift`
@@ -159,7 +160,7 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
 - Build: `xcodebuild ... build`
 - Manual：计数正确、位置稳定、不会遮挡 HUD/手牌。
 
-#### Task 7（可选）：端详牌堆（按住显示 Top-N 卡名列表）
+#### ✅ Task 7（可选）：端详牌堆（按住显示 Top-N 卡名列表）
 
 **Files:**
 - Modify: `SaluNative/SaluAVP/Immersive/ImmersiveRootView.swift`
@@ -177,13 +178,10 @@ xcodebuild -project SaluNative/SaluNative.xcodeproj \
 
 ## Open Questions（不确定项，执行前确认）
 
-1) 语言：卡面文本默认用 `zhHans` 是否固定？还是未来需要跟随系统语言？
-2) Mode C 的“简短描述”：
-   - 直接截断 `rulesText` 的前 1–2 行即可（MVP）？
-   - 还是需要为卡牌定义新增单独的 `shortRulesText`（会涉及 GameCore 变更）？
+1) ✅ 语言：当前卡面文本固定用 `zhHans`（后续如需可跟随系统语言）。
+2) ✅ Mode C 的“简短描述”：MVP 采用直接截断 `rulesText`（无需引入 `shortRulesText`，避免触碰 GameCore）。
 
 ## Rollup / 回归策略
 
 - 每完成一个 Phase（P1/P2/P3）后至少跑一次 `xcodebuild ... build`。
 - 若 P3 增加了对 `BattleState` 的新读取逻辑或任何 GameCore 变更，则补跑：`swift test`。
-
