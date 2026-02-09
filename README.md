@@ -34,4 +34,4 @@ swift run
 
 - `GameCore`：纯逻辑层（规则/状态/战斗/卡牌/敌人/地图/存档快照模型），见 [GameCore 开发规范](Sources/GameCore/AGENTS.md)
 - `GameCLI`：CLI/TUI 表现层（终端渲染/输入/房间流程/持久化落盘实现），见 [GameCLI 开发规范](Sources/GameCLI/AGENTS.md)
-- `SaluNative/SaluAVP`：原生 App（visionOS，ImmersiveSpace + RealityKit），见 `.github/plans/Plan AVP - Apple Vision Pro 原生 3D 实现（SaluAVP）.md`
+- `SaluNative/SaluAVP`：原生 App（visionOS，ImmersiveSpace + RealityKit），见 `.github/plans/Apple Vision Pro 原生 3D 实现（SaluAVP）.md`
