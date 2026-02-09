@@ -126,7 +126,7 @@
 
 ### P2：战斗动画闭环（抽牌/打牌/受击/死亡）
 
-### Task 4: 抽牌动画（DrawPile -> Hand）
+### ✅Task 4: 抽牌动画（DrawPile -> Hand）
 **Files:**
 - Modify: `SaluNative/SaluAVP/Immersive/BattleAnimationSystem.swift`
 - Modify: `SaluNative/SaluAVP/Immersive/BattleSceneRenderer.swift`
@@ -141,7 +141,7 @@
 **Step 3: 验证**
 - Manual: 连续抽牌与洗牌后抽牌，动画不丢帧、不重影。
 
-### Task 5: 出牌动画（Hand -> Enemy / Pile）
+### ✅Task 5: 出牌动画（Hand -> Enemy / Pile）
 **Files:**
 - Modify: `SaluNative/SaluAVP/ViewModels/RunSession.swift`
 - Modify: `SaluNative/SaluAVP/Immersive/BattleAnimationSystem.swift`
@@ -156,7 +156,7 @@
 **Step 3: 验证**
 - Manual: 普通卡与消耗性卡各打 3 次，路径正确。
 
-### Task 6: 受击、格挡、死亡反馈
+### ✅Task 6: 受击、格挡、死亡反馈
 **Files:**
 - Create: `SaluNative/SaluAVP/Immersive/FloatingTextFactory.swift`
 - Modify: `SaluNative/SaluAVP/Immersive/BattleSceneRenderer.swift`
@@ -174,7 +174,7 @@
 **Step 3: 验证**
 - Manual: 触发高伤、被格挡、击杀三种情形。
 
-### Task 7: 回合切换与 HUD 动效
+### ✅Task 7: 回合切换与 HUD 动效
 **Files:**
 - Modify: `SaluNative/SaluAVP/Immersive/BattleHUDPanel.swift`
 - Modify: `SaluNative/SaluAVP/Immersive/BattleAnimationSystem.swift`
