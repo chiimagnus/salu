@@ -26,31 +26,6 @@ struct ControlPanelView: View {
                 .fontWeight(.semibold)
             }
 
-            HStack(spacing: 8) {
-                Button("Continue") {
-                    runSession.continueFromSavedSnapshot()
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(!runSession.hasSavedRunSnapshot)
-
-                Button("Save") {
-                    runSession.saveRunSnapshot()
-                }
-                .buttonStyle(.bordered)
-                .disabled(runSession.runState == nil)
-
-                Button("Delete Save") {
-                    runSession.deleteSavedSnapshot()
-                }
-                .buttonStyle(.bordered)
-                .disabled(!runSession.hasSavedRunSnapshot)
-
-                Button("Reset") {
-                    runSession.resetToControlPanel()
-                }
-                .buttonStyle(.bordered)
-            }
-
             if let error = runSession.lastError {
                 Text(error)
                     .font(.caption)
@@ -61,11 +36,6 @@ struct ControlPanelView: View {
                 Text("Route: \(routeLabel(runSession.route))  Current: \(run.currentNodeId ?? "-")")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                if let autosaveError = runSession.lastAutosaveError {
-                    Text("Autosave: \(autosaveError)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
             } else {
                 Text("No run started.")
                     .font(.caption)
