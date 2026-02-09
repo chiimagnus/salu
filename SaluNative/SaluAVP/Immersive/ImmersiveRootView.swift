@@ -305,7 +305,7 @@ struct ImmersiveRootView: View {
         .applyIf(isBattleRoute) { view in
             view.highPriorityGesture(dragPeekGesture)
         }
-        .onChange(of: isBattleRoute) { newValue in
+        .onChange(of: isBattleRoute) { _, newValue in
             if !newValue {
                 suppressNextTap = false
                 didPeekInCurrentPress = false

@@ -68,10 +68,18 @@ final class BattleSceneRenderer {
         peekedHandIndex: Int?,
         newEvents: [BattlePresentationEvent]
     ) {
-        animationSystem.enqueue(events: newEvents)
-        animationSystem.beginRenderPass(in: battleLayer)
-
         let enemyRoot = ensureEnemyRoot(in: battleLayer)
+        let headAnchor = ensureHeadAnchor(in: battleLayer)
+        let handRoot = ensureHandRoot(in: headAnchor)
+        let pilesRoot = ensurePilesRoot(in: battleLayer)
+
+        animationSystem.enqueue(events: newEvents)
+        animationSystem.beginRenderPass(
+            in: battleLayer,
+            handRoot: handRoot,
+            enemyRoot: enemyRoot
+        )
+
         enemyRoot.children.forEach { $0.removeFromParent() }
 
         if let enemy = engine.state.enemies.first {
@@ -80,17 +88,19 @@ final class BattleSceneRenderer {
             enemyRoot.addChild(enemyEntity)
         }
 
-        let headAnchor = ensureHeadAnchor(in: battleLayer)
-        let handRoot = ensureHandRoot(in: headAnchor)
-
         let hand = engine.state.hand
         let playable = Set(engine.playableCardIndices)
 
         if hand.isEmpty {
             handRoot.children.forEach { $0.removeFromParent() }
             clearPeek(in: headAnchor)
-            renderPiles(state: engine.state, in: battleLayer)
-            animationSystem.endRenderPass(in: battleLayer)
+            renderPiles(state: engine.state, in: pilesRoot)
+            animationSystem.endRenderPass(
+                in: battleLayer,
+                handRoot: handRoot,
+                enemyRoot: enemyRoot,
+                pilesRoot: pilesRoot
+            )
             return
         }
 
@@ -134,8 +144,13 @@ final class BattleSceneRenderer {
         }
 
         renderPeek(handRoot: handRoot, in: headAnchor, peekedHandIndex: peekedHandIndex)
-        renderPiles(state: engine.state, in: battleLayer)
-        animationSystem.endRenderPass(in: battleLayer)
+        renderPiles(state: engine.state, in: pilesRoot)
+        animationSystem.endRenderPass(
+            in: battleLayer,
+            handRoot: handRoot,
+            enemyRoot: enemyRoot,
+            pilesRoot: pilesRoot
+        )
     }
 
     func renderReward(
@@ -143,10 +158,19 @@ final class BattleSceneRenderer {
         in battleLayer: RealityKit.Entity,
         newEvents: [BattlePresentationEvent]
     ) {
-        animationSystem.enqueue(events: newEvents)
-        animationSystem.beginRenderPass(in: battleLayer)
-
         let enemyRoot = ensureEnemyRoot(in: battleLayer)
+        let pilesRoot = ensurePilesRoot(in: battleLayer)
+        let handRoot = battleLayer
+            .findEntity(named: Names.battleHeadAnchor)?
+            .findEntity(named: Names.battleHandRoot)
+
+        animationSystem.enqueue(events: newEvents)
+        animationSystem.beginRenderPass(
+            in: battleLayer,
+            handRoot: handRoot,
+            enemyRoot: enemyRoot
+        )
+
         enemyRoot.children.forEach { $0.removeFromParent() }
 
         if let enemy = state.enemies.first {
@@ -162,8 +186,13 @@ final class BattleSceneRenderer {
             clearPeek(in: headAnchor)
         }
 
-        renderPiles(state: state, in: battleLayer)
-        animationSystem.endRenderPass(in: battleLayer)
+        renderPiles(state: state, in: pilesRoot)
+        animationSystem.endRenderPass(
+            in: battleLayer,
+            handRoot: handRoot,
+            enemyRoot: enemyRoot,
+            pilesRoot: pilesRoot
+        )
     }
 
     private func addBattleFloor(to root: RealityKit.Entity) {
@@ -211,6 +240,19 @@ final class BattleSceneRenderer {
         return handRoot
     }
 
+    private func ensurePilesRoot(in battleLayer: RealityKit.Entity) -> RealityKit.Entity {
+        if let pilesRoot = battleLayer.findEntity(named: Names.battlePilesRoot) {
+            return pilesRoot
+        }
+
+        let pilesRoot = RealityKit.Entity()
+        pilesRoot.name = Names.battlePilesRoot
+        pilesRoot.position = [0, 0.045, -0.72]
+        pilesRoot.orientation = simd_quatf(angle: -0.55, axis: [1, 0, 0])
+        battleLayer.addChild(pilesRoot)
+        return pilesRoot
+    }
+
     private func renderPeek(
         handRoot: RealityKit.Entity,
         in headAnchor: AnchorEntity,
@@ -252,16 +294,7 @@ final class BattleSceneRenderer {
         inspectRoot.children.forEach { $0.removeFromParent() }
     }
 
-    private func renderPiles(state: BattleState, in battleLayer: RealityKit.Entity) {
-        let pilesRoot = battleLayer.findEntity(named: Names.battlePilesRoot) ?? {
-            let root = RealityKit.Entity()
-            root.name = Names.battlePilesRoot
-            root.position = [0, 0.045, -0.72]
-            root.orientation = simd_quatf(angle: -0.55, axis: [1, 0, 0])
-            battleLayer.addChild(root)
-            return root
-        }()
-
+    private func renderPiles(state: BattleState, in pilesRoot: RealityKit.Entity) {
         let signature = StableHash.fnv1a64("piles#\(state.drawPile.count)#\(state.discardPile.count)#\(state.exhaustPile.count)")
         if let stateComponent = pilesRoot.components[PileRenderStateComponent.self], stateComponent.signature == signature {
             return
@@ -283,11 +316,10 @@ final class BattleSceneRenderer {
     }
 
     private func makeEnemyEntity(enemy: GameCore.Entity) -> ModelEntity {
-        _ = enemy
         let material = SimpleMaterial(color: UIColor.systemRed.withAlphaComponent(0.85), isMetallic: true)
         let mesh = MeshResource.generateSphere(radius: 0.14)
         let entity = ModelEntity(mesh: mesh, materials: [material])
-        entity.name = "enemy:0"
+        entity.name = "enemy:\(enemy.id)"
         entity.components.set(CollisionComponent(shapes: [.generateSphere(radius: 0.14)]))
         entity.components.set(InputTargetComponent())
         return entity

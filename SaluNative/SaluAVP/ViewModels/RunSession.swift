@@ -24,6 +24,7 @@ final class RunSession {
     private var battleNodeId: String?
     private var battleRoomType: RoomType?
     private var lastConsumedBattleEventIndex: Int = 0
+    private var playedCardContextsBySequence: [Int: PlayedCardPresentationContext] = [:]
 
     func startNewRun() {
         let seed: UInt64
@@ -46,6 +47,7 @@ final class RunSession {
         battleNodeId = nil
         battleRoomType = nil
         lastConsumedBattleEventIndex = 0
+        playedCardContextsBySequence = [:]
         route = .map
     }
 
@@ -91,8 +93,11 @@ final class RunSession {
         guard routeIsBattle else { return }
         guard let battleEngine else { return }
         guard battleEngine.pendingInput == nil else { return }
+        guard battleEngine.state.hand.indices.contains(handIndex) else { return }
+        let eventStartIndex = battleEngine.events.count
         _ = battleEngine.handleAction(.playCard(handIndex: handIndex, targetEnemyIndex: nil))
         syncBattleStateFromEngine()
+        capturePlayedCardContexts(startIndex: eventStartIndex, sourceHandIndex: handIndex)
         finishBattleIfNeeded()
     }
 
@@ -119,7 +124,14 @@ final class RunSession {
     }
 
     func consumeNewBattleEvents() -> [BattleEvent] {
+        let startIndex = lastConsumedBattleEventIndex
         let newEvents = consumeNewBattleEventSlice()
+        let consumedEnd = startIndex + newEvents.count
+        if consumedEnd > startIndex {
+            for sequence in startIndex..<consumedEnd {
+                playedCardContextsBySequence.removeValue(forKey: sequence)
+            }
+        }
         return Array(newEvents)
     }
 
@@ -127,7 +139,13 @@ final class RunSession {
         let startIndex = lastConsumedBattleEventIndex
         let newEvents = consumeNewBattleEventSlice()
         return newEvents.enumerated().map { offset, event in
-            BattlePresentationEvent(sequence: startIndex + offset, event: event)
+            let sequence = startIndex + offset
+            let context = playedCardContextsBySequence.removeValue(forKey: sequence)
+            return BattlePresentationEvent(
+                sequence: sequence,
+                event: event,
+                playedCardContext: context
+            )
         }
     }
 
@@ -150,6 +168,7 @@ final class RunSession {
         battleNodeId = nil
         battleRoomType = nil
         lastConsumedBattleEventIndex = 0
+        playedCardContextsBySequence = [:]
 
         if runState.isOver {
             route = .runOver(lastNodeId: nodeId, won: runState.won, floor: runState.floor)
@@ -193,6 +212,7 @@ final class RunSession {
             self.battleNodeId = nil
             self.battleRoomType = nil
             self.lastConsumedBattleEventIndex = 0
+            self.playedCardContextsBySequence = [:]
             route = .runOver(lastNodeId: nodeId, won: false, floor: runState.floor)
         }
     }
@@ -258,6 +278,7 @@ final class RunSession {
         battleNodeId = nodeId
         battleRoomType = roomType
         lastConsumedBattleEventIndex = 0
+        playedCardContextsBySequence = [:]
         route = .battle(nodeId: nodeId, roomType: roomType)
     }
 
@@ -275,6 +296,7 @@ final class RunSession {
         battleNodeId = nil
         battleRoomType = nil
         lastConsumedBattleEventIndex = 0
+        playedCardContextsBySequence = [:]
     }
 
     private func consumeNewBattleEventSlice() -> ArraySlice<BattleEvent> {
@@ -290,6 +312,26 @@ final class RunSession {
         battleEvents = battleEngine.events
         if battleEvents.count < lastConsumedBattleEventIndex {
             lastConsumedBattleEventIndex = 0
+            playedCardContextsBySequence = [:]
         }
+        playedCardContextsBySequence = playedCardContextsBySequence.filter { $0.key < battleEvents.count }
+    }
+
+    private func capturePlayedCardContexts(startIndex: Int, sourceHandIndex: Int) {
+        guard startIndex < battleEvents.count else { return }
+        let newEvents = battleEvents[startIndex..<battleEvents.count]
+        for (offset, event) in newEvents.enumerated() {
+            guard case .played(_, let cardId, _) = event else { continue }
+            let destinationPile = destinationPileForPlayedCard(cardId: cardId)
+            playedCardContextsBySequence[startIndex + offset] = PlayedCardPresentationContext(
+                sourceHandIndex: sourceHandIndex,
+                destinationPile: destinationPile
+            )
+        }
+    }
+
+    private func destinationPileForPlayedCard(cardId: CardID) -> PlayedCardDestinationPile {
+        let definition = CardRegistry.require(cardId)
+        return definition.type == .consumable ? .exhaust : .discard
     }
 }
