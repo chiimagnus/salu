@@ -84,7 +84,7 @@
 - Run: `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluAVP -destination 'platform=visionOS Simulator,name=Apple Vision Pro' build`
 - Run: `rg -n \"battleState.*直接驱动视图重建|legacy|deprecated\" SaluNative/SaluAVP`
 
-### Task 2: 抽离战斗渲染器，降低 `ImmersiveRootView` 复杂度
+### ✅Task 2: 抽离战斗渲染器，降低 `ImmersiveRootView` 复杂度
 **Files:**
 - Create: `SaluNative/SaluAVP/Immersive/BattleSceneRenderer.swift`
 - Create: `SaluNative/SaluAVP/Immersive/BattleAnimationSystem.swift`
