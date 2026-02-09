@@ -2,6 +2,7 @@ import GameCore
 import RealityKit
 import UIKit
 
+@MainActor
 struct RoomSceneRenderer {
     enum Names {
         static let roomLayer = "roomLayer"
@@ -216,11 +217,28 @@ struct RoomSceneRenderer {
         merchant.position = [0, 0, -0.98]
         root.addChild(merchant)
 
+        renderShopGoldBalance(runState: runState, in: root)
         renderShopCardOffers(shopState: shopState, runState: runState, in: root)
         renderShopRelicOffers(shopState: shopState, runState: runState, in: root)
         renderShopConsumables(shopState: shopState, runState: runState, in: root)
         renderShopRemoveCardOffers(shopState: shopState, runState: runState, in: root)
         renderShopLeaveAction(in: root)
+    }
+
+    private func renderShopGoldBalance(runState: RunState, in root: RealityKit.Entity) {
+        let wallet = ModelEntity(
+            mesh: .generateCylinder(height: 0.04, radius: 0.06),
+            materials: [SimpleMaterial(color: UIColor.systemYellow.withAlphaComponent(0.88), isMetallic: true)]
+        )
+        wallet.name = "shopGoldWallet"
+        wallet.position = [0.50, 0.14, -0.88]
+        root.addChild(wallet)
+
+        if let badge = makeBadgeEntity(text: "\(runState.gold)", affordable: true) {
+            badge.name = "shopGoldLabel"
+            badge.position = [0.50, 0.24, -0.88]
+            root.addChild(badge)
+        }
     }
 
     private func renderShopCardOffers(
@@ -231,14 +249,21 @@ struct RoomSceneRenderer {
         for (index, offer) in shopState.inventory.cardOffers.enumerated() {
             let affordable = runState.gold >= offer.price
             let x = -0.46 + Float(index) * 0.13
+            let itemPosition: SIMD3<Float> = [x, 0.18, -0.70]
             let entity = makeShopActionEntity(
                 mesh: .generateBox(size: [0.09, 0.11, 0.05]),
                 color: actionColor(base: UIColor.systemBlue, affordable: affordable),
-                position: [x, 0.18, -0.70],
+                position: itemPosition,
                 name: Names.shopActionName("card", index: index),
                 collisionSize: [0.12, 0.14, 0.10]
             )
             root.addChild(entity)
+            root.addChild(makeAffordabilityMarker(affordable: affordable, near: itemPosition))
+            if let tag = makeBadgeEntity(text: "\(offer.price)", affordable: affordable) {
+                tag.name = "shopCardPrice:\(index)"
+                tag.position = [itemPosition.x, itemPosition.y + 0.10, itemPosition.z + 0.02]
+                root.addChild(tag)
+            }
         }
     }
 
@@ -250,14 +275,21 @@ struct RoomSceneRenderer {
         for (index, offer) in shopState.inventory.relicOffers.enumerated() {
             let affordable = runState.gold >= offer.price
             let x = -0.18 + Float(index) * 0.18
+            let itemPosition: SIMD3<Float> = [x, 0.22, -0.58]
             let entity = makeShopActionEntity(
                 mesh: .generateSphere(radius: 0.055),
                 color: actionColor(base: UIColor.systemPurple, affordable: affordable),
-                position: [x, 0.22, -0.58],
+                position: itemPosition,
                 name: Names.shopActionName("relic", index: index),
                 collisionSize: [0.14, 0.14, 0.14]
             )
             root.addChild(entity)
+            root.addChild(makeAffordabilityMarker(affordable: affordable, near: itemPosition))
+            if let tag = makeBadgeEntity(text: "\(offer.price)", affordable: affordable) {
+                tag.name = "shopRelicPrice:\(index)"
+                tag.position = [itemPosition.x, itemPosition.y + 0.11, itemPosition.z + 0.02]
+                root.addChild(tag)
+            }
         }
     }
 
@@ -269,14 +301,21 @@ struct RoomSceneRenderer {
         for (index, offer) in shopState.inventory.consumableOffers.enumerated() {
             let affordable = runState.gold >= offer.price
             let x = 0.12 + Float(index) * 0.14
+            let itemPosition: SIMD3<Float> = [x, 0.20, -0.72]
             let entity = makeShopActionEntity(
                 mesh: .generateCylinder(height: 0.12, radius: 0.045),
                 color: actionColor(base: UIColor.systemGreen, affordable: affordable),
-                position: [x, 0.20, -0.72],
+                position: itemPosition,
                 name: Names.shopActionName("consumable", index: index),
                 collisionSize: [0.12, 0.15, 0.12]
             )
             root.addChild(entity)
+            root.addChild(makeAffordabilityMarker(affordable: affordable, near: itemPosition))
+            if let tag = makeBadgeEntity(text: "\(offer.price)", affordable: affordable) {
+                tag.name = "shopConsumablePrice:\(index)"
+                tag.position = [itemPosition.x, itemPosition.y + 0.11, itemPosition.z + 0.02]
+                root.addChild(tag)
+            }
         }
     }
 
@@ -286,21 +325,29 @@ struct RoomSceneRenderer {
         in root: RealityKit.Entity
     ) {
         let isAffordable = runState.gold >= shopState.inventory.removeCardPrice
+        if let removeTag = makeBadgeEntity(text: "\(shopState.inventory.removeCardPrice)", affordable: isAffordable) {
+            removeTag.name = "shopRemovePrice"
+            removeTag.position = [0.06, 0.16, -0.92]
+            root.addChild(removeTag)
+        }
+
         let maxCount = min(runState.deck.count, Self.maxRemoveCardDisplayCount)
         for deckIndex in 0..<maxCount {
             let row = deckIndex / 4
             let col = deckIndex % 4
             let x = -0.46 + Float(col) * 0.12
             let z = -0.93 - Float(row) * 0.12
+            let itemPosition: SIMD3<Float> = [x, 0.10, z]
             let entity = makeShopActionEntity(
                 mesh: .generateBox(size: [0.08, 0.04, 0.10]),
                 color: actionColor(base: UIColor.systemPink, affordable: isAffordable),
-                position: [x, 0.10, z],
+                position: itemPosition,
                 name: Names.shopActionName("remove", index: deckIndex),
                 collisionSize: [0.11, 0.08, 0.13],
                 metallic: false
             )
             root.addChild(entity)
+            root.addChild(makeAffordabilityMarker(affordable: isAffordable, near: itemPosition))
         }
 
         if runState.deck.count > maxCount {
@@ -314,15 +361,21 @@ struct RoomSceneRenderer {
     }
 
     private func renderShopLeaveAction(in root: RealityKit.Entity) {
+        let leavePosition: SIMD3<Float> = [0.44, 0.09, -0.58]
         let leave = makeShopActionEntity(
             mesh: .generateCone(height: 0.14, radius: 0.06),
             color: UIColor.systemGray,
-            position: [0.44, 0.09, -0.58],
+            position: leavePosition,
             name: Names.shopActionName("leave"),
             collisionSize: [0.14, 0.18, 0.14],
             metallic: false
         )
         root.addChild(leave)
+        if let leaveTag = makeBadgeEntity(text: "EXIT", affordable: true) {
+            leaveTag.name = "shopLeaveLabel"
+            leaveTag.position = [leavePosition.x, leavePosition.y + 0.14, leavePosition.z]
+            root.addChild(leaveTag)
+        }
     }
 
     private func buildEventScene(nodeId: String, in root: RealityKit.Entity) {
@@ -371,6 +424,26 @@ struct RoomSceneRenderer {
     private func actionColor(base: UIColor, affordable: Bool) -> UIColor {
         if affordable { return base }
         return UIColor.systemRed.withAlphaComponent(0.85)
+    }
+
+    private func makeAffordabilityMarker(affordable: Bool, near position: SIMD3<Float>) -> ModelEntity {
+        let color = affordable
+            ? UIColor.systemGreen.withAlphaComponent(0.70)
+            : UIColor.systemRed.withAlphaComponent(0.72)
+        let marker = ModelEntity(
+            mesh: .generateCylinder(height: 0.004, radius: 0.06),
+            materials: [SimpleMaterial(color: color, isMetallic: false)]
+        )
+        marker.position = [position.x, max(0.01, position.y - 0.08), position.z]
+        return marker
+    }
+
+    private func makeBadgeEntity(text: String, affordable: Bool) -> ModelEntity? {
+        let style: FloatingTextFactory.Style = affordable ? .neutral : .damage
+        guard let badge = FloatingTextFactory.makeEntity(text: text, style: style) else { return nil }
+        badge.scale = [0.34, 0.34, 0.34]
+        badge.components.set(BillboardComponent())
+        return badge
     }
 
     private func makeShopActionEntity(

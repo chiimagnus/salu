@@ -15,6 +15,8 @@ struct ImmersiveRootView: View {
     @State private var peekedPile: PileKind? = nil
     @State private var didPeekInCurrentPress: Bool = false
     @State private var suppressNextTap: Bool = false
+    @State private var shownShopMessageSequence: UInt64 = 0
+    @State private var shopFeedbackTask: Task<Void, Never>? = nil
 
     private let nodeNamePrefix = "node:"
     private let roomPanelAttachmentId = "roomPanel"
@@ -215,10 +217,16 @@ struct ImmersiveRootView: View {
                     runState: runSession.runState,
                     in: roomLayer
                 )
+                if roomType == .shop {
+                    updateShopFeedback(in: roomLayer)
+                } else {
+                    clearShopFeedback(in: roomLayer)
+                }
                 battleSceneRenderer.clear(in: battleLayer)
 
             case .battle:
                 roomSceneRenderer.clear(in: roomLayer)
+                clearShopFeedback(in: roomLayer)
                 if let engine = runSession.battleEngine {
                     let newEvents = runSession.consumeNewBattlePresentationEvents()
                     battleSceneRenderer.render(
@@ -236,6 +244,7 @@ struct ImmersiveRootView: View {
 
             case .cardReward:
                 roomSceneRenderer.clear(in: roomLayer)
+                clearShopFeedback(in: roomLayer)
                 if let state = runSession.battleState {
                     let newEvents = runSession.consumeNewBattlePresentationEvents()
                     battleSceneRenderer.renderReward(state: state, in: battleLayer, newEvents: newEvents)
@@ -245,6 +254,7 @@ struct ImmersiveRootView: View {
 
             case .map, .runOver:
                 roomSceneRenderer.clear(in: roomLayer)
+                clearShopFeedback(in: roomLayer)
                 battleSceneRenderer.clear(in: battleLayer)
             }
 
@@ -422,6 +432,54 @@ struct ImmersiveRootView: View {
         default:
             break
         }
+    }
+
+    private func updateShopFeedback(in roomLayer: RealityKit.Entity) {
+        guard let shopState = runSession.shopRoomState,
+              let message = shopState.message,
+              !message.isEmpty else { return }
+        guard shopState.messageSequence > shownShopMessageSequence else { return }
+
+        shownShopMessageSequence = shopState.messageSequence
+        roomLayer.children
+            .filter { $0.name.hasPrefix("shopFeedback:") }
+            .forEach { $0.removeFromParent() }
+
+        let style = shopFeedbackStyle(for: message)
+        guard let feedback = FloatingTextFactory.makeEntity(text: message, style: style) else { return }
+        feedback.name = "shopFeedback:\(shopState.messageSequence)"
+        feedback.position = [0, 0.42, -0.76]
+        feedback.scale = [0.60, 0.60, 1.0]
+        feedback.components.set(BillboardComponent())
+        roomLayer.addChild(feedback)
+
+        shopFeedbackTask?.cancel()
+        shopFeedbackTask = Task { @MainActor in
+            var toTransform = feedback.transform
+            toTransform.translation = [feedback.position.x, feedback.position.y + 0.10, feedback.position.z]
+            feedback.move(to: toTransform, relativeTo: feedback.parent, duration: 0.85, timingFunction: .easeOut)
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            if Task.isCancelled { return }
+            feedback.removeFromParent()
+        }
+    }
+
+    private func clearShopFeedback(in roomLayer: RealityKit.Entity) {
+        roomLayer.children
+            .filter { $0.name.hasPrefix("shopFeedback:") }
+            .forEach { $0.removeFromParent() }
+        shopFeedbackTask?.cancel()
+        shopFeedbackTask = nil
+    }
+
+    private func shopFeedbackStyle(for message: String) -> FloatingTextFactory.Style {
+        if message.contains("不足")
+            || message.contains("无效")
+            || message.contains("失败")
+            || message.contains("已满") {
+            return .damage
+        }
+        return .block
     }
 
     private func addFloor(to root: RealityKit.Entity) {

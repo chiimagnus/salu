@@ -42,6 +42,7 @@ final class RunSession {
     private(set) var restRoomMessage: String?
     private(set) var shopRoomState: ShopRoomState?
     private(set) var eventRoomState: EventRoomState?
+    private var shopMessageSequence: UInt64 = 0
     private var battleSource: BattleSource = .mapNode
     private var eventBattleContext: EventBattleContext?
 
@@ -78,6 +79,7 @@ final class RunSession {
         restRoomMessage = nil
         shopRoomState = nil
         eventRoomState = nil
+        shopMessageSequence = 0
         battleSource = .mapNode
         eventBattleContext = nil
         route = .map
@@ -172,14 +174,14 @@ final class RunSession {
         var shopState = ensureShopRoomState(nodeId: nodeId, runState: runState)
 
         guard shopState.inventory.cardOffers.indices.contains(offerIndex) else {
-            shopState.message = "无效的卡牌编号"
+            setShopMessage("无效的卡牌编号", in: &shopState)
             shopRoomState = shopState
             return
         }
 
         let offer = shopState.inventory.cardOffers[offerIndex]
         guard runState.gold >= offer.price else {
-            shopState.message = "金币不足，无法购买该卡牌"
+            setShopMessage("金币不足，无法购买该卡牌", in: &shopState)
             shopRoomState = shopState
             return
         }
@@ -194,7 +196,7 @@ final class RunSession {
             consumableOffers: shopState.inventory.consumableOffers,
             removeCardPrice: shopState.inventory.removeCardPrice
         )
-        shopState.message = "购买成功：\(CardRegistry.require(offer.cardId).name.resolved(for: .zhHans))"
+        setShopMessage("购买成功：\(CardRegistry.require(offer.cardId).name.resolved(for: .zhHans))", in: &shopState)
         self.runState = runState
         shopRoomState = shopState
     }
@@ -205,14 +207,14 @@ final class RunSession {
         var shopState = ensureShopRoomState(nodeId: nodeId, runState: runState)
 
         guard shopState.inventory.relicOffers.indices.contains(offerIndex) else {
-            shopState.message = "无效的遗物编号"
+            setShopMessage("无效的遗物编号", in: &shopState)
             shopRoomState = shopState
             return
         }
 
         let offer = shopState.inventory.relicOffers[offerIndex]
         guard runState.gold >= offer.price else {
-            shopState.message = "金币不足，无法购买该遗物"
+            setShopMessage("金币不足，无法购买该遗物", in: &shopState)
             shopRoomState = shopState
             return
         }
@@ -228,7 +230,7 @@ final class RunSession {
             removeCardPrice: shopState.inventory.removeCardPrice
         )
         let relicDef = RelicRegistry.require(offer.relicId)
-        shopState.message = "购买成功：\(relicDef.icon) \(relicDef.name.resolved(for: .zhHans))"
+        setShopMessage("购买成功：\(relicDef.icon) \(relicDef.name.resolved(for: .zhHans))", in: &shopState)
         self.runState = runState
         shopRoomState = shopState
     }
@@ -239,26 +241,26 @@ final class RunSession {
         var shopState = ensureShopRoomState(nodeId: nodeId, runState: runState)
 
         guard shopState.inventory.consumableOffers.indices.contains(offerIndex) else {
-            shopState.message = "无效的消耗性卡牌编号"
+            setShopMessage("无效的消耗性卡牌编号", in: &shopState)
             shopRoomState = shopState
             return
         }
 
         let offer = shopState.inventory.consumableOffers[offerIndex]
         guard runState.gold >= offer.price else {
-            shopState.message = "金币不足，无法购买该消耗性卡牌"
+            setShopMessage("金币不足，无法购买该消耗性卡牌", in: &shopState)
             shopRoomState = shopState
             return
         }
 
         guard runState.addConsumableCardToDeck(cardId: offer.cardId) else {
-            shopState.message = "消耗性卡牌槽位已满（最多 \(RunState.maxConsumableCardSlots)）"
+            setShopMessage("消耗性卡牌槽位已满（最多 \(RunState.maxConsumableCardSlots)）", in: &shopState)
             shopRoomState = shopState
             return
         }
 
         runState.gold -= offer.price
-        shopState.message = "购买成功：\(CardRegistry.require(offer.cardId).name.resolved(for: .zhHans))"
+        setShopMessage("购买成功：\(CardRegistry.require(offer.cardId).name.resolved(for: .zhHans))", in: &shopState)
         self.runState = runState
         shopRoomState = shopState
     }
@@ -269,14 +271,14 @@ final class RunSession {
         var shopState = ensureShopRoomState(nodeId: nodeId, runState: runState)
 
         guard runState.deck.indices.contains(deckIndex) else {
-            shopState.message = "无效的卡牌编号"
+            setShopMessage("无效的卡牌编号", in: &shopState)
             shopRoomState = shopState
             return
         }
 
         let price = shopState.inventory.removeCardPrice
         guard runState.gold >= price else {
-            shopState.message = "金币不足，无法删牌"
+            setShopMessage("金币不足，无法删牌", in: &shopState)
             shopRoomState = shopState
             return
         }
@@ -284,7 +286,7 @@ final class RunSession {
         let removedCard = runState.deck[deckIndex]
         runState.removeCardFromDeck(at: deckIndex)
         runState.gold -= price
-        shopState.message = "删牌成功：\(CardRegistry.require(removedCard.cardId).name.resolved(for: .zhHans))"
+        setShopMessage("删牌成功：\(CardRegistry.require(removedCard.cardId).name.resolved(for: .zhHans))", in: &shopState)
         self.runState = runState
         shopRoomState = shopState
     }
@@ -885,6 +887,12 @@ final class RunSession {
         let generated = EventRoomState(nodeId: nodeId, offer: EventGenerator.generate(context: context))
         self.eventRoomState = generated
         return generated
+    }
+
+    private func setShopMessage(_ message: String, in shopState: inout ShopRoomState) {
+        shopMessageSequence &+= 1
+        shopState.message = message
+        shopState.messageSequence = shopMessageSequence
     }
 
     private func clearBattleState(preserveSnapshot: Bool) {
