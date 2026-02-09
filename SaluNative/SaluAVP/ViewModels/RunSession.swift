@@ -51,16 +51,8 @@ final class RunSession {
     private(set) var hasSavedRunSnapshot: Bool = false
     private(set) var lastAutosaveError: String?
 
-    private let traceStore = AVPRunTraceStore()
-    private(set) var hasSavedRunTrace: Bool = false
-    private(set) var lastTracePath: String?
-    private(set) var lastReplayError: String?
-    private var isReplaying: Bool = false
-    private(set) var runTrace: RunTrace?
-
     init() {
         refreshSnapshotPresence()
-        refreshTracePresence()
     }
 
     var selectedEnemyDisplayName: String? {
@@ -100,9 +92,7 @@ final class RunSession {
         battleSource = .mapNode
         eventBattleContext = nil
         route = .map
-        runTrace = RunTrace(seed: seed)
         refreshSnapshotPresence()
-        refreshTracePresence()
         autosaveIfNeeded()
     }
 
@@ -110,7 +100,6 @@ final class RunSession {
         guard var runState else { return }
         guard runState.enterNode(nodeId) else { return }
 
-        appendTrace(.selectNode(nodeId: nodeId))
         self.runState = runState
         autosaveIfNeeded()
 
@@ -154,7 +143,6 @@ final class RunSession {
     func restHeal() {
         guard case .room(_, .rest) = route else { return }
         guard var runState else { return }
-        appendTrace(.restHeal)
         _ = runState.restAtNode()
         self.runState = runState
         restRoomMessage = nil
@@ -169,7 +157,6 @@ final class RunSession {
             return
         }
 
-        appendTrace(.restUpgrade(deckIndex: deckIndex))
         self.runState = runState
         restRoomMessage = nil
         completeCurrentRoomAndReturnToMap()
@@ -192,7 +179,6 @@ final class RunSession {
 
     func leaveShopRoom() {
         guard case .room(_, .shop) = route else { return }
-        appendTrace(.leaveShop)
         completeCurrentRoomAndReturnToMap()
     }
 
@@ -222,7 +208,6 @@ final class RunSession {
             return
         }
 
-        appendTrace(.shopBuyCard(offerIndex: offerIndex))
         runState.gold -= offer.price
         runState.addCardToDeck(cardId: offer.cardId)
         var cardOffers = shopState.inventory.cardOffers
@@ -256,7 +241,6 @@ final class RunSession {
             return
         }
 
-        appendTrace(.shopBuyRelic(offerIndex: offerIndex))
         runState.gold -= offer.price
         runState.relicManager.add(offer.relicId)
         var relicOffers = shopState.inventory.relicOffers
@@ -297,7 +281,6 @@ final class RunSession {
             return
         }
 
-        appendTrace(.shopBuyConsumable(offerIndex: offerIndex))
         runState.gold -= offer.price
         setShopMessage("购买成功：\(CardRegistry.require(offer.cardId).name.resolved(for: .zhHans))", in: &shopState)
         self.runState = runState
@@ -322,7 +305,6 @@ final class RunSession {
             return
         }
 
-        appendTrace(.shopRemoveCard(deckIndex: deckIndex))
         let removedCard = runState.deck[deckIndex]
         runState.removeCardFromDeck(at: deckIndex)
         runState.gold -= price
@@ -343,7 +325,6 @@ final class RunSession {
         }
 
         let option = eventState.offer.options[optionIndex]
-        appendTrace(.eventChooseOption(optionIndex: optionIndex))
         var failureLines: [String] = []
         for effect in option.effects {
             guard runState.apply(effect) else {
@@ -434,7 +415,6 @@ final class RunSession {
             return
         }
 
-        appendTrace(.eventChooseUpgrade(deckIndex: deckIndex))
         let upgradedDef = CardRegistry.require(upgradedId)
         var lines = baseResultLines
         lines.append("升级：\(cardDef.name.resolved(for: .zhHans)) -> \(upgradedDef.name.resolved(for: .zhHans))")
@@ -452,7 +432,6 @@ final class RunSession {
 
         var lines = baseResultLines
         lines.append("你放弃了升级")
-        appendTrace(.eventSkipUpgrade)
         eventState.phase = .resolved(optionIndex: optionIndex, resultLines: lines)
         eventState.message = nil
         eventRoomState = eventState
@@ -462,7 +441,6 @@ final class RunSession {
         guard case .room(_, .event) = route else { return }
         guard let eventRoomState else { return }
         guard case .resolved = eventRoomState.phase else { return }
-        appendTrace(.eventComplete)
         completeCurrentRoomAndReturnToMap()
     }
 
@@ -471,14 +449,6 @@ final class RunSession {
         guard let battleEngine else { return }
         guard battleEngine.pendingInput == nil else { return }
         guard battleEngine.state.hand.indices.contains(handIndex) else { return }
-
-        let targetEntityId: String? = {
-            guard let selectedEnemyIndex, let battleState else { return nil }
-            guard battleState.enemies.indices.contains(selectedEnemyIndex) else { return nil }
-            return battleState.enemies[selectedEnemyIndex].id
-        }()
-        appendTrace(.playCard(handIndex: handIndex, targetEnemyEntityId: targetEntityId))
-
         let targetEnemyIndex = resolveTargetEnemyIndex(
             for: battleEngine.state.hand[handIndex],
             in: battleEngine.state
@@ -507,7 +477,6 @@ final class RunSession {
         guard routeIsBattle else { return }
         guard let battleEngine else { return }
         guard battleEngine.pendingInput == nil else { return }
-        appendTrace(.endTurn)
         _ = battleEngine.handleAction(.endTurn)
         syncBattleStateFromEngine()
         battleTargetHint = nil
@@ -547,7 +516,6 @@ final class RunSession {
     func selectEnemyTarget(entityId: String) {
         guard let battleState else { return }
         guard let index = battleState.enemies.firstIndex(where: { $0.id == entityId }) else { return }
-        appendTrace(.selectEnemy(entityId: entityId))
         selectEnemyTarget(index: index)
     }
 
@@ -592,7 +560,6 @@ final class RunSession {
             self.runState = runState
         }
 
-        appendTrace(.chooseRelicReward(take: take))
         rewardState.phase = .card
         route = .reward(rewardState)
         autosaveIfNeeded()
@@ -615,7 +582,6 @@ final class RunSession {
             guard offer.canSkip else { return }
         }
 
-        appendTrace(.chooseCardReward(cardId: cardId?.rawValue))
         runState.completeCurrentNode()
         self.runState = runState
 
@@ -637,7 +603,6 @@ final class RunSession {
     func continueAfterChapterEnd() {
         guard case .chapterEnd = route else { return }
         route = .map
-        appendTrace(.continueAfterChapterEnd)
         autosaveIfNeeded()
     }
 
@@ -665,45 +630,9 @@ final class RunSession {
             clearRoomState(clearEventBattleContext: true)
             route = restored.isOver ? .runOver(lastNodeId: restored.currentNodeId ?? "unknown", won: restored.won, floor: restored.floor) : .map
             hasSavedRunSnapshot = true
-            runTrace = RunTrace(seed: restored.seed)
         } catch {
             lastError = "Continue failed: \(error)"
             refreshSnapshotPresence()
-        }
-    }
-
-    func exportRunTrace() {
-        guard let runTrace else { return }
-        do {
-            try traceStore.save(runTrace)
-            refreshTracePresence()
-            lastTracePath = traceStore.tracePathString()
-            lastError = nil
-        } catch {
-            lastError = "Export trace failed: \(error)"
-        }
-    }
-
-    func clearRunTrace() {
-        guard let seed else {
-            runTrace = nil
-            return
-        }
-        runTrace = RunTrace(seed: seed)
-        lastReplayError = nil
-    }
-
-    func replayFromSavedTrace() {
-        do {
-            let trace = try traceStore.load()
-            lastReplayError = nil
-            lastError = nil
-            Task { @MainActor in
-                await replay(trace: trace)
-            }
-        } catch {
-            lastError = "Load trace failed: \(error)"
-            refreshTracePresence()
         }
     }
 
@@ -718,7 +647,6 @@ final class RunSession {
 
     private func autosaveIfNeeded() {
         // Best-effort. Never block gameplay flow on persistence, and never clobber lastError.
-        guard !isReplaying else { return }
         guard let runState else { return }
         do {
             let snapshot = RunSnapshotMapper.makeSnapshot(from: runState)
@@ -732,174 +660,6 @@ final class RunSession {
 
     private func refreshSnapshotPresence() {
         hasSavedRunSnapshot = snapshotStore.snapshotExists()
-    }
-
-    private func refreshTracePresence() {
-        hasSavedRunTrace = traceStore.traceExists()
-        lastTracePath = traceStore.tracePathString()
-    }
-
-    private func appendTrace(_ action: RunTrace.Action) {
-        guard !isReplaying else { return }
-        guard var runTrace else { return }
-        runTrace.append(action)
-        self.runTrace = runTrace
-    }
-
-    private enum ReplayError: Error, Sendable, Equatable {
-        case routeMismatch(expected: String, actual: String, entryId: Int)
-        case invalidEnemy(entityId: String, entryId: Int)
-    }
-
-    private func replay(trace: RunTrace) async {
-        isReplaying = true
-        defer { isReplaying = false }
-
-        // Reset and start deterministic run
-        seed = trace.seed
-        seedText = String(trace.seed)
-        startNewRun()
-        lastReplayError = nil
-
-        // Do not record trace during replay.
-        runTrace = nil
-
-        for entry in trace.entries {
-            do {
-                try applyReplayEntry(entry)
-            } catch {
-                lastReplayError = "Replay failed at #\(entry.id): \(error)"
-                return
-            }
-        }
-    }
-
-    private func applyReplayEntry(_ entry: RunTrace.Entry) throws {
-        switch entry.action {
-        case .selectNode(let nodeId):
-            guard case .map = route else { throw ReplayError.routeMismatch(expected: "map", actual: routeLabel(route), entryId: entry.id) }
-            selectAccessibleNode(nodeId)
-
-        case .selectEnemy(let entityId):
-            guard case .battle = route else { throw ReplayError.routeMismatch(expected: "battle", actual: routeLabel(route), entryId: entry.id) }
-            guard let battleState, battleState.enemies.contains(where: { $0.id == entityId }) else {
-                throw ReplayError.invalidEnemy(entityId: entityId, entryId: entry.id)
-            }
-            selectEnemyTarget(entityId: entityId)
-
-        case .playCard(let handIndex, let targetEnemyEntityId):
-            guard case .battle = route else { throw ReplayError.routeMismatch(expected: "battle", actual: routeLabel(route), entryId: entry.id) }
-            if let targetEnemyEntityId {
-                _ = targetEnemyEntityId
-                selectEnemyTarget(entityId: targetEnemyEntityId)
-            }
-            playCard(handIndex: handIndex)
-
-        case .endTurn:
-            guard case .battle = route else { throw ReplayError.routeMismatch(expected: "battle", actual: routeLabel(route), entryId: entry.id) }
-            endTurn()
-
-        case .chooseRelicReward(let take):
-            guard case .reward(let state) = route, state.phase == .relic else {
-                throw ReplayError.routeMismatch(expected: "reward(relic)", actual: routeLabel(route), entryId: entry.id)
-            }
-            chooseRelicReward(take: take)
-
-        case .chooseCardReward(let raw):
-            guard case .reward(let state) = route, state.phase == .card else {
-                throw ReplayError.routeMismatch(expected: "reward(card)", actual: routeLabel(route), entryId: entry.id)
-            }
-            chooseCardReward(raw.map { CardID($0) })
-
-        case .continueAfterChapterEnd:
-            guard case .chapterEnd = route else {
-                throw ReplayError.routeMismatch(expected: "chapterEnd", actual: routeLabel(route), entryId: entry.id)
-            }
-            continueAfterChapterEnd()
-
-        case .restHeal:
-            guard case .room(_, .rest) = route else {
-                throw ReplayError.routeMismatch(expected: "room(rest)", actual: routeLabel(route), entryId: entry.id)
-            }
-            restHeal()
-
-        case .restUpgrade(let deckIndex):
-            guard case .room(_, .rest) = route else {
-                throw ReplayError.routeMismatch(expected: "room(rest)", actual: routeLabel(route), entryId: entry.id)
-            }
-            restUpgradeCard(deckIndex: deckIndex)
-
-        case .shopBuyCard(let offerIndex):
-            guard case .room(_, .shop) = route else {
-                throw ReplayError.routeMismatch(expected: "room(shop)", actual: routeLabel(route), entryId: entry.id)
-            }
-            buyShopCard(at: offerIndex)
-
-        case .shopBuyRelic(let offerIndex):
-            guard case .room(_, .shop) = route else {
-                throw ReplayError.routeMismatch(expected: "room(shop)", actual: routeLabel(route), entryId: entry.id)
-            }
-            buyShopRelic(at: offerIndex)
-
-        case .shopBuyConsumable(let offerIndex):
-            guard case .room(_, .shop) = route else {
-                throw ReplayError.routeMismatch(expected: "room(shop)", actual: routeLabel(route), entryId: entry.id)
-            }
-            buyShopConsumable(at: offerIndex)
-
-        case .shopRemoveCard(let deckIndex):
-            guard case .room(_, .shop) = route else {
-                throw ReplayError.routeMismatch(expected: "room(shop)", actual: routeLabel(route), entryId: entry.id)
-            }
-            removeCardInShop(deckIndex: deckIndex)
-
-        case .leaveShop:
-            guard case .room(_, .shop) = route else {
-                throw ReplayError.routeMismatch(expected: "room(shop)", actual: routeLabel(route), entryId: entry.id)
-            }
-            leaveShopRoom()
-
-        case .eventChooseOption(let optionIndex):
-            guard case .room(_, .event) = route else {
-                throw ReplayError.routeMismatch(expected: "room(event)", actual: routeLabel(route), entryId: entry.id)
-            }
-            chooseEventOption(optionIndex)
-
-        case .eventChooseUpgrade(let deckIndex):
-            guard case .room(_, .event) = route else {
-                throw ReplayError.routeMismatch(expected: "room(event)", actual: routeLabel(route), entryId: entry.id)
-            }
-            chooseEventUpgradeCard(deckIndex: deckIndex)
-
-        case .eventSkipUpgrade:
-            guard case .room(_, .event) = route else {
-                throw ReplayError.routeMismatch(expected: "room(event)", actual: routeLabel(route), entryId: entry.id)
-            }
-            skipEventUpgradeChoice()
-
-        case .eventComplete:
-            guard case .room(_, .event) = route else {
-                throw ReplayError.routeMismatch(expected: "room(event)", actual: routeLabel(route), entryId: entry.id)
-            }
-            completeEventRoom()
-        }
-    }
-
-    private func routeLabel(_ route: Route) -> String {
-        switch route {
-        case .map:
-            return "map"
-        case .room(_, let roomType):
-            return "room(\(roomType.rawValue))"
-        case .battle(_, let roomType):
-            return "battle(\(roomType.rawValue))"
-        case .reward(let rewardState):
-            return "reward(\(rewardState.roomType.rawValue)#\(rewardState.phase))"
-        case .chapterEnd(let prev, let next):
-            return "chapterEnd(\(prev)->\(next))"
-        case .runOver(_, let won, let floor):
-            return "runOver(won:\(won), floor:\(floor))"
-        }
     }
 
     private func finishBattleIfNeeded() {
@@ -1080,16 +840,6 @@ final class RunSession {
         battleSource = .mapNode
         eventBattleContext = nil
         refreshSnapshotPresence()
-        refreshTracePresence()
-    }
-
-    func deleteSavedTrace() {
-        do {
-            try traceStore.delete()
-            refreshTracePresence()
-        } catch {
-            lastError = "Delete trace failed: \(error)"
-        }
     }
 
     private func consumeNewBattleEventSlice() -> ArraySlice<BattleEvent> {
