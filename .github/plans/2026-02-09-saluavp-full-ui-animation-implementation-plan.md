@@ -362,9 +362,9 @@
 
 ---
 
-### P6：存档与 Continue（控制面板能力补齐）
+### ✅P6：存档与 Continue（控制面板能力补齐）
 
-### Task 18: AVP 快照存储层（RunSnapshot）
+### ✅Task 18: AVP 快照存储层（RunSnapshot）
 **Files:**
 - Create: `SaluNative/SaluAVP/Persistence/AVPRunSnapshotStore.swift`
 - Create: `SaluNative/SaluAVP/Persistence/AVPDataDirectory.swift`
@@ -379,7 +379,7 @@
 **Step 3: 验证**
 - Manual: 新开 run -> 保存 -> 关闭重开 -> Continue 恢复。
 
-### Task 19: 控制面板 Continue / Save / Reset UI
+### ✅Task 19: 控制面板 Continue / Save / Reset UI
 **Files:**
 - Modify: `SaluNative/SaluAVP/ControlPanel/ControlPanelView.swift`
 - Modify: `SaluNative/SaluAVP/ViewModels/RunSession.swift`
@@ -393,7 +393,7 @@
 **Step 3: 验证**
 - Manual: 有存档和无存档两条路径。
 
-### Task 20: 自动保存策略
+### ✅Task 20: 自动保存策略
 **Files:**
 - Modify: `SaluNative/SaluAVP/ViewModels/RunSession.swift`
 

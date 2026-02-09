@@ -47,6 +47,14 @@ final class RunSession {
     private var battleSource: BattleSource = .mapNode
     private var eventBattleContext: EventBattleContext?
 
+    private let snapshotStore = AVPRunSnapshotStore()
+    private(set) var hasSavedRunSnapshot: Bool = false
+    private(set) var lastAutosaveError: String?
+
+    init() {
+        refreshSnapshotPresence()
+    }
+
     var selectedEnemyDisplayName: String? {
         guard let battleState, let selectedEnemyIndex else { return nil }
         guard battleState.enemies.indices.contains(selectedEnemyIndex) else { return nil }
@@ -84,6 +92,8 @@ final class RunSession {
         battleSource = .mapNode
         eventBattleContext = nil
         route = .map
+        refreshSnapshotPresence()
+        autosaveIfNeeded()
     }
 
     func selectAccessibleNode(_ nodeId: String) {
@@ -91,6 +101,7 @@ final class RunSession {
         guard runState.enterNode(nodeId) else { return }
 
         self.runState = runState
+        autosaveIfNeeded()
 
         guard let node = runState.map.node(withId: nodeId) else {
             lastError = "Node not found: \(nodeId)"
@@ -125,6 +136,8 @@ final class RunSession {
         } else {
             route = .map
         }
+
+        autosaveIfNeeded()
     }
 
     func restHeal() {
@@ -549,6 +562,7 @@ final class RunSession {
 
         rewardState.phase = .card
         route = .reward(rewardState)
+        autosaveIfNeeded()
     }
 
     func chooseCardReward(_ cardId: CardID?) {
@@ -582,11 +596,70 @@ final class RunSession {
                 route = .map
             }
         }
+
+        autosaveIfNeeded()
     }
 
     func continueAfterChapterEnd() {
         guard case .chapterEnd = route else { return }
         route = .map
+        autosaveIfNeeded()
+    }
+
+    func saveRunSnapshot() {
+        guard let runState else { return }
+        do {
+            let snapshot = RunSnapshotMapper.makeSnapshot(from: runState)
+            try snapshotStore.save(snapshot)
+            hasSavedRunSnapshot = true
+            lastError = nil
+        } catch {
+            lastError = "Save failed: \(error)"
+        }
+    }
+
+    func continueFromSavedSnapshot() {
+        do {
+            let snapshot = try snapshotStore.load()
+            let restored = try RunSnapshotMapper.loadRunState(from: snapshot)
+            seed = restored.seed
+            seedText = String(restored.seed)
+            runState = restored
+            lastError = nil
+            clearBattleState(preserveSnapshot: false)
+            clearRoomState(clearEventBattleContext: true)
+            route = restored.isOver ? .runOver(lastNodeId: restored.currentNodeId ?? "unknown", won: restored.won, floor: restored.floor) : .map
+            hasSavedRunSnapshot = true
+        } catch {
+            lastError = "Continue failed: \(error)"
+            refreshSnapshotPresence()
+        }
+    }
+
+    func deleteSavedSnapshot() {
+        do {
+            try snapshotStore.delete()
+            refreshSnapshotPresence()
+        } catch {
+            lastError = "Delete save failed: \(error)"
+        }
+    }
+
+    private func autosaveIfNeeded() {
+        // Best-effort. Never block gameplay flow on persistence, and never clobber lastError.
+        guard let runState else { return }
+        do {
+            let snapshot = RunSnapshotMapper.makeSnapshot(from: runState)
+            try snapshotStore.save(snapshot)
+            hasSavedRunSnapshot = true
+            lastAutosaveError = nil
+        } catch {
+            lastAutosaveError = String(describing: error)
+        }
+    }
+
+    private func refreshSnapshotPresence() {
+        hasSavedRunSnapshot = snapshotStore.snapshotExists()
     }
 
     private func finishBattleIfNeeded() {
@@ -648,10 +721,12 @@ final class RunSession {
                     relicReward: relicReward
                 )
             )
+            autosaveIfNeeded()
         } else {
             clearBattleState(preserveSnapshot: false)
             clearRoomState(clearEventBattleContext: true)
             route = .runOver(lastNodeId: nodeId, won: false, floor: runState.floor)
+            autosaveIfNeeded()
         }
     }
 
@@ -764,6 +839,7 @@ final class RunSession {
         eventRoomState = nil
         battleSource = .mapNode
         eventBattleContext = nil
+        refreshSnapshotPresence()
     }
 
     private func consumeNewBattleEventSlice() -> ArraySlice<BattleEvent> {
