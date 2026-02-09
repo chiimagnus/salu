@@ -13,6 +13,18 @@ final class RunSession {
         case runOver(lastNodeId: String, won: Bool, floor: Int)
     }
 
+    private enum BattleSource: Sendable, Equatable {
+        case mapNode
+        case eventFollowUp
+    }
+
+    private struct EventBattleContext: Sendable {
+        let nodeId: String
+        let optionIndex: Int
+        let enemyId: EnemyID
+        let baseResultLines: [String]
+    }
+
     var seedText: String = ""
     private(set) var seed: UInt64?
     var lastError: String?
@@ -27,6 +39,11 @@ final class RunSession {
     private var playedCardContextsBySequence: [Int: PlayedCardPresentationContext] = [:]
     private(set) var selectedEnemyIndex: Int?
     private(set) var battleTargetHint: String?
+    private(set) var restRoomMessage: String?
+    private(set) var shopRoomState: ShopRoomState?
+    private(set) var eventRoomState: EventRoomState?
+    private var battleSource: BattleSource = .mapNode
+    private var eventBattleContext: EventBattleContext?
 
     var selectedEnemyDisplayName: String? {
         guard let battleState, let selectedEnemyIndex else { return nil }
@@ -58,6 +75,11 @@ final class RunSession {
         playedCardContextsBySequence = [:]
         selectedEnemyIndex = nil
         battleTargetHint = nil
+        restRoomMessage = nil
+        shopRoomState = nil
+        eventRoomState = nil
+        battleSource = .mapNode
+        eventBattleContext = nil
         route = .map
     }
 
@@ -74,8 +96,10 @@ final class RunSession {
 
         switch node.roomType {
         case .battle, .elite, .boss:
-            startBattle(nodeId: nodeId, roomType: node.roomType)
+            clearRoomState(clearEventBattleContext: true)
+            startBattle(nodeId: nodeId, roomType: node.roomType, source: .mapNode)
         default:
+            prepareRoomState(nodeId: nodeId, roomType: node.roomType, runState: runState)
             route = .room(nodeId: nodeId, roomType: node.roomType)
         }
     }
@@ -91,12 +115,309 @@ final class RunSession {
         guard var runState else { return }
         runState.completeCurrentNode()
         self.runState = runState
+        clearRoomState(clearEventBattleContext: true)
 
         if runState.isOver, let lastNodeId {
             route = .runOver(lastNodeId: lastNodeId, won: runState.won, floor: runState.floor)
         } else {
             route = .map
         }
+    }
+
+    func restHeal() {
+        guard case .room(_, .rest) = route else { return }
+        guard var runState else { return }
+        _ = runState.restAtNode()
+        self.runState = runState
+        restRoomMessage = nil
+        completeCurrentRoomAndReturnToMap()
+    }
+
+    func restUpgradeCard(deckIndex: Int) {
+        guard case .room(_, .rest) = route else { return }
+        guard var runState else { return }
+        guard runState.upgradeCard(at: deckIndex) else {
+            restRoomMessage = "该卡牌无法升级"
+            return
+        }
+
+        self.runState = runState
+        restRoomMessage = nil
+        completeCurrentRoomAndReturnToMap()
+    }
+
+    func restTalkToAira() {
+        guard case .room(_, .rest) = route else { return }
+        guard let runState else { return }
+
+        let dialogue = RestPointDialogues.getAiraDialogue(floor: runState.floor)
+        var lines = [
+            dialogue.title.resolved(for: .zhHans),
+            dialogue.content.resolved(for: .zhHans)
+        ]
+        if let effect = dialogue.effect?.resolved(for: .zhHans), !effect.isEmpty {
+            lines.append("效果：\(effect)")
+        }
+        restRoomMessage = lines.joined(separator: "\n\n")
+    }
+
+    func leaveShopRoom() {
+        guard case .room(_, .shop) = route else { return }
+        completeCurrentRoomAndReturnToMap()
+    }
+
+    func buyShopCard(at offerIndex: Int) {
+        guard case .room(let nodeId, .shop) = route else { return }
+        guard var runState else { return }
+        var shopState = ensureShopRoomState(nodeId: nodeId, runState: runState)
+
+        guard shopState.inventory.cardOffers.indices.contains(offerIndex) else {
+            shopState.message = "无效的卡牌编号"
+            shopRoomState = shopState
+            return
+        }
+
+        let offer = shopState.inventory.cardOffers[offerIndex]
+        guard runState.gold >= offer.price else {
+            shopState.message = "金币不足，无法购买该卡牌"
+            shopRoomState = shopState
+            return
+        }
+
+        runState.gold -= offer.price
+        runState.addCardToDeck(cardId: offer.cardId)
+        var cardOffers = shopState.inventory.cardOffers
+        cardOffers.remove(at: offerIndex)
+        shopState.inventory = ShopInventory(
+            cardOffers: cardOffers,
+            relicOffers: shopState.inventory.relicOffers,
+            consumableOffers: shopState.inventory.consumableOffers,
+            removeCardPrice: shopState.inventory.removeCardPrice
+        )
+        shopState.message = "购买成功：\(CardRegistry.require(offer.cardId).name.resolved(for: .zhHans))"
+        self.runState = runState
+        shopRoomState = shopState
+    }
+
+    func buyShopRelic(at offerIndex: Int) {
+        guard case .room(let nodeId, .shop) = route else { return }
+        guard var runState else { return }
+        var shopState = ensureShopRoomState(nodeId: nodeId, runState: runState)
+
+        guard shopState.inventory.relicOffers.indices.contains(offerIndex) else {
+            shopState.message = "无效的遗物编号"
+            shopRoomState = shopState
+            return
+        }
+
+        let offer = shopState.inventory.relicOffers[offerIndex]
+        guard runState.gold >= offer.price else {
+            shopState.message = "金币不足，无法购买该遗物"
+            shopRoomState = shopState
+            return
+        }
+
+        runState.gold -= offer.price
+        runState.relicManager.add(offer.relicId)
+        var relicOffers = shopState.inventory.relicOffers
+        relicOffers.remove(at: offerIndex)
+        shopState.inventory = ShopInventory(
+            cardOffers: shopState.inventory.cardOffers,
+            relicOffers: relicOffers,
+            consumableOffers: shopState.inventory.consumableOffers,
+            removeCardPrice: shopState.inventory.removeCardPrice
+        )
+        let relicDef = RelicRegistry.require(offer.relicId)
+        shopState.message = "购买成功：\(relicDef.icon) \(relicDef.name.resolved(for: .zhHans))"
+        self.runState = runState
+        shopRoomState = shopState
+    }
+
+    func buyShopConsumable(at offerIndex: Int) {
+        guard case .room(let nodeId, .shop) = route else { return }
+        guard var runState else { return }
+        var shopState = ensureShopRoomState(nodeId: nodeId, runState: runState)
+
+        guard shopState.inventory.consumableOffers.indices.contains(offerIndex) else {
+            shopState.message = "无效的消耗性卡牌编号"
+            shopRoomState = shopState
+            return
+        }
+
+        let offer = shopState.inventory.consumableOffers[offerIndex]
+        guard runState.gold >= offer.price else {
+            shopState.message = "金币不足，无法购买该消耗性卡牌"
+            shopRoomState = shopState
+            return
+        }
+
+        guard runState.addConsumableCardToDeck(cardId: offer.cardId) else {
+            shopState.message = "消耗性卡牌槽位已满（最多 \(RunState.maxConsumableCardSlots)）"
+            shopRoomState = shopState
+            return
+        }
+
+        runState.gold -= offer.price
+        shopState.message = "购买成功：\(CardRegistry.require(offer.cardId).name.resolved(for: .zhHans))"
+        self.runState = runState
+        shopRoomState = shopState
+    }
+
+    func removeCardInShop(deckIndex: Int) {
+        guard case .room(let nodeId, .shop) = route else { return }
+        guard var runState else { return }
+        var shopState = ensureShopRoomState(nodeId: nodeId, runState: runState)
+
+        guard runState.deck.indices.contains(deckIndex) else {
+            shopState.message = "无效的卡牌编号"
+            shopRoomState = shopState
+            return
+        }
+
+        let price = shopState.inventory.removeCardPrice
+        guard runState.gold >= price else {
+            shopState.message = "金币不足，无法删牌"
+            shopRoomState = shopState
+            return
+        }
+
+        let removedCard = runState.deck[deckIndex]
+        runState.removeCardFromDeck(at: deckIndex)
+        runState.gold -= price
+        shopState.message = "删牌成功：\(CardRegistry.require(removedCard.cardId).name.resolved(for: .zhHans))"
+        self.runState = runState
+        shopRoomState = shopState
+    }
+
+    func chooseEventOption(_ optionIndex: Int) {
+        guard case .room(let nodeId, .event) = route else { return }
+        guard var runState else { return }
+        var eventState = ensureEventRoomState(nodeId: nodeId, runState: runState)
+        guard case .choosing = eventState.phase else { return }
+        guard eventState.offer.options.indices.contains(optionIndex) else {
+            eventState.message = "无效的事件选项"
+            eventRoomState = eventState
+            return
+        }
+
+        let option = eventState.offer.options[optionIndex]
+        var failureLines: [String] = []
+        for effect in option.effects {
+            guard runState.apply(effect) else {
+                failureLines.append(eventApplyFailureLine(for: effect))
+                continue
+            }
+        }
+        self.runState = runState
+
+        if runState.isOver {
+            clearRoomState(clearEventBattleContext: true)
+            route = .runOver(lastNodeId: nodeId, won: false, floor: runState.floor)
+            return
+        }
+
+        let baseResultLines = buildEventResultLines(option: option, additional: failureLines)
+
+        if let followUp = option.followUp {
+            switch followUp {
+            case .chooseUpgradeableCard(let indices):
+                let validIndices = indices.filter { index in
+                    runState.deck.indices.contains(index)
+                    && RunState.upgradedCard(from: runState.deck[index]) != nil
+                }
+                if validIndices.isEmpty {
+                    var lines = baseResultLines
+                    lines.append("没有可升级的卡牌")
+                    eventState.phase = .resolved(optionIndex: optionIndex, resultLines: lines)
+                } else {
+                    eventState.phase = .chooseUpgrade(
+                        optionIndex: optionIndex,
+                        indices: validIndices,
+                        baseResultLines: baseResultLines
+                    )
+                }
+                eventState.message = nil
+                eventRoomState = eventState
+
+            case .startEliteBattle(let enemyId):
+                eventState.phase = .awaitingBattleResolution(
+                    optionIndex: optionIndex,
+                    enemyId: enemyId,
+                    baseResultLines: baseResultLines
+                )
+                eventState.message = nil
+                eventRoomState = eventState
+                eventBattleContext = EventBattleContext(
+                    nodeId: nodeId,
+                    optionIndex: optionIndex,
+                    enemyId: enemyId,
+                    baseResultLines: baseResultLines
+                )
+                startBattle(
+                    nodeId: nodeId,
+                    roomType: .elite,
+                    forcedEnemyIds: [enemyId],
+                    source: .eventFollowUp
+                )
+            }
+            return
+        }
+
+        eventState.phase = .resolved(optionIndex: optionIndex, resultLines: baseResultLines)
+        eventState.message = nil
+        eventRoomState = eventState
+    }
+
+    func chooseEventUpgradeCard(deckIndex: Int) {
+        guard case .room(let nodeId, .event) = route else { return }
+        guard var runState else { return }
+        var eventState = ensureEventRoomState(nodeId: nodeId, runState: runState)
+        guard case .chooseUpgrade(let optionIndex, let indices, let baseResultLines) = eventState.phase else { return }
+        guard indices.contains(deckIndex), runState.deck.indices.contains(deckIndex) else {
+            eventState.message = "请选择有效的升级目标"
+            eventRoomState = eventState
+            return
+        }
+
+        let card = runState.deck[deckIndex]
+        guard let cardDef = CardRegistry.get(card.cardId), let upgradedId = cardDef.upgradedId else {
+            eventState.message = "该卡牌无法升级"
+            eventRoomState = eventState
+            return
+        }
+        guard runState.upgradeCard(at: deckIndex) else {
+            eventState.message = "升级失败，请重试"
+            eventRoomState = eventState
+            return
+        }
+
+        let upgradedDef = CardRegistry.require(upgradedId)
+        var lines = baseResultLines
+        lines.append("升级：\(cardDef.name.resolved(for: .zhHans)) -> \(upgradedDef.name.resolved(for: .zhHans))")
+        eventState.phase = .resolved(optionIndex: optionIndex, resultLines: lines)
+        eventState.message = nil
+        self.runState = runState
+        eventRoomState = eventState
+    }
+
+    func skipEventUpgradeChoice() {
+        guard case .room(let nodeId, .event) = route else { return }
+        guard let runState else { return }
+        var eventState = ensureEventRoomState(nodeId: nodeId, runState: runState)
+        guard case .chooseUpgrade(let optionIndex, _, let baseResultLines) = eventState.phase else { return }
+
+        var lines = baseResultLines
+        lines.append("你放弃了升级")
+        eventState.phase = .resolved(optionIndex: optionIndex, resultLines: lines)
+        eventState.message = nil
+        eventRoomState = eventState
+    }
+
+    func completeEventRoom() {
+        guard case .room(_, .event) = route else { return }
+        guard let eventRoomState else { return }
+        guard case .resolved = eventRoomState.phase else { return }
+        completeCurrentRoomAndReturnToMap()
     }
 
     func playCard(handIndex: Int) {
@@ -214,14 +535,7 @@ final class RunSession {
         runState.completeCurrentNode()
         self.runState = runState
 
-        battleState = nil
-        battleEvents = []
-        battleNodeId = nil
-        battleRoomType = nil
-        lastConsumedBattleEventIndex = 0
-        playedCardContextsBySequence = [:]
-        selectedEnemyIndex = nil
-        battleTargetHint = nil
+        clearBattleState(preserveSnapshot: false)
 
         if runState.isOver {
             route = .runOver(lastNodeId: nodeId, won: runState.won, floor: runState.floor)
@@ -238,14 +552,19 @@ final class RunSession {
 
         let nodeId = battleNodeId ?? runState.currentNodeId ?? "unknown"
         let roomTypeForRewards = battleRoomType ?? .battle
+        let battleSource = self.battleSource
         runState.updateFromBattle(playerHP: battleEngine.state.player.currentHP)
         self.runState = runState
 
-        // Freeze the final battle state for UI (reward panel), but release the engine.
-        self.battleEvents = battleEngine.events
-        self.battleEngine = nil
-
         if battleEngine.state.playerWon == true {
+            if battleSource == .eventFollowUp {
+                resolveEventEliteBattleVictory(nodeId: nodeId)
+                return
+            }
+
+            // Freeze the final battle state for UI (reward panel), but release the engine.
+            self.battleEvents = battleEngine.events
+            clearBattleState(preserveSnapshot: true)
             let rewardContext = RewardContext(
                 seed: runState.seed,
                 floor: runState.floor,
@@ -260,60 +579,68 @@ final class RunSession {
             let offer = RewardGenerator.generateCardReward(context: rewardContext)
             route = .cardReward(nodeId: nodeId, roomType: roomTypeForRewards, offer: offer, goldEarned: goldEarned)
         } else {
-            self.battleState = nil
-            self.battleEvents = []
-            self.battleNodeId = nil
-            self.battleRoomType = nil
-            self.lastConsumedBattleEventIndex = 0
-            self.playedCardContextsBySequence = [:]
-            self.selectedEnemyIndex = nil
-            self.battleTargetHint = nil
+            clearBattleState(preserveSnapshot: false)
+            clearRoomState(clearEventBattleContext: true)
             route = .runOver(lastNodeId: nodeId, won: false, floor: runState.floor)
         }
     }
 
-    private func startBattle(nodeId: String, roomType: RoomType) {
+    private func startBattle(
+        nodeId: String,
+        roomType: RoomType,
+        forcedEnemyIds: [EnemyID]? = nil,
+        source: BattleSource
+    ) {
         guard let runState else { return }
 
         let battleSeed = SeedDerivation.battleSeed(runSeed: runState.seed, floor: runState.floor, nodeId: nodeId)
         var rng = SeededRNG(seed: battleSeed)
 
         let enemyIds: [EnemyID]
-        switch roomType {
-        case .battle:
-            let encounter: EnemyEncounter
-            switch runState.floor {
-            case 1:
-                encounter = Act1EncounterPool.randomWeak(rng: &rng)
-            case 2:
-                encounter = Act2EncounterPool.randomWeak(rng: &rng)
-            default:
-                encounter = Act3EncounterPool.randomWeak(rng: &rng)
-            }
-            enemyIds = encounter.enemyIds
+        if let forcedEnemyIds {
+            enemyIds = forcedEnemyIds
+        } else {
+            switch roomType {
+            case .battle:
+                let encounter: EnemyEncounter
+                switch runState.floor {
+                case 1:
+                    encounter = Act1EncounterPool.randomWeak(rng: &rng)
+                case 2:
+                    encounter = Act2EncounterPool.randomWeak(rng: &rng)
+                default:
+                    encounter = Act3EncounterPool.randomWeak(rng: &rng)
+                }
+                enemyIds = encounter.enemyIds
 
-        case .elite:
-            switch runState.floor {
-            case 1:
-                enemyIds = [Act1EnemyPool.randomMedium(rng: &rng)]
-            case 2:
-                enemyIds = [Act2EnemyPool.randomMedium(rng: &rng)]
-            default:
-                enemyIds = [Act3EnemyPool.randomMedium(rng: &rng)]
-            }
+            case .elite:
+                switch runState.floor {
+                case 1:
+                    enemyIds = [Act1EnemyPool.randomMedium(rng: &rng)]
+                case 2:
+                    enemyIds = [Act2EnemyPool.randomMedium(rng: &rng)]
+                default:
+                    enemyIds = [Act3EnemyPool.randomMedium(rng: &rng)]
+                }
 
-        case .boss:
-            switch runState.floor {
-            case 1:
-                enemyIds = ["toxic_colossus"]
-            case 2:
-                enemyIds = ["cipher"]
-            default:
-                enemyIds = ["sequence_progenitor"]
-            }
+            case .boss:
+                switch runState.floor {
+                case 1:
+                    enemyIds = ["toxic_colossus"]
+                case 2:
+                    enemyIds = ["cipher"]
+                default:
+                    enemyIds = ["sequence_progenitor"]
+                }
 
-        default:
-            lastError = "Not a battle room: \(roomType.rawValue)"
+            default:
+                lastError = "Not a battle room: \(roomType.rawValue)"
+                return
+            }
+        }
+
+        guard !enemyIds.isEmpty else {
+            lastError = "No enemies available for battle start."
             return
         }
 
@@ -338,6 +665,10 @@ final class RunSession {
         playedCardContextsBySequence = [:]
         selectedEnemyIndex = enemies.count == 1 ? 0 : nil
         battleTargetHint = nil
+        battleSource = source
+        if source == .mapNode {
+            eventBattleContext = nil
+        }
         route = .battle(nodeId: nodeId, roomType: roomType)
     }
 
@@ -358,6 +689,11 @@ final class RunSession {
         playedCardContextsBySequence = [:]
         selectedEnemyIndex = nil
         battleTargetHint = nil
+        restRoomMessage = nil
+        shopRoomState = nil
+        eventRoomState = nil
+        battleSource = .mapNode
+        eventBattleContext = nil
     }
 
     private func consumeNewBattleEventSlice() -> ArraySlice<BattleEvent> {
@@ -453,6 +789,194 @@ final class RunSession {
             guard case .invalidAction(let reason) = event else { continue }
             battleTargetHint = reason.resolved(for: .zhHans)
             return
+        }
+    }
+
+    private func clearRoomState(clearEventBattleContext: Bool) {
+        restRoomMessage = nil
+        shopRoomState = nil
+        eventRoomState = nil
+        if clearEventBattleContext {
+            eventBattleContext = nil
+        }
+    }
+
+    private func prepareRoomState(nodeId: String, roomType: RoomType, runState: RunState) {
+        restRoomMessage = nil
+        eventBattleContext = nil
+
+        switch roomType {
+        case .rest:
+            shopRoomState = nil
+            eventRoomState = nil
+
+        case .shop:
+            let context = ShopContext(
+                seed: runState.seed,
+                floor: runState.floor,
+                currentRow: runState.currentRow,
+                nodeId: nodeId,
+                ownedRelicIds: runState.relicManager.all
+            )
+            shopRoomState = ShopRoomState(
+                nodeId: nodeId,
+                inventory: ShopInventory.generate(context: context)
+            )
+            eventRoomState = nil
+
+        case .event:
+            let context = EventContext(
+                seed: runState.seed,
+                floor: runState.floor,
+                currentRow: runState.currentRow,
+                nodeId: nodeId,
+                playerMaxHP: runState.player.maxHP,
+                playerCurrentHP: runState.player.currentHP,
+                gold: runState.gold,
+                deck: runState.deck,
+                relicIds: runState.relicManager.all
+            )
+            eventRoomState = EventRoomState(
+                nodeId: nodeId,
+                offer: EventGenerator.generate(context: context)
+            )
+            shopRoomState = nil
+
+        default:
+            shopRoomState = nil
+            eventRoomState = nil
+        }
+    }
+
+    private func ensureShopRoomState(nodeId: String, runState: RunState) -> ShopRoomState {
+        if let shopRoomState, shopRoomState.nodeId == nodeId {
+            return shopRoomState
+        }
+        let context = ShopContext(
+            seed: runState.seed,
+            floor: runState.floor,
+            currentRow: runState.currentRow,
+            nodeId: nodeId,
+            ownedRelicIds: runState.relicManager.all
+        )
+        let generated = ShopRoomState(
+            nodeId: nodeId,
+            inventory: ShopInventory.generate(context: context)
+        )
+        self.shopRoomState = generated
+        return generated
+    }
+
+    private func ensureEventRoomState(nodeId: String, runState: RunState) -> EventRoomState {
+        if let eventRoomState, eventRoomState.nodeId == nodeId {
+            return eventRoomState
+        }
+        let context = EventContext(
+            seed: runState.seed,
+            floor: runState.floor,
+            currentRow: runState.currentRow,
+            nodeId: nodeId,
+            playerMaxHP: runState.player.maxHP,
+            playerCurrentHP: runState.player.currentHP,
+            gold: runState.gold,
+            deck: runState.deck,
+            relicIds: runState.relicManager.all
+        )
+        let generated = EventRoomState(nodeId: nodeId, offer: EventGenerator.generate(context: context))
+        self.eventRoomState = generated
+        return generated
+    }
+
+    private func clearBattleState(preserveSnapshot: Bool) {
+        battleEngine = nil
+        if !preserveSnapshot {
+            battleState = nil
+            battleEvents = []
+        }
+        battleNodeId = nil
+        battleRoomType = nil
+        lastConsumedBattleEventIndex = 0
+        playedCardContextsBySequence = [:]
+        selectedEnemyIndex = nil
+        battleTargetHint = nil
+        battleSource = .mapNode
+        eventBattleContext = nil
+    }
+
+    private func resolveEventEliteBattleVictory(nodeId: String) {
+        let context = eventBattleContext
+        clearBattleState(preserveSnapshot: false)
+
+        guard var eventRoomState,
+              let context,
+              eventRoomState.nodeId == nodeId,
+              context.nodeId == nodeId else {
+            route = .room(nodeId: nodeId, roomType: .event)
+            return
+        }
+
+        let enemyName = EnemyRegistry.require(context.enemyId).name.resolved(for: .zhHans)
+        var resultLines = context.baseResultLines
+        resultLines.append("你击败了：\(enemyName)")
+        eventRoomState.phase = .resolved(optionIndex: context.optionIndex, resultLines: resultLines)
+        eventRoomState.message = nil
+        self.eventRoomState = eventRoomState
+        route = .room(nodeId: nodeId, roomType: .event)
+    }
+
+    private func buildEventResultLines(option: EventOption, additional: [String]) -> [String] {
+        if let preview = option.preview {
+            let text = preview.resolved(for: .zhHans)
+            if !text.isEmpty {
+                return [text] + additional
+            }
+        }
+
+        if option.effects.isEmpty {
+            return additional.isEmpty ? ["没有发生任何事。"] : additional
+        }
+
+        let base = option.effects.map(describeRunEffect)
+        return base + additional
+    }
+
+    private func describeRunEffect(_ effect: RunEffect) -> String {
+        switch effect {
+        case .gainGold(let amount):
+            return "获得 \(amount) 金币"
+        case .loseGold(let amount):
+            return "失去 \(amount) 金币"
+        case .heal(let amount):
+            return "恢复 \(amount) HP"
+        case .takeDamage(let amount):
+            return "失去 \(amount) HP"
+        case .addCard(let cardId):
+            let name = CardRegistry.require(cardId).name.resolved(for: .zhHans)
+            return "获得卡牌：\(name)"
+        case .addRelic(let relicId):
+            let def = RelicRegistry.require(relicId)
+            return "获得遗物：\(def.icon) \(def.name.resolved(for: .zhHans))"
+        case .applyStatus(let statusId, let stacks):
+            let statusName = StatusRegistry.get(statusId)?.name.resolved(for: .zhHans) ?? statusId.rawValue
+            let sign = stacks >= 0 ? "+" : ""
+            return "\(statusName) \(sign)\(stacks)"
+        case .setStatus(let statusId, let stacks):
+            let statusName = StatusRegistry.get(statusId)?.name.resolved(for: .zhHans) ?? statusId.rawValue
+            return "\(statusName) 设为 \(stacks)"
+        case .upgradeCard:
+            return "升级了一张卡牌"
+        }
+    }
+
+    private func eventApplyFailureLine(for effect: RunEffect) -> String {
+        switch effect {
+        case .addCard(let cardId):
+            if let def = CardRegistry.get(cardId), def.type == .consumable {
+                return "消耗性卡牌槽位已满，未能获得 \(def.name.resolved(for: .zhHans))"
+            }
+            return "未能获得卡牌"
+        default:
+            return "有一项效果未能生效"
         }
     }
 }

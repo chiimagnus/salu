@@ -277,18 +277,38 @@ struct ImmersiveRootView: View {
             }
         } attachments: {
             Attachment(id: roomPanelAttachmentId) {
-                RoomPanel(
-                    route: runSession.route,
-                    onCompleteRoom: { runSession.completeCurrentRoomAndReturnToMap() },
-                    onNewRun: { runSession.startNewRun() },
-                    onClose: {
-                        Task { @MainActor in
-                            runSession.resetToControlPanel()
-                            await dismissImmersiveSpace()
-                            openWindow(id: AppModel.controlPanelWindowID)
+                switch runSession.route {
+                case .room(let nodeId, let roomType):
+                    switch roomType {
+                    case .rest:
+                        RestRoomPanel(nodeId: nodeId)
+                    case .shop:
+                        ShopRoomPanel(nodeId: nodeId)
+                    case .event:
+                        EventRoomPanel(nodeId: nodeId)
+                    default:
+                        GenericRoomPanel(nodeId: nodeId, roomType: roomType) {
+                            runSession.completeCurrentRoomAndReturnToMap()
                         }
                     }
-                )
+
+                case .runOver(_, let won, let floor):
+                    RunOverPanel(
+                        won: won,
+                        floor: floor,
+                        onNewRun: { runSession.startNewRun() },
+                        onClose: {
+                            Task { @MainActor in
+                                runSession.resetToControlPanel()
+                                await dismissImmersiveSpace()
+                                openWindow(id: AppModel.controlPanelWindowID)
+                            }
+                        }
+                    )
+
+                case .map, .battle, .cardReward:
+                    EmptyView()
+                }
             }
 
             Attachment(id: battleHudAttachmentId) {
@@ -497,60 +517,56 @@ private extension View {
     }
 }
 
-private struct RoomPanel: View {
-    let route: RunSession.Route
+private struct GenericRoomPanel: View {
+    let nodeId: String
+    let roomType: RoomType
     let onCompleteRoom: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("\(roomType.icon) \(roomType.displayName(language: .zhHans))")
+                .font(.headline)
+
+            Text("Node: \(nodeId)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Button("继续") {
+                onCompleteRoom()
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding(12)
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+private struct RunOverPanel: View {
+    let won: Bool
+    let floor: Int
     let onNewRun: () -> Void
     let onClose: () -> Void
 
     var body: some View {
-        Group {
-            switch route {
-            case .map:
-                EmptyView()
+        VStack(alignment: .leading, spacing: 10) {
+            Text(won ? "Victory" : "Defeat")
+                .font(.headline)
 
-            case .room(let nodeId, let roomType):
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("\(roomType.icon) \(roomType.displayName(language: .zhHans))")
-                        .font(.headline)
+            Text("Run ended at Act \(floor)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
 
-                    Text("Node: \(nodeId)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    Button("Complete") {
-                        onCompleteRoom()
-                    }
-                    .buttonStyle(.borderedProminent)
+            HStack(spacing: 10) {
+                Button("New Run") {
+                    onNewRun()
                 }
+                .buttonStyle(.borderedProminent)
 
-            case .battle:
-                EmptyView()
-
-            case .cardReward:
-                EmptyView()
-
-            case .runOver(_, let won, let floor):
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(won ? "🎉 Victory" : "💀 Defeat")
-                        .font(.headline)
-
-                    Text("Run ended at Act \(floor)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    HStack(spacing: 10) {
-                        Button("New Run") {
-                            onNewRun()
-                        }
-                        .buttonStyle(.borderedProminent)
-
-                        Button("Close") {
-                            onClose()
-                        }
-                        .buttonStyle(.bordered)
-                    }
+                Button("Close") {
+                    onClose()
                 }
+                .buttonStyle(.bordered)
             }
         }
         .padding(12)
@@ -570,12 +586,5 @@ private struct CardRewardAttachment: View {
         default:
             EmptyView()
         }
-    }
-}
-
-private extension RunSession.Route {
-    var isRoom: Bool {
-        if case .room = self { return true }
-        return false
     }
 }
