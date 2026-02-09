@@ -244,7 +244,7 @@
 
 ---
 
-### P4：房间 UI 闭环（Rest / Shop / Event）
+### ✅P4：房间 UI 闭环（Rest / Shop / Event）
 
 ### Task 11: Rest 房间交互（休息/升级/对话）
 **Files:**
