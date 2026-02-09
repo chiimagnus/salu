@@ -105,7 +105,7 @@
 - Run: `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluAVP -destination 'platform=visionOS Simulator,name=Apple Vision Pro' build`
 - Manual: 新开一局进入战斗，确认地图/战斗切换、出牌、回合结束可用。
 
-### Task 3: 引入动画队列（先占位，不改交互）
+### ❎Task 3: 引入动画队列（先占位，不改交互）
 **Files:**
 - Create: `SaluNative/SaluAVP/Immersive/BattleAnimationQueue.swift`
 - Modify: `SaluNative/SaluAVP/Immersive/BattleAnimationSystem.swift`

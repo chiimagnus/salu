@@ -65,8 +65,10 @@ final class BattleSceneRenderer {
         in battleLayer: RealityKit.Entity,
         cardDisplayMode: CardDisplayMode,
         language: GameLanguage,
-        peekedHandIndex: Int?
+        peekedHandIndex: Int?,
+        newEvents: [BattlePresentationEvent]
     ) {
+        animationSystem.enqueue(events: newEvents)
         animationSystem.beginRenderPass(in: battleLayer)
 
         let enemyRoot = ensureEnemyRoot(in: battleLayer)
@@ -136,7 +138,14 @@ final class BattleSceneRenderer {
         animationSystem.endRenderPass(in: battleLayer)
     }
 
-    func renderReward(state: BattleState, in battleLayer: RealityKit.Entity) {
+    func renderReward(
+        state: BattleState,
+        in battleLayer: RealityKit.Entity,
+        newEvents: [BattlePresentationEvent]
+    ) {
+        animationSystem.enqueue(events: newEvents)
+        animationSystem.beginRenderPass(in: battleLayer)
+
         let enemyRoot = ensureEnemyRoot(in: battleLayer)
         enemyRoot.children.forEach { $0.removeFromParent() }
 
@@ -154,6 +163,7 @@ final class BattleSceneRenderer {
         }
 
         renderPiles(state: state, in: battleLayer)
+        animationSystem.endRenderPass(in: battleLayer)
     }
 
     private func addBattleFloor(to root: RealityKit.Entity) {

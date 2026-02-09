@@ -178,12 +178,14 @@ struct ImmersiveRootView: View {
             switch runSession.route {
             case .battle:
                 if let engine = runSession.battleEngine {
+                    let newEvents = runSession.consumeNewBattlePresentationEvents()
                     battleSceneRenderer.render(
                         engine: engine,
                         in: battleLayer,
                         cardDisplayMode: appModel.cardDisplayMode,
                         language: .zhHans,
-                        peekedHandIndex: peekedHandIndex
+                        peekedHandIndex: peekedHandIndex,
+                        newEvents: newEvents
                     )
                 } else {
                     battleSceneRenderer.clear(in: battleLayer)
@@ -191,7 +193,8 @@ struct ImmersiveRootView: View {
 
             case .cardReward:
                 if let state = runSession.battleState {
-                    battleSceneRenderer.renderReward(state: state, in: battleLayer)
+                    let newEvents = runSession.consumeNewBattlePresentationEvents()
+                    battleSceneRenderer.renderReward(state: state, in: battleLayer, newEvents: newEvents)
                 } else {
                     battleSceneRenderer.clear(in: battleLayer)
                 }
