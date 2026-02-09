@@ -428,6 +428,7 @@ struct ImmersiveRootView: View {
         if suffix == "leave" {
             if selectedShopItem != nil {
                 selectedShopItem = nil
+                runSession.clearShopTransientMessage()
                 return
             }
             selectedShopItem = nil
@@ -436,6 +437,7 @@ struct ImmersiveRootView: View {
         }
 
         guard let nextSelection = parseShopSelection(from: suffix) else { return }
+        runSession.clearShopTransientMessage()
         if selectedShopItem == nextSelection {
             selectedShopItem = nil
         } else {

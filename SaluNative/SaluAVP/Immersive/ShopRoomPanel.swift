@@ -57,6 +57,7 @@ struct ShopRoomPanel: View {
                     .disabled(!descriptor.canAfford)
 
                     Button("关闭") {
+                        runSession.clearShopTransientMessage()
                         self.selection = nil
                     }
                     .buttonStyle(.bordered)

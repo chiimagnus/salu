@@ -168,6 +168,14 @@ final class RunSession {
         completeCurrentRoomAndReturnToMap()
     }
 
+    func clearShopTransientMessage() {
+        guard case .room(let nodeId, .shop) = route else { return }
+        guard var shopState = shopRoomState, shopState.nodeId == nodeId else { return }
+        guard shopState.message != nil else { return }
+        shopState.message = nil
+        shopRoomState = shopState
+    }
+
     func buyShopCard(at offerIndex: Int) {
         guard case .room(let nodeId, .shop) = route else { return }
         guard var runState else { return }
