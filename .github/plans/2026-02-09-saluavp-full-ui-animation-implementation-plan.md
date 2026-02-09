@@ -246,7 +246,7 @@
 
 ### ✅P4：房间 UI 闭环（Rest / Shop / Event）
 
-### Task 11: Rest 房间交互（休息/升级/对话）
+### ✅Task 11: Rest 房间交互（休息/升级/对话）
 **Files:**
 - Create: `SaluNative/SaluAVP/Immersive/RestRoomPanel.swift`
 - Modify: `SaluNative/SaluAVP/ViewModels/RunSession.swift`
@@ -263,7 +263,7 @@
 **Step 3: 验证**
 - Manual: 进入休息点完成“休息”与“升级”各一次。
 
-### Task 12: Shop 房间交互（买卡/买遗物/买消耗/删牌）
+### ✅Task 12: Shop 房间交互（买卡/买遗物/买消耗/删牌）
 **Files:**
 - Create: `SaluNative/SaluAVP/Immersive/ShopRoomPanel.swift`
 - Create: `SaluNative/SaluAVP/ViewModels/ShopRoomState.swift`
@@ -281,7 +281,7 @@
 **Step 3: 验证**
 - Manual: 每类交易至少执行一次；金币不足路径触发一次。
 
-### Task 13: Event 房间交互（选项 + Follow-up）
+### ✅Task 13: Event 房间交互（选项 + Follow-up）
 **Files:**
 - Create: `SaluNative/SaluAVP/Immersive/EventRoomPanel.swift`
 - Create: `SaluNative/SaluAVP/ViewModels/EventRoomState.swift`
@@ -299,7 +299,7 @@
 **Step 3: 验证**
 - Manual: 触发 3 个不同事件，验证数值和牌组变化。
 
-### Task 14: Event 触发精英战（followUp.startEliteBattle）
+### ✅Task 14: Event 触发精英战（followUp.startEliteBattle）
 **Files:**
 - Modify: `SaluNative/SaluAVP/ViewModels/RunSession.swift`
 - Modify: `SaluNative/SaluAVP/Immersive/EventRoomPanel.swift`
