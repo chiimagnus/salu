@@ -61,7 +61,12 @@ struct ImmersiveRootView: View {
                     guard let handIndex = Int(suffix) else { return }
                     runSession.playCard(handIndex: handIndex)
 
-                case .cardReward, .room, .runOver:
+                case .room(_, let roomType):
+                    if roomType == .shop {
+                        handleShopSceneTap(named: value.entity.name)
+                    }
+
+                case .cardReward, .runOver:
                     break
                 }
             }
@@ -203,7 +208,13 @@ struct ImmersiveRootView: View {
 
             switch runSession.route {
             case .room(let nodeId, let roomType):
-                roomSceneRenderer.render(nodeId: nodeId, roomType: roomType, in: roomLayer)
+                roomSceneRenderer.render(
+                    nodeId: nodeId,
+                    roomType: roomType,
+                    shopState: runSession.shopRoomState,
+                    runState: runSession.runState,
+                    in: roomLayer
+                )
                 battleSceneRenderer.clear(in: battleLayer)
 
             case .battle:
@@ -237,18 +248,23 @@ struct ImmersiveRootView: View {
                 battleSceneRenderer.clear(in: battleLayer)
             }
 
+            uiLayer.children.first(where: { $0.name == roomPanelAttachmentId })?.removeFromParent()
+            roomLayer.children.first(where: { $0.name == roomPanelAttachmentId })?.removeFromParent()
+
             if let panel = attachments.entity(for: roomPanelAttachmentId) {
                 panel.name = roomPanelAttachmentId
                 panel.components.set(BillboardComponent())
                 panel.components.set(InputTargetComponent())
-                uiLayer.children.first(where: { $0.name == roomPanelAttachmentId })?.removeFromParent()
-                roomLayer.children.first(where: { $0.name == roomPanelAttachmentId })?.removeFromParent()
 
                 switch runSession.route {
                 case .room(_, let roomType):
-                    panel.isEnabled = true
-                    panel.position = roomSceneRenderer.panelPosition(for: roomType)
-                    roomLayer.addChild(panel)
+                    if roomType == .shop {
+                        panel.isEnabled = false
+                    } else {
+                        panel.isEnabled = true
+                        panel.position = roomSceneRenderer.panelPosition(for: roomType)
+                        roomLayer.addChild(panel)
+                    }
 
                 case .runOver:
                     panel.isEnabled = true
@@ -322,7 +338,7 @@ struct ImmersiveRootView: View {
                     case .rest:
                         RestRoomPanel(nodeId: nodeId)
                     case .shop:
-                        ShopRoomPanel(nodeId: nodeId)
+                        EmptyView()
                     case .event:
                         EventRoomPanel(nodeId: nodeId)
                     default:
@@ -379,6 +395,32 @@ struct ImmersiveRootView: View {
                 peekedHandIndex = nil
                 peekedPile = nil
             }
+        }
+    }
+
+    private func handleShopSceneTap(named entityName: String) {
+        guard entityName.hasPrefix(RoomSceneRenderer.Names.shopActionPrefix) else { return }
+
+        let suffix = String(entityName.dropFirst(RoomSceneRenderer.Names.shopActionPrefix.count))
+        if suffix == "leave" {
+            runSession.leaveShopRoom()
+            return
+        }
+
+        let parts = suffix.split(separator: ":", omittingEmptySubsequences: true)
+        guard parts.count == 2, let index = Int(parts[1]) else { return }
+
+        switch parts[0] {
+        case "card":
+            runSession.buyShopCard(at: index)
+        case "relic":
+            runSession.buyShopRelic(at: index)
+        case "consumable":
+            runSession.buyShopConsumable(at: index)
+        case "remove":
+            runSession.removeCardInShop(deckIndex: index)
+        default:
+            break
         }
     }
 

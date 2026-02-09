@@ -7,11 +7,29 @@ struct RoomSceneRenderer {
         static let roomLayer = "roomLayer"
         static let roomRoot = "roomRoot"
         static let npcPrefix = "roomNpc:"
+        static let shopActionPrefix = "shopAction:"
+
+        static func shopActionName(_ action: String, index: Int? = nil) -> String {
+            if let index {
+                return "\(shopActionPrefix)\(action):\(index)"
+            }
+            return "\(shopActionPrefix)\(action)"
+        }
+    }
+
+    private struct ShopVisualKey: Equatable {
+        let cardOffers: [ShopCardOffer]
+        let relicOffers: [ShopRelicOffer]
+        let consumableOffers: [ShopConsumableOffer]
+        let removeCardPrice: Int
+        let deckCardInstanceIds: [String]
+        let gold: Int
     }
 
     private struct RenderKey: Equatable {
         let nodeId: String
         let roomType: RoomType
+        let shopVisual: ShopVisualKey?
     }
 
     private var renderKey: RenderKey?
@@ -22,10 +40,23 @@ struct RoomSceneRenderer {
         return layer
     }
 
-    mutating func render(nodeId: String, roomType: RoomType, in layer: RealityKit.Entity) {
-        let key = RenderKey(nodeId: nodeId, roomType: roomType)
+    mutating func render(
+        nodeId: String,
+        roomType: RoomType,
+        shopState: ShopRoomState?,
+        runState: RunState?,
+        in layer: RealityKit.Entity
+    ) {
+        let shopVisual = makeShopVisualKey(roomType: roomType, shopState: shopState, runState: runState)
+        let key = RenderKey(nodeId: nodeId, roomType: roomType, shopVisual: shopVisual)
         guard renderKey != key else { return }
-        rebuildScene(nodeId: nodeId, roomType: roomType, in: layer)
+        rebuildScene(
+            nodeId: nodeId,
+            roomType: roomType,
+            shopState: shopState,
+            runState: runState,
+            in: layer
+        )
         renderKey = key
     }
 
@@ -39,8 +70,6 @@ struct RoomSceneRenderer {
         switch roomType {
         case .rest:
             return [0.34, 0.14, -0.62]
-        case .shop:
-            return [0.38, 0.14, -0.62]
         case .event:
             return [0.34, 0.14, -0.62]
         default:
@@ -48,7 +77,29 @@ struct RoomSceneRenderer {
         }
     }
 
-    private mutating func rebuildScene(nodeId: String, roomType: RoomType, in layer: RealityKit.Entity) {
+    private func makeShopVisualKey(
+        roomType: RoomType,
+        shopState: ShopRoomState?,
+        runState: RunState?
+    ) -> ShopVisualKey? {
+        guard roomType == .shop, let shopState, let runState else { return nil }
+        return ShopVisualKey(
+            cardOffers: shopState.inventory.cardOffers,
+            relicOffers: shopState.inventory.relicOffers,
+            consumableOffers: shopState.inventory.consumableOffers,
+            removeCardPrice: shopState.inventory.removeCardPrice,
+            deckCardInstanceIds: runState.deck.map(\.id),
+            gold: runState.gold
+        )
+    }
+
+    private mutating func rebuildScene(
+        nodeId: String,
+        roomType: RoomType,
+        shopState: ShopRoomState?,
+        runState: RunState?,
+        in layer: RealityKit.Entity
+    ) {
         layer.children.forEach { $0.removeFromParent() }
 
         let root = RealityKit.Entity()
@@ -61,7 +112,7 @@ struct RoomSceneRenderer {
         case .rest:
             buildRestScene(nodeId: nodeId, in: root)
         case .shop:
-            buildShopScene(nodeId: nodeId, in: root)
+            buildShopScene(nodeId: nodeId, shopState: shopState, runState: runState, in: root)
         case .event:
             buildEventScene(nodeId: nodeId, in: root)
         default:
@@ -132,18 +183,26 @@ struct RoomSceneRenderer {
         root.addChild(seat)
     }
 
-    private func buildShopScene(nodeId: String, in root: RealityKit.Entity) {
-        _ = nodeId
+    private func buildShopScene(
+        nodeId: String,
+        shopState: ShopRoomState?,
+        runState: RunState?,
+        in root: RealityKit.Entity
+    ) {
+        guard let shopState, let runState, shopState.nodeId == nodeId else {
+            buildGenericScene(nodeId: nodeId, roomType: .shop, in: root)
+            return
+        }
 
         let counter = ModelEntity(
-            mesh: .generateBox(size: [0.9, 0.16, 0.26]),
+            mesh: .generateBox(size: [1.0, 0.16, 0.28]),
             materials: [SimpleMaterial(color: UIColor.systemBrown, isMetallic: false)]
         )
         counter.position = [0, 0.08, -0.82]
         root.addChild(counter)
 
         let stallTop = ModelEntity(
-            mesh: .generateBox(size: [1.0, 0.02, 0.28]),
+            mesh: .generateBox(size: [1.05, 0.02, 0.30]),
             materials: [SimpleMaterial(color: UIColor.systemYellow.withAlphaComponent(0.65), isMetallic: false)]
         )
         stallTop.position = [0, 0.44, -0.82]
@@ -154,22 +213,116 @@ struct RoomSceneRenderer {
             color: UIColor.systemTeal,
             accessoryColor: UIColor.systemOrange.withAlphaComponent(0.7)
         )
-        merchant.position = [0, 0, -0.97]
+        merchant.position = [0, 0, -0.98]
         root.addChild(merchant)
 
-        let relicPedestalLeft = ModelEntity(
-            mesh: .generateCylinder(height: 0.18, radius: 0.05),
-            materials: [SimpleMaterial(color: UIColor.systemGray2, isMetallic: true)]
-        )
-        relicPedestalLeft.position = [-0.26, 0.09, -0.68]
-        root.addChild(relicPedestalLeft)
+        renderShopCardOffers(shopState: shopState, runState: runState, in: root)
+        renderShopRelicOffers(shopState: shopState, runState: runState, in: root)
+        renderShopConsumables(shopState: shopState, runState: runState, in: root)
+        renderShopRemoveCardOffers(shopState: shopState, runState: runState, in: root)
+        renderShopLeaveAction(in: root)
+    }
 
-        let relicPedestalRight = ModelEntity(
-            mesh: .generateCylinder(height: 0.18, radius: 0.05),
-            materials: [SimpleMaterial(color: UIColor.systemGray2, isMetallic: true)]
+    private func renderShopCardOffers(
+        shopState: ShopRoomState,
+        runState: RunState,
+        in root: RealityKit.Entity
+    ) {
+        for (index, offer) in shopState.inventory.cardOffers.enumerated() {
+            let affordable = runState.gold >= offer.price
+            let x = -0.46 + Float(index) * 0.13
+            let entity = makeShopActionEntity(
+                mesh: .generateBox(size: [0.09, 0.11, 0.05]),
+                color: actionColor(base: UIColor.systemBlue, affordable: affordable),
+                position: [x, 0.18, -0.70],
+                name: Names.shopActionName("card", index: index),
+                collisionSize: [0.12, 0.14, 0.10]
+            )
+            root.addChild(entity)
+        }
+    }
+
+    private func renderShopRelicOffers(
+        shopState: ShopRoomState,
+        runState: RunState,
+        in root: RealityKit.Entity
+    ) {
+        for (index, offer) in shopState.inventory.relicOffers.enumerated() {
+            let affordable = runState.gold >= offer.price
+            let x = -0.18 + Float(index) * 0.18
+            let entity = makeShopActionEntity(
+                mesh: .generateSphere(radius: 0.055),
+                color: actionColor(base: UIColor.systemPurple, affordable: affordable),
+                position: [x, 0.22, -0.58],
+                name: Names.shopActionName("relic", index: index),
+                collisionSize: [0.14, 0.14, 0.14]
+            )
+            root.addChild(entity)
+        }
+    }
+
+    private func renderShopConsumables(
+        shopState: ShopRoomState,
+        runState: RunState,
+        in root: RealityKit.Entity
+    ) {
+        for (index, offer) in shopState.inventory.consumableOffers.enumerated() {
+            let affordable = runState.gold >= offer.price
+            let x = 0.12 + Float(index) * 0.14
+            let entity = makeShopActionEntity(
+                mesh: .generateCylinder(height: 0.12, radius: 0.045),
+                color: actionColor(base: UIColor.systemGreen, affordable: affordable),
+                position: [x, 0.20, -0.72],
+                name: Names.shopActionName("consumable", index: index),
+                collisionSize: [0.12, 0.15, 0.12]
+            )
+            root.addChild(entity)
+        }
+    }
+
+    private func renderShopRemoveCardOffers(
+        shopState: ShopRoomState,
+        runState: RunState,
+        in root: RealityKit.Entity
+    ) {
+        let isAffordable = runState.gold >= shopState.inventory.removeCardPrice
+        let maxCount = min(runState.deck.count, Self.maxRemoveCardDisplayCount)
+        for deckIndex in 0..<maxCount {
+            let row = deckIndex / 4
+            let col = deckIndex % 4
+            let x = -0.46 + Float(col) * 0.12
+            let z = -0.93 - Float(row) * 0.12
+            let entity = makeShopActionEntity(
+                mesh: .generateBox(size: [0.08, 0.04, 0.10]),
+                color: actionColor(base: UIColor.systemPink, affordable: isAffordable),
+                position: [x, 0.10, z],
+                name: Names.shopActionName("remove", index: deckIndex),
+                collisionSize: [0.11, 0.08, 0.13],
+                metallic: false
+            )
+            root.addChild(entity)
+        }
+
+        if runState.deck.count > maxCount {
+            let more = ModelEntity(
+                mesh: .generateSphere(radius: 0.035),
+                materials: [SimpleMaterial(color: UIColor.white.withAlphaComponent(0.85), isMetallic: false)]
+            )
+            more.position = [0.02, 0.10, -1.00]
+            root.addChild(more)
+        }
+    }
+
+    private func renderShopLeaveAction(in root: RealityKit.Entity) {
+        let leave = makeShopActionEntity(
+            mesh: .generateCone(height: 0.14, radius: 0.06),
+            color: UIColor.systemGray,
+            position: [0.44, 0.09, -0.58],
+            name: Names.shopActionName("leave"),
+            collisionSize: [0.14, 0.18, 0.14],
+            metallic: false
         )
-        relicPedestalRight.position = [0.26, 0.09, -0.68]
-        root.addChild(relicPedestalRight)
+        root.addChild(leave)
     }
 
     private func buildEventScene(nodeId: String, in root: RealityKit.Entity) {
@@ -215,6 +368,30 @@ struct RoomSceneRenderer {
         root.addChild(plate)
     }
 
+    private func actionColor(base: UIColor, affordable: Bool) -> UIColor {
+        if affordable { return base }
+        return UIColor.systemRed.withAlphaComponent(0.85)
+    }
+
+    private func makeShopActionEntity(
+        mesh: MeshResource,
+        color: UIColor,
+        position: SIMD3<Float>,
+        name: String,
+        collisionSize: SIMD3<Float>,
+        metallic: Bool = true
+    ) -> ModelEntity {
+        let entity = ModelEntity(
+            mesh: mesh,
+            materials: [SimpleMaterial(color: color, isMetallic: metallic)]
+        )
+        entity.name = name
+        entity.position = position
+        entity.components.set(CollisionComponent(shapes: [.generateBox(size: collisionSize)]))
+        entity.components.set(InputTargetComponent())
+        return entity
+    }
+
     private func makeNPC(name: String, color: UIColor, accessoryColor: UIColor) -> RealityKit.Entity {
         let npc = RealityKit.Entity()
         npc.name = name
@@ -244,4 +421,6 @@ struct RoomSceneRenderer {
 
         return npc
     }
+
+    private static let maxRemoveCardDisplayCount = 12
 }
