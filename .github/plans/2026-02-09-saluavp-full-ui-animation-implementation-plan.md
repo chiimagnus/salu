@@ -315,9 +315,9 @@
 
 ---
 
-### P5：奖励链路一致性（尤其精英/Boss 遗物）
+### ✅P5：奖励链路一致性（尤其精英/Boss 遗物）
 
-### Task 15: 统一 AVP 奖励路由模型
+### ✅Task 15: 统一 AVP 奖励路由模型
 **Files:**
 - Modify: `SaluNative/SaluAVP/ViewModels/RunSession.swift`
 - Create: `SaluNative/SaluAVP/ViewModels/RewardRouteState.swift`
@@ -332,7 +332,7 @@
 **Step 3: 验证**
 - Manual: 普通战、精英战、Boss 战分别走一遍奖励。
 
-### Task 16: 遗物奖励面板（精英/Boss）
+### ✅Task 16: 遗物奖励面板（精英/Boss）
 **Files:**
 - Create: `SaluNative/SaluAVP/Immersive/RelicRewardPanel.swift`
 - Modify: `SaluNative/SaluAVP/Immersive/ImmersiveRootView.swift`
@@ -346,7 +346,7 @@
 **Step 3: 验证**
 - Manual: 精英和 Boss 奖励各测一次选择与跳过。
 
-### Task 17: Boss 章节收束和下一幕衔接
+### ✅Task 17: Boss 章节收束和下一幕衔接
 **Files:**
 - Modify: `SaluNative/SaluAVP/ViewModels/RunSession.swift`
 - Create: `SaluNative/SaluAVP/Immersive/ChapterEndPanel.swift`
