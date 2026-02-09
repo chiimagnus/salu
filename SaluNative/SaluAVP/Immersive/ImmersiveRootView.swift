@@ -17,6 +17,7 @@ struct ImmersiveRootView: View {
     @State private var suppressNextTap: Bool = false
     @State private var shownShopMessageSequence: UInt64 = 0
     @State private var shopFeedbackTask: Task<Void, Never>? = nil
+    @State private var selectedShopItem: ShopItemSelection? = nil
 
     private let nodeNamePrefix = "node:"
     private let roomPanelAttachmentId = "roomPanel"
@@ -218,14 +219,17 @@ struct ImmersiveRootView: View {
                     in: roomLayer
                 )
                 if roomType == .shop {
+                    sanitizeShopSelection()
                     updateShopFeedback(in: roomLayer)
                 } else {
+                    selectedShopItem = nil
                     clearShopFeedback(in: roomLayer)
                 }
                 battleSceneRenderer.clear(in: battleLayer)
 
             case .battle:
                 roomSceneRenderer.clear(in: roomLayer)
+                selectedShopItem = nil
                 clearShopFeedback(in: roomLayer)
                 if let engine = runSession.battleEngine {
                     let newEvents = runSession.consumeNewBattlePresentationEvents()
@@ -244,6 +248,7 @@ struct ImmersiveRootView: View {
 
             case .cardReward:
                 roomSceneRenderer.clear(in: roomLayer)
+                selectedShopItem = nil
                 clearShopFeedback(in: roomLayer)
                 if let state = runSession.battleState {
                     let newEvents = runSession.consumeNewBattlePresentationEvents()
@@ -254,6 +259,7 @@ struct ImmersiveRootView: View {
 
             case .map, .runOver:
                 roomSceneRenderer.clear(in: roomLayer)
+                selectedShopItem = nil
                 clearShopFeedback(in: roomLayer)
                 battleSceneRenderer.clear(in: battleLayer)
             }
@@ -269,7 +275,13 @@ struct ImmersiveRootView: View {
                 switch runSession.route {
                 case .room(_, let roomType):
                     if roomType == .shop {
-                        panel.isEnabled = false
+                        if selectedShopItem == nil {
+                            panel.isEnabled = false
+                        } else {
+                            panel.isEnabled = true
+                            panel.position = [0.52, 0.18, -0.58]
+                            roomLayer.addChild(panel)
+                        }
                     } else {
                         panel.isEnabled = true
                         panel.position = roomSceneRenderer.panelPosition(for: roomType)
@@ -348,7 +360,7 @@ struct ImmersiveRootView: View {
                     case .rest:
                         RestRoomPanel(nodeId: nodeId)
                     case .shop:
-                        EmptyView()
+                        ShopRoomPanel(nodeId: nodeId, selection: $selectedShopItem)
                     case .event:
                         EventRoomPanel(nodeId: nodeId)
                     default:
@@ -413,24 +425,58 @@ struct ImmersiveRootView: View {
 
         let suffix = String(entityName.dropFirst(RoomSceneRenderer.Names.shopActionPrefix.count))
         if suffix == "leave" {
+            selectedShopItem = nil
             runSession.leaveShopRoom()
             return
         }
 
+        guard let nextSelection = parseShopSelection(from: suffix) else { return }
+        if selectedShopItem == nextSelection {
+            selectedShopItem = nil
+        } else {
+            selectedShopItem = nextSelection
+        }
+    }
+
+    private func parseShopSelection(from suffix: String) -> ShopItemSelection? {
         let parts = suffix.split(separator: ":", omittingEmptySubsequences: true)
-        guard parts.count == 2, let index = Int(parts[1]) else { return }
+        guard parts.count == 2, let index = Int(parts[1]) else { return nil }
 
         switch parts[0] {
         case "card":
-            runSession.buyShopCard(at: index)
+            return .card(index)
         case "relic":
-            runSession.buyShopRelic(at: index)
+            return .relic(index)
         case "consumable":
-            runSession.buyShopConsumable(at: index)
+            return .consumable(index)
         case "remove":
-            runSession.removeCardInShop(deckIndex: index)
+            return .removeCard(index)
         default:
-            break
+            return nil
+        }
+    }
+
+    private func sanitizeShopSelection() {
+        guard let selectedShopItem else { return }
+        guard let runState = runSession.runState, let shopState = runSession.shopRoomState else {
+            self.selectedShopItem = nil
+            return
+        }
+
+        let isValid: Bool
+        switch selectedShopItem {
+        case .card(let index):
+            isValid = shopState.inventory.cardOffers.indices.contains(index)
+        case .relic(let index):
+            isValid = shopState.inventory.relicOffers.indices.contains(index)
+        case .consumable(let index):
+            isValid = shopState.inventory.consumableOffers.indices.contains(index)
+        case .removeCard(let deckIndex):
+            isValid = runState.deck.indices.contains(deckIndex)
+        }
+
+        if !isValid {
+            self.selectedShopItem = nil
         }
     }
 
