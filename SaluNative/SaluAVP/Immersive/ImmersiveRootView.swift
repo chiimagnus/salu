@@ -266,6 +266,7 @@ struct ImmersiveRootView: View {
 
             uiLayer.children.first(where: { $0.name == roomPanelAttachmentId })?.removeFromParent()
             roomLayer.children.first(where: { $0.name == roomPanelAttachmentId })?.removeFromParent()
+            hudAnchor.children.first(where: { $0.name == roomPanelAttachmentId })?.removeFromParent()
 
             if let panel = attachments.entity(for: roomPanelAttachmentId) {
                 panel.name = roomPanelAttachmentId
@@ -279,8 +280,8 @@ struct ImmersiveRootView: View {
                             panel.isEnabled = false
                         } else {
                             panel.isEnabled = true
-                            panel.position = [0.52, 0.18, -0.58]
-                            roomLayer.addChild(panel)
+                            panel.position = [0.30, 0.15, -0.50]
+                            hudAnchor.addChild(panel)
                         }
                     } else {
                         panel.isEnabled = true
@@ -425,6 +426,10 @@ struct ImmersiveRootView: View {
 
         let suffix = String(entityName.dropFirst(RoomSceneRenderer.Names.shopActionPrefix.count))
         if suffix == "leave" {
+            if selectedShopItem != nil {
+                selectedShopItem = nil
+                return
+            }
             selectedShopItem = nil
             runSession.leaveShopRoom()
             return
