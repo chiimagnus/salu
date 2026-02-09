@@ -2,14 +2,14 @@
 
 > 执行方式：建议使用 `executing-plans` 按批次实现与验收。
 
-**Goal（目标）:** 以 XR 原生、3D 原生为唯一方向，对 `SaluAVP` 做破坏性重构：完整补齐战斗动画、目标选择、多敌人、房间 UI（休息/商店/事件）、奖励链路（含精英/Boss 遗物）、存档 Continue 与回放观测，并在每个阶段及时删除老旧实现与兼容层。
+**Goal（目标）:** 以 XR 原生、3D 原生为唯一方向，对 `SaluAVP` 做破坏性重构：完整补齐战斗动画、目标选择、多敌人、房间 UI（休息/商店/事件）、奖励链路（含精英/Boss 遗物），并在每个阶段及时删除老旧实现与兼容层。
 
 **Non-goals（非目标）:** 不做写实资产管线重建；不引入网络同步；不修改 `GameCore` 既有规则语义；不把 `RealityKit` 代码抽到 `Sources/`；不保留旧 AVP UI/路由 API 的向后兼容桥接。
 
 **Approach（方案）:**  
 1) 先建立“状态推进（GameCore）”与“表现驱动（AVP）”之间的事件桥接层，替换当前 `ImmersiveRootView` 大一统渲染。  
 2) 优先做可复现、可验证的动画闭环（抽牌、出牌、受击、死亡、牌堆变化），并直接移除旧静态重建路径。  
-3) 房间、奖励、存档、回放全部用新路由与新面板实现，不做旧路由兼容。  
+3) 房间与奖励用新路由与新面板实现，不做旧路由兼容。  
 4) 每个阶段必须包含“实现 + 删除老代码 + 验证”三连动作，禁止新旧双轨长期并存。
 
 **Acceptance（验收）:**  
@@ -17,10 +17,8 @@
 2) 支持多敌人并可明确选目标；`.singleEnemy` 卡在多敌人战斗中可稳定落点。  
 3) 休息、商店、事件三类房间在 AVP 可完成完整交互并正确推进 `RunState`。  
 4) 精英/Boss 胜利后奖励链路与 CLI 业务一致（金币/卡牌/遗物）。  
-5) 2D 控制面板支持 Continue（从快照恢复）与自动保存。  
-6) 可导出一局关键选择路径并用于重放验证。  
-7) 旧 AVP 占位逻辑被删除（无旧 room panel 占位完成路径、无旧 battle 静态分支）。  
-8) 修改 `SaluNative/**` 后 `xcodebuild` 可通过；修改 `Sources/**` 后 `swift test` 可通过。
+5) 旧 AVP 占位逻辑被删除（无旧 room panel 占位完成路径、无旧 battle 静态分支）。  
+6) 修改 `SaluNative/**` 后 `xcodebuild` 可通过；修改 `Sources/**` 后 `swift test` 可通过。
 
 ---
 
@@ -30,7 +28,7 @@
 2) 不保留“兼容桥接层”超过一个任务周期：新实现落地的同批次必须删除旧实现。  
 3) 禁止新旧双轨渲染：同一能力只保留一条主路径。  
 4) 2D Window 仅承担控制面板与调试入口；核心玩法必须在 Immersive 3D 中完成。  
-5) 存档兼容策略仅保证 `GameCore.RunSnapshot` 语义，不保证旧 AVP 私有结构可读。  
+5) 2D 面板允许作为 HUD（例如商店商品信息/购买按钮、奖励选择），但不做“厚面板”或伪 3D UI。  
 
 ---
 
@@ -362,7 +360,9 @@
 
 ---
 
-### P6：存档与 Continue（控制面板能力补齐）
+### P6（Dropped）：存档与 Continue（控制面板能力补齐）
+
+> 2026-02-09 决策：当前阶段不实现 AVP 存档/读档/Continue。相关实现已在仓库中回滚；本计划后续仅保留说明，不再执行本阶段任务。
 
 ### Task 18: AVP 快照存储层（RunSnapshot）
 **Files:**
@@ -408,7 +408,9 @@
 
 ---
 
-### P7：可观测性与回放（Determinism + Replay）
+### P7（Dropped）：可观测性与回放（Determinism + Replay）
+
+> 2026-02-09 决策：当前阶段不实现 AVP trace/replay。相关实现已在仓库中回滚；本计划后续仅保留说明，不再执行本阶段任务。
 
 ### Task 21: 选择路径记录模型
 **Files:**
@@ -445,11 +447,10 @@
 ### Task 23: GameCore 相关新增/变更测试补齐
 **Files:**
 - Modify: `Tests/GameCoreTests/BattleEngineFlowTests.swift`
-- Create: `Tests/GameCoreTests/BattleSeedAndEncounterParityTests.swift`
-- Create: `Tests/GameCoreTests/RunSnapshotCodableRoundTripTests.swift`
 
 **Step 1: 最小验收**
-- 新增逻辑（多敌人目标、奖励链路、快照读写）有单测覆盖。
+- 新增/变更逻辑（多敌人目标、奖励链路关键生成器）有单测覆盖。
+- 不新增 AVP 存档/回放相关测试要求（本阶段已明确 Drop）。
 
 **Step 2: 验证**
 - Run: `swift test --filter GameCoreTests`
@@ -460,7 +461,7 @@
 - Modify: `.github/plans/Apple Vision Pro 原生 3D 实现（SaluAVP）.md`
 
 **Step 1: 最小验收**
-- 覆盖地图、战斗动画、多敌人、房间、奖励、存档、重放七大路径。
+- 覆盖地图、战斗动画、多敌人、房间、奖励五大路径（明确不含存档/回放）。
 
 **Step 2: 验证**
 - Run: `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluAVP -destination 'platform=visionOS Simulator,name=Apple Vision Pro' build`
@@ -508,10 +509,10 @@
 - `swift test --filter GameCoreTests`  
 - 手动：普通/精英/Boss 各 1 场，验证奖励一致性。
 
-3) 完成 P6-P8 后：交付回归  
+3) 完成 P8 后：交付回归  
 - `swift test`  
 - `xcodebuild ... build`  
-- 手动：新开局、Continue、重放导入全链路。
+- 手动：新开局、地图推进到各房间、完成一幕并继续下一幕（无存档/回放）。
 
 ---
 
@@ -519,4 +520,4 @@
 
 1) 已确认：本轮不纳入“甩牌/投掷命中（B1）”，留在后续迭代。  
 2) 事件房间中的“文本演出深度”目标（仅功能可用 vs 有完整剧情排版和动效）。  
-3) 存档策略是否只保留“单槽自动保存”，还是支持多槽（多槽会显著增加 UI 与管理复杂度）。  
+3) 商店“删牌服务”的交互形式：2D HUD 面板选择卡牌列表 vs 3D 牌堆实体点选（后者更沉浸但工期更长）。  
