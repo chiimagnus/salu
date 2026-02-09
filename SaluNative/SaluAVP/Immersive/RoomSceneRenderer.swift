@@ -3,7 +3,7 @@ import RealityKit
 import UIKit
 
 @MainActor
-struct RoomSceneRenderer {
+final class RoomSceneRenderer {
     enum Names {
         static let roomLayer = "roomLayer"
         static let roomRoot = "roomRoot"
@@ -33,15 +33,17 @@ struct RoomSceneRenderer {
         let shopVisual: ShopVisualKey?
     }
 
-    private var renderKey: RenderKey?
+    private struct RoomRenderStateComponent: Component {
+        let signature: UInt64
+    }
 
-    mutating func makeRoomLayer() -> RealityKit.Entity {
+    func makeRoomLayer() -> RealityKit.Entity {
         let layer = RealityKit.Entity()
         layer.name = Names.roomLayer
         return layer
     }
 
-    mutating func render(
+    func render(
         nodeId: String,
         roomType: RoomType,
         shopState: ShopRoomState?,
@@ -50,7 +52,12 @@ struct RoomSceneRenderer {
     ) {
         let shopVisual = makeShopVisualKey(roomType: roomType, shopState: shopState, runState: runState)
         let key = RenderKey(nodeId: nodeId, roomType: roomType, shopVisual: shopVisual)
-        guard renderKey != key else { return }
+        let signature = renderSignature(for: key)
+        if let state = layer.components[RoomRenderStateComponent.self],
+           state.signature == signature,
+           layer.findEntity(named: Names.roomRoot) != nil {
+            return
+        }
         rebuildScene(
             nodeId: nodeId,
             roomType: roomType,
@@ -58,13 +65,13 @@ struct RoomSceneRenderer {
             runState: runState,
             in: layer
         )
-        renderKey = key
+        layer.components.set(RoomRenderStateComponent(signature: signature))
     }
 
-    mutating func clear(in layer: RealityKit.Entity) {
-        guard renderKey != nil || !layer.children.isEmpty else { return }
+    func clear(in layer: RealityKit.Entity) {
+        guard !layer.children.isEmpty || layer.components[RoomRenderStateComponent.self] != nil else { return }
         layer.children.forEach { $0.removeFromParent() }
-        renderKey = nil
+        layer.components.remove(RoomRenderStateComponent.self)
     }
 
     func panelPosition(for roomType: RoomType) -> SIMD3<Float> {
@@ -94,7 +101,7 @@ struct RoomSceneRenderer {
         )
     }
 
-    private mutating func rebuildScene(
+    private func rebuildScene(
         nodeId: String,
         roomType: RoomType,
         shopState: ShopRoomState?,
@@ -119,6 +126,32 @@ struct RoomSceneRenderer {
         default:
             buildGenericScene(nodeId: nodeId, roomType: roomType, in: root)
         }
+    }
+
+    private func renderSignature(for key: RenderKey) -> UInt64 {
+        var parts: [String] = [
+            "node:\(key.nodeId)",
+            "type:\(key.roomType.rawValue)"
+        ]
+
+        if let shopVisual = key.shopVisual {
+            parts.append("gold:\(shopVisual.gold)")
+            parts.append("remove:\(shopVisual.removeCardPrice)")
+            parts.append("deck:\(shopVisual.deckCardInstanceIds.joined(separator: ","))")
+            parts.append(
+                "cards:\(shopVisual.cardOffers.map { "\($0.cardId.rawValue)-\($0.price)" }.joined(separator: ","))"
+            )
+            parts.append(
+                "relics:\(shopVisual.relicOffers.map { "\($0.relicId.rawValue)-\($0.price)" }.joined(separator: ","))"
+            )
+            parts.append(
+                "consumables:\(shopVisual.consumableOffers.map { "\($0.cardId.rawValue)-\($0.price)" }.joined(separator: ","))"
+            )
+        } else {
+            parts.append("shop:nil")
+        }
+
+        return StableHash.fnv1a64(parts.joined(separator: "#"))
     }
 
     private func addCommonEnvironment(roomType: RoomType, to root: RealityKit.Entity) {
@@ -194,20 +227,6 @@ struct RoomSceneRenderer {
             buildGenericScene(nodeId: nodeId, roomType: .shop, in: root)
             return
         }
-
-        let counter = ModelEntity(
-            mesh: .generateBox(size: [1.0, 0.16, 0.28]),
-            materials: [SimpleMaterial(color: UIColor.systemBrown, isMetallic: false)]
-        )
-        counter.position = [0, 0.08, -0.82]
-        root.addChild(counter)
-
-        let stallTop = ModelEntity(
-            mesh: .generateBox(size: [1.05, 0.02, 0.30]),
-            materials: [SimpleMaterial(color: UIColor.systemYellow.withAlphaComponent(0.65), isMetallic: false)]
-        )
-        stallTop.position = [0, 0.44, -0.82]
-        root.addChild(stallTop)
 
         let merchant = makeNPC(
             name: "\(Names.npcPrefix)merchant",
