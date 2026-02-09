@@ -59,7 +59,7 @@
 
 ### P1（最高优先级）：战斗表现基础层（事件桥接 + 动画骨架）
 
-### Task 1: 建立 AVP 战斗事件消费接口（允许破坏旧 AVP 接口）
+### ✅Task 1: 建立 AVP 战斗事件消费接口（允许破坏旧 AVP 接口）
 **Files:**
 - Create: `SaluNative/SaluAVP/ViewModels/BattlePresentationEvent.swift`
 - Modify: `SaluNative/SaluAVP/ViewModels/RunSession.swift`

@@ -20,8 +20,10 @@ final class RunSession {
     var route: Route = .map
     private(set) var battleEngine: BattleEngine?
     private(set) var battleState: BattleState?
+    private(set) var battleEvents: [BattleEvent] = []
     private var battleNodeId: String?
     private var battleRoomType: RoomType?
+    private var lastConsumedBattleEventIndex: Int = 0
 
     func startNewRun() {
         let seed: UInt64
@@ -40,8 +42,10 @@ final class RunSession {
         lastError = nil
         battleEngine = nil
         battleState = nil
+        battleEvents = []
         battleNodeId = nil
         battleRoomType = nil
+        lastConsumedBattleEventIndex = 0
         route = .map
     }
 
@@ -88,7 +92,7 @@ final class RunSession {
         guard let battleEngine else { return }
         guard battleEngine.pendingInput == nil else { return }
         _ = battleEngine.handleAction(.playCard(handIndex: handIndex, targetEnemyIndex: nil))
-        battleState = battleEngine.state
+        syncBattleStateFromEngine()
         finishBattleIfNeeded()
     }
 
@@ -97,7 +101,7 @@ final class RunSession {
         guard let battleEngine else { return }
         guard battleEngine.pendingInput == nil else { return }
         _ = battleEngine.handleAction(.endTurn)
-        battleState = battleEngine.state
+        syncBattleStateFromEngine()
         finishBattleIfNeeded()
     }
 
@@ -110,8 +114,21 @@ final class RunSession {
         guard routeIsBattle else { return }
         guard let battleEngine else { return }
         _ = battleEngine.submitForesightChoice(index: index)
-        battleState = battleEngine.state
+        syncBattleStateFromEngine()
         finishBattleIfNeeded()
+    }
+
+    func consumeNewBattleEvents() -> [BattleEvent] {
+        let newEvents = consumeNewBattleEventSlice()
+        return Array(newEvents)
+    }
+
+    func consumeNewBattlePresentationEvents() -> [BattlePresentationEvent] {
+        let startIndex = lastConsumedBattleEventIndex
+        let newEvents = consumeNewBattleEventSlice()
+        return newEvents.enumerated().map { offset, event in
+            BattlePresentationEvent(sequence: startIndex + offset, event: event)
+        }
     }
 
     func chooseCardReward(_ cardId: CardID?) {
@@ -129,8 +146,10 @@ final class RunSession {
         self.runState = runState
 
         battleState = nil
+        battleEvents = []
         battleNodeId = nil
         battleRoomType = nil
+        lastConsumedBattleEventIndex = 0
 
         if runState.isOver {
             route = .runOver(lastNodeId: nodeId, won: runState.won, floor: runState.floor)
@@ -151,6 +170,7 @@ final class RunSession {
         self.runState = runState
 
         // Freeze the final battle state for UI (reward panel), but release the engine.
+        self.battleEvents = battleEngine.events
         self.battleEngine = nil
 
         if battleEngine.state.playerWon == true {
@@ -169,8 +189,10 @@ final class RunSession {
             route = .cardReward(nodeId: nodeId, roomType: roomTypeForRewards, offer: offer, goldEarned: goldEarned)
         } else {
             self.battleState = nil
+            self.battleEvents = []
             self.battleNodeId = nil
             self.battleRoomType = nil
+            self.lastConsumedBattleEventIndex = 0
             route = .runOver(lastNodeId: nodeId, won: false, floor: runState.floor)
         }
     }
@@ -232,8 +254,10 @@ final class RunSession {
 
         battleEngine = engine
         battleState = engine.state
+        battleEvents = engine.events
         battleNodeId = nodeId
         battleRoomType = roomType
+        lastConsumedBattleEventIndex = 0
         route = .battle(nodeId: nodeId, roomType: roomType)
     }
 
@@ -247,7 +271,25 @@ final class RunSession {
         lastError = nil
         battleEngine = nil
         battleState = nil
+        battleEvents = []
         battleNodeId = nil
         battleRoomType = nil
+        lastConsumedBattleEventIndex = 0
+    }
+
+    private func consumeNewBattleEventSlice() -> ArraySlice<BattleEvent> {
+        guard lastConsumedBattleEventIndex < battleEvents.count else { return [] }
+        let range = lastConsumedBattleEventIndex..<battleEvents.count
+        lastConsumedBattleEventIndex = battleEvents.count
+        return battleEvents[range]
+    }
+
+    private func syncBattleStateFromEngine() {
+        guard let battleEngine else { return }
+        battleState = battleEngine.state
+        battleEvents = battleEngine.events
+        if battleEvents.count < lastConsumedBattleEventIndex {
+            lastConsumedBattleEventIndex = 0
+        }
     }
 }

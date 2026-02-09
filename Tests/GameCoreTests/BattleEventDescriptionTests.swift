@@ -27,6 +27,18 @@ final class BattleEventDescriptionTests: XCTestCase {
             (.invalidAction(reason: LocalizedText("测试", "Test")), "无效操作"),
             (.statusApplied(target: LocalizedText("玩家", "玩家"), effect: LocalizedText("易伤", "Vulnerable"), stacks: 2), "获得"),
             (.statusExpired(target: LocalizedText("玩家", "玩家"), effect: LocalizedText("易伤", "Vulnerable")), "消退"),
+            (.madnessReduced(from: 6, to: 4), "疯狂消减"),
+            (.madnessThreshold(level: 2, effect: LocalizedText("获得虚弱 1", "Gain Weak 1")), "阈值"),
+            (.madnessDiscard(cardId: "strike"), "弃牌"),
+            (.madnessCleared(amount: 2), "消除 2 层"),
+            (.madnessCleared(amount: 0), "完全消除"),
+            (.foresightChosen(cardId: "strike", fromCount: 3), "预知"),
+            (.rewindCard(cardId: "strike"), "回溯"),
+            (.intentRewritten(
+                enemyName: LocalizedText("敌人", "Enemy"),
+                oldIntent: LocalizedText("攻击", "Attack"),
+                newIntent: LocalizedText("防御", "Defend")
+            ), "改写"),
         ]
         
         for (event, expected) in events {
@@ -34,5 +46,22 @@ final class BattleEventDescriptionTests: XCTestCase {
             XCTAssertFalse(desc.isEmpty)
             XCTAssertTrue(desc.contains(expected), "期望描述包含关键字：\(expected)（实际：\(desc)）")
         }
+    }
+
+    func testBattleEvent_description_sequenceOrder_staysStable() {
+        let events: [BattleEvent] = [
+            .battleStarted,
+            .turnStarted(turn: 1),
+            .energyReset(amount: 3),
+            .turnEnded(turn: 1),
+            .battleWon,
+        ]
+        let descriptions = events.map(\.description)
+        XCTAssertEqual(descriptions.count, 5)
+        XCTAssertTrue(descriptions[0].contains("战斗开始"))
+        XCTAssertTrue(descriptions[1].contains("第 1 回合"))
+        XCTAssertTrue(descriptions[2].contains("能量"))
+        XCTAssertTrue(descriptions[3].contains("回合结束"))
+        XCTAssertTrue(descriptions[4].contains("胜利"))
     }
 }
