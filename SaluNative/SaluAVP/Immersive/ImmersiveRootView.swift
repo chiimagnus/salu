@@ -10,6 +10,7 @@ struct ImmersiveRootView: View {
     @Environment(\.openWindow) private var openWindow
 
     @State private var battleSceneRenderer = BattleSceneRenderer()
+    @State private var roomSceneRenderer = RoomSceneRenderer()
     @State private var peekedHandIndex: Int? = nil
     @State private var peekedPile: PileKind? = nil
     @State private var didPeekInCurrentPress: Bool = false
@@ -118,6 +119,9 @@ struct ImmersiveRootView: View {
             hudAnchor.name = hudAnchorName
             mapRoot.addChild(hudAnchor)
 
+            let roomLayer = roomSceneRenderer.makeRoomLayer()
+            mapRoot.addChild(roomLayer)
+
             let battleLayer = battleSceneRenderer.makeBattleLayer()
             mapRoot.addChild(battleLayer)
             content.add(mapRoot)
@@ -142,6 +146,7 @@ struct ImmersiveRootView: View {
 
             guard let run = runSession.runState else {
                 mapRoot.children.first(where: { $0.name.hasPrefix(mapLayerPrefix) })?.removeFromParent()
+                mapRoot.findEntity(named: RoomSceneRenderer.Names.roomLayer)?.isEnabled = false
                 mapRoot.findEntity(named: BattleSceneRenderer.Names.battleLayer)?.isEnabled = false
                 return
             }
@@ -170,6 +175,12 @@ struct ImmersiveRootView: View {
                 return battleLayer
             }()
 
+            let roomLayer = mapRoot.findEntity(named: RoomSceneRenderer.Names.roomLayer) ?? {
+                let roomLayer = roomSceneRenderer.makeRoomLayer()
+                mapRoot.addChild(roomLayer)
+                return roomLayer
+            }()
+
             let isInBattle: Bool = {
                 switch runSession.route {
                 case .battle, .cardReward:
@@ -179,11 +190,24 @@ struct ImmersiveRootView: View {
                 }
             }()
 
-            mapLayer.isEnabled = !isInBattle
+            let isInRoom: Bool = {
+                if case .room = runSession.route {
+                    return true
+                }
+                return false
+            }()
+
+            mapLayer.isEnabled = !isInBattle && !isInRoom
+            roomLayer.isEnabled = isInRoom
             battleLayer.isEnabled = isInBattle
 
             switch runSession.route {
+            case .room(let nodeId, let roomType):
+                roomSceneRenderer.render(nodeId: nodeId, roomType: roomType, in: roomLayer)
+                battleSceneRenderer.clear(in: battleLayer)
+
             case .battle:
+                roomSceneRenderer.clear(in: roomLayer)
                 if let engine = runSession.battleEngine {
                     let newEvents = runSession.consumeNewBattlePresentationEvents()
                     battleSceneRenderer.render(
@@ -200,6 +224,7 @@ struct ImmersiveRootView: View {
                 }
 
             case .cardReward:
+                roomSceneRenderer.clear(in: roomLayer)
                 if let state = runSession.battleState {
                     let newEvents = runSession.consumeNewBattlePresentationEvents()
                     battleSceneRenderer.renderReward(state: state, in: battleLayer, newEvents: newEvents)
@@ -207,7 +232,8 @@ struct ImmersiveRootView: View {
                     battleSceneRenderer.clear(in: battleLayer)
                 }
 
-            case .map, .room, .runOver:
+            case .map, .runOver:
+                roomSceneRenderer.clear(in: roomLayer)
                 battleSceneRenderer.clear(in: battleLayer)
             }
 
@@ -215,10 +241,23 @@ struct ImmersiveRootView: View {
                 panel.name = roomPanelAttachmentId
                 panel.components.set(BillboardComponent())
                 panel.components.set(InputTargetComponent())
-                let (isVisible, position) = roomPanelPlacement(mapRoot: mapLayer, route: runSession.route)
-                panel.isEnabled = isVisible
-                panel.position = position
-                uiLayer.addChild(panel)
+                uiLayer.children.first(where: { $0.name == roomPanelAttachmentId })?.removeFromParent()
+                roomLayer.children.first(where: { $0.name == roomPanelAttachmentId })?.removeFromParent()
+
+                switch runSession.route {
+                case .room(_, let roomType):
+                    panel.isEnabled = true
+                    panel.position = roomSceneRenderer.panelPosition(for: roomType)
+                    roomLayer.addChild(panel)
+
+                case .runOver:
+                    panel.isEnabled = true
+                    panel.position = [0, 0.25, -0.55]
+                    uiLayer.addChild(panel)
+
+                case .map, .battle, .cardReward:
+                    panel.isEnabled = false
+                }
             }
 
             if let hud = attachments.entity(for: battleHudAttachmentId) {
@@ -241,7 +280,7 @@ struct ImmersiveRootView: View {
                 hud.name = mapHudAttachmentId
                 hud.components.set(BillboardComponent())
                 hud.components.set(InputTargetComponent())
-                hud.isEnabled = !isInBattle
+                hud.isEnabled = !isInBattle && !isInRoom
 
                 hudAnchor.children.first(where: { $0.name == mapHudAttachmentId })?.removeFromParent()
                 hud.position = [0.18, 0.17, -0.50]
@@ -340,34 +379,6 @@ struct ImmersiveRootView: View {
                 peekedHandIndex = nil
                 peekedPile = nil
             }
-        }
-    }
-
-    private func roomPanelPlacement(mapRoot: RealityKit.Entity, route: RunSession.Route) -> (isVisible: Bool, position: SIMD3<Float>) {
-        switch route {
-        case .map:
-            return (false, .zero)
-
-        case .room(let nodeId, _):
-            let nodeName = "\(nodeNamePrefix)\(nodeId)"
-            if let node = mapRoot.findEntity(named: nodeName) {
-                // Place the panel above the selected node; billboard will face the user.
-                return (true, node.position + [0, 0.18, 0])
-            }
-
-            // Fallback: place in front of the map origin.
-            return (true, [0, 0.25, -0.55])
-
-        case .battle:
-            return (false, .zero)
-
-        case .cardReward:
-            return (false, .zero)
-
-        case .runOver(let lastNodeId, _, _):
-            // End-of-run panel should be easy to find: keep it near the map origin instead of far away at the Boss node.
-            _ = lastNodeId
-            return (true, [0, 0.25, -0.55])
         }
     }
 
