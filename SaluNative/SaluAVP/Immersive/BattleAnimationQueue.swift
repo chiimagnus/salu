@@ -71,24 +71,26 @@ struct BattleAnimationQueue {
                 AnimationJob(sequence: event.sequence, kind: .pileUpdate, summary: "pileUpdate:play")
             ]
 
-        case .damageDealt(_, _, let amount, let blocked):
+        case .damageDealt(_, _, let targetEntityId, _, let amount, let blocked):
             return [
                 AnimationJob(
                     sequence: event.sequence,
                     kind: .hit,
                     summary: "damageDealt",
                     amount: amount,
-                    blocked: blocked
+                    blocked: blocked,
+                    entityId: targetEntityId
                 )
             ]
 
-        case .blockGained(_, let amount):
+        case .blockGained(let targetEntityId, _, let amount):
             return [
                 AnimationJob(
                     sequence: event.sequence,
                     kind: .block,
                     summary: "blockGained",
-                    amount: amount
+                    amount: amount,
+                    entityId: targetEntityId
                 )
             ]
 

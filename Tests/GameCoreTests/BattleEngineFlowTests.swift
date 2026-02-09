@@ -168,6 +168,7 @@ final class BattleEngineFlowTests: XCTestCase {
         XCTAssertEqual(engine.state.player.statuses.stacks(of: "vulnerable"), 0)
         XCTAssertTrue(
             engine.events.contains(.statusExpired(
+                targetEntityId: "player",
                 target: LocalizedText("玩家", "玩家"),
                 effect: Vulnerable.name
             )),

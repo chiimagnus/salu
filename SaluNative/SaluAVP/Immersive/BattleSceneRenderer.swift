@@ -82,7 +82,6 @@ final class BattleSceneRenderer {
             enemyRoot: enemyRoot
         )
 
-        enemyRoot.children.forEach { $0.removeFromParent() }
         renderEnemies(enemies: engine.state.enemies, selectedEnemyIndex: selectedEnemyIndex, in: enemyRoot)
 
         let hand = engine.state.hand
@@ -168,7 +167,6 @@ final class BattleSceneRenderer {
             enemyRoot: enemyRoot
         )
 
-        enemyRoot.children.forEach { $0.removeFromParent() }
         renderEnemies(enemies: state.enemies, selectedEnemyIndex: nil, in: enemyRoot)
 
         if let headAnchor = battleLayer.findEntity(named: Names.battleHeadAnchor) {
@@ -316,12 +314,54 @@ final class BattleSceneRenderer {
         guard !aliveEnemies.isEmpty else { return }
         let count = aliveEnemies.count
 
+        let aliveIds = Set(aliveEnemies.map(\.element.id))
+        let existingEnemyEntities = enemyRoot.children.compactMap { child -> (id: String, entity: ModelEntity)? in
+            guard child.name.hasPrefix(Names.enemyNamePrefix) else { return nil }
+            guard let model = child as? ModelEntity else { return nil }
+            let id = String(child.name.dropFirst(Names.enemyNamePrefix.count))
+            return (id: id, entity: model)
+        }
+
+        // Remove entities for enemies that are no longer alive/visible.
+        for (id, entity) in existingEnemyEntities where !aliveIds.contains(id) {
+            _ = id
+            entity.removeFromParent()
+        }
+
+        var entityById: [String: ModelEntity] = Dictionary(uniqueKeysWithValues: existingEnemyEntities.map { ($0.id, $0.entity) })
+
         for (visibleIndex, pair) in aliveEnemies.enumerated() {
             let (stateIndex, enemy) = pair
             let isSelected = (selectedEnemyIndex == stateIndex)
-            let enemyEntity = makeEnemyEntity(enemy: enemy, isSelected: isSelected)
+            let enemyEntity: ModelEntity = entityById[enemy.id] ?? {
+                let created = makeEnemyEntity(enemy: enemy, isSelected: isSelected)
+                enemyRoot.addChild(created)
+                entityById[enemy.id] = created
+                return created
+            }()
+
+            applySelectionState(enemyEntity, isSelected: isSelected)
             enemyEntity.position = enemyPosition(at: visibleIndex, total: count)
-            enemyRoot.addChild(enemyEntity)
+        }
+    }
+
+    private func applySelectionState(_ entity: ModelEntity, isSelected: Bool) {
+        let baseColor = isSelected ? UIColor.systemYellow : UIColor.systemRed
+        entity.model?.materials = [SimpleMaterial(color: baseColor.withAlphaComponent(0.85), isMetallic: true)]
+
+        let existingMarker = entity.children.first(where: { $0.name == "enemySelectionMarker" })
+        if isSelected {
+            if existingMarker == nil {
+                let marker = ModelEntity(
+                    mesh: .generateCylinder(height: 0.008, radius: 0.19),
+                    materials: [SimpleMaterial(color: UIColor.systemYellow.withAlphaComponent(0.5), isMetallic: false)]
+                )
+                marker.name = "enemySelectionMarker"
+                marker.position = [0, -0.145, 0]
+                entity.addChild(marker)
+            }
+        } else {
+            existingMarker?.removeFromParent()
         }
     }
 

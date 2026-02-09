@@ -86,12 +86,13 @@ final class BattleAnimationSystem {
                     job: job,
                     in: battleLayer,
                     handRoot: handRoot,
+                    enemyRoot: enemyRoot,
                     pilesRoot: pilesRoot
                 )
             case .hit:
-                playDamageFeedback(job: job, in: battleLayer, enemyRoot: enemyRoot)
+                playDamageFeedback(job: job, in: battleLayer, handRoot: handRoot, enemyRoot: enemyRoot)
             case .block:
-                playBlockFeedback(job: job, in: battleLayer, enemyRoot: enemyRoot)
+                playBlockFeedback(job: job, in: battleLayer, handRoot: handRoot, enemyRoot: enemyRoot)
             case .die:
                 playDeathAnimation(job: job, in: battleLayer, enemyRoot: enemyRoot)
             case .turnStart:
@@ -192,6 +193,7 @@ final class BattleAnimationSystem {
         job: BattleAnimationQueue.AnimationJob,
         in battleLayer: RealityKit.Entity,
         handRoot: RealityKit.Entity?,
+        enemyRoot: RealityKit.Entity?,
         pilesRoot: RealityKit.Entity?
     ) {
         guard let context = job.playedCardContext else { return }
@@ -226,23 +228,41 @@ final class BattleAnimationSystem {
         endTransform.scale = SIMD3<Float>(repeating: 0.58)
         endTransform.rotation = pileTransform.rotation * simd_quatf(angle: .pi * 0.75, axis: [0, 1, 0])
 
-        tempCard.move(to: endTransform, relativeTo: battleLayer, duration: 0.25, timingFunction: .easeIn)
+        if let targetId = context.targetEnemyEntityId,
+           let targetEntity = enemyRoot?.findEntity(named: "\(Names.enemyPrefix)\(targetId)") {
+            var midTransform = transform(of: targetEntity, relativeTo: battleLayer)
+            midTransform.translation += [0, 0.10, 0]
+            midTransform.scale = SIMD3<Float>(repeating: 0.92)
+            tempCard.move(to: midTransform, relativeTo: battleLayer, duration: 0.13, timingFunction: .easeIn)
 
-        Task { @MainActor [weak tempCard, weak sourceEntity] in
-            try? await Task.sleep(nanoseconds: 280_000_000)
-            if let sourceEntity {
-                sourceEntity.components.set(OpacityComponent(opacity: 1))
+            Task { @MainActor [weak tempCard, weak sourceEntity] in
+                try? await Task.sleep(nanoseconds: 150_000_000)
+                tempCard?.move(to: endTransform, relativeTo: battleLayer, duration: 0.18, timingFunction: .easeOut)
+                try? await Task.sleep(nanoseconds: 220_000_000)
+                if let sourceEntity {
+                    sourceEntity.components.set(OpacityComponent(opacity: 1))
+                }
+                tempCard?.removeFromParent()
             }
-            tempCard?.removeFromParent()
+        } else {
+            tempCard.move(to: endTransform, relativeTo: battleLayer, duration: 0.25, timingFunction: .easeIn)
+            Task { @MainActor [weak tempCard, weak sourceEntity] in
+                try? await Task.sleep(nanoseconds: 280_000_000)
+                if let sourceEntity {
+                    sourceEntity.components.set(OpacityComponent(opacity: 1))
+                }
+                tempCard?.removeFromParent()
+            }
         }
     }
 
     private func playDamageFeedback(
         job: BattleAnimationQueue.AnimationJob,
         in battleLayer: RealityKit.Entity,
+        handRoot: RealityKit.Entity?,
         enemyRoot: RealityKit.Entity?
     ) {
-        guard let target = enemyRoot?.children.first else { return }
+        guard let target = resolveFeedbackTarget(job.entityId, handRoot: handRoot, enemyRoot: enemyRoot) else { return }
         pulseEntity(target, relativeTo: battleLayer, amplitude: 1.10)
 
         if let amount = job.amount, amount > 0 {
@@ -267,9 +287,10 @@ final class BattleAnimationSystem {
     private func playBlockFeedback(
         job: BattleAnimationQueue.AnimationJob,
         in battleLayer: RealityKit.Entity,
+        handRoot: RealityKit.Entity?,
         enemyRoot: RealityKit.Entity?
     ) {
-        guard let target = enemyRoot?.children.first else { return }
+        guard let target = resolveFeedbackTarget(job.entityId, handRoot: handRoot, enemyRoot: enemyRoot) else { return }
         pulseEntity(target, relativeTo: battleLayer, amplitude: 1.06)
         if let amount = job.amount, amount > 0 {
             spawnFloatingText(
@@ -324,6 +345,16 @@ final class BattleAnimationSystem {
             }
             entity?.removeFromParent()
         }
+    }
+
+    private func resolveFeedbackTarget(
+        _ entityId: String?,
+        handRoot: RealityKit.Entity?,
+        enemyRoot: RealityKit.Entity?
+    ) -> RealityKit.Entity? {
+        guard let entityId else { return enemyRoot?.children.first ?? handRoot }
+        if let enemy = enemyRoot?.findEntity(named: "\(Names.enemyPrefix)\(entityId)") { return enemy }
+        return handRoot ?? enemyRoot?.children.first
     }
 
     private func pulseBattleFloor(in battleLayer: RealityKit.Entity, color: UIColor) {

@@ -364,7 +364,9 @@
 
 > 2026-02-09 决策：当前阶段不实现 AVP 存档/读档/Continue。相关实现已在仓库中回滚；本计划后续仅保留说明，不再执行本阶段任务。
 
-### Task 18: AVP 快照存储层（RunSnapshot）
+### Task 18（Dropped）: AVP 快照存储层（RunSnapshot）
+
+> Dropped：本阶段不实现；相关代码已回滚。以下内容仅保留为历史设计记录。
 **Files:**
 - Create: `SaluNative/SaluAVP/Persistence/AVPRunSnapshotStore.swift`
 - Create: `SaluNative/SaluAVP/Persistence/AVPDataDirectory.swift`
@@ -379,7 +381,9 @@
 **Step 3: 验证**
 - Manual: 新开 run -> 保存 -> 关闭重开 -> Continue 恢复。
 
-### Task 19: 控制面板 Continue / Save / Reset UI
+### Task 19（Dropped）: 控制面板 Continue / Save / Reset UI
+
+> Dropped：本阶段不实现；相关代码已回滚。以下内容仅保留为历史设计记录。
 **Files:**
 - Modify: `SaluNative/SaluAVP/ControlPanel/ControlPanelView.swift`
 - Modify: `SaluNative/SaluAVP/ViewModels/RunSession.swift`
@@ -393,7 +397,9 @@
 **Step 3: 验证**
 - Manual: 有存档和无存档两条路径。
 
-### Task 20: 自动保存策略
+### Task 20（Dropped）: 自动保存策略
+
+> Dropped：本阶段不实现；相关代码已回滚。以下内容仅保留为历史设计记录。
 **Files:**
 - Modify: `SaluNative/SaluAVP/ViewModels/RunSession.swift`
 
@@ -412,7 +418,9 @@
 
 > 2026-02-09 决策：当前阶段不实现 AVP trace/replay。相关实现已在仓库中回滚；本计划后续仅保留说明，不再执行本阶段任务。
 
-### Task 21: 选择路径记录模型
+### Task 21（Dropped）: 选择路径记录模型
+
+> Dropped：本阶段不实现；相关代码已回滚。以下内容仅保留为历史设计记录。
 **Files:**
 - Create: `SaluNative/SaluAVP/ViewModels/RunTrace.swift`
 - Modify: `SaluNative/SaluAVP/ViewModels/RunSession.swift`
@@ -426,7 +434,9 @@
 **Step 3: 验证**
 - Manual: 完成 1 场战斗后导出 trace，内容完整。
 
-### Task 22: Trace 导出与重放模式（开发向）
+### Task 22（Dropped）: Trace 导出与重放模式（开发向）
+
+> Dropped：本阶段不实现；相关代码已回滚。以下内容仅保留为历史设计记录。
 **Files:**
 - Create: `SaluNative/SaluAVP/ControlPanel/ReplayPanel.swift`
 - Modify: `SaluNative/SaluAVP/ViewModels/RunSession.swift`

@@ -16,7 +16,7 @@ enum EventFormatter {
         case .energyReset(let amount):
             return "\(Terminal.yellow)⚡ \(L10n.text("能量恢复至", "Energy restored to")) \(amount)\(Terminal.reset)"
             
-        case .blockCleared(let target, let amount):
+        case .blockCleared(_, let target, let amount):
             return "\(Terminal.dim)🛡️ \(L10n.resolve(target)) \(amount) \(L10n.text("格挡清除", "Block cleared"))\(Terminal.reset)"
             
         case .drew(let cardId):
@@ -30,10 +30,10 @@ enum EventFormatter {
             let def = CardRegistry.require(cardId)
             return "\(Terminal.bold)▶️ \(L10n.text("打出", "Played")) \(L10n.resolve(def.name)) (◆\(cost))\(Terminal.reset)"
             
-        case .damageDealt(let source, let target, let amount, let blocked):
+        case .damageDealt(_, let source, _, let target, let amount, let blocked):
             return formatDamage(source: source, target: target, amount: amount, blocked: blocked)
             
-        case .blockGained(let target, let amount):
+        case .blockGained(_, let target, let amount):
             return "\(Terminal.cyan)🛡️ \(L10n.resolve(target)) +\(amount) \(L10n.text("格挡", "Block"))\(Terminal.reset)"
             
         case .handDiscarded(let count):
@@ -63,10 +63,10 @@ enum EventFormatter {
         case .invalidAction(let reason):
             return "\(Terminal.red)❌ \(L10n.resolve(reason))\(Terminal.reset)"
             
-        case .statusApplied(let target, let effect, let stacks):
+        case .statusApplied(_, let target, let effect, let stacks):
             return "\(Terminal.magenta)✨ \(L10n.resolve(target)) \(L10n.text("获得", "gains")) \(L10n.resolve(effect)) \(stacks) \(L10n.text("层", "stacks"))\(Terminal.reset)"
             
-        case .statusExpired(let target, let effect):
+        case .statusExpired(_, let target, let effect):
             return "\(Terminal.dim)💨 \(L10n.resolve(target)) \(L10n.text("的", "'s")) \(L10n.resolve(effect)) \(L10n.text("已消退", "has faded"))\(Terminal.reset)"
             
         // MARK: - 疯狂系统事件（占卜家序列）

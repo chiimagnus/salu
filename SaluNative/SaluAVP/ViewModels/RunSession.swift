@@ -443,6 +443,13 @@ final class RunSession {
         guard case .resolved(let resolvedTargetEnemyIndex) = targetEnemyIndex else {
             return
         }
+
+        let targetEnemyEntityId: String? = {
+            guard let resolvedTargetEnemyIndex else { return nil }
+            guard battleEngine.state.enemies.indices.contains(resolvedTargetEnemyIndex) else { return nil }
+            return battleEngine.state.enemies[resolvedTargetEnemyIndex].id
+        }()
+
         let eventStartIndex = battleEngine.events.count
         let succeeded = battleEngine.handleAction(
             .playCard(
@@ -451,7 +458,11 @@ final class RunSession {
             )
         )
         syncBattleStateFromEngine()
-        capturePlayedCardContexts(startIndex: eventStartIndex, sourceHandIndex: handIndex)
+        capturePlayedCardContexts(
+            startIndex: eventStartIndex,
+            sourceHandIndex: handIndex,
+            targetEnemyEntityId: targetEnemyEntityId
+        )
         if succeeded {
             battleTargetHint = nil
         } else {
@@ -785,7 +796,7 @@ final class RunSession {
         sanitizeSelectedEnemyIndex()
     }
 
-    private func capturePlayedCardContexts(startIndex: Int, sourceHandIndex: Int) {
+    private func capturePlayedCardContexts(startIndex: Int, sourceHandIndex: Int, targetEnemyEntityId: String?) {
         guard startIndex < battleEvents.count else { return }
         let newEvents = battleEvents[startIndex..<battleEvents.count]
         for (offset, event) in newEvents.enumerated() {
@@ -793,7 +804,8 @@ final class RunSession {
             let destinationPile = destinationPileForPlayedCard(cardId: cardId)
             playedCardContextsBySequence[startIndex + offset] = PlayedCardPresentationContext(
                 sourceHandIndex: sourceHandIndex,
-                destinationPile: destinationPile
+                destinationPile: destinationPile,
+                targetEnemyEntityId: targetEnemyEntityId
             )
         }
     }
@@ -971,7 +983,9 @@ final class RunSession {
         }
         battleNodeId = nil
         battleRoomType = nil
-        lastConsumedBattleEventIndex = 0
+        // When preserving snapshot for reward UI, do not re-consume the entire battle event stream.
+        // Reward should display the final state, not replay the full battle timeline.
+        lastConsumedBattleEventIndex = preserveSnapshot ? battleEvents.count : 0
         playedCardContextsBySequence = [:]
         selectedEnemyIndex = nil
         battleTargetHint = nil

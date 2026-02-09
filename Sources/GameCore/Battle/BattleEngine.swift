@@ -289,7 +289,7 @@ public final class BattleEngine: @unchecked Sendable {
         if state.player.block > 0 {
             let clearedBlock = state.player.block
             state.player.clearBlock()
-            emit(.blockCleared(target: state.player.name, amount: clearedBlock))
+            emit(.blockCleared(targetEntityId: state.player.id, target: state.player.name, amount: clearedBlock))
         }
         
         // P2: 状态递减现在由 processStatusesAtTurnEnd 处理（在回合结束时）
@@ -373,7 +373,11 @@ public final class BattleEngine: @unchecked Sendable {
                 if state.enemies[index].block > 0 {
                     let clearedBlock = state.enemies[index].block
                     state.enemies[index].clearBlock()
-                    emit(.blockCleared(target: state.enemies[index].name, amount: clearedBlock))
+                    emit(.blockCleared(
+                        targetEntityId: state.enemies[index].id,
+                        target: state.enemies[index].name,
+                        amount: clearedBlock
+                    ))
                 }
             }
             startNewTurn()
@@ -624,7 +628,9 @@ public final class BattleEngine: @unchecked Sendable {
         }
         
         emit(.damageDealt(
+            sourceEntityId: attacker.id,
             source: resolveDisplayName(for: source),
+            targetEntityId: defenderBefore.id,
             target: resolveDisplayName(for: target),
             amount: damageResult.dealt,
             blocked: damageResult.blocked
@@ -649,7 +655,7 @@ public final class BattleEngine: @unchecked Sendable {
         case .player:
             state.player.gainBlock(block)
             battleStats.totalBlockGained += block
-            emit(.blockGained(target: state.player.name, amount: block))
+            emit(.blockGained(targetEntityId: state.player.id, target: state.player.name, amount: block))
             // P4: 触发获得格挡遗物效果（仅玩家）
             triggerRelics(.blockGained(amount: block))
         case .enemy(index: let enemyIndex):
@@ -658,7 +664,11 @@ public final class BattleEngine: @unchecked Sendable {
                 return
             }
             state.enemies[enemyIndex].gainBlock(block)
-            emit(.blockGained(target: state.enemies[enemyIndex].name, amount: block))
+            emit(.blockGained(
+                targetEntityId: state.enemies[enemyIndex].id,
+                target: state.enemies[enemyIndex].name,
+                amount: block
+            ))
         }
     }
     
@@ -677,6 +687,7 @@ public final class BattleEngine: @unchecked Sendable {
         if statusId == Madness.id && target == .player && stacks > 0 && shouldSkipNextMadnessFromRewrite {
             shouldSkipNextMadnessFromRewrite = false
             emit(.statusApplied(
+                targetEntityId: state.player.id,
                 target: state.player.name,
                 effect: LocalizedText("（预言者手札抵消疯狂）", "(Prophet Notes negated Madness)"),
                 stacks: 0
@@ -687,14 +698,24 @@ public final class BattleEngine: @unchecked Sendable {
         switch target {
         case .player:
             state.player.statuses.apply(statusId, stacks: stacks)
-            emit(.statusApplied(target: state.player.name, effect: def.name, stacks: stacks))
+            emit(.statusApplied(
+                targetEntityId: state.player.id,
+                target: state.player.name,
+                effect: def.name,
+                stacks: stacks
+            ))
         case .enemy(index: let enemyIndex):
             guard enemyIndex >= 0, enemyIndex < state.enemies.count else {
                 emit(.invalidAction(reason: LocalizedText("无效的敌人索引", "Invalid enemy index")))
                 return
             }
             state.enemies[enemyIndex].statuses.apply(statusId, stacks: stacks)
-            emit(.statusApplied(target: state.enemies[enemyIndex].name, effect: def.name, stacks: stacks))
+            emit(.statusApplied(
+                targetEntityId: state.enemies[enemyIndex].id,
+                target: state.enemies[enemyIndex].name,
+                effect: def.name,
+                stacks: stacks
+            ))
         }
     }
     
@@ -804,8 +825,19 @@ public final class BattleEngine: @unchecked Sendable {
         // 3) 发出状态过期事件
         for statusId in expired {
             guard let def = StatusRegistry.get(statusId) else { continue }
+            let entityId: String
+            switch target {
+            case .player:
+                entityId = state.player.id
+            case .enemy(index: let enemyIndex):
+                guard enemyIndex >= 0, enemyIndex < state.enemies.count else {
+                    emit(.invalidAction(reason: LocalizedText("无效的敌人索引", "Invalid enemy index")))
+                    return
+                }
+                entityId = state.enemies[enemyIndex].id
+            }
             let entityName = resolveDisplayName(for: target)
-            emit(.statusExpired(target: entityName, effect: def.name))
+            emit(.statusExpired(targetEntityId: entityId, target: entityName, effect: def.name))
         }
     }
     

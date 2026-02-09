@@ -134,77 +134,83 @@
 
 - Task: `Task 6: 受击、格挡、死亡反馈`
 - Severity: `High`
-- Status: `Open`
+- Status: `Resolved`
 - Location: `SaluNative/SaluAVP/Immersive/BattleAnimationSystem.swift:245`
 - Summary: `damageDealt/blockGained` 的反馈永远打在 `enemyRoot.children.first`，多敌人时会给错目标；并且无法区分“玩家受击”和“某个敌人受击”。
 - Risk: 多敌人战斗反馈错误，目标选择的价值被削弱；容易造成“我明明打了 B，但动画/飘字出现在 A”。
 - Expected fix: 最小改动下让 hit/block 反馈基于“稳定目标标识”路由到正确实体；不依赖名字字符串匹配（避免双同名敌人歧义）。
 - Validation: `swift test --filter GameCoreTests` + `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluAVP -destination 'platform=visionOS Simulator,name=Apple Vision Pro' build`
-- Resolution evidence: (pending)
+- Resolution evidence: `BattleEvent` 为 damage/block/status 相关事件补齐 entity id；AVP 动画队列把 `targetEntityId` 写入 job，并在动画系统里按 `enemy:<id>` 精确寻址（玩家则落到手牌根节点附近）。验证见下方 Validation Log。
 
 ## Finding F-02
 
 - Task: `Task 2: 抽离战斗渲染器，降低 ImmersiveRootView 复杂度`
 - Severity: `High`
-- Status: `Open`
+- Status: `Resolved`
 - Location: `SaluNative/SaluAVP/Immersive/BattleSceneRenderer.swift:85`
 - Summary: `enemyRoot` 在每次 `render(...)` 都会 `removeFromParent()` 并重建，导致对敌人的 pulse/受击缩放等“持续动画”在下一帧被销毁，表现为抖一下就瞬间复位。
 - Risk: 动画系统看似工作，但核心反馈持续时间被帧刷新打断；多敌人时更明显（每帧重建更重，也更丑）。
 - Expected fix: 让敌人渲染从“每帧重建”改为“保留实体并增量更新”（按 enemy id 复用、按 alive/selected 状态更新材质/marker），仅在敌人集合变化时增删。
 - Validation: `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluAVP -destination 'platform=visionOS Simulator,name=Apple Vision Pro' build` + 手动在多敌人战斗里观察受击脉冲持续 0.2s 以上不被重置。
-- Resolution evidence: (pending)
+- Resolution evidence: `BattleSceneRenderer.renderEnemies(...)` 改为按 enemy id 复用实体并增量更新，避免每帧销毁敌人实体导致动画中断。构建验证见 Validation Log。
 
 ## Finding F-03
 
 - Task: `Task 1: 建立 AVP 战斗事件消费接口（允许破坏旧 AVP 接口）`
 - Severity: `Medium`
-- Status: `Open`
+- Status: `Resolved`
 - Location: `SaluNative/SaluAVP/ViewModels/RunSession.swift:966` (see `clearBattleState(preserveSnapshot:)`)
 - Summary: `playerWon` 进入 `reward` 路由时，`clearBattleState(preserveSnapshot: true)` 会把 `lastConsumedBattleEventIndex` 重置为 0，导致在奖励界面再次“从头消费一遍 battleEvents”，违反“自上次消费后新增事件”的语义。
 - Risk: 奖励界面可能重复触发抽牌/回合等动画队列，表现为随机闪动/噪声；也会让 event bridge 的“增量消费”难以推理。
 - Expected fix: `preserveSnapshot == true` 时不要重置 `lastConsumedBattleEventIndex`（或直接推进到 `battleEvents.count`），并明确 reward 界面不回放整场战斗事件。
 - Validation: 手动：打一场战斗胜利后进入奖励界面，不再触发“抽牌/回合开始”类动画；并保持后续回到地图正常。
-- Resolution evidence: (pending)
+- Resolution evidence: `clearBattleState(preserveSnapshot: true)` 现在会把 `lastConsumedBattleEventIndex` 置为 `battleEvents.count`，reward 界面不再回放整场战斗事件。
 
 ## Finding F-04
 
 - Task: `Task 5: 出牌动画（Hand -> Enemy / Pile）`
 - Severity: `Medium`
-- Status: `Open`
+- Status: `Resolved`
 - Location: `SaluNative/SaluAVP/ViewModels/RunSession.swift:788`
 - Summary: 出牌动画当前只从手牌飞向牌堆（discard/exhaust），没有“命中目标”的视觉阶段；且 `PlayedCardPresentationContext` 不包含目标实体信息。
 - Risk: 出牌缺乏因果链（打到谁），“选目标”与“造成伤害”之间缺少视觉连接，尤其多敌人战斗可读性差。
 - Expected fix: 在 AVP 层为 `.played` 事件补足“本次出牌的目标 enemyId（若有）”，动画先飞向目标再落入牌堆；不需要改 GameCore 规则。
 - Validation: 手动：多敌人战斗选中目标出牌，卡牌先飞向目标再回收；无目标牌仍飞向牌堆。
-- Resolution evidence: (pending)
+- Resolution evidence: `PlayedCardPresentationContext` 增加 `targetEnemyEntityId`，`BattleAnimationSystem` 出牌动画在有目标时先飞向 `enemy:<id>` 再落入牌堆。
 
 ## Finding F-05
 
 - Task: `Task 18: AVP 快照存储层（RunSnapshot）`
 - Severity: `Low`
-- Status: `Open`
+- Status: `Resolved`
 - Location: `.github/plans/2026-02-09-saluavp-full-ui-animation-implementation-plan.md:367`
 - Summary: Plan P6/P7 已标 `Dropped`，但 Task 18/21/22 的文件清单仍指向当前不存在的实现文件，容易误导后续执行者。
 - Risk: 执行偏离当前决策；审查时无法快速判断“缺文件是 bug 还是刻意 drop”。 
 - Expected fix: 将 Task 18/21/22 标题也明确标注 `Dropped`，并在 Files 段落注明“已回滚/本阶段不执行”。
 - Validation: 文档审查即可（无代码验证要求）。
-- Resolution evidence: (pending)
+- Resolution evidence: Task 18-22 标题已标注 `Dropped` 并追加说明行（保留为历史设计记录）。
 
 ---
 
 ## Fix Log (Reserved)
 
-> 本节在修复阶段填写：每条 Finding 的改动摘要与对应验证证据。
+- F-01: `BattleEvent` 补齐 entity id；AVP hit/block 动画按 id 寻址目标实体。
+- F-02: 战斗敌人渲染改为增量更新（按 enemy id 复用实体），避免每帧重建打断动画。
+- F-03: reward 快照模式下不再重置 battle event 消费游标，避免奖励界面回放整场事件。
+- F-04: 出牌动画补齐目标 enemy id，支持“飞向目标再回收至牌堆”。
+- F-05: Plan 中 Task 18-22 明确标注 `Dropped` 并说明已回滚。
 
 ---
 
 ## Validation Log (Reserved)
 
-- (pending)
+- `swift test --filter GameCoreTests` PASS
+- `xcodebuild -project SaluNative/SaluNative.xcodeproj -scheme SaluAVP -destination 'platform=visionOS Simulator,name=Apple Vision Pro' build` PASS
 
 ---
 
 ## Current Status
 
-- Findings Open: `F-01..F-05`
-- Next step: Apply fixes in priority order (High -> Medium -> Low), then update this report with `Resolved` statuses and validation evidence.
+- Findings Open: none
+- Residual risks:
+  - 需要手动确认：多敌人战斗中，enemy 位置更新不会与受击 pulse 产生视觉冲突（目前 pulse 只做 scale，不改 translation）。

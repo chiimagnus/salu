@@ -11,7 +11,7 @@ public enum BattleEvent: Sendable, Equatable {
     case energyReset(amount: Int)
     
     /// 格挡清除
-    case blockCleared(target: LocalizedText, amount: Int)
+    case blockCleared(targetEntityId: String, target: LocalizedText, amount: Int)
     
     /// 抽牌
     case drew(cardId: CardID)
@@ -23,10 +23,17 @@ public enum BattleEvent: Sendable, Equatable {
     case played(cardInstanceId: String, cardId: CardID, cost: Int)
     
     /// 造成伤害
-    case damageDealt(source: LocalizedText, target: LocalizedText, amount: Int, blocked: Int)
+    case damageDealt(
+        sourceEntityId: String,
+        source: LocalizedText,
+        targetEntityId: String,
+        target: LocalizedText,
+        amount: Int,
+        blocked: Int
+    )
     
     /// 获得格挡
-    case blockGained(target: LocalizedText, amount: Int)
+    case blockGained(targetEntityId: String, target: LocalizedText, amount: Int)
     
     /// 手牌弃置（回合结束时）
     case handDiscarded(count: Int)
@@ -56,10 +63,10 @@ public enum BattleEvent: Sendable, Equatable {
     case invalidAction(reason: LocalizedText)
     
     /// 获得状态效果
-    case statusApplied(target: LocalizedText, effect: LocalizedText, stacks: Int)
+    case statusApplied(targetEntityId: String, target: LocalizedText, effect: LocalizedText, stacks: Int)
     
     /// 状态效果过期
-    case statusExpired(target: LocalizedText, effect: LocalizedText)
+    case statusExpired(targetEntityId: String, target: LocalizedText, effect: LocalizedText)
     
     // MARK: - 疯狂系统事件（占卜家序列）
     
@@ -100,7 +107,7 @@ extension BattleEvent {
         case .energyReset(let amount):
             return "⚡ 能量恢复至 \(amount)"
             
-        case .blockCleared(let target, let amount):
+        case .blockCleared(_, let target, let amount):
             return "🛡️ \(target.resolved(for: .zhHans)) 的格挡 \(amount) 已清除"
             
         case .drew(let cardId):
@@ -114,14 +121,14 @@ extension BattleEvent {
             let def = CardRegistry.require(cardId)
             return "▶️ 打出 \(def.name.resolved(for: .zhHans))（消耗 \(cost) 能量）"
             
-        case .damageDealt(let source, let target, let amount, let blocked):
+        case .damageDealt(_, let source, _, let target, let amount, let blocked):
             if blocked > 0 {
                 return "💥 \(source.resolved(for: .zhHans)) 对 \(target.resolved(for: .zhHans)) 造成 \(amount) 伤害（\(blocked) 被格挡）"
             } else {
                 return "💥 \(source.resolved(for: .zhHans)) 对 \(target.resolved(for: .zhHans)) 造成 \(amount) 伤害"
             }
             
-        case .blockGained(let target, let amount):
+        case .blockGained(_, let target, let amount):
             return "🛡️ \(target.resolved(for: .zhHans)) 获得 \(amount) 格挡"
             
         case .handDiscarded(let count):
@@ -151,10 +158,10 @@ extension BattleEvent {
         case .invalidAction(let reason):
             return "❌ 无效操作：\(reason.resolved(for: .zhHans))"
             
-        case .statusApplied(let target, let effect, let stacks):
+        case .statusApplied(_, let target, let effect, let stacks):
             return "✨ \(target.resolved(for: .zhHans)) 获得 \(effect.resolved(for: .zhHans)) \(stacks) 层"
             
-        case .statusExpired(let target, let effect):
+        case .statusExpired(_, let target, let effect):
             return "💨 \(target.resolved(for: .zhHans)) 的 \(effect.resolved(for: .zhHans)) 已消退"
             
         // MARK: - 疯狂系统事件

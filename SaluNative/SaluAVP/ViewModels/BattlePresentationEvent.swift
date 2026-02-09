@@ -9,6 +9,7 @@ enum PlayedCardDestinationPile: String, Sendable, Equatable {
 struct PlayedCardPresentationContext: Sendable, Equatable {
     let sourceHandIndex: Int
     let destinationPile: PlayedCardDestinationPile
+    let targetEnemyEntityId: String?
 }
 
 /// AVP 表现层使用的战斗事件包装，包含稳定序号以支持动画队列消费。
