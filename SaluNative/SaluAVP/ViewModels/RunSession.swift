@@ -9,7 +9,8 @@ final class RunSession {
         case map
         case room(nodeId: String, roomType: RoomType)
         case battle(nodeId: String, roomType: RoomType)
-        case cardReward(nodeId: String, roomType: RoomType, offer: CardRewardOffer, goldEarned: Int)
+        case reward(RewardRouteState)
+        case chapterEnd(previousFloor: Int, nextFloor: Int)
         case runOver(lastNodeId: String, won: Bool, floor: Int)
     }
 
@@ -531,9 +532,34 @@ final class RunSession {
         }
     }
 
-    func chooseCardReward(_ cardId: CardID?) {
-        guard case .cardReward(let nodeId, let roomType, let offer, let goldEarned) = route else { return }
+    func chooseRelicReward(take: Bool) {
+        guard case .reward(var rewardState) = route else { return }
+        guard rewardState.phase == .relic else { return }
         guard var runState else { return }
+        guard let relicReward = rewardState.relicReward else {
+            rewardState.phase = .card
+            route = .reward(rewardState)
+            return
+        }
+
+        if take {
+            runState.relicManager.add(relicReward.relicId)
+            self.runState = runState
+        }
+
+        rewardState.phase = .card
+        route = .reward(rewardState)
+    }
+
+    func chooseCardReward(_ cardId: CardID?) {
+        guard case .reward(let rewardState) = route else { return }
+        guard rewardState.phase == .card else { return }
+        guard var runState else { return }
+
+        let nodeId = rewardState.nodeId
+        let offer = rewardState.cardOffer
+        let previousFloor = runState.floor
+        let shouldShowChapterEnd = (rewardState.roomType == .boss)
 
         if let cardId {
             guard offer.choices.contains(cardId) else { return }
@@ -550,10 +576,17 @@ final class RunSession {
         if runState.isOver {
             route = .runOver(lastNodeId: nodeId, won: runState.won, floor: runState.floor)
         } else {
-            _ = roomType
-            _ = goldEarned
-            route = .map
+            if shouldShowChapterEnd {
+                route = .chapterEnd(previousFloor: previousFloor, nextFloor: runState.floor)
+            } else {
+                route = .map
+            }
         }
+    }
+
+    func continueAfterChapterEnd() {
+        guard case .chapterEnd = route else { return }
+        route = .map
     }
 
     private func finishBattleIfNeeded() {
@@ -586,8 +619,35 @@ final class RunSession {
             runState.gold += goldEarned
             self.runState = runState
 
-            let offer = RewardGenerator.generateCardReward(context: rewardContext)
-            route = .cardReward(nodeId: nodeId, roomType: roomTypeForRewards, offer: offer, goldEarned: goldEarned)
+            let cardOffer = RewardGenerator.generateCardReward(context: rewardContext)
+            let relicReward: RewardRouteState.RelicReward? = {
+                let source: RelicDropSource?
+                switch roomTypeForRewards {
+                case .elite:
+                    source = .elite
+                case .boss:
+                    source = .boss
+                default:
+                    source = nil
+                }
+                guard let source else { return nil }
+                guard let relicId = RelicDropStrategy.generateRelicDrop(
+                    context: rewardContext,
+                    source: source,
+                    ownedRelics: runState.relicManager.all
+                ) else { return nil }
+                return RewardRouteState.RelicReward(relicId: relicId, source: source)
+            }()
+
+            route = .reward(
+                RewardRouteState(
+                    nodeId: nodeId,
+                    roomType: roomTypeForRewards,
+                    goldEarned: goldEarned,
+                    cardOffer: cardOffer,
+                    relicReward: relicReward
+                )
+            )
         } else {
             clearBattleState(preserveSnapshot: false)
             clearRoomState(clearEventBattleContext: true)

@@ -69,7 +69,7 @@ struct ImmersiveRootView: View {
                         handleShopSceneTap(named: value.entity.name)
                     }
 
-                case .cardReward, .runOver:
+                case .reward, .chapterEnd, .runOver:
                     break
                 }
             }
@@ -191,9 +191,9 @@ struct ImmersiveRootView: View {
 
             let isInBattle: Bool = {
                 switch runSession.route {
-                case .battle, .cardReward:
+                case .battle, .reward:
                     return true
-                case .map, .room, .runOver:
+                case .map, .room, .chapterEnd, .runOver:
                     return false
                 }
             }()
@@ -246,7 +246,7 @@ struct ImmersiveRootView: View {
                     battleSceneRenderer.clear(in: battleLayer)
                 }
 
-            case .cardReward:
+            case .reward:
                 roomSceneRenderer.clear(in: roomLayer)
                 selectedShopItem = nil
                 clearShopFeedback(in: roomLayer)
@@ -257,7 +257,7 @@ struct ImmersiveRootView: View {
                     battleSceneRenderer.clear(in: battleLayer)
                 }
 
-            case .map, .runOver:
+            case .chapterEnd, .map, .runOver:
                 roomSceneRenderer.clear(in: roomLayer)
                 selectedShopItem = nil
                 clearShopFeedback(in: roomLayer)
@@ -294,7 +294,7 @@ struct ImmersiveRootView: View {
                     panel.position = [0, 0.25, -0.55]
                     uiLayer.addChild(panel)
 
-                case .map, .battle, .cardReward:
+                case .map, .battle, .reward, .chapterEnd:
                     panel.isEnabled = false
                 }
             }
@@ -319,7 +319,8 @@ struct ImmersiveRootView: View {
                 hud.name = mapHudAttachmentId
                 hud.components.set(BillboardComponent())
                 hud.components.set(InputTargetComponent())
-                hud.isEnabled = !isInBattle && !isInRoom
+                let isInChapterEnd: Bool = { if case .chapterEnd = runSession.route { return true } else { return false } }()
+                hud.isEnabled = !isInBattle && !isInRoom && !isInChapterEnd
 
                 hudAnchor.children.first(where: { $0.name == mapHudAttachmentId })?.removeFromParent()
                 hud.position = [0.18, 0.17, -0.50]
@@ -330,7 +331,15 @@ struct ImmersiveRootView: View {
                 panel.name = cardRewardAttachmentId
                 panel.components.set(BillboardComponent())
                 panel.components.set(InputTargetComponent())
-                if case .cardReward = runSession.route {
+                let isRewardVisible: Bool = {
+                    switch runSession.route {
+                    case .reward, .chapterEnd:
+                        return true
+                    default:
+                        return false
+                    }
+                }()
+                if isRewardVisible {
                     panel.isEnabled = true
                 } else {
                     panel.isEnabled = false
@@ -384,7 +393,7 @@ struct ImmersiveRootView: View {
                         }
                     )
 
-                case .map, .battle, .cardReward:
+                case .map, .battle, .reward, .chapterEnd:
                     EmptyView()
                 }
             }
@@ -744,8 +753,32 @@ private struct CardRewardAttachment: View {
 
     var body: some View {
         switch runSession.route {
-        case .cardReward(let nodeId, let roomType, let offer, let goldEarned):
-            CardRewardPanel(nodeId: nodeId, roomType: roomType, offer: offer, goldEarned: goldEarned)
+        case .reward(let rewardState):
+            switch rewardState.phase {
+            case .relic:
+                if let relicReward = rewardState.relicReward {
+                    RelicRewardPanel(rewardState: rewardState, relicReward: relicReward)
+                } else {
+                    CardRewardPanel(
+                        nodeId: rewardState.nodeId,
+                        roomType: rewardState.roomType,
+                        offer: rewardState.cardOffer,
+                        goldEarned: rewardState.goldEarned
+                    )
+                }
+            case .card:
+                CardRewardPanel(
+                    nodeId: rewardState.nodeId,
+                    roomType: rewardState.roomType,
+                    offer: rewardState.cardOffer,
+                    goldEarned: rewardState.goldEarned
+                )
+            }
+
+        case .chapterEnd(let previousFloor, let nextFloor):
+            ChapterEndPanel(previousFloor: previousFloor, nextFloor: nextFloor) {
+                runSession.continueAfterChapterEnd()
+            }
 
         default:
             EmptyView()
