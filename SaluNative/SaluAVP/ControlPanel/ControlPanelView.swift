@@ -84,6 +84,10 @@ struct ControlPanelView: View {
 
             Divider()
 
+            ReplayPanel()
+
+            Divider()
+
             VStack(alignment: .leading, spacing: 8) {
                 Text("Card Display Mode")
                     .font(.caption)
