@@ -195,7 +195,7 @@
 
 ### P3：多敌人与目标选择（战斗可玩性补齐）
 
-### Task 8: RunSession 启用多敌人遭遇初始化
+### ✅Task 8: RunSession 启用多敌人遭遇初始化
 **Files:**
 - Modify: `SaluNative/SaluAVP/ViewModels/RunSession.swift`
 
@@ -226,7 +226,7 @@
 **Step 3: 验证**
 - Manual: 多敌人时攻击牌可定向命中，非目标牌不受影响。
 
-### Task 10: 目标选择边界处理与提示
+### ✅Task 10: 目标选择边界处理与提示
 **Files:**
 - Modify: `SaluNative/SaluAVP/Immersive/BattleHUDPanel.swift`
 - Modify: `SaluNative/SaluAVP/ViewModels/RunSession.swift`

@@ -55,9 +55,33 @@ struct BattleHUDPanel: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Player HP \(state.player.currentHP)/\(state.player.maxHP)  Block \(state.player.block)")
                         .font(.caption)
-                    let enemy = state.enemies.first
-                    Text("Enemy: \(enemy.map { $0.name.resolved(for: .zhHans) } ?? "-")  HP \(enemy?.currentHP ?? 0)/\(enemy?.maxHP ?? 0)  Block \(enemy?.block ?? 0)")
-                        .font(.caption)
+
+                    if state.enemies.count == 1, let enemy = state.enemies.first {
+                        let marker = (runSession.selectedEnemyIndex == 0) ? "[Target] " : ""
+                        Text("\(marker)Enemy: \(enemy.name.resolved(for: .zhHans))  HP \(enemy.currentHP)/\(enemy.maxHP)  Block \(enemy.block)")
+                            .font(.caption)
+                    } else {
+                        ForEach(Array(state.enemies.enumerated()), id: \.offset) { index, enemy in
+                            let marker = (runSession.selectedEnemyIndex == index) ? "[Target] " : ""
+                            let alive = enemy.isAlive ? "" : " [DEAD]"
+                            Text("\(marker)E\(index + 1): \(enemy.name.resolved(for: .zhHans))\(alive)  HP \(enemy.currentHP)/\(enemy.maxHP)  Block \(enemy.block)")
+                                .font(.caption2)
+                                .foregroundStyle(enemy.isAlive ? .primary : .secondary)
+                        }
+                    }
+
+                    if let selectedEnemyDisplayName = runSession.selectedEnemyDisplayName {
+                        Text("Target Locked: \(selectedEnemyDisplayName)")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.yellow)
+                    }
+
+                    if let battleTargetHint = runSession.battleTargetHint {
+                        Text(battleTargetHint)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.red)
+                    }
+
                     HStack(spacing: 8) {
                         Text("Turn \(state.turn) · \(state.isPlayerTurn ? "Player" : "Enemy")")
                             .font(.caption2)

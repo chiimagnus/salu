@@ -48,6 +48,13 @@ struct ImmersiveRootView: View {
                     runSession.selectAccessibleNode(nodeId)
 
                 case .battle:
+                    if value.entity.name.hasPrefix(BattleSceneRenderer.Names.enemyNamePrefix) {
+                        let enemyId = String(
+                            value.entity.name.dropFirst(BattleSceneRenderer.Names.enemyNamePrefix.count)
+                        )
+                        runSession.selectEnemyTarget(entityId: enemyId)
+                        return
+                    }
                     guard value.entity.name.hasPrefix(BattleSceneRenderer.Names.cardNamePrefix) else { return }
                     let suffix = value.entity.name.dropFirst(BattleSceneRenderer.Names.cardNamePrefix.count)
                     guard let handIndex = Int(suffix) else { return }
@@ -185,6 +192,7 @@ struct ImmersiveRootView: View {
                         cardDisplayMode: appModel.cardDisplayMode,
                         language: .zhHans,
                         peekedHandIndex: peekedHandIndex,
+                        selectedEnemyIndex: runSession.selectedEnemyIndex,
                         newEvents: newEvents
                     )
                 } else {

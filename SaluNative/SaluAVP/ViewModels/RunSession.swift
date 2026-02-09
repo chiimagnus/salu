@@ -25,6 +25,14 @@ final class RunSession {
     private var battleRoomType: RoomType?
     private var lastConsumedBattleEventIndex: Int = 0
     private var playedCardContextsBySequence: [Int: PlayedCardPresentationContext] = [:]
+    private(set) var selectedEnemyIndex: Int?
+    private(set) var battleTargetHint: String?
+
+    var selectedEnemyDisplayName: String? {
+        guard let battleState, let selectedEnemyIndex else { return nil }
+        guard battleState.enemies.indices.contains(selectedEnemyIndex) else { return nil }
+        return battleState.enemies[selectedEnemyIndex].name.resolved(for: .zhHans)
+    }
 
     func startNewRun() {
         let seed: UInt64
@@ -48,6 +56,8 @@ final class RunSession {
         battleRoomType = nil
         lastConsumedBattleEventIndex = 0
         playedCardContextsBySequence = [:]
+        selectedEnemyIndex = nil
+        battleTargetHint = nil
         route = .map
     }
 
@@ -94,10 +104,27 @@ final class RunSession {
         guard let battleEngine else { return }
         guard battleEngine.pendingInput == nil else { return }
         guard battleEngine.state.hand.indices.contains(handIndex) else { return }
+        let targetEnemyIndex = resolveTargetEnemyIndex(
+            for: battleEngine.state.hand[handIndex],
+            in: battleEngine.state
+        )
+        guard case .resolved(let resolvedTargetEnemyIndex) = targetEnemyIndex else {
+            return
+        }
         let eventStartIndex = battleEngine.events.count
-        _ = battleEngine.handleAction(.playCard(handIndex: handIndex, targetEnemyIndex: nil))
+        let succeeded = battleEngine.handleAction(
+            .playCard(
+                handIndex: handIndex,
+                targetEnemyIndex: resolvedTargetEnemyIndex
+            )
+        )
         syncBattleStateFromEngine()
         capturePlayedCardContexts(startIndex: eventStartIndex, sourceHandIndex: handIndex)
+        if succeeded {
+            battleTargetHint = nil
+        } else {
+            captureInvalidActionHint(from: battleEngine.events, startIndex: eventStartIndex)
+        }
         finishBattleIfNeeded()
     }
 
@@ -107,6 +134,7 @@ final class RunSession {
         guard battleEngine.pendingInput == nil else { return }
         _ = battleEngine.handleAction(.endTurn)
         syncBattleStateFromEngine()
+        battleTargetHint = nil
         finishBattleIfNeeded()
     }
 
@@ -121,6 +149,29 @@ final class RunSession {
         _ = battleEngine.submitForesightChoice(index: index)
         syncBattleStateFromEngine()
         finishBattleIfNeeded()
+    }
+
+    func selectEnemyTarget(index: Int) {
+        guard routeIsBattle else { return }
+        guard let battleState else { return }
+        guard battleState.enemies.indices.contains(index) else { return }
+        guard battleState.enemies[index].isAlive else {
+            battleTargetHint = "目标已失效，请重新选择"
+            return
+        }
+
+        if selectedEnemyIndex == index {
+            selectedEnemyIndex = nil
+        } else {
+            selectedEnemyIndex = index
+        }
+        battleTargetHint = nil
+    }
+
+    func selectEnemyTarget(entityId: String) {
+        guard let battleState else { return }
+        guard let index = battleState.enemies.firstIndex(where: { $0.id == entityId }) else { return }
+        selectEnemyTarget(index: index)
     }
 
     func consumeNewBattleEvents() -> [BattleEvent] {
@@ -169,6 +220,8 @@ final class RunSession {
         battleRoomType = nil
         lastConsumedBattleEventIndex = 0
         playedCardContextsBySequence = [:]
+        selectedEnemyIndex = nil
+        battleTargetHint = nil
 
         if runState.isOver {
             route = .runOver(lastNodeId: nodeId, won: runState.won, floor: runState.floor)
@@ -213,6 +266,8 @@ final class RunSession {
             self.battleRoomType = nil
             self.lastConsumedBattleEventIndex = 0
             self.playedCardContextsBySequence = [:]
+            self.selectedEnemyIndex = nil
+            self.battleTargetHint = nil
             route = .runOver(lastNodeId: nodeId, won: false, floor: runState.floor)
         }
     }
@@ -223,7 +278,7 @@ final class RunSession {
         let battleSeed = SeedDerivation.battleSeed(runSeed: runState.seed, floor: runState.floor, nodeId: nodeId)
         var rng = SeededRNG(seed: battleSeed)
 
-        let enemyId: EnemyID
+        let enemyIds: [EnemyID]
         switch roomType {
         case .battle:
             let encounter: EnemyEncounter
@@ -235,26 +290,26 @@ final class RunSession {
             default:
                 encounter = Act3EncounterPool.randomWeak(rng: &rng)
             }
-            enemyId = encounter.enemyIds.first ?? "jaw_worm"
+            enemyIds = encounter.enemyIds
 
         case .elite:
             switch runState.floor {
             case 1:
-                enemyId = Act1EnemyPool.randomMedium(rng: &rng)
+                enemyIds = [Act1EnemyPool.randomMedium(rng: &rng)]
             case 2:
-                enemyId = Act2EnemyPool.randomMedium(rng: &rng)
+                enemyIds = [Act2EnemyPool.randomMedium(rng: &rng)]
             default:
-                enemyId = Act3EnemyPool.randomMedium(rng: &rng)
+                enemyIds = [Act3EnemyPool.randomMedium(rng: &rng)]
             }
 
         case .boss:
             switch runState.floor {
             case 1:
-                enemyId = "toxic_colossus"
+                enemyIds = ["toxic_colossus"]
             case 2:
-                enemyId = "cipher"
+                enemyIds = ["cipher"]
             default:
-                enemyId = "sequence_progenitor"
+                enemyIds = ["sequence_progenitor"]
             }
 
         default:
@@ -262,10 +317,12 @@ final class RunSession {
             return
         }
 
-        let enemy = createEnemy(enemyId: enemyId, instanceIndex: 0, rng: &rng)
+        let enemies = enemyIds.enumerated().map { instanceIndex, enemyId in
+            createEnemy(enemyId: enemyId, instanceIndex: instanceIndex, rng: &rng)
+        }
         let engine = BattleEngine(
             player: runState.player,
-            enemies: [enemy],
+            enemies: enemies,
             deck: runState.deck,
             relicManager: runState.relicManager,
             seed: battleSeed
@@ -279,6 +336,8 @@ final class RunSession {
         battleRoomType = roomType
         lastConsumedBattleEventIndex = 0
         playedCardContextsBySequence = [:]
+        selectedEnemyIndex = enemies.count == 1 ? 0 : nil
+        battleTargetHint = nil
         route = .battle(nodeId: nodeId, roomType: roomType)
     }
 
@@ -297,6 +356,8 @@ final class RunSession {
         battleRoomType = nil
         lastConsumedBattleEventIndex = 0
         playedCardContextsBySequence = [:]
+        selectedEnemyIndex = nil
+        battleTargetHint = nil
     }
 
     private func consumeNewBattleEventSlice() -> ArraySlice<BattleEvent> {
@@ -315,6 +376,7 @@ final class RunSession {
             playedCardContextsBySequence = [:]
         }
         playedCardContextsBySequence = playedCardContextsBySequence.filter { $0.key < battleEvents.count }
+        sanitizeSelectedEnemyIndex()
     }
 
     private func capturePlayedCardContexts(startIndex: Int, sourceHandIndex: Int) {
@@ -333,5 +395,64 @@ final class RunSession {
     private func destinationPileForPlayedCard(cardId: CardID) -> PlayedCardDestinationPile {
         let definition = CardRegistry.require(cardId)
         return definition.type == .consumable ? .exhaust : .discard
+    }
+
+    private enum TargetResolution {
+        case resolved(Int?)
+        case missingTarget
+    }
+
+    private func resolveTargetEnemyIndex(for card: Card, in state: BattleState) -> TargetResolution {
+        let definition = CardRegistry.require(card.cardId)
+        guard definition.targeting == .singleEnemy else { return .resolved(nil) }
+
+        let aliveEnemyIndices = state.enemies.indices.filter { state.enemies[$0].isAlive }
+        guard !aliveEnemyIndices.isEmpty else {
+            battleTargetHint = "没有可选目标"
+            return .missingTarget
+        }
+
+        if aliveEnemyIndices.count == 1, let only = aliveEnemyIndices.first {
+            selectedEnemyIndex = only
+            return .resolved(only)
+        }
+
+        guard let selectedEnemyIndex, aliveEnemyIndices.contains(selectedEnemyIndex) else {
+            battleTargetHint = "该牌需要选择目标：请先点击敌人"
+            return .missingTarget
+        }
+        return .resolved(selectedEnemyIndex)
+    }
+
+    private func sanitizeSelectedEnemyIndex() {
+        guard let battleState else {
+            selectedEnemyIndex = nil
+            return
+        }
+
+        if let selectedEnemyIndex {
+            let isValid = battleState.enemies.indices.contains(selectedEnemyIndex)
+                && battleState.enemies[selectedEnemyIndex].isAlive
+            if !isValid {
+                self.selectedEnemyIndex = nil
+                battleTargetHint = "目标已失效，请重新选择"
+            }
+        }
+
+        if selectedEnemyIndex == nil {
+            let aliveEnemyIndices = battleState.enemies.indices.filter { battleState.enemies[$0].isAlive }
+            if aliveEnemyIndices.count == 1, let only = aliveEnemyIndices.first {
+                selectedEnemyIndex = only
+            }
+        }
+    }
+
+    private func captureInvalidActionHint(from events: [BattleEvent], startIndex: Int) {
+        guard startIndex < events.count else { return }
+        for event in events[startIndex..<events.count].reversed() {
+            guard case .invalidAction(let reason) = event else { continue }
+            battleTargetHint = reason.resolved(for: .zhHans)
+            return
+        }
     }
 }

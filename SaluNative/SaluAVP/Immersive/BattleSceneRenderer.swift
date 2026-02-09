@@ -9,6 +9,7 @@ final class BattleSceneRenderer {
         static let battleHeadAnchor = "battleHeadAnchor"
         static let battleHandRoot = "battleHandRoot"
         static let battleEnemyRoot = "battleEnemyRoot"
+        static let enemyNamePrefix = "enemy:"
         static let battleInspectRoot = "battleInspectRoot"
         static let battlePilesRoot = "battlePilesRoot"
         static let cardNamePrefix = "card:"
@@ -66,6 +67,7 @@ final class BattleSceneRenderer {
         cardDisplayMode: CardDisplayMode,
         language: GameLanguage,
         peekedHandIndex: Int?,
+        selectedEnemyIndex: Int?,
         newEvents: [BattlePresentationEvent]
     ) {
         let enemyRoot = ensureEnemyRoot(in: battleLayer)
@@ -81,12 +83,7 @@ final class BattleSceneRenderer {
         )
 
         enemyRoot.children.forEach { $0.removeFromParent() }
-
-        if let enemy = engine.state.enemies.first {
-            let enemyEntity = makeEnemyEntity(enemy: enemy)
-            enemyEntity.position = .zero
-            enemyRoot.addChild(enemyEntity)
-        }
+        renderEnemies(enemies: engine.state.enemies, selectedEnemyIndex: selectedEnemyIndex, in: enemyRoot)
 
         let hand = engine.state.hand
         let playable = Set(engine.playableCardIndices)
@@ -172,12 +169,7 @@ final class BattleSceneRenderer {
         )
 
         enemyRoot.children.forEach { $0.removeFromParent() }
-
-        if let enemy = state.enemies.first {
-            let enemyEntity = makeEnemyEntity(enemy: enemy)
-            enemyEntity.position = .zero
-            enemyRoot.addChild(enemyEntity)
-        }
+        renderEnemies(enemies: state.enemies, selectedEnemyIndex: nil, in: enemyRoot)
 
         if let headAnchor = battleLayer.findEntity(named: Names.battleHeadAnchor) {
             headAnchor.findEntity(named: Names.battleHandRoot)?
@@ -315,13 +307,67 @@ final class BattleSceneRenderer {
         pilesRoot.addChild(discard)
     }
 
-    private func makeEnemyEntity(enemy: GameCore.Entity) -> ModelEntity {
-        let material = SimpleMaterial(color: UIColor.systemRed.withAlphaComponent(0.85), isMetallic: true)
+    private func renderEnemies(
+        enemies: [GameCore.Entity],
+        selectedEnemyIndex: Int?,
+        in enemyRoot: RealityKit.Entity
+    ) {
+        let aliveEnemies = enemies.enumerated().filter { $0.element.isAlive }
+        guard !aliveEnemies.isEmpty else { return }
+        let count = aliveEnemies.count
+
+        for (visibleIndex, pair) in aliveEnemies.enumerated() {
+            let (stateIndex, enemy) = pair
+            let isSelected = (selectedEnemyIndex == stateIndex)
+            let enemyEntity = makeEnemyEntity(enemy: enemy, isSelected: isSelected)
+            enemyEntity.position = enemyPosition(at: visibleIndex, total: count)
+            enemyRoot.addChild(enemyEntity)
+        }
+    }
+
+    private func enemyPosition(at index: Int, total: Int) -> SIMD3<Float> {
+        switch total {
+        case 1:
+            return [0, 0, 0]
+        case 2:
+            return [
+                index == 0 ? -0.22 : 0.22,
+                0,
+                0.03
+            ]
+        case 3:
+            return [
+                Float(index - 1) * 0.24,
+                0,
+                index == 1 ? 0 : 0.06
+            ]
+        default:
+            let center = Float(total - 1) / 2.0
+            let dx = Float(index) - center
+            return [dx * 0.2, 0, abs(dx) * 0.05]
+        }
+    }
+
+    private func makeEnemyEntity(enemy: GameCore.Entity, isSelected: Bool) -> ModelEntity {
+        let baseColor = isSelected ? UIColor.systemYellow : UIColor.systemRed
+        let material = SimpleMaterial(color: baseColor.withAlphaComponent(0.85), isMetallic: true)
         let mesh = MeshResource.generateSphere(radius: 0.14)
         let entity = ModelEntity(mesh: mesh, materials: [material])
-        entity.name = "enemy:\(enemy.id)"
-        entity.components.set(CollisionComponent(shapes: [.generateSphere(radius: 0.14)]))
-        entity.components.set(InputTargetComponent())
+        entity.name = "\(Names.enemyNamePrefix)\(enemy.id)"
+        if enemy.isAlive {
+            entity.components.set(CollisionComponent(shapes: [.generateSphere(radius: 0.14)]))
+            entity.components.set(InputTargetComponent())
+        }
+
+        if isSelected {
+            let marker = ModelEntity(
+                mesh: .generateCylinder(height: 0.008, radius: 0.19),
+                materials: [SimpleMaterial(color: UIColor.systemYellow.withAlphaComponent(0.5), isMetallic: false)]
+            )
+            marker.name = "enemySelectionMarker"
+            marker.position = [0, -0.145, 0]
+            entity.addChild(marker)
+        }
         return entity
     }
 
