@@ -85,6 +85,29 @@ final class BattleEngineFlowTests: XCTestCase {
         XCTAssertEqual(engine.state.enemies[0].currentHP, e1HPBefore)
         XCTAssertEqual(engine.state.enemies[1].currentHP, e2HPBefore)
     }
+
+    func testPlayAttackCard_targetsCorrectEnemyIndex_whenMultipleEnemiesAlive() {
+
+        print("🧪 测试：testPlayAttackCard_targetsCorrectEnemyIndex_whenMultipleEnemiesAlive")
+        let player = Entity(id: "player", name: LocalizedText("玩家", "玩家"), maxHP: 80)
+        let e1 = Entity(id: "e1", name: LocalizedText("敌人A", "敌人A"), maxHP: 999, enemyId: "jaw_worm")
+        let e2 = Entity(id: "e2", name: LocalizedText("敌人B", "敌人B"), maxHP: 999, enemyId: "jaw_worm")
+        let engine = BattleEngine(
+            player: player,
+            enemies: [e1, e2],
+            deck: [Card(id: "strike_1", cardId: "strike")],
+            seed: 1
+        )
+        engine.startBattle()
+        engine.clearEvents()
+
+        let e1HPBefore = engine.state.enemies[0].currentHP
+        let e2HPBefore = engine.state.enemies[1].currentHP
+
+        XCTAssertTrue(engine.handleAction(PlayerAction.playCard(handIndex: 0, targetEnemyIndex: 1)))
+        XCTAssertEqual(engine.state.enemies[0].currentHP, e1HPBefore)
+        XCTAssertEqual(engine.state.enemies[1].currentHP, e2HPBefore - 6)
+    }
     
     func testShuffleDiscardIntoDraw_emitsShuffledEvent_nextTurn() {
     
@@ -145,6 +168,7 @@ final class BattleEngineFlowTests: XCTestCase {
         XCTAssertEqual(engine.state.player.statuses.stacks(of: "vulnerable"), 0)
         XCTAssertTrue(
             engine.events.contains(.statusExpired(
+                targetEntityId: "player",
                 target: LocalizedText("玩家", "玩家"),
                 effect: Vulnerable.name
             )),
@@ -173,4 +197,3 @@ final class BattleEngineFlowTests: XCTestCase {
         XCTAssertEqual(engine.state.player.statuses.stacks(of: "poison"), 1)
     }
 }
-

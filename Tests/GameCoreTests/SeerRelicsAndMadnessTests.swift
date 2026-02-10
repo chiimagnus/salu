@@ -199,7 +199,7 @@ final class SeerRelicsAndMadnessTests: XCTestCase {
 
         XCTAssertEqual(engine.state.player.statuses.stacks(of: "madness"), 0)
         XCTAssertTrue(engine.events.contains(where: {
-            if case .statusApplied(_, let effect, let stacks) = $0 {
+            if case .statusApplied(_, _, let effect, let stacks) = $0 {
                 return effect.zhHans.contains("预言者手札") && stacks == 0
             }
             return false

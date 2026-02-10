@@ -9,15 +9,17 @@ struct ImmersiveRootView: View {
     @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
     @Environment(\.openWindow) private var openWindow
 
-    @State private var cardFaceTextureCache = CardFaceTextureCache()
+    @State private var battleSceneRenderer = BattleSceneRenderer()
+    @State private var roomSceneRenderer = RoomSceneRenderer()
     @State private var peekedHandIndex: Int? = nil
     @State private var peekedPile: PileKind? = nil
     @State private var didPeekInCurrentPress: Bool = false
     @State private var suppressNextTap: Bool = false
+    @State private var shownShopMessageSequence: UInt64 = 0
+    @State private var shopFeedbackTask: Task<Void, Never>? = nil
+    @State private var selectedShopItem: ShopItemSelection? = nil
 
     private let nodeNamePrefix = "node:"
-    private let cardNamePrefix = "card:"
-    private let pileNamePrefix = "pile:"
     private let roomPanelAttachmentId = "roomPanel"
     private let battleHudAttachmentId = "battleHUD"
     private let mapHudAttachmentId = "mapHUD"
@@ -25,13 +27,7 @@ struct ImmersiveRootView: View {
     private let pilePeekAttachmentId = "pilePeek"
     private let mapLayerPrefix = "mapLayer_floor_"
     private let uiLayerName = "uiLayer"
-    private let battleLayerName = "battleLayer"
     private let hudAnchorName = "hudAnchor"
-    private let battleHeadAnchorName = "battleHeadAnchor"
-    private let battleHandRootName = "battleHandRoot"
-    private let battleEnemyRootName = "battleEnemyRoot"
-    private let battleInspectRootName = "battleInspectRoot"
-    private let battlePilesRootName = "battlePilesRoot"
 
     var body: some View {
         let isBattleRoute: Bool = {
@@ -56,12 +52,24 @@ struct ImmersiveRootView: View {
                     runSession.selectAccessibleNode(nodeId)
 
                 case .battle:
-                    guard value.entity.name.hasPrefix(cardNamePrefix) else { return }
-                    let suffix = value.entity.name.dropFirst(cardNamePrefix.count)
+                    if value.entity.name.hasPrefix(BattleSceneRenderer.Names.enemyNamePrefix) {
+                        let enemyId = String(
+                            value.entity.name.dropFirst(BattleSceneRenderer.Names.enemyNamePrefix.count)
+                        )
+                        runSession.selectEnemyTarget(entityId: enemyId)
+                        return
+                    }
+                    guard value.entity.name.hasPrefix(BattleSceneRenderer.Names.cardNamePrefix) else { return }
+                    let suffix = value.entity.name.dropFirst(BattleSceneRenderer.Names.cardNamePrefix.count)
                     guard let handIndex = Int(suffix) else { return }
                     runSession.playCard(handIndex: handIndex)
 
-                case .cardReward, .room, .runOver:
+                case .room(_, let roomType):
+                    if roomType == .shop {
+                        handleShopSceneTap(named: value.entity.name)
+                    }
+
+                case .reward, .chapterEnd, .runOver:
                     break
                 }
             }
@@ -77,8 +85,8 @@ struct ImmersiveRootView: View {
                 guard translation.height < -22 else { return }
 
                 let name = value.entity.name
-                if name.hasPrefix(cardNamePrefix) {
-                    let suffix = name.dropFirst(cardNamePrefix.count)
+                if name.hasPrefix(BattleSceneRenderer.Names.cardNamePrefix) {
+                    let suffix = name.dropFirst(BattleSceneRenderer.Names.cardNamePrefix.count)
                     guard let handIndex = Int(suffix) else { return }
                     didPeekInCurrentPress = true
                     peekedPile = nil
@@ -86,8 +94,8 @@ struct ImmersiveRootView: View {
                     return
                 }
 
-                if name.hasPrefix(pileNamePrefix) {
-                    let suffix = String(name.dropFirst(pileNamePrefix.count))
+                if name.hasPrefix(BattleSceneRenderer.Names.pileNamePrefix) {
+                    let suffix = String(name.dropFirst(BattleSceneRenderer.Names.pileNamePrefix.count))
                     guard let kind = PileKind(rawValue: suffix) else { return }
                     didPeekInCurrentPress = true
                     peekedHandIndex = nil
@@ -119,26 +127,10 @@ struct ImmersiveRootView: View {
             hudAnchor.name = hudAnchorName
             mapRoot.addChild(hudAnchor)
 
-            let battleLayer = RealityKit.Entity()
-            battleLayer.name = battleLayerName
-            battleLayer.isEnabled = false
+            let roomLayer = roomSceneRenderer.makeRoomLayer()
+            mapRoot.addChild(roomLayer)
 
-            addBattleFloor(to: battleLayer)
-
-            let enemyRoot = RealityKit.Entity()
-            enemyRoot.name = battleEnemyRootName
-            enemyRoot.position = [0, 0.14, -1.0]
-            battleLayer.addChild(enemyRoot)
-
-            let headAnchor = AnchorEntity(.head)
-            headAnchor.name = battleHeadAnchorName
-            battleLayer.addChild(headAnchor)
-
-            let handRoot = RealityKit.Entity()
-            handRoot.name = battleHandRootName
-            handRoot.position = [0, -0.12, -0.35]
-            headAnchor.addChild(handRoot)
-
+            let battleLayer = battleSceneRenderer.makeBattleLayer()
             mapRoot.addChild(battleLayer)
             content.add(mapRoot)
         } update: { content, attachments in
@@ -162,7 +154,8 @@ struct ImmersiveRootView: View {
 
             guard let run = runSession.runState else {
                 mapRoot.children.first(where: { $0.name.hasPrefix(mapLayerPrefix) })?.removeFromParent()
-                mapRoot.findEntity(named: battleLayerName)?.isEnabled = false
+                mapRoot.findEntity(named: RoomSceneRenderer.Names.roomLayer)?.isEnabled = false
+                mapRoot.findEntity(named: BattleSceneRenderer.Names.battleLayer)?.isEnabled = false
                 return
             }
 
@@ -184,69 +177,126 @@ struct ImmersiveRootView: View {
                 mapLayer = newLayer
             }
 
-            let battleLayer = mapRoot.findEntity(named: battleLayerName) ?? {
-                let battleLayer = RealityKit.Entity()
-                battleLayer.name = battleLayerName
-                battleLayer.isEnabled = false
-                addBattleFloor(to: battleLayer)
-
-                let enemyRoot = RealityKit.Entity()
-                enemyRoot.name = battleEnemyRootName
-                enemyRoot.position = [0, 0.14, -1.0]
-                battleLayer.addChild(enemyRoot)
-
-                let headAnchor = AnchorEntity(.head)
-                headAnchor.name = battleHeadAnchorName
-                battleLayer.addChild(headAnchor)
-
-                let handRoot = RealityKit.Entity()
-                handRoot.name = battleHandRootName
-                handRoot.position = [0, -0.12, -0.35]
-                headAnchor.addChild(handRoot)
-
+            let battleLayer = mapRoot.findEntity(named: BattleSceneRenderer.Names.battleLayer) ?? {
+                let battleLayer = battleSceneRenderer.makeBattleLayer()
                 mapRoot.addChild(battleLayer)
                 return battleLayer
             }()
 
+            let roomLayer = mapRoot.findEntity(named: RoomSceneRenderer.Names.roomLayer) ?? {
+                let roomLayer = roomSceneRenderer.makeRoomLayer()
+                mapRoot.addChild(roomLayer)
+                return roomLayer
+            }()
+
             let isInBattle: Bool = {
                 switch runSession.route {
-                case .battle, .cardReward:
+                case .battle, .reward:
                     return true
-                case .map, .room, .runOver:
+                case .map, .room, .chapterEnd, .runOver:
                     return false
                 }
             }()
 
-            mapLayer.isEnabled = !isInBattle
+            let isInRoom: Bool = {
+                if case .room = runSession.route {
+                    return true
+                }
+                return false
+            }()
+
+            mapLayer.isEnabled = !isInBattle && !isInRoom
+            roomLayer.isEnabled = isInRoom
             battleLayer.isEnabled = isInBattle
 
             switch runSession.route {
+            case .room(let nodeId, let roomType):
+                roomSceneRenderer.render(
+                    nodeId: nodeId,
+                    roomType: roomType,
+                    shopState: runSession.shopRoomState,
+                    runState: runSession.runState,
+                    in: roomLayer
+                )
+                if roomType == .shop {
+                    sanitizeShopSelection()
+                    updateShopFeedback(in: roomLayer)
+                } else {
+                    selectedShopItem = nil
+                    clearShopFeedback(in: roomLayer)
+                }
+                battleSceneRenderer.clear(in: battleLayer)
+
             case .battle:
+                roomSceneRenderer.clear(in: roomLayer)
+                selectedShopItem = nil
+                clearShopFeedback(in: roomLayer)
                 if let engine = runSession.battleEngine {
-                    renderBattle(engine: engine, in: battleLayer)
+                    let newEvents = runSession.consumeNewBattlePresentationEvents()
+                    battleSceneRenderer.render(
+                        engine: engine,
+                        in: battleLayer,
+                        cardDisplayMode: appModel.cardDisplayMode,
+                        language: .zhHans,
+                        peekedHandIndex: peekedHandIndex,
+                        selectedEnemyIndex: runSession.selectedEnemyIndex,
+                        newEvents: newEvents
+                    )
                 } else {
-                    clearBattle(in: battleLayer)
+                    battleSceneRenderer.clear(in: battleLayer)
                 }
 
-            case .cardReward:
+            case .reward:
+                roomSceneRenderer.clear(in: roomLayer)
+                selectedShopItem = nil
+                clearShopFeedback(in: roomLayer)
                 if let state = runSession.battleState {
-                    renderBattleReward(state: state, in: battleLayer)
+                    let newEvents = runSession.consumeNewBattlePresentationEvents()
+                    battleSceneRenderer.renderReward(state: state, in: battleLayer, newEvents: newEvents)
                 } else {
-                    clearBattle(in: battleLayer)
+                    battleSceneRenderer.clear(in: battleLayer)
                 }
 
-            case .map, .room, .runOver:
-                clearBattle(in: battleLayer)
+            case .chapterEnd, .map, .runOver:
+                roomSceneRenderer.clear(in: roomLayer)
+                selectedShopItem = nil
+                clearShopFeedback(in: roomLayer)
+                battleSceneRenderer.clear(in: battleLayer)
             }
+
+            uiLayer.children.first(where: { $0.name == roomPanelAttachmentId })?.removeFromParent()
+            roomLayer.children.first(where: { $0.name == roomPanelAttachmentId })?.removeFromParent()
+            hudAnchor.children.first(where: { $0.name == roomPanelAttachmentId })?.removeFromParent()
 
             if let panel = attachments.entity(for: roomPanelAttachmentId) {
                 panel.name = roomPanelAttachmentId
                 panel.components.set(BillboardComponent())
                 panel.components.set(InputTargetComponent())
-                let (isVisible, position) = roomPanelPlacement(mapRoot: mapLayer, route: runSession.route)
-                panel.isEnabled = isVisible
-                panel.position = position
-                uiLayer.addChild(panel)
+
+                switch runSession.route {
+                case .room(_, let roomType):
+                    if roomType == .shop {
+                        if selectedShopItem == nil {
+                            panel.isEnabled = false
+                        } else {
+                            panel.isEnabled = true
+                            panel.position = [0.30, 0.15, -0.50]
+                            hudAnchor.addChild(panel)
+                        }
+                    } else {
+                        panel.isEnabled = true
+                        panel.position = roomSceneRenderer.panelPosition(for: roomType)
+                        roomLayer.addChild(panel)
+                    }
+
+                case .runOver:
+                    panel.isEnabled = true
+                    panel.position = [0, 0.25, -0.55]
+                    uiLayer.addChild(panel)
+
+                case .map, .battle, .reward, .chapterEnd:
+                    panel.isEnabled = false
+                }
             }
 
             if let hud = attachments.entity(for: battleHudAttachmentId) {
@@ -269,7 +319,8 @@ struct ImmersiveRootView: View {
                 hud.name = mapHudAttachmentId
                 hud.components.set(BillboardComponent())
                 hud.components.set(InputTargetComponent())
-                hud.isEnabled = !isInBattle
+                let isInChapterEnd: Bool = { if case .chapterEnd = runSession.route { return true } else { return false } }()
+                hud.isEnabled = !isInBattle && !isInRoom && !isInChapterEnd
 
                 hudAnchor.children.first(where: { $0.name == mapHudAttachmentId })?.removeFromParent()
                 hud.position = [0.18, 0.17, -0.50]
@@ -280,7 +331,15 @@ struct ImmersiveRootView: View {
                 panel.name = cardRewardAttachmentId
                 panel.components.set(BillboardComponent())
                 panel.components.set(InputTargetComponent())
-                if case .cardReward = runSession.route {
+                let isRewardVisible: Bool = {
+                    switch runSession.route {
+                    case .reward, .chapterEnd:
+                        return true
+                    default:
+                        return false
+                    }
+                }()
+                if isRewardVisible {
                     panel.isEnabled = true
                 } else {
                     panel.isEnabled = false
@@ -305,18 +364,38 @@ struct ImmersiveRootView: View {
             }
         } attachments: {
             Attachment(id: roomPanelAttachmentId) {
-                RoomPanel(
-                    route: runSession.route,
-                    onCompleteRoom: { runSession.completeCurrentRoomAndReturnToMap() },
-                    onNewRun: { runSession.startNewRun() },
-                    onClose: {
-                        Task { @MainActor in
-                            runSession.resetToControlPanel()
-                            await dismissImmersiveSpace()
-                            openWindow(id: AppModel.controlPanelWindowID)
+                switch runSession.route {
+                case .room(let nodeId, let roomType):
+                    switch roomType {
+                    case .rest:
+                        RestRoomPanel(nodeId: nodeId)
+                    case .shop:
+                        ShopRoomPanel(nodeId: nodeId, selection: $selectedShopItem)
+                    case .event:
+                        EventRoomPanel(nodeId: nodeId)
+                    default:
+                        GenericRoomPanel(nodeId: nodeId, roomType: roomType) {
+                            runSession.completeCurrentRoomAndReturnToMap()
                         }
                     }
-                )
+
+                case .runOver(_, let won, let floor):
+                    RunOverPanel(
+                        won: won,
+                        floor: floor,
+                        onNewRun: { runSession.startNewRun() },
+                        onClose: {
+                            Task { @MainActor in
+                                runSession.resetToControlPanel()
+                                await dismissImmersiveSpace()
+                                openWindow(id: AppModel.controlPanelWindowID)
+                            }
+                        }
+                    )
+
+                case .map, .battle, .reward, .chapterEnd:
+                    EmptyView()
+                }
             }
 
             Attachment(id: battleHudAttachmentId) {
@@ -341,7 +420,7 @@ struct ImmersiveRootView: View {
         .applyIf(isBattleRoute) { view in
             view.highPriorityGesture(dragPeekGesture)
         }
-        .onChange(of: isBattleRoute) { newValue in
+        .onChange(of: isBattleRoute) { _, newValue in
             if !newValue {
                 suppressNextTap = false
                 didPeekInCurrentPress = false
@@ -351,32 +430,118 @@ struct ImmersiveRootView: View {
         }
     }
 
-    private func roomPanelPlacement(mapRoot: RealityKit.Entity, route: RunSession.Route) -> (isVisible: Bool, position: SIMD3<Float>) {
-        switch route {
-        case .map:
-            return (false, .zero)
+    private func handleShopSceneTap(named entityName: String) {
+        guard entityName.hasPrefix(RoomSceneRenderer.Names.shopActionPrefix) else { return }
 
-        case .room(let nodeId, _):
-            let nodeName = "\(nodeNamePrefix)\(nodeId)"
-            if let node = mapRoot.findEntity(named: nodeName) {
-                // Place the panel above the selected node; billboard will face the user.
-                return (true, node.position + [0, 0.18, 0])
+        let suffix = String(entityName.dropFirst(RoomSceneRenderer.Names.shopActionPrefix.count))
+        if suffix == "leave" {
+            if selectedShopItem != nil {
+                selectedShopItem = nil
+                runSession.clearShopTransientMessage()
+                return
             }
-
-            // Fallback: place in front of the map origin.
-            return (true, [0, 0.25, -0.55])
-
-        case .battle:
-            return (false, .zero)
-
-        case .cardReward:
-            return (false, .zero)
-
-        case .runOver(let lastNodeId, _, _):
-            // End-of-run panel should be easy to find: keep it near the map origin instead of far away at the Boss node.
-            _ = lastNodeId
-            return (true, [0, 0.25, -0.55])
+            selectedShopItem = nil
+            runSession.leaveShopRoom()
+            return
         }
+
+        guard let nextSelection = parseShopSelection(from: suffix) else { return }
+        runSession.clearShopTransientMessage()
+        if selectedShopItem == nextSelection {
+            selectedShopItem = nil
+        } else {
+            selectedShopItem = nextSelection
+        }
+    }
+
+    private func parseShopSelection(from suffix: String) -> ShopItemSelection? {
+        let parts = suffix.split(separator: ":", omittingEmptySubsequences: true)
+        guard parts.count == 2, let index = Int(parts[1]) else { return nil }
+
+        switch parts[0] {
+        case "card":
+            return .card(index)
+        case "relic":
+            return .relic(index)
+        case "consumable":
+            return .consumable(index)
+        case "remove":
+            return .removeCard(index)
+        default:
+            return nil
+        }
+    }
+
+    private func sanitizeShopSelection() {
+        guard let selectedShopItem else { return }
+        guard let runState = runSession.runState, let shopState = runSession.shopRoomState else {
+            self.selectedShopItem = nil
+            return
+        }
+
+        let isValid: Bool
+        switch selectedShopItem {
+        case .card(let index):
+            isValid = shopState.inventory.cardOffers.indices.contains(index)
+        case .relic(let index):
+            isValid = shopState.inventory.relicOffers.indices.contains(index)
+        case .consumable(let index):
+            isValid = shopState.inventory.consumableOffers.indices.contains(index)
+        case .removeCard(let deckIndex):
+            isValid = runState.deck.indices.contains(deckIndex)
+        }
+
+        if !isValid {
+            self.selectedShopItem = nil
+        }
+    }
+
+    private func updateShopFeedback(in roomLayer: RealityKit.Entity) {
+        guard let shopState = runSession.shopRoomState,
+              let message = shopState.message,
+              !message.isEmpty else { return }
+        guard shopState.messageSequence > shownShopMessageSequence else { return }
+
+        shownShopMessageSequence = shopState.messageSequence
+        roomLayer.children
+            .filter { $0.name.hasPrefix("shopFeedback:") }
+            .forEach { $0.removeFromParent() }
+
+        let style = shopFeedbackStyle(for: message)
+        guard let feedback = FloatingTextFactory.makeEntity(text: message, style: style) else { return }
+        feedback.name = "shopFeedback:\(shopState.messageSequence)"
+        feedback.position = [0, 0.42, -0.76]
+        feedback.scale = [0.60, 0.60, 1.0]
+        feedback.components.set(BillboardComponent())
+        roomLayer.addChild(feedback)
+
+        shopFeedbackTask?.cancel()
+        shopFeedbackTask = Task { @MainActor in
+            var toTransform = feedback.transform
+            toTransform.translation = [feedback.position.x, feedback.position.y + 0.10, feedback.position.z]
+            feedback.move(to: toTransform, relativeTo: feedback.parent, duration: 0.85, timingFunction: .easeOut)
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            if Task.isCancelled { return }
+            feedback.removeFromParent()
+        }
+    }
+
+    private func clearShopFeedback(in roomLayer: RealityKit.Entity) {
+        roomLayer.children
+            .filter { $0.name.hasPrefix("shopFeedback:") }
+            .forEach { $0.removeFromParent() }
+        shopFeedbackTask?.cancel()
+        shopFeedbackTask = nil
+    }
+
+    private func shopFeedbackStyle(for message: String) -> FloatingTextFactory.Style {
+        if message.contains("不足")
+            || message.contains("无效")
+            || message.contains("失败")
+            || message.contains("已满") {
+            return .damage
+        }
+        return .block
     }
 
     private func addFloor(to root: RealityKit.Entity) {
@@ -385,247 +550,6 @@ struct ImmersiveRootView: View {
         floor.components.set(CollisionComponent(shapes: [.generateBox(size: [2.8, 0.01, 4.2])]))
         floor.components.set(InputTargetComponent())
         root.addChild(floor)
-    }
-
-    private func addBattleFloor(to root: RealityKit.Entity) {
-        let floorEntity = ModelEntity(
-            mesh: .generateBox(size: [2.8, 0.01, 2.8]),
-            materials: [SimpleMaterial(color: .black.withAlphaComponent(0.15), isMetallic: false)]
-        )
-        floorEntity.name = "battleFloor"
-        floorEntity.position = [0, -0.01, -1.0]
-        root.addChild(floorEntity)
-    }
-
-    private func clearBattle(in battleLayer: RealityKit.Entity) {
-        battleLayer.findEntity(named: battleEnemyRootName)?.children.forEach { $0.removeFromParent() }
-        if let headAnchor = battleLayer.findEntity(named: battleHeadAnchorName) {
-            headAnchor.findEntity(named: battleHandRootName)?.children.forEach { $0.removeFromParent() }
-            headAnchor.findEntity(named: battleInspectRootName)?.children.forEach { $0.removeFromParent() }
-        }
-        battleLayer.findEntity(named: battlePilesRootName)?.children.forEach { $0.removeFromParent() }
-    }
-
-    private func renderBattle(engine: BattleEngine, in battleLayer: RealityKit.Entity) {
-        let enemyRoot = battleLayer.findEntity(named: battleEnemyRootName) ?? {
-            let root = RealityKit.Entity()
-            root.name = battleEnemyRootName
-            root.position = [0, 0.14, -1.0]
-            battleLayer.addChild(root)
-            return root
-        }()
-
-        enemyRoot.children.forEach { $0.removeFromParent() }
-
-        if let enemy = engine.state.enemies.first {
-            let enemyEntity = makeEnemyEntity(enemy: enemy)
-            enemyEntity.position = .zero
-            enemyRoot.addChild(enemyEntity)
-        }
-
-        let headAnchor = battleLayer.findEntity(named: battleHeadAnchorName) ?? {
-            let anchor = AnchorEntity(.head)
-            anchor.name = battleHeadAnchorName
-            battleLayer.addChild(anchor)
-            return anchor
-        }()
-
-        let handRoot = headAnchor.findEntity(named: battleHandRootName) ?? {
-            let root = RealityKit.Entity()
-            root.name = battleHandRootName
-            root.position = [0, -0.12, -0.35]
-            headAnchor.addChild(root)
-            return root
-        }()
-
-        let hand = engine.state.hand
-        guard !hand.isEmpty else {
-            clearPeek(in: headAnchor)
-            return
-        }
-
-        let displayMode = appModel.cardDisplayMode
-        let language: GameLanguage = .zhHans
-        let playable = Set(engine.playableCardIndices)
-        let signature = StableHash.fnv1a64(
-            hand.map(\.cardId.rawValue).joined(separator: "|")
-                + "#"
-                + playable.sorted().map(String.init).joined(separator: ",")
-                + "#"
-                + displayMode.rawValue
-                + "#"
-                + language.rawValue
-        )
-
-        let needsHandRebuild = (handRoot.components[HandRenderStateComponent.self]?.signature != signature)
-        if needsHandRebuild {
-            handRoot.components.set(HandRenderStateComponent(signature: signature))
-            handRoot.children.forEach { $0.removeFromParent() }
-
-            let count = hand.count
-            let center = Float(count - 1) / 2.0
-
-            for (index, card) in hand.enumerated() {
-                let isPlayable = playable.contains(index)
-                let entity = makeCardEntity(card: card, isPlayable: isPlayable, displayMode: displayMode, language: language)
-                entity.name = "\(cardNamePrefix)\(index)"
-
-                let dx = Float(index) - center
-                let x = dx * 0.07
-                // Outer cards should come slightly closer to the user.
-                let z = abs(dx) * 0.02
-                entity.position = [x, 0, z]
-
-                // Fan the cards toward the user (arc center facing the player).
-                let yaw = -dx * 0.22
-                let pitch: Float = 0.18
-                entity.orientation = simd_quatf(angle: yaw, axis: [0, 1, 0]) * simd_quatf(angle: pitch, axis: [1, 0, 0])
-
-                handRoot.addChild(entity)
-            }
-        }
-
-        renderPeek(handRoot: handRoot, in: headAnchor)
-        renderPiles(state: engine.state, in: battleLayer)
-    }
-
-    private func renderPeek(handRoot: RealityKit.Entity, in headAnchor: RealityKit.Entity) {
-        let inspectRoot = headAnchor.findEntity(named: battleInspectRootName) ?? {
-            let root = RealityKit.Entity()
-            root.name = battleInspectRootName
-            root.position = [0, 0.02, -0.22]
-            headAnchor.addChild(root)
-            return root
-        }()
-
-        guard let peekedHandIndex else {
-            inspectRoot.children.forEach { $0.removeFromParent() }
-            return
-        }
-
-        let signature = StableHash.fnv1a64("peek#\(peekedHandIndex)")
-        if let state = inspectRoot.components[PileRenderStateComponent.self], state.signature == signature, !inspectRoot.children.isEmpty {
-            return
-        }
-        inspectRoot.components.set(PileRenderStateComponent(signature: signature))
-        inspectRoot.children.forEach { $0.removeFromParent() }
-
-        guard let cardEntity = handRoot.findEntity(named: "\(cardNamePrefix)\(peekedHandIndex)") else { return }
-        let clone = cardEntity.clone(recursive: true)
-        clone.components.remove(InputTargetComponent.self)
-        clone.components.remove(CollisionComponent.self)
-        clone.name = "peekCard"
-        clone.position = .zero
-        clone.scale = [3.2, 3.2, 3.2]
-        clone.orientation = simd_quatf(angle: 0.35, axis: [1, 0, 0])
-        inspectRoot.addChild(clone)
-    }
-
-    private func clearPeek(in headAnchor: RealityKit.Entity) {
-        guard let inspectRoot = headAnchor.findEntity(named: battleInspectRootName) else { return }
-        inspectRoot.children.forEach { $0.removeFromParent() }
-    }
-
-    private func renderPiles(state: BattleState, in battleLayer: RealityKit.Entity) {
-        let pilesRoot = battleLayer.findEntity(named: battlePilesRootName) ?? {
-            let root = RealityKit.Entity()
-            root.name = battlePilesRootName
-            // Keep piles fixed on the "table" (world space), not attached to the user's head.
-            // Position is relative to battleLayer.
-            root.position = [0, 0.045, -0.72]
-            root.orientation = simd_quatf(angle: -0.55, axis: [1, 0, 0])
-            battleLayer.addChild(root)
-            return root
-        }()
-
-        let signature = StableHash.fnv1a64("piles#\(state.drawPile.count)#\(state.discardPile.count)#\(state.exhaustPile.count)")
-        if let stateComponent = pilesRoot.components[PileRenderStateComponent.self], stateComponent.signature == signature {
-            return
-        }
-        pilesRoot.components.set(PileRenderStateComponent(signature: signature))
-        pilesRoot.children.forEach { $0.removeFromParent() }
-
-        let draw = PileEntityFactory.makePileEntity(kind: .draw, count: state.drawPile.count)
-        draw.position = [-0.22, 0, 0]
-        pilesRoot.addChild(draw)
-
-        let exhaust = PileEntityFactory.makePileEntity(kind: .exhaust, count: state.exhaustPile.count)
-        exhaust.position = [0.0, 0, 0]
-        pilesRoot.addChild(exhaust)
-
-        let discard = PileEntityFactory.makePileEntity(kind: .discard, count: state.discardPile.count)
-        discard.position = [0.22, 0, 0]
-        pilesRoot.addChild(discard)
-    }
-
-    private func renderBattleReward(state: BattleState, in battleLayer: RealityKit.Entity) {
-        let enemyRoot = battleLayer.findEntity(named: battleEnemyRootName) ?? {
-            let root = RealityKit.Entity()
-            root.name = battleEnemyRootName
-            root.position = [0, 0.14, -1.0]
-            battleLayer.addChild(root)
-            return root
-        }()
-
-        enemyRoot.children.forEach { $0.removeFromParent() }
-        if let enemy = state.enemies.first {
-            let enemyEntity = makeEnemyEntity(enemy: enemy)
-            enemyEntity.position = .zero
-            enemyRoot.addChild(enemyEntity)
-        }
-
-        battleLayer.findEntity(named: battleHeadAnchorName)?
-            .findEntity(named: battleHandRootName)?
-            .children
-            .forEach { $0.removeFromParent() }
-    }
-
-    private func makeEnemyEntity(enemy: GameCore.Entity) -> ModelEntity {
-        let material = SimpleMaterial(color: UIColor.systemRed.withAlphaComponent(0.85), isMetallic: true)
-        let mesh = MeshResource.generateSphere(radius: 0.14)
-        let entity = ModelEntity(mesh: mesh, materials: [material])
-        entity.name = "enemy:0"
-        entity.components.set(CollisionComponent(shapes: [.generateSphere(radius: 0.14)]))
-        entity.components.set(InputTargetComponent())
-        return entity
-    }
-
-    private func makeCardEntity(card: Card, isPlayable: Bool, displayMode: CardDisplayMode, language: GameLanguage) -> ModelEntity {
-        let def = CardRegistry.require(card.cardId)
-        let baseColor: UIColor
-        switch def.type {
-        case .attack:
-            baseColor = .systemRed
-        case .skill:
-            baseColor = .systemBlue
-        case .power:
-            baseColor = .systemPurple
-        case .consumable:
-            baseColor = .systemGreen
-        }
-
-        let color = isPlayable ? baseColor.withAlphaComponent(0.9) : baseColor.withAlphaComponent(0.25)
-        let material = SimpleMaterial(color: color, isMetallic: false)
-        let entity = ModelEntity(mesh: .generateBox(size: [0.06, 0.002, 0.09]), materials: [material])
-        entity.components.set(CollisionComponent(shapes: [.generateBox(size: [0.065, 0.02, 0.095])]))
-        entity.components.set(InputTargetComponent())
-
-        if let texture = cardFaceTextureCache.texture(for: card.cardId, displayMode: displayMode, language: language) {
-            let faceWidth: Float = 0.056
-            let faceHeight: Float = 0.086
-            let faceMesh = MeshResource.generatePlane(width: faceWidth, height: faceHeight)
-
-            var faceMaterial = UnlitMaterial()
-            faceMaterial.color = .init(tint: .white)
-            faceMaterial.color.texture = .init(texture)
-
-            let face = ModelEntity(mesh: faceMesh, materials: [faceMaterial])
-            face.name = "cardFace"
-            face.position = [0, 0.0012, 0]
-            entity.addChild(face)
-        }
-
-        return entity
     }
 
     private func updateMapState(run: RunState, in mapLayer: RealityKit.Entity) {
@@ -766,60 +690,56 @@ private extension View {
     }
 }
 
-private struct RoomPanel: View {
-    let route: RunSession.Route
+private struct GenericRoomPanel: View {
+    let nodeId: String
+    let roomType: RoomType
     let onCompleteRoom: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("\(roomType.icon) \(roomType.displayName(language: .zhHans))")
+                .font(.headline)
+
+            Text("Node: \(nodeId)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Button("继续") {
+                onCompleteRoom()
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding(12)
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+private struct RunOverPanel: View {
+    let won: Bool
+    let floor: Int
     let onNewRun: () -> Void
     let onClose: () -> Void
 
     var body: some View {
-        Group {
-            switch route {
-            case .map:
-                EmptyView()
+        VStack(alignment: .leading, spacing: 10) {
+            Text(won ? "Victory" : "Defeat")
+                .font(.headline)
 
-            case .room(let nodeId, let roomType):
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("\(roomType.icon) \(roomType.displayName(language: .zhHans))")
-                        .font(.headline)
+            Text("Run ended at Act \(floor)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
 
-                    Text("Node: \(nodeId)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    Button("Complete") {
-                        onCompleteRoom()
-                    }
-                    .buttonStyle(.borderedProminent)
+            HStack(spacing: 10) {
+                Button("New Run") {
+                    onNewRun()
                 }
+                .buttonStyle(.borderedProminent)
 
-            case .battle:
-                EmptyView()
-
-            case .cardReward:
-                EmptyView()
-
-            case .runOver(_, let won, let floor):
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(won ? "🎉 Victory" : "💀 Defeat")
-                        .font(.headline)
-
-                    Text("Run ended at Act \(floor)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    HStack(spacing: 10) {
-                        Button("New Run") {
-                            onNewRun()
-                        }
-                        .buttonStyle(.borderedProminent)
-
-                        Button("Close") {
-                            onClose()
-                        }
-                        .buttonStyle(.bordered)
-                    }
+                Button("Close") {
+                    onClose()
                 }
+                .buttonStyle(.bordered)
             }
         }
         .padding(12)
@@ -833,18 +753,35 @@ private struct CardRewardAttachment: View {
 
     var body: some View {
         switch runSession.route {
-        case .cardReward(let nodeId, let roomType, let offer, let goldEarned):
-            CardRewardPanel(nodeId: nodeId, roomType: roomType, offer: offer, goldEarned: goldEarned)
+        case .reward(let rewardState):
+            switch rewardState.phase {
+            case .relic:
+                if let relicReward = rewardState.relicReward {
+                    RelicRewardPanel(rewardState: rewardState, relicReward: relicReward)
+                } else {
+                    CardRewardPanel(
+                        nodeId: rewardState.nodeId,
+                        roomType: rewardState.roomType,
+                        offer: rewardState.cardOffer,
+                        goldEarned: rewardState.goldEarned
+                    )
+                }
+            case .card:
+                CardRewardPanel(
+                    nodeId: rewardState.nodeId,
+                    roomType: rewardState.roomType,
+                    offer: rewardState.cardOffer,
+                    goldEarned: rewardState.goldEarned
+                )
+            }
+
+        case .chapterEnd(let previousFloor, let nextFloor):
+            ChapterEndPanel(previousFloor: previousFloor, nextFloor: nextFloor) {
+                runSession.continueAfterChapterEnd()
+            }
 
         default:
             EmptyView()
         }
-    }
-}
-
-private extension RunSession.Route {
-    var isRoom: Bool {
-        if case .room = self { return true }
-        return false
     }
 }

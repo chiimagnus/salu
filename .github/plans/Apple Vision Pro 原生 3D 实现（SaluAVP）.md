@@ -139,7 +139,7 @@ SaluNative/
 ### 2D 控制面板（MVP）
 
 - ✅ New Run：输入 seed（或随机生成后展示）并开始。
-- Continue：从 App 层持久化恢复（如果 P3 之前未做存档，可先隐藏/置灰）。
+- Continue：本阶段不实现（刻意不做存档/读档/Continue）；建议在 UI 中隐藏或置灰并标注“Not in scope”。
 - ✅ Immersive 控制：进入/退出 ImmersiveSpace，显示当前 run 的关键摘要（楼层/金币/HP）。
 
 ---
